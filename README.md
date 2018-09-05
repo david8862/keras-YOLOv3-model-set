@@ -1,14 +1,34 @@
-# keras-yolo3
+# keras-yolo3-Mobilenet
 
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](LICENSE)
 
 ## Introduction
 
 A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/YAD2K](https://github.com/allanzelener/YAD2K).
+#### And I change the backend of darknet53 into 
+##### &radic; Mobilenet
+##### inceptionResnetv2
+##### inceptionv3
 
+# Guide of keras-yolov3-Mobilenet
 
+1.train_Mobilenet.py 
+     
+     Code for training
+     (I change some of the code to read in train.txt and val.txt seperately, remember to change that)
+
+2.model_Mobilenet.py 
+    
+    model_Mobilenet is the yolo model based on Mobilenet 
+    (I extract three layers from the Mobilenet to make the prediction)
+
+3.yolo_Mobilenet.py
+    
+    testing and evaluation code
+
+##### if you find anything tricky, contact me as you wish
 ---
-
+# Guide of keras-yolov3
 ## Quick Start
 
 1. Download YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
