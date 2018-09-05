@@ -17,7 +17,7 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
      Code for training
      (I change some of the code to read in train.txt and val.txt seperately, remember to change that)
 
-2.model_Mobilenet.py 
+2.yolo3/model_Mobilenet.py 
     
     model_Mobilenet is the yolo model based on Mobilenet 
     (I extract three layers from the Mobilenet to make the prediction)
@@ -26,6 +26,8 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
     
     testing and evaluation code
 
+
+###### Be sure that you do not load pretrained model when training because I did it on keras_applications,and the keras will load the pretrained model for you
 ##### if you find anything tricky, contact me as you wish
 ---
 # Guide of keras-yolov3
