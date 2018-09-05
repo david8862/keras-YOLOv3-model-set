@@ -19,7 +19,8 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 
 2.yolo3/model_Mobilenet.py 
     
-    model_Mobilenet is the yolo model based on Mobilenet 
+    model_Mobilenet is the yolo model based on Mobilenet
+    ##### If you want to go through the source code,ignore the other function,please see the yolo_body ####
     (I extract three layers from the Mobilenet to make the prediction)
 
 3.yolo_Mobilenet.py
