@@ -15,7 +15,7 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 1.train_Mobilenet.py 
      
      Code for training
-     (I change some of the code to read in train.txt and val.txt seperately, remember to change that)
+     (I change some of the code to read in train.txt and val.txt seperately, remember to change that, and the .txt file are in the same form descibed below)
 
 2.yolo3/model_Mobilenet.py 
     
