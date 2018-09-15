@@ -32,6 +32,7 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 ##### if you find anything tricky, contact me as you wish
 ---
 # Guide of keras-yolov3
+[this is the guide for darknet53 not mobilenet]
 ## Quick Start
 
 1. Download YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
