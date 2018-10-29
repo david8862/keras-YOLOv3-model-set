@@ -31,6 +31,9 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 ###### Be sure that you do not load pretrained model when training because I did it on keras_applications,and the keras will load the pretrained model for you
 ##### if you find anything tricky, contact me as you wish
 ---
+# Evaluation 
+#### Please use this repo to draw the RP curve calculate the MAP
+---
 # Guide of keras-yolov3
 [this is the guide for darknet53 not mobilenet]
 ## Quick Start
