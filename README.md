@@ -32,7 +32,7 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 ##### if you find anything tricky, contact me as you wish
 ---
 # Evaluation 
-#### Please use this repo to draw the RP curve calculate the MAP
+#### Please use this repo to draw the RP curve calculate the MAP https://github.com/Adamdad/Object-Detection-Metrics.git
 ---
 # Guide of keras-yolov3
 [this is the guide for darknet53 not mobilenet]
