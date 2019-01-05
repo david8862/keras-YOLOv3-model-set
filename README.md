@@ -23,8 +23,9 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 
 #### PS:
 1. Compared with MobileNet-SSD, YOLOv3-Mobilenet is much better on VOC2007 test, even without pre-training on Ms-COCO
-1. I use the default anchor size that the author cluster on COCO with inputsize of 416\*416, whereas the anchors for VOC 320 input should be smaller. The change of anchor size could gain performance improvement.
-2. Evaluation on https://github.com/Adamdad/Object-Detection-Metrics.git
+2. I use the default anchor size that the author cluster on COCO with inputsize of 416\*416, whereas the anchors for VOC 320 input should be smaller. The change of anchor size could gain performance improvement.
+3. Evaluation on https://github.com/Adamdad/Object-Detection-Metrics.git
+4. I only use the pure model of YOLOv3-Mobilenet with no additional tricks.
 
 # Guide of keras-yolov3-Mobilenet
 
