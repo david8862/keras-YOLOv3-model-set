@@ -12,9 +12,16 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 
 ## Experiment on open datasets
 
-| InputSize | TrainSet | TestSet | mAP | Speed | Discription |
-| ------ | ------ | ------ | ----- | ----- | ----- |
-| 320\*320 | VOC07 trainval| VOC07 test | 64.22% | 29.4fps on 1080ti | finetune Imagenet 224\*224 (no Ms-coco)
+| Model name | InputSize | TrainSet | TestSet | mAP | Speed | Ps |
+| ----- | ------ | ------ | ------ | ----- | ----- | ----- |
+| YOLOv3-Mobilenet | 320\*320 | VOC07 | VOC07 | 64.22% | 29fps on 1080ti ||
+| YOLOv3-Mobilenet | 320\*320 | VOC07+12 | VOC07 | 74.56% | (above) ||
+| MobileNet-SSD | 300x300 | VOC07+12+coco | VOC07 | 72.7% | (unknown) |https://github.com/chuanqi305/MobileNet-SSD|
+| MobileNet-SSD | 300x300 | VOC07+12 | VOC07 | 68% | (unknown) | (above) |
+| Faster RCNN, VGG-16| ~1000x600 | VOC07+12| VOC07 | 73.2% | 198ms |https://github.com/ShaoqingRen/faster_rcnn|
+#### Comparision
+
+
 
 #### PS:
 1. I use the default anchor size that the author cluster on COCO with inputsize of 416\*416, whereas the anchors for VOC 320 input should be smaller. The change of anchor size could gain performance improvement.
