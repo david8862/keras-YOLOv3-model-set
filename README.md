@@ -10,16 +10,15 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 - [ ] inceptionResnetv2
 - [ ] inceptionv3
 
-## Experiment on VOC2007
+## Experiment on open datasets
 
-| InputSize | TrainSet | TestSet | mAP | Speed |
-| ------ | ------ | ------ | ----- | ----- | 
-| 320\*320 | VOC07 trainval| VOC07 test | 64.22% | 29.4fps on 1080ti |
+| InputSize | TrainSet | TestSet | mAP | Speed | Discription |
+| ------ | ------ | ------ | ----- | ----- | ----- |
+| 320\*320 | VOC07 trainval| VOC07 test | 64.22% | 29.4fps on 1080ti | finetune Imagenet 224\*224 (no Ms-coco)
 
 #### PS:
-1. I use the **default anchor size** that the author cluster on COCO with inputsize of 416\*416, where as the anchors for VOC 320 input should be smaller. The change of anchor size could gain performance improvement.
-2. The model is pre-trained on Imagenet with 224\*224 input, without training on coco.
-3. Evaluation on https://github.com/Adamdad/Object-Detection-Metrics.git
+1. I use the default anchor size that the author cluster on COCO with inputsize of 416\*416, whereas the anchors for VOC 320 input should be smaller. The change of anchor size could gain performance improvement.
+2. Evaluation on https://github.com/Adamdad/Object-Detection-Metrics.git
 
 # Guide of keras-yolov3-Mobilenet
 
