@@ -16,9 +16,9 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 | ----- | ------ | ------ | ------ | ----- | ----- | ----- |
 | YOLOv3-Mobilenet | 320\*320 | VOC07 | VOC07 | 64.22% | 29fps on 1080ti ||
 | YOLOv3-Mobilenet | 320\*320 | VOC07+12 | VOC07 | 74.56% | (above) ||
-| MobileNet-SSD | 300x300 | VOC07+12+coco | VOC07 | 72.7% | (unknown) |https://github.com/chuanqi305/MobileNet-SSD|
-| MobileNet-SSD | 300x300 | VOC07+12 | VOC07 | 68% | (unknown) | (above) |
-| Faster RCNN, VGG-16| ~1000x600 | VOC07+12| VOC07 | 73.2% | 198ms |https://github.com/ShaoqingRen/faster_rcnn|
+| [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12+coco | VOC07 | 72.7% | (unknown) ||
+| [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12 | VOC07 | 68% | (unknown) ||
+| [Faster RCNN, VGG-16](https://github.com/ShaoqingRen/faster_rcnn)| ~1000x600 | VOC07+12| VOC07 | 73.2% | 198ms ||
 #### Comparision
 
 
