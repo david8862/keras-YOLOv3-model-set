@@ -14,16 +14,15 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 
 | Model name | InputSize | TrainSet | TestSet | mAP | Speed | Ps |
 | ----- | ------ | ------ | ------ | ----- | ----- | ----- |
-| YOLOv3-Mobilenet | 320\*320 | VOC07 | VOC07 | 64.22% | 29fps on 1080ti ||
-| YOLOv3-Mobilenet | 320\*320 | VOC07+12 | VOC07 | 74.56% | (above) ||
+| YOLOv3-Mobilenet | 320x320 | VOC07 | VOC07 | 64.22% | 29fps ||
+| YOLOv3-Mobilenet | 320x320 | VOC07+12 | VOC07 | 74.56% | (above) ||
 | [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12+coco | VOC07 | 72.7% | (unknown) ||
 | [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12 | VOC07 | 68% | (unknown) ||
 | [Faster RCNN, VGG-16](https://github.com/ShaoqingRen/faster_rcnn)| ~1000x600 | VOC07+12| VOC07 | 73.2% | 198ms ||
-#### Comparision
-
-
+|[SSD,VGG-16](https://github.com/pierluigiferrari/ssd_keras) | 300x300 | VOC07+12 | VOC07	| 77.5% | 39fps ||
 
 #### PS:
+1. Compared with MobileNet-SSD, YOLOv3-Mobilenet is much better on VOC2007 test, even without pre-training on Ms-COCO
 1. I use the default anchor size that the author cluster on COCO with inputsize of 416\*416, whereas the anchors for VOC 320 input should be smaller. The change of anchor size could gain performance improvement.
 2. Evaluation on https://github.com/Adamdad/Object-Detection-Metrics.git
 
