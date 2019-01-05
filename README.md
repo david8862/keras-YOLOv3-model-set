@@ -24,18 +24,18 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 
 1.train_Mobilenet.py 
      
-     Code for training
-     (I change some of the code to read in train.txt and val.txt seperately, remember to change that, and the .txt file are in the same form descibed below)
+> * **Code for training**
+> * I change some of the code to read in the annotaions seperately (train.txt and val.txt), remember to change that, and the .txt file are in the same form descibed below
 
 2.yolo3/model_Mobilenet.py 
     
-    model_Mobilenet is the yolo model based on Mobilenet
-    ##### If you want to go through the source code,ignore the other function,please see the yolo_body ####
-    (I extract three layers from the Mobilenet to make the prediction)
+> * **Model_Mobilenet is the yolo model based on Mobilenet**
+> * If you want to go through the source code,ignore the other function,please see the yolo_body
+(I extract three layers from the Mobilenet to make the prediction)
 
 3.yolo_Mobilenet.py
     
-    testing and evaluation code
+ > * **Testing on images**
 
 
 ###### Be sure that you do not load pretrained model when training because I did it on keras_applications,and the keras will load the pretrained model for you
