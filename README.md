@@ -14,12 +14,12 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 
 | Model name | InputSize | TrainSet | TestSet | mAP | Speed | Ps |
 | ----- | ------ | ------ | ------ | ----- | ----- | ----- |
-| YOLOv3-Mobilenet | 320x320 | VOC07 | VOC07 | 64.22% | 29fps ||
-| YOLOv3-Mobilenet | 320x320 | VOC07+12 | VOC07 | 74.56% | (above) ||
+| YOLOv3-Mobilenet | 320x320 | VOC07 | VOC07 | 64.22% | 29fps | Keras on 1080Ti |
+| YOLOv3-Mobilenet | 320x320 | VOC07+12 | VOC07 | 74.56% | 29fps | Keras on 1080Ti |
 | [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12+coco | VOC07 | 72.7% | (unknown) ||
 | [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12 | VOC07 | 68% | (unknown) ||
-| [Faster RCNN, VGG-16](https://github.com/ShaoqingRen/faster_rcnn)| ~1000x600 | VOC07+12| VOC07 | 73.2% | 198ms ||
-|[SSD,VGG-16](https://github.com/pierluigiferrari/ssd_keras) | 300x300 | VOC07+12 | VOC07	| 77.5% | 39fps ||
+| [Faster RCNN, VGG-16](https://github.com/ShaoqingRen/faster_rcnn)| ~1000x600 | VOC07+12| VOC07 | 73.2% | 151ms | Caffe on Titan X |
+|[SSD,VGG-16](https://github.com/pierluigiferrari/ssd_keras) | 300x300 | VOC07+12 | VOC07	| 77.5% | 39fps | Keras on Titan X |
 
 #### PS:
 1. Compared with MobileNet-SSD, YOLOv3-Mobilenet is much better on VOC2007 test, even without pre-training on Ms-COCO
