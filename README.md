@@ -7,9 +7,9 @@
 A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/YAD2K](https://github.com/allanzelener/YAD2K).
 #### And I change the backend of darknet53 into 
 - [x] Mobilenet
-- [x] Vgg16
-- [ ] inceptionResnetv2
-- [ ] inceptionv3
+- [x] VGG16
+- [ ] InceptionResnetv2
+- [ ] Inceptionv3
 
 ## Experiment on open datasets
 
