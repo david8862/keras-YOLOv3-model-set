@@ -9,16 +9,16 @@ import os
 from timeit import default_timer as timer
 import tensorflow as tf
 import numpy as np
-from keras import backend as K
-from keras.models import load_model
-from keras.layers import Input
+from tensorflow.keras import backend as K
+from tensorflow.keras.models import load_model
+from tensorflow.keras.layers import Input
 from PIL import Image, ImageFont, ImageDraw
 
 from yolo3.model_Mobilenet import yolo_eval, yolo_body, tiny_yolo_body
 from yolo3.utils import letterbox_image
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-from keras.utils import multi_gpu_model
+from tensorflow.keras.utils import multi_gpu_model
 gpu_num=1
 
 class YOLO(object):

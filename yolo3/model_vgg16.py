@@ -4,13 +4,13 @@ from functools import wraps
 
 import numpy as np
 import tensorflow as tf
-from keras import backend as K
-from keras.layers import merge,Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
-from keras.layers.advanced_activations import LeakyReLU
-from keras.layers.normalization import BatchNormalization
-from keras.models import Model
-from keras.applications.vgg16 import VGG16
-from keras.regularizers import l2
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import merge,Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
+from tensorflow.keras.layers import LeakyReLU
+from tensorflow.keras.layers import BatchNormalization
+from tensorflow.keras.models import Model
+from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.regularizers import l2
 
 from yolo3.utils import compose
 
@@ -190,9 +190,9 @@ def yolo_head(feats, anchors, num_classes, input_shape, calc_loss=False):
     anchors_tensor = K.reshape(K.constant(anchors), [1, 1, 1, num_anchors, 2])
 
     grid_shape = K.shape(feats)[1:3] # height, width
-    grid_y = K.tile(K.reshape(K.arange(0, stop=grid_shape[0]), [-1, 1, 1, 1]),
+    grid_y = tf.tile(K.reshape(K.arange(0, stop=grid_shape[0]), [-1, 1, 1, 1]),
         [1, grid_shape[1], 1, 1])
-    grid_x = K.tile(K.reshape(K.arange(0, stop=grid_shape[1]), [1, -1, 1, 1]),
+    grid_x = tf.tile(K.reshape(K.arange(0, stop=grid_shape[1]), [1, -1, 1, 1]),
         [grid_shape[0], 1, 1, 1])
     grid = K.concatenate([grid_x, grid_y])
     grid = K.cast(grid, K.dtype(feats))
