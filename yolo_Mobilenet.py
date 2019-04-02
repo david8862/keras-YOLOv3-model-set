@@ -6,6 +6,7 @@ Run a YOLO_v3 style detection model on test images.
 
 import colorsys
 import os
+import cv2
 from timeit import default_timer as timer
 import tensorflow as tf
 import numpy as np
@@ -23,9 +24,9 @@ gpu_num=1
 
 class YOLO(object):
     def __init__(self):
-        self.model_path = 'logs/carMobilenet/001_Mobilenet_finetune/trained_weights_final.h5' # model path or trained weights path
+        self.model_path = 'model_data/trained_final.h5' # model path or trained weights path
         self.anchors_path = 'model_data/yolo_anchors.txt'
-        self.classes_path = 'model_data/car_classes.txt'
+        self.classes_path = 'model_data/voc_classes.txt'
         self.score = 0.3
         self.iou = 0.45
         self.class_names = self._get_class()
@@ -63,6 +64,7 @@ class YOLO(object):
             self.yolo_model = tiny_yolo_body(Input(shape=(None,None,3)), num_anchors//2, num_classes) \
                 if is_tiny_version else yolo_body(Input(shape=(None,None,3)), num_anchors//3, num_classes)
             self.yolo_model.load_weights(self.model_path) # make sure model, anchors and classes match
+            self.yolo_model.summary()
         else:
             assert self.yolo_model.layers[-1].output_shape[-1] == \
                 num_anchors/len(self.yolo_model.output) * (num_classes + 5), \
@@ -71,15 +73,15 @@ class YOLO(object):
         print('{} model, anchors, and classes loaded.'.format(model_path))
 
         # Generate colors for drawing bounding boxes.
-        # hsv_tuples = [(x / len(self.class_names), 1., 1.)
-        #               for x in range(len(self.class_names))]
-        # self.colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
-        # self.colors = list(
-        #     map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)),
-        #         self.colors))
-        # np.random.seed(10101)  # Fixed seed for consistent colors across runs.
-        # np.random.shuffle(self.colors)  # Shuffle colors to decorrelate adjacent classes.
-        # np.random.seed(None)  # Reset seed to default.
+        hsv_tuples = [(x / len(self.class_names), 1., 1.)
+                      for x in range(len(self.class_names))]
+        self.colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
+        self.colors = list(
+            map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)),
+                self.colors))
+        np.random.seed(10101)  # Fixed seed for consistent colors across runs.
+        np.random.shuffle(self.colors)  # Shuffle colors to decorrelate adjacent classes.
+        np.random.seed(None)  # Reset seed to default.
 
         # Generate output tensor targets for filtered bounding boxes.
         self.input_image_shape = K.placeholder(shape=(2, ))
@@ -94,7 +96,7 @@ class YOLO(object):
         return boxes, scores, classes
 
     def detect_image(self, image):
-        # start = timer()
+        start = timer()
         rects = []
         if self.model_image_size != (None, None):
             assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
@@ -128,20 +130,20 @@ class YOLO(object):
                 K.learning_phase(): 0
             })
 
-        # print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
+        print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
 
-        # font = ImageFont.truetype(font='font/FiraMono-Medium.otf',
-        #             size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
-        # thickness = (image.size[0] + image.size[1]) // 500
+        font = ImageFont.truetype(font='font/FiraMono-Medium.otf',
+                    size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
+        thickness = (image.size[0] + image.size[1]) // 500
 
         for i, c in reversed(list(enumerate(out_classes))):
             predicted_class = self.class_names[c]
             box = out_boxes[i]
             score = out_scores[i]
 
-            # label = '{} {:.2f}'.format(predicted_class, score)
-            # draw = ImageDraw.Draw(image)
-            # label_size = draw.textsize(label, font)
+            label = '{} {:.2f}'.format(predicted_class, score)
+            draw = ImageDraw.Draw(image)
+            label_size = draw.textsize(label, font)
 
             y1, x1, y2, x2 = box
             y1 = max(0, np.floor(y1 + 0.5).astype('float32'))
@@ -152,25 +154,25 @@ class YOLO(object):
             bbox = dict([("score",str(score)),("x1",str(x1)),("y1", str(y1)),("x2", str(x2)),("y2", str(y2))])
             rects.append(bbox)
 
-        #     if y1 - label_size[1] >= 0:
-        #         text_origin = np.array([x1, y1 - label_size[1]])
-        #     else:
-        #         text_origin = np.array([x1, y1 + 1])
-        #
-        #     # My kingdom for a good redistributable image drawing library.
-        #     for i in range(thickness):
-        #         draw.rectangle(
-        #             [x1 + i, y1 + i, x2 - i, y2 - i],
-        #             outline=self.colors[c])
-        #     draw.rectangle(
-        #         [tuple(text_origin), tuple(text_origin + label_size)],
-        #         fill=self.colors[c])
-        #     draw.text(text_origin, label, fill=(0, 0, 0), font=font)
-        #     del draw
-        #
-        # end = timer()
-        # print(str(end - start))
-        return rects
+            if y1 - label_size[1] >= 0:
+                text_origin = np.array([x1, y1 - label_size[1]])
+            else:
+                text_origin = np.array([x1, y1 + 1])
+
+            # My kingdom for a good redistributable image drawing library.
+            for i in range(thickness):
+                draw.rectangle(
+                    [x1 + i, y1 + i, x2 - i, y2 - i],
+                    outline=self.colors[c])
+            draw.rectangle(
+                [tuple(text_origin), tuple(text_origin + label_size)],
+                fill=self.colors[c])
+            draw.text(text_origin, label, fill=(0, 0, 0), font=font)
+            del draw
+
+        end = timer()
+        print(str(end - start))
+        return image
 
     def close_session(self):
         self.sess.close()
@@ -328,6 +330,7 @@ def car_detect(yolo,mainFolder = '/home/wenwen/Viewnyx/FrameImages/'):
 
 
 if __name__ == '__main__':
-    car_detect(YOLO())
+    detect_img(YOLO())
+    #car_detect(YOLO())
     #detect_test(YOLO(), json_name='../mrsub/mrsub_test.json',test_out_json='mobilenet_train_bw_test_mrsub.json', data_dst='../mrsub/')
     #detect_test_draw(YOLO(), json_name='dataset/brainwash/test_boxes.json',test_pic='./mobilenet_test/')

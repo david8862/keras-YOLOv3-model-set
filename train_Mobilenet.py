@@ -14,10 +14,10 @@ from yolo3.utils import get_random_data
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 def _main():
-    train_path = 'car_train.txt'
-    val_path = 'car_val.txt'
+    train_path = '2007_train.txt'
+    val_path = '2007_val.txt'
     log_dir = 'logs/carMobilenet/001_Mobilenet_finetune/'
-    classes_path = 'model_data/car_classes.txt'
+    classes_path = 'model_data/voc_classes.txt'
     anchors_path = 'model_data/yolo_anchors.txt'
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
@@ -47,14 +47,14 @@ def _main():
     np.random.seed(10101)
     np.random.shuffle(t_lines)
     np.random.seed(None)
-    v_lines = t_lines[8000:]
-    t_lines = t_lines[:8000]
+    #v_lines = t_lines[8000:]
+    #t_lines = t_lines[:8000]
     num_train = len(t_lines)
-    # with open(val_path) as v_f:
-    #     v_lines = v_f.readlines()
-    # np.random.seed(10010)
-    # np.random.shuffle(v_lines)
-    # np.random.seed(None)
+    with open(val_path) as v_f:
+        v_lines = v_f.readlines()
+    np.random.seed(10010)
+    np.random.shuffle(v_lines)
+    np.random.seed(None)
     num_val = len(v_lines)
 
     # Train with frozen layers first, to get a stable loss.
