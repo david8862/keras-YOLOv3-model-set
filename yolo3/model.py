@@ -118,6 +118,21 @@ def tiny_yolo_body(inputs, num_anchors, num_classes):
 
     return Model(inputs, [y1,y2])
 
+def custom_tiny_yolo_body(inputs, num_anchors, num_classes):
+    '''Create a custom Tiny YOLO_v3 model, use
+       pre-trained weights from darknet and fit
+       for our target classes.'''
+    #TODO: get darknet class number from class file
+    num_classes_darknet = 80
+    weights_path='model_data/tiny_yolo_weights.h5'
+    base_model = tiny_yolo_body(inputs, num_anchors, num_classes_darknet)
+    base_model.load_weights(weights_path, by_name=True)
+    #get conv output in original network
+    y1 = base_model.get_layer('leaky_re_lu_8').output
+    y2 = base_model.get_layer('leaky_re_lu_10').output
+    y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_13')(y1)
+    y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_26')(y2)
+    return Model(inputs, [y1,y2])
 
 def yolo_head(feats, anchors, num_classes, input_shape, calc_loss=False):
     """Convert final layer features to bounding box parameters."""

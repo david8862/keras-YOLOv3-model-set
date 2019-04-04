@@ -9,7 +9,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 
-from yolo3.model import preprocess_true_boxes, yolo_body, tiny_yolo_body, yolo_loss
+from yolo3.model import preprocess_true_boxes, yolo_body, tiny_yolo_body, custom_tiny_yolo_body, yolo_loss
 from yolo3.utils import get_random_data
 
 
@@ -55,6 +55,7 @@ def _main():
             'yolo_loss': lambda y_true, y_pred: y_pred})
 
         batch_size = 32
+        model.summary()
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
                 steps_per_epoch=max(1, num_train//batch_size),
@@ -85,7 +86,6 @@ def _main():
         model.save_weights(log_dir + 'trained_weights_final.h5')
 
     # Further training if needed.
-
 
 def get_classes(classes_path):
     '''loads the classes'''
@@ -133,7 +133,7 @@ def create_model(input_shape, anchors, num_classes, load_pretrained=False, freez
     return model
 
 def create_tiny_model(input_shape, anchors, num_classes, load_pretrained=False, freeze_body=2,
-            weights_path='model_data/tiny_yolo_weights.h5'):
+            weights_path='model_data/tiny_yolo_weights.h5', transfer_learn=True):
     '''create the training model, for Tiny YOLOv3'''
     K.clear_session() # get a new session
     image_input = Input(shape=(None, None, 3))
@@ -143,8 +143,17 @@ def create_tiny_model(input_shape, anchors, num_classes, load_pretrained=False, 
     y_true = [Input(shape=(h//{0:32, 1:16}[l], w//{0:32, 1:16}[l], \
         num_anchors//2, num_classes+5)) for l in range(2)]
 
-    model_body = tiny_yolo_body(image_input, num_anchors//2, num_classes)
+    if transfer_learn:
+        model_body = custom_tiny_yolo_body(image_input, num_anchors//2, num_classes)
+    else:
+        model_body = tiny_yolo_body(image_input, num_anchors//2, num_classes)
     print('Create Tiny YOLOv3 model with {} anchors and {} classes.'.format(num_anchors, num_classes))
+
+    if transfer_learn:
+        # Freeze the darknet body or freeze all but final feature map & input layers.
+        num = (20, len(model_body.layers)-4)[freeze_body-1]
+        for i in range(num): model_body.layers[i].trainable = False
+        print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
     if load_pretrained:
         model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
