@@ -12,6 +12,14 @@ from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnP
 from yolo3.model import preprocess_true_boxes, yolo_body, tiny_yolo_body, custom_tiny_yolo_body, yolo_loss
 from yolo3.utils import get_random_data
 
+import tensorflow as tf
+config = tf.ConfigProto()
+config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
+config.gpu_options.per_process_gpu_memory_fraction = 0.6  #GPU memory threshold 0.3
+session = tf.Session(config=config)
+
+# set session
+K.set_session(session)
 
 def _main():
     annotation_path = 'train_val.txt'
