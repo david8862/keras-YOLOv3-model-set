@@ -6,6 +6,7 @@ Class definition of YOLO_v3 style detection model on image and video
 import colorsys
 import os
 from timeit import default_timer as timer
+import time
 
 import numpy as np
 from tensorflow.keras import backend as K
@@ -16,7 +17,6 @@ import cv2
 
 from yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
 from yolo3.utils import letterbox_image
-import os
 from tensorflow.keras.utils import multi_gpu_model
 
 class YOLO(object):
@@ -102,7 +102,7 @@ class YOLO(object):
         return boxes, scores, classes
 
     def detect_image(self, image):
-        start = timer()
+        start = time.time()
 
         if self.model_image_size != (None, None):
             assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
@@ -164,12 +164,12 @@ class YOLO(object):
             draw.text(text_origin, label, fill=(0, 0, 0), font=font)
             del draw
 
-        end = timer()
-        print(end - start)
+        end = time.time()
+        print("Inference time: {:.2f}s".format(end - start))
         return image
 
     def detect_image2(self, image):
-        start = timer()
+        start = time.time()
 
         if self.model_image_size != (None, None):
             assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
@@ -196,6 +196,8 @@ class YOLO(object):
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
         image = self.draw_boxes(np.array(image, dtype='uint8'), out_boxes, out_classes, out_scores)
 
+        end = time.time()
+        print("Inference time: {:.2f}s".format(end - start))
         return Image.fromarray(image)
 
     def draw_boxes(self, image, boxes, classes, scores):
