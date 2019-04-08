@@ -12,6 +12,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import Input
 from PIL import Image, ImageFont, ImageDraw
+import cv2
 
 from yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
 from yolo3.utils import letterbox_image
@@ -166,6 +167,87 @@ class YOLO(object):
         end = timer()
         print(end - start)
         return image
+
+    def detect_image2(self, image):
+        start = timer()
+
+        if self.model_image_size != (None, None):
+            assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
+            assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
+            #boxed_image = letterbox_image(image, tuple(reversed(self.model_image_size)))
+            boxed_image = image.resize(tuple(reversed(self.model_image_size)), Image.BICUBIC)
+        else:
+            new_image_size = (image.width - (image.width % 32),
+                              image.height - (image.height % 32))
+            #boxed_image = letterbox_image(image, new_image_size)
+            boxed_image = image.resize(new_image_size, Image.BICUBIC)
+        image_data = np.array(boxed_image, dtype='float32')
+
+        image_data /= 255.
+        image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
+
+        from yolo_head import yolo_head
+        from predict import handle_predictions
+
+        predictions = yolo_head(self.yolo_model.predict(image_data), num_classes=len(self.class_names), input_dims=self.model_image_size)
+
+        out_boxes, out_classes, out_scores = handle_predictions(predictions, confidence=self.score, iou_threshold=self.iou)
+
+        print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
+        image = self.draw_boxes(np.array(image, dtype='uint8'), out_boxes, out_classes, out_scores)
+
+        return Image.fromarray(image)
+
+    def draw_boxes(self, image, boxes, classes, scores):
+        if classes is None or len(classes) == 0:
+            return image
+
+        height, width = image.shape[:2]
+
+        ratio_x = width / self.model_image_size[1]
+        ratio_y = height / self.model_image_size[0]
+
+        for box, cls, score in zip(boxes, classes, scores):
+            x, y, w, h = box
+
+            # Rescale box coordinates
+            x1 = int(x * ratio_x)
+            y1 = int(y * ratio_y)
+            x2 = int((x + w) * ratio_x)
+            y2 = int((y + h) * ratio_y)
+
+            y1 = max(0, np.floor(y1 + 0.5).astype('int32'))
+            x1 = max(0, np.floor(x1 + 0.5).astype('int32'))
+            y2 = min(height, np.floor(y2 + 0.5).astype('int32'))
+            x2 = min(width, np.floor(x2 + 0.5).astype('int32'))
+
+            predicted_class = self.class_names[cls]
+            label = '{} {:.2f}'.format(predicted_class, score)
+            print(label, (x1, y1), (x2, y2))
+            cv2.rectangle(image, (x1, y1), (x2, y2), self.colors[cls], 1, cv2.LINE_AA)
+            image = self.draw_label(image, label, self.colors[cls], (x1, y1))
+
+        return image
+
+    def draw_label(self, image, text, color, coords):
+        font = cv2.FONT_HERSHEY_PLAIN
+        font_scale = 1.
+        (text_width, text_height) = cv2.getTextSize(text, font, fontScale=font_scale, thickness=1)[0]
+
+        padding = 5
+        rect_height = text_height + padding * 2
+        rect_width = text_width + padding * 2
+
+        (x, y) = coords
+
+        cv2.rectangle(image, (x, y), (x + rect_width, y - rect_height), color, cv2.FILLED)
+        cv2.putText(image, text, (x + padding, y - text_height + padding), font,
+                    fontScale=font_scale,
+                    color=(255, 255, 255),
+                    lineType=cv2.LINE_AA)
+
+        return image
+
 
     def close_session(self):
         self.sess.close()
