@@ -9,7 +9,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 
-from yolo3.model import preprocess_true_boxes, yolo_body, tiny_yolo_body, custom_tiny_yolo_body, yolo_loss
+from yolo3.model import preprocess_true_boxes, yolo_body, tiny_yolo_body, custom_yolo_body, custom_tiny_yolo_body, yolo_loss
 from yolo3.utils import get_random_data
 
 import tensorflow as tf
@@ -35,10 +35,10 @@ def _main():
     is_tiny_version = len(anchors)==6 # default setting
     if is_tiny_version:
         model = create_tiny_model(input_shape, anchors, num_classes,
-            freeze_body=2, weights_path='model_data/tiny_yolo_weights.h5')
+            freeze_body=1, weights_path='model_data/tiny_yolo_weights.h5', transfer_learn=True)
     else:
         model = create_model(input_shape, anchors, num_classes,
-            freeze_body=2, weights_path='model_data/yolo_weights.h5') # make sure you know what you freeze
+            freeze_body=1, weights_path='model_data/yolo_weights.h5', transfer_learn=True) # make sure you know what you freeze
 
     logging = TensorBoard(log_dir=log_dir)
     checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
@@ -114,8 +114,8 @@ def get_anchors(anchors_path):
     return np.array(anchors).reshape(-1, 2)
 
 
-def create_model(input_shape, anchors, num_classes, load_pretrained=False, freeze_body=2,
-            weights_path='model_data/yolo_weights.h5'):
+def create_model(input_shape, anchors, num_classes, freeze_body=2,
+            weights_path='model_data/yolo_weights.h5', transfer_learn=True):
     '''create the training model'''
     K.clear_session() # get a new session
     image_input = Input(shape=(None, None, 3))
@@ -125,17 +125,27 @@ def create_model(input_shape, anchors, num_classes, load_pretrained=False, freez
     y_true = [Input(shape=(h//{0:32, 1:16, 2:8}[l], w//{0:32, 1:16, 2:8}[l], \
         num_anchors//3, num_classes+5)) for l in range(3)]
 
-    model_body = yolo_body(image_input, num_anchors//3, num_classes)
+    if transfer_learn:
+        model_body = custom_yolo_body(image_input, num_anchors//3, num_classes, weights_path)
+    else:
+        model_body = yolo_body(image_input, num_anchors//3, num_classes)
     print('Create YOLOv3 model with {} anchors and {} classes.'.format(num_anchors, num_classes))
 
-    if load_pretrained:
-        model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
-        print('Load weights {}.'.format(weights_path))
+    if transfer_learn:
         if freeze_body in [1, 2]:
-            # Freeze darknet53 body or freeze all but 3 output layers.
+            # Freeze the darknet body or freeze all but final feature map & input layers.
             num = (185, len(model_body.layers)-3)[freeze_body-1]
             for i in range(num): model_body.layers[i].trainable = False
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
+
+    #if load_pretrained:
+        #model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
+        #print('Load weights {}.'.format(weights_path))
+        #if freeze_body in [1, 2]:
+            ## Freeze darknet53 body or freeze all but 3 output layers.
+            #num = (185, len(model_body.layers)-3)[freeze_body-1]
+            #for i in range(num): model_body.layers[i].trainable = False
+            #print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
     model_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
         arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5})(
@@ -144,7 +154,7 @@ def create_model(input_shape, anchors, num_classes, load_pretrained=False, freez
 
     return model
 
-def create_tiny_model(input_shape, anchors, num_classes, load_pretrained=False, freeze_body=2,
+def create_tiny_model(input_shape, anchors, num_classes, freeze_body=2,
             weights_path='model_data/tiny_yolo_weights.h5', transfer_learn=True):
     '''create the training model, for Tiny YOLOv3'''
     K.clear_session() # get a new session
@@ -156,25 +166,26 @@ def create_tiny_model(input_shape, anchors, num_classes, load_pretrained=False, 
         num_anchors//2, num_classes+5)) for l in range(2)]
 
     if transfer_learn:
-        model_body = custom_tiny_yolo_body(image_input, num_anchors//2, num_classes)
+        model_body = custom_tiny_yolo_body(image_input, num_anchors//2, num_classes, weights_path)
     else:
         model_body = tiny_yolo_body(image_input, num_anchors//2, num_classes)
     print('Create Tiny YOLOv3 model with {} anchors and {} classes.'.format(num_anchors, num_classes))
 
     if transfer_learn:
-        # Freeze the darknet body or freeze all but final feature map & input layers.
-        num = (20, len(model_body.layers)-4)[freeze_body-1]
-        for i in range(num): model_body.layers[i].trainable = False
-        print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
-
-    if load_pretrained:
-        model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
-        print('Load weights {}.'.format(weights_path))
         if freeze_body in [1, 2]:
-            # Freeze the darknet body or freeze all but 2 output layers.
+            # Freeze the darknet body or freeze all but final feature map & input layers.
             num = (20, len(model_body.layers)-2)[freeze_body-1]
             for i in range(num): model_body.layers[i].trainable = False
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
+
+    #if load_pretrained:
+        #model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
+        #print('Load weights {}.'.format(weights_path))
+        #if freeze_body in [1, 2]:
+            ## Freeze the darknet body or freeze all but 2 output layers.
+            #num = (20, len(model_body.layers)-2)[freeze_body-1]
+            #for i in range(num): model_body.layers[i].trainable = False
+            #print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
     model_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
         arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.7})(
