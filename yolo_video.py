@@ -3,6 +3,12 @@ import argparse
 from yolo import YOLO, detect_video
 from PIL import Image
 
+import tensorflow as tf
+config = tf.ConfigProto()
+config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
+config.gpu_options.per_process_gpu_memory_fraction = 0.3  #GPU memory threshold 0.3
+session = tf.Session(config=config)
+
 def detect_img(yolo):
     while True:
         img = input('Input image filename:')
@@ -12,6 +18,7 @@ def detect_img(yolo):
             print('Open Error! Try again!')
             continue
         else:
+            #yolo.predict(image)
             r_image = yolo.detect_image2(image)
             r_image.show()
     yolo.close_session()

@@ -192,24 +192,62 @@ class YOLO(object):
         predictions = yolo_head(self.yolo_model.predict(image_data), num_classes=len(self.class_names), input_dims=self.model_image_size)
 
         out_boxes, out_classes, out_scores = handle_predictions(predictions, confidence=self.score, iou_threshold=self.iou)
+        adjusted_boxes = self.adjust_boxes(out_boxes, np.array(image, dtype='uint8'))
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
-        image = self.draw_boxes(np.array(image, dtype='uint8'), out_boxes, out_classes, out_scores)
+        image = self.draw_boxes(np.array(image, dtype='uint8'), adjusted_boxes, out_classes, out_scores)
 
         end = time.time()
         print("Inference time: {:.2f}s".format(end - start))
         return Image.fromarray(image)
 
-    def draw_boxes(self, image, boxes, classes, scores):
-        if classes is None or len(classes) == 0:
-            return image
+
+    def predict(self, image):
+        start = time.time()
+
+        if self.model_image_size != (None, None):
+            assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
+            assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
+            #boxed_image = letterbox_image(image, tuple(reversed(self.model_image_size)))
+            boxed_image = image.resize(tuple(reversed(self.model_image_size)), Image.BICUBIC)
+        else:
+            new_image_size = (image.width - (image.width % 32),
+                              image.height - (image.height % 32))
+            #boxed_image = letterbox_image(image, new_image_size)
+            boxed_image = image.resize(new_image_size, Image.BICUBIC)
+        image_data = np.array(boxed_image, dtype='float32')
+
+        image_data /= 255.
+        image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
+
+        from yolo_head import yolo_head
+        from predict import handle_predictions
+
+        predictions = yolo_head(self.yolo_model.predict(image_data), num_classes=len(self.class_names), input_dims=self.model_image_size)
+
+        out_boxes, out_classes, out_scores = handle_predictions(predictions, confidence=self.score, iou_threshold=self.iou)
+
+        print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
+        adjusted_boxes = self.adjust_boxes(out_boxes, np.array(image, dtype='uint8'))
+
+        end = time.time()
+        print("Inference time: {:.2f}s".format(end - start))
+        return adjusted_boxes, out_classes, out_scores
+
+    ''' convert boxes format to () and rescale to original image shape'''
+    def adjust_boxes(self, boxes, image):
+        if boxes is None or len(boxes) == 0:
+            return None
+
+        print(boxes.shape)
 
         height, width = image.shape[:2]
+        adjusted_boxes = []
 
         ratio_x = width / self.model_image_size[1]
         ratio_y = height / self.model_image_size[0]
 
-        for box, cls, score in zip(boxes, classes, scores):
+        for box in boxes:
             x, y, w, h = box
 
             # Rescale box coordinates
@@ -222,12 +260,23 @@ class YOLO(object):
             x1 = max(0, np.floor(x1 + 0.5).astype('int32'))
             y2 = min(height, np.floor(y2 + 0.5).astype('int32'))
             x2 = min(width, np.floor(x2 + 0.5).astype('int32'))
+            adjusted_boxes.append([x1,y1,x2,y2])
+
+        return np.array(adjusted_boxes)
+
+
+    def draw_boxes(self, image, boxes, classes, scores):
+        if classes is None or len(classes) == 0:
+            return image
+
+        for box, cls, score in zip(boxes, classes, scores):
+            top, left, bottom, right = box
 
             predicted_class = self.class_names[cls]
             label = '{} {:.2f}'.format(predicted_class, score)
-            print(label, (x1, y1), (x2, y2))
-            cv2.rectangle(image, (x1, y1), (x2, y2), self.colors[cls], 1, cv2.LINE_AA)
-            image = self.draw_label(image, label, self.colors[cls], (x1, y1))
+            print(label, (top, left), (bottom, right))
+            cv2.rectangle(image, (top, left), (bottom, right), self.colors[cls], 1, cv2.LINE_AA)
+            image = self.draw_label(image, label, self.colors[cls], (top, left))
 
         return image
 
