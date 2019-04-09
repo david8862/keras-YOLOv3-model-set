@@ -234,12 +234,10 @@ class YOLO(object):
         print("Inference time: {:.2f}s".format(end - start))
         return adjusted_boxes, out_classes, out_scores
 
-    ''' convert boxes format to () and rescale to original image shape'''
+    ''' convert boxes format to (xmin, ymin, xmax, ymax) and rescale to original image shape'''
     def adjust_boxes(self, boxes, image):
         if boxes is None or len(boxes) == 0:
             return None
-
-        print(boxes.shape)
 
         height, width = image.shape[:2]
         adjusted_boxes = []
@@ -251,16 +249,16 @@ class YOLO(object):
             x, y, w, h = box
 
             # Rescale box coordinates
-            x1 = int(x * ratio_x)
-            y1 = int(y * ratio_y)
-            x2 = int((x + w) * ratio_x)
-            y2 = int((y + h) * ratio_y)
+            xmin = int(x * ratio_x)
+            ymin = int(y * ratio_y)
+            xmax = int((x + w) * ratio_x)
+            ymax = int((y + h) * ratio_y)
 
-            y1 = max(0, np.floor(y1 + 0.5).astype('int32'))
-            x1 = max(0, np.floor(x1 + 0.5).astype('int32'))
-            y2 = min(height, np.floor(y2 + 0.5).astype('int32'))
-            x2 = min(width, np.floor(x2 + 0.5).astype('int32'))
-            adjusted_boxes.append([x1,y1,x2,y2])
+            ymin = max(0, np.floor(ymin + 0.5).astype('int32'))
+            xmin = max(0, np.floor(xmin + 0.5).astype('int32'))
+            ymax = min(height, np.floor(ymax + 0.5).astype('int32'))
+            xmax = min(width, np.floor(xmax + 0.5).astype('int32'))
+            adjusted_boxes.append([xmin,ymin,xmax,ymax])
 
         return np.array(adjusted_boxes)
 
@@ -270,13 +268,13 @@ class YOLO(object):
             return image
 
         for box, cls, score in zip(boxes, classes, scores):
-            top, left, bottom, right = box
+            xmin, ymin, xmax, ymax = box
 
             predicted_class = self.class_names[cls]
             label = '{} {:.2f}'.format(predicted_class, score)
-            print(label, (top, left), (bottom, right))
-            cv2.rectangle(image, (top, left), (bottom, right), self.colors[cls], 1, cv2.LINE_AA)
-            image = self.draw_label(image, label, self.colors[cls], (top, left))
+            print(label, (xmin, ymin), (xmax, ymax))
+            cv2.rectangle(image, (xmin, ymin), (xmax, ymax), self.colors[cls], 1, cv2.LINE_AA)
+            image = self.draw_label(image, label, self.colors[cls], (xmin, ymin))
 
         return image
 
