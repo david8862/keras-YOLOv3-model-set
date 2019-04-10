@@ -114,7 +114,7 @@ def get_anchors(anchors_path):
     return np.array(anchors).reshape(-1, 2)
 
 
-def create_model(input_shape, anchors, num_classes, freeze_body=2,
+def create_model(input_shape, anchors, num_classes, freeze_body=1,
             weights_path='model_data/yolo_weights.h5', transfer_learn=True):
     '''create the training model'''
     K.clear_session() # get a new session
@@ -154,7 +154,7 @@ def create_model(input_shape, anchors, num_classes, freeze_body=2,
 
     return model
 
-def create_tiny_model(input_shape, anchors, num_classes, freeze_body=2,
+def create_tiny_model(input_shape, anchors, num_classes, freeze_body=1,
             weights_path='model_data/tiny_yolo_weights.h5', transfer_learn=True):
     '''create the training model, for Tiny YOLOv3'''
     K.clear_session() # get a new session
