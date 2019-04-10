@@ -24,8 +24,8 @@ session = tf.Session(config=config)
 K.set_session(session)
 
 def _main():
-    train_path = '2007_train.txt'
-    val_path = '2007_val.txt'
+    train_path = 'train_val.txt'
+    val_path = 'val.txt'
     log_dir = 'logs/000/'
     classes_path = 'model_data/voc_classes.txt'
     anchors_path = 'model_data/tiny_yolo_anchors.txt'
@@ -54,20 +54,14 @@ def _main():
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=3, verbose=1)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=10, verbose=1)
 
-    with open(train_path) as t_f:
-        t_lines = t_f.readlines()
+    val_split = 0.1
+    with open(train_path) as f:
+        lines = f.readlines()
     np.random.seed(10101)
-    np.random.shuffle(t_lines)
+    np.random.shuffle(lines)
     np.random.seed(None)
-    #v_lines = t_lines[8000:]
-    #t_lines = t_lines[:8000]
-    num_train = len(t_lines)
-    with open(val_path) as v_f:
-        v_lines = v_f.readlines()
-    np.random.seed(10010)
-    np.random.shuffle(v_lines)
-    np.random.seed(None)
-    num_val = len(v_lines)
+    num_val = int(len(lines)*val_split)
+    num_train = len(lines) - num_val
 
     # Train with frozen layers first, to get a stable loss.
     # Adjust num epochs to your dataset. This step is enough to obtain a not bad model.
