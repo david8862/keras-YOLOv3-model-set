@@ -160,7 +160,7 @@ def match_gt_box(pred_record, gt_records, iou_threshold=0.5):
 
     return max_index
 
-
+'''
 def voc_ap(rec, prec):
     """
     --- Official matlab code VOC2012---
@@ -204,7 +204,27 @@ def voc_ap(rec, prec):
     ap = 0.0
     for i in i_list:
         ap += ((mrec[i] - mrec[i - 1]) * mpre[i])
-    return ap, mrec, mpre
+    return ap#, mrec, mpre
+'''
+
+def voc_ap(rec, prec, use_07_metric=False):
+    if use_07_metric:
+        # 11 point metric
+        ap = 0.
+        for t in np.arange(0., 1.1, 0.1):
+            if np.sum(rec >= t) == 0:
+                p = 0
+            else:
+                p = np.max(prec[rec >= t])
+            ap = ap + p / 11.
+    else:
+        mrec = np.concatenate(([0.], rec, [1.]))
+        mpre = np.concatenate(([0.], prec, [0.]))
+        for i in range(mpre.size - 1, 0, -1):
+            mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+        i = np.where(mrec[1:] != mrec[:-1])[0]
+        ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+    return ap
 
 
 def get_rec_prec(true_positive, false_positive, gt_records):
@@ -276,7 +296,7 @@ def calc_AP(gt_records, pred_records):
 
     # compute precision/recall
     rec, prec = get_rec_prec(true_positive, false_positive, gt_records)
-    ap, mrec, mprec = voc_ap(rec, prec)
+    ap = voc_ap(rec, prec)
 
     return ap
 
