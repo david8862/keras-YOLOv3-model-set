@@ -26,7 +26,7 @@ K.set_session(session)
 def _main():
     train_path = '2007_train.txt'
     val_path = '2007_val.txt'
-    log_dir = 'logs/carMobilenet/001_Mobilenet_finetune/'
+    log_dir = 'logs/000/'
     classes_path = 'model_data/voc_classes.txt'
     anchors_path = 'model_data/tiny_yolo_anchors.txt'
     class_names = get_classes(classes_path)
@@ -41,7 +41,7 @@ def _main():
             freeze_body=1)
     else:
         model = create_model(input_shape, anchors, num_classes,load_pretrained=False,
-                             weights_path='logs/carMobilenet/000_Mobilenet_finetune/trained_weights_final.h5',
+                             weights_path='logs/000/trained_weights_final.h5',
             freeze_body=1, transfer_learn=True) # make sure you know what you freeze
 
     logging = TensorBoard(log_dir=log_dir)
