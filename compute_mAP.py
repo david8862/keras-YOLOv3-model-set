@@ -6,7 +6,7 @@ Calculate mAP for YOLO model on some annotation dataset
 import numpy as np
 import random
 import os, argparse
-from predict import predict
+from predict import predict, get_classes
 from PIL import Image
 
 import tensorflow as tf
@@ -305,14 +305,6 @@ def calc_AP(gt_records, pred_records):
     return ap
 
 
-def get_classes(classes_path):
-    classes_path = os.path.expanduser(classes_path)
-    with open(classes_path) as f:
-        class_names = f.readlines()
-    class_names = [c.strip() for c in class_names]
-    return class_names
-
-
 def compute_mAP(model, annotation_file, class_names, model_image_size):
     '''
     Compute mAP for YOLO model on annotation dataset
@@ -370,12 +362,13 @@ def main():
 
     args = parser.parse_args()
 
+    if not args.model_path:
+        raise ValueError('model file is not specified')
     if not args.annotation_file:
         raise ValueError('annotation file is not specified')
 
     # param parse
     model = load_model(args.model_path, compile=False)
-    print(model.input_shape)
     class_names = get_classes(args.classes_path)
     height, width = args.model_image_size.split('x')
     model_image_size = (int(height), int(width))
