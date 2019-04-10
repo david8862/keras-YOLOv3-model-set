@@ -1,34 +1,100 @@
 import cv2
 import numpy as np
-
-from yolo_head import yolo_head
-
-
-def predict(model, orig, config, confidence=0.5, iou_threshold=0.4):
-    image, image_data = preprocess_image(orig, model_image_size=(config['width'], config['height']))
-
-    boxes, classes, scores = handle_predictions(model.predict([image_data]),
-                                                confidence=confidence,
-                                                iou_threshold=iou_threshold)
-
-    draw_boxes(image, boxes, classes, scores, config)
-
-    return np.array(image)
+from scipy.special import expit
 
 
-def predict_with_yolo_head(model, orig, config, confidence=0.5, iou_threshold=0.4):
-    image, image_data = preprocess_image(orig, model_image_size=(config['width'], config['height']))
+def yolo_head(predictions, num_classes, input_dims):
+    """
+    YOLO Head to process predictions from Darknet
 
-    predictions = yolo_head(model.predict([image_data]), num_classes=80,
-                            input_dims=(config['width'], config['height']))
+    :param num_classes: Total number of classes
+    :param input_dims: Input dimensions of the image
+    :param predictions: A list of three tensors with shape (N, 19, 19, 255), (N,38, 38, 255) and (N, 76, 76, 255)
+    :return: A tensor with the shape (N, num_boxes, 85)
+    """
+
+    anchors = [
+        [[116, 90], [156, 198], [373, 326]],
+        [[30, 61], [62, 45], [59, 119]],
+        [[10, 13], [16, 30], [33, 23]]
+    ]
+
+    tiny_anchors = [
+        [[81, 82], [135, 169], [344, 319]],
+        [[10, 14], [23, 27], [37, 58]]
+    ]
+    results = []
+
+    if len(predictions) == 3: # assume 3 set of predictions is YOLOv3
+        model_anchors = anchors
+    elif len(predictions) == 2: # 2 set of predictions is YOLOv3-tiny
+        model_anchors = tiny_anchors
+    else:
+        raise ValueError('Unsupported prediction length: {}'.format(len(predictions)))
+
+    for i, prediction in enumerate(predictions):
+        results.append(_yolo_head(prediction, num_classes, model_anchors[i], input_dims))
+
+    return np.concatenate(results, axis=1)
+
+
+def _yolo_head(prediction, num_classes, anchors, input_dims):
+    batch_size = np.shape(prediction)[0]
+    stride = input_dims[0] // np.shape(prediction)[1]
+    grid_size = input_dims[0] // stride
+    num_anchors = len(anchors)
+
+    prediction = np.reshape(prediction,
+                            (batch_size, num_anchors * grid_size * grid_size, num_classes + 5))
+
+    box_xy = expit(prediction[:, :, :2])  # t_x (box x and y coordinates)
+    objectness = expit(prediction[:, :, 4])  # p_o (objectness score)
+    objectness = np.expand_dims(objectness, 2)  # To make the same number of values for axis 0 and 1
+
+    grid = np.arange(grid_size)
+    a, b = np.meshgrid(grid, grid)
+
+    x_offset = np.reshape(a, (-1, 1))
+    y_offset = np.reshape(b, (-1, 1))
+
+    x_y_offset = np.concatenate((x_offset, y_offset), axis=1)
+    x_y_offset = np.tile(x_y_offset, (1, num_anchors))
+    x_y_offset = np.reshape(x_y_offset, (-1, 2))
+    x_y_offset = np.expand_dims(x_y_offset, 0)
+
+    box_xy += x_y_offset
+
+    # Log space transform of the height and width
+    anchors = [(a[0] / stride, a[1] / stride) for a in anchors]
+    anchors = np.tile(anchors, (grid_size * grid_size, 1))
+    anchors = np.expand_dims(anchors, 0)
+
+    box_wh = np.exp(prediction[:, :, 2:4]) * anchors
+
+    # Sigmoid class scores
+    class_scores = expit(prediction[:, :, 5:])
+
+    # Resize detection map back to the input image size
+    box_xy *= stride
+    box_wh *= stride
+
+    # Convert centoids to top left coordinates
+    box_xy -= box_wh / 2
+
+    return np.concatenate([box_xy, box_wh, objectness, class_scores], axis=2)
+
+
+def predict(model, image_arr, num_classes, model_image_size, confidence=0.5, iou_threshold=0.4):
+    image, image_data = preprocess_image(image_arr, model_image_size)
+
+    predictions = yolo_head(model.predict([image_data]), num_classes, input_dims=model_image_size)
 
     boxes, classes, scores = handle_predictions(predictions,
                                                 confidence=confidence,
                                                 iou_threshold=iou_threshold)
+    boxes = adjust_boxes(boxes, image_arr, model_image_size)
 
-    draw_boxes(image, boxes, classes, scores, config)
-
-    return np.array(image)
+    return boxes, classes, scores
 
 
 def handle_predictions(predictions, confidence=0.6, iou_threshold=0.5):
@@ -110,6 +176,34 @@ def nms_boxes(boxes, classes, scores, iou_threshold):
     return nboxes, nclasses, nscores
 
 
+def adjust_boxes(boxes, image, model_image_size):
+    if boxes is None or len(boxes) == 0:
+        return []
+
+    height, width = image.shape[:2]
+    adjusted_boxes = []
+
+    ratio_x = width / model_image_size[1]
+    ratio_y = height / model_image_size[0]
+
+    for box in boxes:
+        x, y, w, h = box
+
+        # Rescale box coordinates
+        xmin = int(x * ratio_x)
+        ymin = int(y * ratio_y)
+        xmax = int((x + w) * ratio_x)
+        ymax = int((y + h) * ratio_y)
+
+        ymin = max(0, np.floor(ymin + 0.5).astype('int32'))
+        xmin = max(0, np.floor(xmin + 0.5).astype('int32'))
+        ymax = min(height, np.floor(ymax + 0.5).astype('int32'))
+        xmax = min(width, np.floor(xmax + 0.5).astype('int32'))
+        adjusted_boxes.append([xmin,ymin,xmax,ymax])
+
+    return np.array(adjusted_boxes)
+
+
 def draw_label(image, text, color, coords):
     font = cv2.FONT_HERSHEY_PLAIN
     font_scale = 1.
@@ -129,32 +223,17 @@ def draw_label(image, text, color, coords):
 
     return image
 
-
-def draw_boxes(image, boxes, classes, scores, config):
+def draw_boxes(image, boxes, classes, scores, class_names, colors):
     if classes is None or len(classes) == 0:
-        return
-
-    height, width = image.shape[:2]
-
-    labels = config['labels']
-    colors = config['colors']
-
-    ratio_x = width / config['width']
-    ratio_y = height / config['height']
+        return image
 
     for box, cls, score in zip(boxes, classes, scores):
-        x, y, w, h = box
+        xmin, ymin, xmax, ymax = box
 
-        # Rescale box coordinates
-        x1 = int(x * ratio_x)
-        y1 = int(y * ratio_y)
-        x2 = int((x + w) * ratio_x)
-        y2 = int((y + h) * ratio_y)
+        predicted_class = class_names[cls]
+        label = '{} {:.2f}'.format(predicted_class, score)
+        print(label, (xmin, ymin), (xmax, ymax))
+        cv2.rectangle(image, (xmin, ymin), (xmax, ymax), colors[cls], 1, cv2.LINE_AA)
+        image = draw_label(image, label, colors[cls], (xmin, ymin))
 
-        print("Class: {}, Score: {}".format(labels[cls], score))
-        cv2.rectangle(image, (x1, y1), (x2, y2), colors[cls], 1, cv2.LINE_AA)
-
-        text = '{0} {1:.2f}'.format(labels[cls], score)
-        image = draw_label(image, text, colors[cls], (x1, y1))
-
-    cv2.imwrite("out.png", image)
+    return image

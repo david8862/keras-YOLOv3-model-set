@@ -18,6 +18,7 @@ import cv2
 from yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
 from yolo3.utils import letterbox_image
 from tensorflow.keras.utils import multi_gpu_model
+from predict import predict, draw_boxes
 
 class YOLO(object):
     _defaults = {
@@ -174,32 +175,16 @@ class YOLO(object):
         if self.model_image_size != (None, None):
             assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
-            #boxed_image = letterbox_image(image, tuple(reversed(self.model_image_size)))
-            boxed_image = image.resize(tuple(reversed(self.model_image_size)), Image.BICUBIC)
-        else:
-            new_image_size = (image.width - (image.width % 32),
-                              image.height - (image.height % 32))
-            #boxed_image = letterbox_image(image, new_image_size)
-            boxed_image = image.resize(new_image_size, Image.BICUBIC)
-        image_data = np.array(boxed_image, dtype='float32')
+        image_data = np.array(image, dtype='uint8')
 
-        image_data /= 255.
-        image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
-
-        from yolo_head import yolo_head
-        from predict import handle_predictions
-
-        predictions = yolo_head(self.yolo_model.predict(image_data), num_classes=len(self.class_names), input_dims=self.model_image_size)
-
-        out_boxes, out_classes, out_scores = handle_predictions(predictions, confidence=self.score, iou_threshold=self.iou)
-        adjusted_boxes = self.adjust_boxes(out_boxes, np.array(image, dtype='uint8'))
+        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, len(self.class_names), self.model_image_size)
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
-        image = self.draw_boxes(np.array(image, dtype='uint8'), adjusted_boxes, out_classes, out_scores)
+        image_data = draw_boxes(image_data, out_boxes, out_classes, out_scores, self.class_names, self.colors)
 
         end = time.time()
         print("Inference time: {:.2f}s".format(end - start))
-        return Image.fromarray(image)
+        return Image.fromarray(image_data)
 
 
     def predict(self, image):
@@ -208,95 +193,14 @@ class YOLO(object):
         if self.model_image_size != (None, None):
             assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
-            #boxed_image = letterbox_image(image, tuple(reversed(self.model_image_size)))
-            boxed_image = image.resize(tuple(reversed(self.model_image_size)), Image.BICUBIC)
-        else:
-            new_image_size = (image.width - (image.width % 32),
-                              image.height - (image.height % 32))
-            #boxed_image = letterbox_image(image, new_image_size)
-            boxed_image = image.resize(new_image_size, Image.BICUBIC)
-        image_data = np.array(boxed_image, dtype='float32')
+        image_data = np.array(image, dtype='uint8')
 
-        image_data /= 255.
-        image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
-
-        from yolo_head import yolo_head
-        from predict import handle_predictions
-
-        predictions = yolo_head(self.yolo_model.predict(image_data), num_classes=len(self.class_names), input_dims=self.model_image_size)
-
-        out_boxes, out_classes, out_scores = handle_predictions(predictions, confidence=self.score, iou_threshold=self.iou)
+        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, len(self.class_names), self.model_image_size)
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
-        adjusted_boxes = self.adjust_boxes(out_boxes, np.array(image, dtype='uint8'))
-
         end = time.time()
         print("Inference time: {:.2f}s".format(end - start))
-        return adjusted_boxes, out_classes, out_scores
-
-    ''' convert boxes format to (xmin, ymin, xmax, ymax) and rescale to original image shape'''
-    def adjust_boxes(self, boxes, image):
-        if boxes is None or len(boxes) == 0:
-            return None
-
-        height, width = image.shape[:2]
-        adjusted_boxes = []
-
-        ratio_x = width / self.model_image_size[1]
-        ratio_y = height / self.model_image_size[0]
-
-        for box in boxes:
-            x, y, w, h = box
-
-            # Rescale box coordinates
-            xmin = int(x * ratio_x)
-            ymin = int(y * ratio_y)
-            xmax = int((x + w) * ratio_x)
-            ymax = int((y + h) * ratio_y)
-
-            ymin = max(0, np.floor(ymin + 0.5).astype('int32'))
-            xmin = max(0, np.floor(xmin + 0.5).astype('int32'))
-            ymax = min(height, np.floor(ymax + 0.5).astype('int32'))
-            xmax = min(width, np.floor(xmax + 0.5).astype('int32'))
-            adjusted_boxes.append([xmin,ymin,xmax,ymax])
-
-        return np.array(adjusted_boxes)
-
-
-    def draw_boxes(self, image, boxes, classes, scores):
-        if classes is None or len(classes) == 0:
-            return image
-
-        for box, cls, score in zip(boxes, classes, scores):
-            xmin, ymin, xmax, ymax = box
-
-            predicted_class = self.class_names[cls]
-            label = '{} {:.2f}'.format(predicted_class, score)
-            print(label, (xmin, ymin), (xmax, ymax))
-            cv2.rectangle(image, (xmin, ymin), (xmax, ymax), self.colors[cls], 1, cv2.LINE_AA)
-            image = self.draw_label(image, label, self.colors[cls], (xmin, ymin))
-
-        return image
-
-    def draw_label(self, image, text, color, coords):
-        font = cv2.FONT_HERSHEY_PLAIN
-        font_scale = 1.
-        (text_width, text_height) = cv2.getTextSize(text, font, fontScale=font_scale, thickness=1)[0]
-
-        padding = 5
-        rect_height = text_height + padding * 2
-        rect_width = text_width + padding * 2
-
-        (x, y) = coords
-
-        cv2.rectangle(image, (x, y), (x + rect_width, y - rect_height), color, cv2.FILLED)
-        cv2.putText(image, text, (x + padding, y - text_height + padding), font,
-                    fontScale=font_scale,
-                    color=(255, 255, 255),
-                    lineType=cv2.LINE_AA)
-
-        return image
-
+        return out_boxes, out_classes, out_scores
 
     def close_session(self):
         self.sess.close()

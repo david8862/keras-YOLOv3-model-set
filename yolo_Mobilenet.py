@@ -7,6 +7,7 @@ Run a YOLO_v3 style detection model on test images.
 import colorsys
 import os
 import cv2
+import time
 from timeit import default_timer as timer
 import tensorflow as tf
 import numpy as np
@@ -15,7 +16,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import Input
 from PIL import Image, ImageFont, ImageDraw
 
-from yolo3.model_Mobilenet import yolo_eval, yolo_body, tiny_yolo_body
+from yolo3.model_Mobilenet import yolo_eval, yolo_mobilenet_body, tiny_yolo_body
 from yolo3.utils import letterbox_image
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -32,7 +33,7 @@ class YOLO(object):
         self.class_names = self._get_class()
         self.anchors = self._get_anchors()
         self.sess = K.get_session()
-        self.model_image_size = (416, 416) # fixed size or (None, None), hw
+        self.model_image_size = (320, 320) # fixed size or (None, None), hw
         self.boxes, self.scores, self.classes = self.generate()
 
     def _get_class(self):
@@ -62,7 +63,7 @@ class YOLO(object):
             self.yolo_model = load_model(model_path, compile=False)
         except:
             self.yolo_model = tiny_yolo_body(Input(shape=(None,None,3)), num_anchors//2, num_classes) \
-                if is_tiny_version else yolo_body(Input(shape=(None,None,3)), num_anchors//3, num_classes)
+                if is_tiny_version else yolo_mobilenet_body(Input(shape=(None,None,3)), num_anchors//3, num_classes)
             self.yolo_model.load_weights(self.model_path) # make sure model, anchors and classes match
             self.yolo_model.summary()
         else:
@@ -174,6 +175,42 @@ class YOLO(object):
         print(str(end - start))
         return image
 
+    def detect_image2(self, image):
+        start = time.time()
+
+        if self.model_image_size != (None, None):
+            assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
+            assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
+        image_data = np.array(image, dtype='uint8')
+
+        from predict import predict, draw_boxes
+
+        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, len(self.class_names), self.model_image_size)
+
+        print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
+        image_data = draw_boxes(image_data, out_boxes, out_classes, out_scores, self.class_names, self.colors)
+
+        end = time.time()
+        print("Inference time: {:.2f}s".format(end - start))
+        return Image.fromarray(image_data)
+
+    def predict(self, image):
+        start = time.time()
+
+        if self.model_image_size != (None, None):
+            assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
+            assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
+        image_data = np.array(image, dtype='uint8')
+
+        from predict import predict
+
+        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, len(self.class_names), self.model_image_size)
+
+        print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
+        end = time.time()
+        print("Inference time: {:.2f}s".format(end - start))
+        return out_boxes, out_classes, out_scores
+
     def close_session(self):
         self.sess.close()
 
@@ -229,7 +266,7 @@ def detect_img(yolo):
             print('Open Error! Try again!')
             continue
         else:
-            r_image = yolo.detect_image(image)
+            r_image = yolo.detect_image2(image)
             r_image.show()
     yolo.close_session()
 

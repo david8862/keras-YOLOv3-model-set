@@ -5,11 +5,13 @@ Calculate mAP for YOLO model on some annotation dataset
 """
 import numpy as np
 import random
-import argparse
+import os, argparse
 from yolo import YOLO
+from predict import predict
 from PIL import Image
 
 import tensorflow as tf
+from tensorflow.keras.models import load_model
 import tensorflow.keras.backend as KTF
 
 config = tf.ConfigProto()
@@ -65,7 +67,7 @@ def annotation_parse(annotation_file, class_names):
     return annotation_records, classes_records
 
 
-def get_prediction_class_records(yolo, annotation_records):
+def get_prediction_class_records(model, annotation_records, class_names, model_image_size):
     '''
     Do the predict with YOLO model on annotation images to get predict class dict
 
@@ -78,14 +80,17 @@ def get_prediction_class_records(yolo, annotation_records):
     pred_classes_records = {}
     for (image_name, box_records) in annotation_records.items():
         image = Image.open(image_name)
-        pred_boxes, pred_classes, pred_scores = yolo.predict(image)
+        image_data = np.array(image, dtype='uint8')
+        #pred_boxes, pred_classes, pred_scores = yolo.predict(image)
+        pred_boxes, pred_classes, pred_scores = predict(model, image_data, len(class_names), model_image_size)
+        print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
 
         # Nothing detected
         if pred_boxes is None or len(pred_boxes) == 0:
             continue
 
         for box, cls, score in zip(pred_boxes, pred_classes, pred_scores):
-            pred_class_name = yolo.class_names[cls]
+            pred_class_name = class_names[cls]
             xmin, ymin, xmax, ymax = box
             coordinate = "{},{},{},{}".format(xmin, ymin, xmax, ymax)
 
@@ -301,12 +306,20 @@ def calc_AP(gt_records, pred_records):
     return ap
 
 
-def compute_mAP(yolo, annotation_file):
+def get_classes(classes_path):
+    classes_path = os.path.expanduser(classes_path)
+    with open(classes_path) as f:
+        class_names = f.readlines()
+    class_names = [c.strip() for c in class_names]
+    return class_names
+
+
+def compute_mAP(model, annotation_file, class_names, model_image_size):
     '''
     Compute mAP for YOLO model on annotation dataset
     '''
-    annotation_records, gt_classes_records = annotation_parse(annotation_file, yolo.class_names)
-    pred_classes_records = get_prediction_class_records(yolo, annotation_records)
+    annotation_records, gt_classes_records = annotation_parse(annotation_file, class_names)
+    pred_classes_records = get_prediction_class_records(model, annotation_records, class_names, model_image_size)
 
     sum_AP = 0.0
     #get AP value for each of the ground truth classes
@@ -338,10 +351,10 @@ def main():
         help='path to model weight file, default ' + YOLO.get_defaults("model_path")
     )
 
-    parser.add_argument(
-        '--anchors_path', type=str,
-        help='path to anchor definitions, default ' + YOLO.get_defaults("anchors_path")
-    )
+    #parser.add_argument(
+        #'--anchors_path', type=str,
+        #help='path to anchor definitions, default ' + YOLO.get_defaults("anchors_path")
+    #)
 
     parser.add_argument(
         '--classes_path', type=str,
@@ -349,8 +362,8 @@ def main():
     )
 
     parser.add_argument(
-        '--gpu_num', type=int,
-        help='Number of GPU to use, default ' + str(YOLO.get_defaults("gpu_num"))
+        '--model_image_size', type=str,
+        help='model image input size as <num>x<num>' + str(YOLO.get_defaults("gpu_num"))
     )
     parser.add_argument(
         '--annotation_file', type=str,
@@ -361,7 +374,14 @@ def main():
     if not args.annotation_file:
         raise ValueError('annotation file is not specified')
 
-    mAP = compute_mAP(YOLO(**vars(args)), args.annotation_file)
+    # param parse
+    model = load_model(args.model_path, compile=False)
+    print(model.input_shape)
+    class_names = get_classes(args.classes_path)
+    height, width = args.model_image_size.split('x')
+    model_image_size = (int(height), int(width))
+
+    mAP = compute_mAP(model, args.annotation_file, class_names, model_image_size)
     print('mAP result: {}'.format(mAP))
 
 

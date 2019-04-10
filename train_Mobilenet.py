@@ -9,7 +9,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 import os
-from yolo3.model_Mobilenet import preprocess_true_boxes, yolo_body, tiny_yolo_body, yolo_loss
+from yolo3.model_Mobilenet import preprocess_true_boxes, yolo_mobilenet_body, tiny_yolo_body, yolo_loss
 from yolo3.utils import get_random_data
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -50,7 +50,7 @@ def _main():
     checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
         monitor='val_loss',
         verbose=1,
-        save_weights_only=True,
+        save_weights_only=False,
         save_best_only=True,
         period=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=3, verbose=1)
@@ -87,7 +87,7 @@ def _main():
                 epochs=30,
                 initial_epoch=0,
                 callbacks=[logging, checkpoint])
-        model.save_weights(log_dir + 'trained_weights_stage_1.h5')
+        model.save(log_dir + 'trained_stage_1.h5')
 
     # Unfreeze and continue training, to fine-tune.
     # Train longer if the result is not good.
@@ -105,7 +105,7 @@ def _main():
             epochs=20,
             initial_epoch=0,
             callbacks=[logging, checkpoint, reduce_lr, early_stopping])
-        model.save_weights(log_dir + 'trained_weights_final.h5')
+        model.save(log_dir + 'trained_final.h5')
 
     # Further training if needed.
 
@@ -136,7 +136,7 @@ def create_model(input_shape, anchors, num_classes, freeze_body=1,
     y_true = [Input(shape=(h//{0:32, 1:16, 2:8}[l], w//{0:32, 1:16, 2:8}[l], \
         num_anchors//3, num_classes+5)) for l in range(3)]
 
-    model_body = yolo_body(image_input, num_anchors//3, num_classes)
+    model_body = yolo_mobilenet_body(image_input, num_anchors//3, num_classes)
     print('Create YOLOv3 MobileNet model with {} anchors and {} classes.'.format(num_anchors, num_classes))
 
     if transfer_learn:

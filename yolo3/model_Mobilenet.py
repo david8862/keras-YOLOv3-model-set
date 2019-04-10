@@ -88,7 +88,7 @@ def make_last_layers(x, num_filters, out_filters):
     return x, y
 
 
-def yolo_body(inputs, num_anchors, num_classes):
+def yolo_mobilenet_body(inputs, num_anchors, num_classes):
     """Create YOLO_V3 model CNN body in Keras."""
     '''
     Layer Name: input_1 Output: Tensor("input_1:0", shape=(?, 416, 416, 3), dtype=float32)
@@ -493,7 +493,7 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, print_loss=False):
 
     Parameters
     ----------
-    yolo_outputs: list of tensor, the output of yolo_body or tiny_yolo_body
+    yolo_outputs: list of tensor, the output of yolo_mobilenet_body or tiny_yolo_body
     y_true: list of array, the output of preprocess_true_boxes
     anchors: array, shape=(N, 2), wh
     num_classes: integer
