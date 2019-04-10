@@ -195,7 +195,6 @@ def yolo_mobilenet_body(inputs, num_anchors, num_classes):
     Layer Name: reshape_2 Output: Tensor("reshape_2/Reshape:0", shape=(?, 1000), dtype=float32)
     '''
 
-    #net, endpoint = inception_v2.inception_v2(inputs)
     mobilenet = MobileNet(input_tensor=inputs,weights='imagenet')
 
     # input: 416 x 416 x 3
@@ -228,34 +227,31 @@ def yolo_mobilenet_body(inputs, num_anchors, num_classes):
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
-def tiny_yolo_body(inputs, num_anchors, num_classes):
-    '''Create Tiny YOLO_v3 model CNN body in keras.'''
-    x1 = compose(
-            DarknetConv2D_BN_Leaky(16, (3,3)),
-            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            DarknetConv2D_BN_Leaky(32, (3,3)),
-            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            DarknetConv2D_BN_Leaky(64, (3,3)),
-            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            DarknetConv2D_BN_Leaky(128, (3,3)),
-            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            DarknetConv2D_BN_Leaky(256, (3,3)))(inputs)
-    x2 = compose(
-            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            DarknetConv2D_BN_Leaky(512, (3,3)),
-            MaxPooling2D(pool_size=(2,2), strides=(1,1), padding='same'),
-            DarknetConv2D_BN_Leaky(1024, (3,3)),
-            DarknetConv2D_BN_Leaky(256, (1,1)))(x1)
+
+def tiny_yolo_mobilenet_body(inputs, num_anchors, num_classes):
+    '''Create Tiny YOLO_v3 MobileNet model CNN body in keras.'''
+    mobilenet = MobileNet(input_tensor=inputs,weights='imagenet')
+
+    # input: 416 x 416 x 3
+    # conv_pw_13_relu :13 x 13 x 1024
+    # conv_pw_11_relu :26 x 26 x 512
+    # conv_pw_5_relu : 52 x 52 x 256
+
+    x1 = mobilenet.get_layer('conv_pw_11_relu').output
+
+    x2 = mobilenet.get_layer('conv_pw_13_relu').output
+    x2 = DarknetConv2D_BN_Leaky(512, (1,1))(x2)
+
     y1 = compose(
             DarknetConv2D_BN_Leaky(512, (3,3)),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
     x2 = compose(
-            DarknetConv2D_BN_Leaky(128, (1,1)),
+            DarknetConv2D_BN_Leaky(256, (1,1)),
             UpSampling2D(2))(x2)
     y2 = compose(
             Concatenate(),
-            DarknetConv2D_BN_Leaky(256, (3,3)),
+            DarknetConv2D_BN_Leaky(512, (3,3)),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
 
     return Model(inputs, [y1,y2])
@@ -493,7 +489,7 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, print_loss=False):
 
     Parameters
     ----------
-    yolo_outputs: list of tensor, the output of yolo_mobilenet_body or tiny_yolo_body
+    yolo_outputs: list of tensor, the output of yolo_mobilenet_body or tiny_yolo_mobilenet_body
     y_true: list of array, the output of preprocess_true_boxes
     anchors: array, shape=(N, 2), wh
     num_classes: integer

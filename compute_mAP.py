@@ -6,7 +6,6 @@ Calculate mAP for YOLO model on some annotation dataset
 import numpy as np
 import random
 import os, argparse
-from yolo import YOLO
 from predict import predict
 from PIL import Image
 
@@ -348,22 +347,22 @@ def main():
     '''
     parser.add_argument(
         '--model_path', type=str,
-        help='path to model weight file, default ' + YOLO.get_defaults("model_path")
+        help='path to model weight file')
     )
 
     #parser.add_argument(
         #'--anchors_path', type=str,
-        #help='path to anchor definitions, default ' + YOLO.get_defaults("anchors_path")
+        #help='path to anchor definitions')
     #)
 
     parser.add_argument(
         '--classes_path', type=str,
-        help='path to class definitions, default ' + YOLO.get_defaults("classes_path")
+        help='path to class definitions, default model_data/voc_classes.txt', default='model_data/voc_classes.txt')
     )
 
     parser.add_argument(
         '--model_image_size', type=str,
-        help='model image input size as <num>x<num>' + str(YOLO.get_defaults("gpu_num"))
+        help='model image input size as <num>x<num>, default 416x416', default='416x416')
     )
     parser.add_argument(
         '--annotation_file', type=str,
