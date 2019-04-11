@@ -168,7 +168,7 @@ class YOLO(object):
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
         image_data = np.array(image, dtype='uint8')
 
-        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, len(self.class_names), self.model_image_size)
+        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, self.anchors, len(self.class_names), self.model_image_size)
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
         image_data = draw_boxes(image_data, out_boxes, out_classes, out_scores, self.class_names, self.colors)
@@ -186,7 +186,7 @@ class YOLO(object):
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
         image_data = np.array(image, dtype='uint8')
 
-        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, len(self.class_names), self.model_image_size)
+        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, self.anchors, len(self.class_names), self.model_image_size)
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
         end = time.time()

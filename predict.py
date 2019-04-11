@@ -4,37 +4,28 @@ import numpy as np
 from scipy.special import expit
 
 
-def yolo_head(predictions, num_classes, input_dims):
+def yolo_head(predictions, anchors, num_classes, input_dims):
     """
-    YOLO Head to process predictions from Darknet
+    YOLO Head to process predictions from YOLO models
 
     :param num_classes: Total number of classes
+    :param anchors: YOLO style anchor list for bounding box assignment
     :param input_dims: Input dimensions of the image
     :param predictions: A list of three tensors with shape (N, 19, 19, 255), (N,38, 38, 255) and (N, 76, 76, 255)
     :return: A tensor with the shape (N, num_boxes, 85)
     """
-
-    anchors = [
-        [[116, 90], [156, 198], [373, 326]],
-        [[30, 61], [62, 45], [59, 119]],
-        [[10, 13], [16, 30], [33, 23]]
-    ]
-
-    tiny_anchors = [
-        [[81, 82], [135, 169], [344, 319]],
-        [[10, 14], [23, 27], [37, 58]]
-    ]
-    results = []
+    assert len(predictions) == len(anchors)//3, 'anchor numbers does not match prediction.'
 
     if len(predictions) == 3: # assume 3 set of predictions is YOLOv3
-        model_anchors = anchors
+        anchor_mask = [[6,7,8], [3,4,5], [0,1,2]]
     elif len(predictions) == 2: # 2 set of predictions is YOLOv3-tiny
-        model_anchors = tiny_anchors
+        anchor_mask = [[3,4,5], [0,1,2]]
     else:
         raise ValueError('Unsupported prediction length: {}'.format(len(predictions)))
 
+    results = []
     for i, prediction in enumerate(predictions):
-        results.append(_yolo_head(prediction, num_classes, model_anchors[i], input_dims))
+        results.append(_yolo_head(prediction, num_classes, anchors[anchor_mask[i]], input_dims))
 
     return np.concatenate(results, axis=1)
 
@@ -85,10 +76,10 @@ def _yolo_head(prediction, num_classes, anchors, input_dims):
     return np.concatenate([box_xy, box_wh, objectness, class_scores], axis=2)
 
 
-def predict(model, image_arr, num_classes, model_image_size, confidence=0.5, iou_threshold=0.4):
+def predict(model, image_arr, anchors, num_classes, model_image_size, confidence=0.5, iou_threshold=0.4):
     image, image_data = preprocess_image(image_arr, model_image_size)
 
-    predictions = yolo_head(model.predict([image_data]), num_classes, input_dims=model_image_size)
+    predictions = yolo_head(model.predict([image_data]), anchors, num_classes, input_dims=model_image_size)
 
     boxes, classes, scores = handle_predictions(predictions,
                                                 confidence=confidence,
@@ -126,12 +117,19 @@ def handle_predictions(predictions, confidence=0.6, iou_threshold=0.5):
         return [], [], []
 
 def get_classes(classes_path):
-    classes_path = os.path.expanduser(classes_path)
+    classes_file = os.path.expanduser(classes_path)
     with open(classes_path) as f:
         class_names = f.readlines()
     class_names = [c.strip() for c in class_names]
     return class_names
 
+
+def get_anchors(anchors_path):
+    anchors_file = os.path.expanduser(anchors_path)
+    with open(anchors_file) as f:
+        anchors = f.readline()
+    anchors = [float(x) for x in anchors.split(',')]
+    return np.array(anchors).reshape(-1, 2)
 
 def get_colors(class_names):
     # Generate colors for drawing bounding boxes.

@@ -6,7 +6,7 @@ Calculate mAP for YOLO model on some annotation dataset
 import numpy as np
 import random
 import os, argparse
-from predict import predict, get_classes
+from predict import predict, get_classes, get_anchors
 from PIL import Image
 
 import tensorflow as tf
@@ -66,7 +66,7 @@ def annotation_parse(annotation_file, class_names):
     return annotation_records, classes_records
 
 
-def get_prediction_class_records(model, annotation_records, class_names, model_image_size):
+def get_prediction_class_records(model, annotation_records, anchors, class_names, model_image_size):
     '''
     Do the predict with YOLO model on annotation images to get predict class dict
 
@@ -80,7 +80,7 @@ def get_prediction_class_records(model, annotation_records, class_names, model_i
     for (image_name, box_records) in annotation_records.items():
         image = Image.open(image_name)
         image_data = np.array(image, dtype='uint8')
-        pred_boxes, pred_classes, pred_scores = predict(model, image_data, len(class_names), model_image_size)
+        pred_boxes, pred_classes, pred_scores = predict(model, image_data, anchors, len(class_names), model_image_size)
         print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
 
         # Nothing detected
@@ -304,12 +304,12 @@ def calc_AP(gt_records, pred_records):
     return ap
 
 
-def compute_mAP(model, annotation_file, class_names, model_image_size):
+def compute_mAP(model, annotation_file, anchors, class_names, model_image_size):
     '''
     Compute mAP for YOLO model on annotation dataset
     '''
     annotation_records, gt_classes_records = annotation_parse(annotation_file, class_names)
-    pred_classes_records = get_prediction_class_records(model, annotation_records, class_names, model_image_size)
+    pred_classes_records = get_prediction_class_records(model, annotation_records, anchors, class_names, model_image_size)
 
     sum_AP = 0.0
     #get AP value for each of the ground truth classes
@@ -340,9 +340,9 @@ def main():
         '--model_path', type=str,
         help='path to model weight file')
 
-    #parser.add_argument(
-        #'--anchors_path', type=str,
-        #help='path to anchor definitions')
+    parser.add_argument(
+        '--anchors_path', type=str,
+        help='path to anchor definitions')
 
     parser.add_argument(
         '--classes_path', type=str,
@@ -365,11 +365,12 @@ def main():
 
     # param parse
     model = load_model(args.model_path, compile=False)
+    anchors = get_anchors(args.anchors_path)
     class_names = get_classes(args.classes_path)
     height, width = args.model_image_size.split('x')
     model_image_size = (int(height), int(width))
 
-    mAP = compute_mAP(model, args.annotation_file, class_names, model_image_size)
+    mAP = compute_mAP(model, args.annotation_file, anchors, class_names, model_image_size)
     print('mAP result: {}'.format(mAP))
 
 

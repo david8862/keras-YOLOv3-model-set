@@ -4,10 +4,10 @@ import os, argparse
 import numpy as np
 
 from tensorflow.lite.python import interpreter as interpreter_wrapper
-from predict import preprocess_image, get_classes, get_colors, yolo_head, handle_predictions, adjust_boxes, draw_boxes
+from predict import preprocess_image, get_classes, get_anchors, get_colors, yolo_head, handle_predictions, adjust_boxes, draw_boxes
 
 
-def validate_yolo_model_tflite(model_path, image_file, class_names, model_image_size):
+def validate_yolo_model_tflite(model_path, image_file, anchors, class_names):
     interpreter = interpreter_wrapper.Interpreter(model_path=model_path)
     interpreter.allocate_tensors()
 
@@ -38,10 +38,10 @@ def validate_yolo_model_tflite(model_path, image_file, class_names, model_image_
         output_data = interpreter.get_tensor(output_detail['index'])
         out_list.append(output_data)
 
-    predictions = yolo_head(out_list, num_classes=len(class_names), input_dims=model_image_size)
+    predictions = yolo_head(out_list, anchors, num_classes=len(class_names), input_dims=(height, width))
 
     boxes, classes, scores = handle_predictions(predictions, confidence=0.3, iou_threshold=0.4)
-    boxes = adjust_boxes(boxes, image, model_image_size)
+    boxes = adjust_boxes(boxes, image, (height, width))
     print('Found {} boxes for {}'.format(len(boxes), image_file))
 
     for box, cls, score in zip(boxes, classes, scores):
@@ -60,8 +60,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', help='model file to predict', type=str)
     parser.add_argument('--image_file', help='image file to predict', type=str)
+    parser.add_argument('--anchors_path',help='path to anchor definitions', type=str)
     parser.add_argument('--classes_path', help='path to class definitions, default model_data/voc_classes.txt', type=str, default='model_data/voc_classes.txt')
-    parser.add_argument('--model_image_size', help='model image input size as <num>x<num>, default 416x416', type=str, default='416x416')
 
     args = parser.parse_args()
     if not args.model_path:
@@ -70,11 +70,10 @@ def main():
         raise ValueError('image file is not specified')
 
     # param parse
+    anchors = get_anchors(args.anchors_path)
     class_names = get_classes(args.classes_path)
-    height, width = args.model_image_size.split('x')
-    model_image_size = (int(height), int(width))
 
-    validate_yolo_model_tflite(args.model_path, args.image_file, class_names, model_image_size)
+    validate_yolo_model_tflite(args.model_path, args.image_file, anchors, class_names)
 
 
 if __name__ == '__main__':

@@ -18,6 +18,7 @@ from PIL import Image, ImageFont, ImageDraw
 
 from yolo3.model_Mobilenet import yolo_eval, yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body
 from yolo3.utils import letterbox_image
+from predict import predict, draw_boxes
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 from tensorflow.keras.utils import multi_gpu_model
@@ -198,9 +199,7 @@ class YOLO(object):
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
         image_data = np.array(image, dtype='uint8')
 
-        from predict import predict, draw_boxes
-
-        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, len(self.class_names), self.model_image_size)
+        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, self.anchors, len(self.class_names), self.model_image_size)
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
         image_data = draw_boxes(image_data, out_boxes, out_classes, out_scores, self.class_names, self.colors)
@@ -217,9 +216,7 @@ class YOLO(object):
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
         image_data = np.array(image, dtype='uint8')
 
-        from predict import predict
-
-        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, len(self.class_names), self.model_image_size)
+        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, self.anchors, len(self.class_names), self.model_image_size)
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
         end = time.time()
