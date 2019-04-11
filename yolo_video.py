@@ -67,8 +67,32 @@ if __name__ == '__main__':
         "--output", nargs='?', type=str, default="",
         help = "[Optional] Video output path"
     )
+    '''
+    Command line positional arguments -- for model dump
+    '''
+    parser.add_argument(
+        '--dump_model', default=False, action="store_true",
+        help='Dump out training model to inference model'
+    )
+
+    parser.add_argument(
+        '--output_model_file', type=str,
+        help='output inference model file'
+    )
 
     FLAGS = parser.parse_args()
+
+    if FLAGS.dump_model:
+        """
+        Dump out training model to inference model
+        """
+        if not FLAGS.output_model_file:
+            raise ValueError('output model file is not specified')
+
+        print('Dumping out training model to inference model')
+        YOLO(**vars(FLAGS)).dump_model_file(FLAGS.output_model_file)
+        sys.exit()
+
 
     if FLAGS.image:
         """

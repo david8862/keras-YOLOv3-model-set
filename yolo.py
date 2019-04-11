@@ -193,6 +193,9 @@ class YOLO(object):
         print("Inference time: {:.2f}s".format(end - start))
         return out_boxes, out_classes, out_scores
 
+    def dump_model_file(self, output_model_file):
+        self.yolo_model.save(output_model_file)
+
     def close_session(self):
         self.sess.close()
 

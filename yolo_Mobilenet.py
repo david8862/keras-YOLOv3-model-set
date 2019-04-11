@@ -5,7 +5,7 @@ Run a YOLO_v3 style detection model on test images.
 """
 
 import colorsys
-import os
+import os, argparse
 import cv2
 import time
 from timeit import default_timer as timer
@@ -24,16 +24,29 @@ from tensorflow.keras.utils import multi_gpu_model
 gpu_num=1
 
 class YOLO(object):
-    def __init__(self):
-        self.model_path = 'model_data/trained_final.h5' # model path or trained weights path
-        self.anchors_path = 'model_data/yolo_anchors.txt'
-        self.classes_path = 'model_data/voc_classes.txt'
-        self.score = 0.3
-        self.iou = 0.45
+    _defaults = {
+        "model_path": 'model_data/yolov3-tiny.h5',
+        "anchors_path": 'model_data/tiny_yolo_anchors.txt',
+        "classes_path": 'model_data/coco_classes.txt',
+        "score" : 0.3,
+        "iou" : 0.45,
+        "model_image_size" : (416, 416),
+        "gpu_num" : 1,
+    }
+
+    @classmethod
+    def get_defaults(cls, n):
+        if n in cls._defaults:
+            return cls._defaults[n]
+        else:
+            return "Unrecognized attribute name '" + n + "'"
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(self._defaults) # set up default values
+        self.__dict__.update(kwargs) # and update with user overrides
         self.class_names = self._get_class()
         self.anchors = self._get_anchors()
         self.sess = K.get_session()
-        self.model_image_size = (320, 320) # fixed size or (None, None), hw
         self.boxes, self.scores, self.classes = self.generate()
 
     def _get_class(self):
@@ -211,6 +224,9 @@ class YOLO(object):
         print("Inference time: {:.2f}s".format(end - start))
         return out_boxes, out_classes, out_scores
 
+    def dump_model_file(self, output_model_file):
+        self.yolo_model.save(output_model_file)
+
     def close_session(self):
         self.sess.close()
 
@@ -367,7 +383,54 @@ def car_detect(yolo,mainFolder = '/home/wenwen/Viewnyx/FrameImages/'):
 
 
 if __name__ == '__main__':
-    detect_img(YOLO())
-    #car_detect(YOLO())
-    #detect_test(YOLO(), json_name='../mrsub/mrsub_test.json',test_out_json='mobilenet_train_bw_test_mrsub.json', data_dst='../mrsub/')
-    #detect_test_draw(YOLO(), json_name='dataset/brainwash/test_boxes.json',test_pic='./mobilenet_test/')
+    # class YOLO defines the default value, so suppress any default here
+    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
+    '''
+    Command line options
+    '''
+    parser.add_argument(
+        '--model_path', type=str,
+        help='path to model weight file, default ' + YOLO.get_defaults("model_path")
+    )
+
+    parser.add_argument(
+        '--anchors_path', type=str,
+        help='path to anchor definitions, default ' + YOLO.get_defaults("anchors_path")
+    )
+
+    parser.add_argument(
+        '--classes_path', type=str,
+        help='path to class definitions, default ' + YOLO.get_defaults("classes_path")
+    )
+
+    parser.add_argument(
+        '--gpu_num', type=int,
+        help='Number of GPU to use, default ' + str(YOLO.get_defaults("gpu_num"))
+    )
+    '''
+    Command line positional arguments -- for model dump
+    '''
+    parser.add_argument(
+        '--dump_model', default=False, action="store_true",
+        help='Dump out training model to inference model'
+    )
+
+    parser.add_argument(
+        '--output_model_file', type=str,
+        help='output inference model file'
+    )
+
+    FLAGS = parser.parse_args()
+
+    if FLAGS.dump_model:
+        """
+        Dump out training model to inference model
+        """
+        if not FLAGS.output_model_file:
+            raise ValueError('output model file is not specified')
+
+        print('Dumping out training model to inference model')
+        YOLO(**vars(FLAGS)).dump_model_file(FLAGS.output_model_file)
+    else:
+        detect_img(YOLO(**vars(FLAGS)))
+
