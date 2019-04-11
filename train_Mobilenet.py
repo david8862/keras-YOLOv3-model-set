@@ -28,7 +28,7 @@ def _main():
     val_path = 'val.txt'
     log_dir = 'logs/000/'
     classes_path = 'model_data/voc_classes.txt'
-    anchors_path = 'model_data/tiny_yolo_anchors.txt'
+    anchors_path = 'model_data/yolo_anchors.txt'
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
     anchors = get_anchors(anchors_path)
@@ -40,7 +40,7 @@ def _main():
         model = create_tiny_model(input_shape, anchors, num_classes,
             freeze_body=1)
     else:
-        model = create_model(input_shape, anchors, num_classes,load_pretrained=False,
+        model = create_model(input_shape, anchors, num_classes,
                              weights_path='logs/000/trained_weights_final.h5',
             freeze_body=1, transfer_learn=True) # make sure you know what you freeze
 
