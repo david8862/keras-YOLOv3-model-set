@@ -80,7 +80,6 @@ def get_prediction_class_records(model, annotation_records, class_names, model_i
     for (image_name, box_records) in annotation_records.items():
         image = Image.open(image_name)
         image_data = np.array(image, dtype='uint8')
-        #pred_boxes, pred_classes, pred_scores = yolo.predict(image)
         pred_boxes, pred_classes, pred_scores = predict(model, image_data, len(class_names), model_image_size)
         print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
 
