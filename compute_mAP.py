@@ -340,22 +340,19 @@ def main():
     parser.add_argument(
         '--model_path', type=str,
         help='path to model weight file')
-    )
 
     #parser.add_argument(
         #'--anchors_path', type=str,
         #help='path to anchor definitions')
-    #)
 
     parser.add_argument(
         '--classes_path', type=str,
         help='path to class definitions, default model_data/voc_classes.txt', default='model_data/voc_classes.txt')
-    )
 
     parser.add_argument(
         '--model_image_size', type=str,
         help='model image input size as <num>x<num>, default 416x416', default='416x416')
-    )
+
     parser.add_argument(
         '--annotation_file', type=str,
         help='annotation txt file to varify')
