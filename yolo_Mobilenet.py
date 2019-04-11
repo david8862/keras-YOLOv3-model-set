@@ -16,7 +16,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import Input
 from PIL import Image, ImageFont, ImageDraw
 
-from yolo3.model_Mobilenet import yolo_eval, yolo_mobilenet_body, tiny_yolo_mobilenet_body
+from yolo3.model_Mobilenet import yolo_eval, yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body
 from yolo3.utils import letterbox_image
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -75,8 +75,10 @@ class YOLO(object):
         try:
             self.yolo_model = load_model(model_path, compile=False)
         except:
+            #self.yolo_model = tiny_yolo_mobilenet_body(Input(shape=(None,None,3)), num_anchors//2, num_classes) \
+                #if is_tiny_version else yolo_mobilenet_body(Input(shape=(None,None,3)), num_anchors//3, num_classes)
             self.yolo_model = tiny_yolo_mobilenet_body(Input(shape=(None,None,3)), num_anchors//2, num_classes) \
-                if is_tiny_version else yolo_mobilenet_body(Input(shape=(None,None,3)), num_anchors//3, num_classes)
+                if is_tiny_version else custom_yolo_mobilenet_body(Input(shape=(None,None,3)), num_anchors//3, num_classes)
             self.yolo_model.load_weights(self.model_path) # make sure model, anchors and classes match
             self.yolo_model.summary()
         else:

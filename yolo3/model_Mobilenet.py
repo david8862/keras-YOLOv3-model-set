@@ -289,7 +289,7 @@ def tiny_yolo_mobilenet_body(inputs, num_anchors, num_classes):
     x2 = DarknetConv2D_BN_Leaky(512, (1,1))(x2)
 
     y1 = compose(
-            DarknetConv2D_BN_Leaky(512, (3,3)),
+            DarknetConv2D_BN_Leaky(1024, (3,3)),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
     x2 = compose(
