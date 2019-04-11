@@ -9,7 +9,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 import os
-from yolo3.model_Mobilenet import preprocess_true_boxes, yolo_mobilenet_body, tiny_yolo_mobilenet_body, yolo_loss
+from yolo3.model_Mobilenet import preprocess_true_boxes, yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body, yolo_loss
 from yolo3.utils import get_random_data
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -128,7 +128,8 @@ def create_model(input_shape, anchors, num_classes, freeze_body=1,
     y_true = [Input(shape=(h//{0:32, 1:16, 2:8}[l], w//{0:32, 1:16, 2:8}[l], \
         num_anchors//3, num_classes+5)) for l in range(3)]
 
-    model_body = yolo_mobilenet_body(image_input, num_anchors//3, num_classes)
+    #model_body = yolo_mobilenet_body(image_input, num_anchors//3, num_classes)
+    model_body = custom_yolo_mobilenet_body(image_input, num_anchors//3, num_classes)
     print('Create YOLOv3 MobileNet model with {} anchors and {} classes.'.format(num_anchors, num_classes))
 
     if transfer_learn:
