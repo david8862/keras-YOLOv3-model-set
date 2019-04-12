@@ -1,5 +1,5 @@
 import time
-import cv2
+from PIL import Image
 import os, argparse
 import numpy as np
 
@@ -8,7 +8,8 @@ from tensorflow.keras.models import load_model
 
 
 def validate_yolo_model(model, image_file, anchors, class_names, model_image_size):
-    image = cv2.imread(image_file)
+    image = Image.open(image_file)
+    image = np.array(image, dtype='uint8')
 
     start = time.time()
     boxes, classes, scores = predict(model, image, anchors, len(class_names), model_image_size)
@@ -23,9 +24,7 @@ def validate_yolo_model(model, image_file, anchors, class_names, model_image_siz
     image = draw_boxes(image, boxes, classes, scores, class_names, colors)
     print("Inference time: {:.2f}s".format((end - start)))
 
-    cv2.imshow('Result', image)
-    # Hit 'q' on the keyboard to quit!
-    cv2.waitKey(0)
+    Image.fromarray(image).show()
 
 def main():
     parser = argparse.ArgumentParser()

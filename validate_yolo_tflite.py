@@ -1,5 +1,5 @@
 import time
-import cv2
+from PIL import Image
 import os, argparse
 import numpy as np
 
@@ -21,7 +21,8 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names):
     if input_details[0]['dtype'] == np.float32:
         floating_model = True
 
-    img = cv2.imread(image_file)
+    img = Image.open(image_file)
+    img = np.array(img, dtype='uint8')
 
     height = input_details[0]['shape'][1]
     width = input_details[0]['shape'][2]
@@ -51,9 +52,7 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names):
     image = draw_boxes(image, boxes, classes, scores, class_names, colors)
     print("Inference time: {:.2f}s".format((end - start)))
 
-    cv2.imshow('Result', image)
-    # Hit 'q' on the keyboard to quit!
-    cv2.waitKey(0)
+    Image.fromarray(image).show()
 
 
 def main():

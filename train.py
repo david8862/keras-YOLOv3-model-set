@@ -34,10 +34,10 @@ def _main():
 
     is_tiny_version = len(anchors)==6 # default setting
     if is_tiny_version:
-        model = create_tiny_model(input_shape, anchors, num_classes,
+        model = create_tiny_model(input_shape, anchors, num_classes, load_pretrained=False,
             freeze_body=1, weights_path='model_data/tiny_yolo_weights.h5', transfer_learn=True)
     else:
-        model = create_model(input_shape, anchors, num_classes,
+        model = create_model(input_shape, anchors, num_classes, load_pretrained=False,
             freeze_body=1, weights_path='model_data/darknet53_weights.h5', transfer_learn=True) # make sure you know what you freeze
 
     logging = TensorBoard(log_dir=log_dir)
@@ -114,7 +114,7 @@ def get_anchors(anchors_path):
     return np.array(anchors).reshape(-1, 2)
 
 
-def create_model(input_shape, anchors, num_classes, freeze_body=1,
+def create_model(input_shape, anchors, num_classes, freeze_body=1, load_pretrained=False,
             weights_path='model_data/darknet53_weights.h5', transfer_learn=True):
     '''create the training model'''
     K.clear_session() # get a new session
@@ -131,21 +131,16 @@ def create_model(input_shape, anchors, num_classes, freeze_body=1,
         model_body = yolo_body(image_input, num_anchors//3, num_classes)
     print('Create YOLOv3 model with {} anchors and {} classes.'.format(num_anchors, num_classes))
 
+    if load_pretrained:
+        model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
+        print('Load weights {}.'.format(weights_path))
+
     if transfer_learn:
         if freeze_body in [1, 2]:
             # Freeze the darknet body or freeze all but final feature map & input layers.
             num = (185, len(model_body.layers)-3)[freeze_body-1]
             for i in range(num): model_body.layers[i].trainable = False
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
-
-    #if load_pretrained:
-        #model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
-        #print('Load weights {}.'.format(weights_path))
-        #if freeze_body in [1, 2]:
-            ## Freeze darknet53 body or freeze all but 3 output layers.
-            #num = (185, len(model_body.layers)-3)[freeze_body-1]
-            #for i in range(num): model_body.layers[i].trainable = False
-            #print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
     model_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
         arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5})(
@@ -154,7 +149,7 @@ def create_model(input_shape, anchors, num_classes, freeze_body=1,
 
     return model
 
-def create_tiny_model(input_shape, anchors, num_classes, freeze_body=1,
+def create_tiny_model(input_shape, anchors, num_classes, freeze_body=1, load_pretrained=False,
             weights_path='model_data/tiny_yolo_weights.h5', transfer_learn=True):
     '''create the training model, for Tiny YOLOv3'''
     K.clear_session() # get a new session
@@ -171,21 +166,16 @@ def create_tiny_model(input_shape, anchors, num_classes, freeze_body=1,
         model_body = tiny_yolo_body(image_input, num_anchors//2, num_classes)
     print('Create Tiny YOLOv3 model with {} anchors and {} classes.'.format(num_anchors, num_classes))
 
+    if load_pretrained:
+        model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
+        print('Load weights {}.'.format(weights_path))
+
     if transfer_learn:
         if freeze_body in [1, 2]:
             # Freeze the darknet body or freeze all but final feature map & input layers.
             num = (20, len(model_body.layers)-2)[freeze_body-1]
             for i in range(num): model_body.layers[i].trainable = False
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
-
-    #if load_pretrained:
-        #model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
-        #print('Load weights {}.'.format(weights_path))
-        #if freeze_body in [1, 2]:
-            ## Freeze the darknet body or freeze all but 2 output layers.
-            #num = (20, len(model_body.layers)-2)[freeze_body-1]
-            #for i in range(num): model_body.layers[i].trainable = False
-            #print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
     model_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
         arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.7})(
