@@ -5,7 +5,7 @@ Run a YOLO_v3 style detection model on test images.
 """
 
 import colorsys
-import os, argparse
+import os, sys, argparse
 import cv2
 import time
 from timeit import default_timer as timer
@@ -232,7 +232,7 @@ class YOLO(object):
 
 def detect_video(yolo, video_path, output_path=""):
     import cv2
-    vid = cv2.VideoCapture(video_path)
+    vid = cv2.VideoCapture(0)
     if not vid.isOpened():
         raise IOError("Couldn't open webcam or video")
     video_FourCC    = int(vid.get(cv2.CAP_PROP_FOURCC))
@@ -406,6 +406,22 @@ if __name__ == '__main__':
         '--gpu_num', type=int,
         help='Number of GPU to use, default ' + str(YOLO.get_defaults("gpu_num"))
     )
+    parser.add_argument(
+        '--image', default=False, action="store_true",
+        help='Image detection mode, will ignore all positional arguments'
+    )
+    '''
+    Command line positional arguments -- for video detection mode
+    '''
+    parser.add_argument(
+        "--input", nargs='?', type=str,required=False,default='./path2your_video',
+        help = "Video input path"
+    )
+
+    parser.add_argument(
+        "--output", nargs='?', type=str, default="",
+        help = "[Optional] Video output path"
+    )
     '''
     Command line positional arguments -- for model dump
     '''
@@ -430,6 +446,17 @@ if __name__ == '__main__':
 
         print('Dumping out training model to inference model')
         YOLO(**vars(FLAGS)).dump_model_file(FLAGS.output_model_file)
-    else:
-        detect_img(YOLO(**vars(FLAGS)))
+        sys.exit()
 
+    if FLAGS.image:
+        """
+        Image detection mode, disregard any remaining command line arguments
+        """
+        print("Image detection mode")
+        if "input" in FLAGS:
+            print(" Ignoring remaining command line arguments: " + FLAGS.input + "," + FLAGS.output)
+        detect_img(YOLO(**vars(FLAGS)))
+    elif "input" in FLAGS:
+        detect_video(YOLO(**vars(FLAGS)), FLAGS.input, FLAGS.output)
+    else:
+        print("Must specify at least video_input_path.  See usage with --help.")
