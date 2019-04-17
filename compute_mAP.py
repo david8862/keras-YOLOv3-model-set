@@ -312,6 +312,7 @@ def compute_mAP(model, annotation_file, anchors, class_names, model_image_size):
     pred_classes_records = get_prediction_class_records(model, annotation_records, anchors, class_names, model_image_size)
 
     sum_AP = 0.0
+    APs = []
     #get AP value for each of the ground truth classes
     for _, class_name in enumerate(sorted(gt_classes_records.keys())):
         gt_records = gt_classes_records[class_name]
@@ -321,8 +322,10 @@ def compute_mAP(model, annotation_file, anchors, class_names, model_image_size):
         pred_records = pred_classes_records[class_name]
         ap = calc_AP(gt_records, pred_records)
         sum_AP += ap
+        APs.append(ap)
 
     #get mAP from sum_AP
+    print(APs)
     mAP = sum_AP/len(gt_classes_records)
 
     #return mAP percentage value
