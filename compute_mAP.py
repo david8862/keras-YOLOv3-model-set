@@ -83,6 +83,15 @@ def get_prediction_class_records(model, annotation_records, anchors, class_names
         pred_boxes, pred_classes, pred_scores = predict(model, image_data, anchors, len(class_names), model_image_size)
         print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
 
+        # Try to show out the result for every image
+        # enable it when debugging
+
+        #from predict import get_colors, draw_boxes
+        #colors = get_colors(class_names)
+        #image = draw_boxes(image_data, pred_boxes, pred_classes, pred_scores, class_names, colors)
+        #Image.fromarray(image).show()
+        #a = input('Next: ')
+
         # Nothing detected
         if pred_boxes is None or len(pred_boxes) == 0:
             continue
