@@ -17,23 +17,23 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import tensorflow as tf
 config = tf.ConfigProto()
 config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
-config.gpu_options.per_process_gpu_memory_fraction = 0.6  #GPU memory threshold 0.3
+config.gpu_options.per_process_gpu_memory_fraction = 0.9  #GPU memory threshold 0.3
 session = tf.Session(config=config)
 
 # set session
 K.set_session(session)
 
 def _main():
-    train_path = 'train_val.txt'
+    train_path = 'roborock_2007_trainval.txt'
     val_path = 'val.txt'
     log_dir = 'logs/000/'
-    classes_path = 'model_data/voc_classes.txt'
+    classes_path = 'model_data/roborock_classes.txt'
     anchors_path = 'model_data/yolo_anchors.txt'
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
     anchors = get_anchors(anchors_path)
 
-    input_shape = (416,416) # multiple of 32, hw
+    input_shape = (608,608) # multiple of 32, hw
 
     is_tiny_version = len(anchors)==6 # default setting
     if is_tiny_version:
@@ -41,7 +41,7 @@ def _main():
             freeze_body=1)
     else:
         model = create_model(input_shape, anchors, num_classes, load_pretrained=True,
-                             weights_path='logs/000/ep018-loss14.573-val_loss14.557.h5',
+                             weights_path='logs/000/ep014-loss9.027-val_loss9.112.h5',
             freeze_body=1, transfer_learn=True) # make sure you know what you freeze
 
     logging = TensorBoard(log_dir=log_dir)
@@ -65,7 +65,7 @@ def _main():
 
     # Train with frozen layers first, to get a stable loss.
     # Adjust num epochs to your dataset. This step is enough to obtain a not bad model.
-    if True:
+    if False:
         model.compile(optimizer=Adam(lr=1e-3), loss={
             # use custom yolo_loss Lambda layer.
             'yolo_loss': lambda y_true, y_pred: y_pred})
@@ -94,7 +94,7 @@ def _main():
             steps_per_epoch=max(1, num_train//batch_size),
             validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
-            epochs=20,
+            epochs=30,
             initial_epoch=0,
             callbacks=[logging, checkpoint, reduce_lr, early_stopping])
         model.save(log_dir + 'trained_final.h5')

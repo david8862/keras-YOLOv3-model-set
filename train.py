@@ -12,33 +12,33 @@ from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnP
 from yolo3.model import preprocess_true_boxes, yolo_body, tiny_yolo_body, custom_yolo_body, custom_tiny_yolo_body, yolo_loss
 from yolo3.utils import get_random_data
 
-import tensorflow as tf
-config = tf.ConfigProto()
-config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
-config.gpu_options.per_process_gpu_memory_fraction = 0.6  #GPU memory threshold 0.3
-session = tf.Session(config=config)
+#import tensorflow as tf
+#config = tf.ConfigProto()
+#config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
+#config.gpu_options.per_process_gpu_memory_fraction = 0.9  #GPU memory threshold 0.3
+#session = tf.Session(config=config)
 
 # set session
-K.set_session(session)
+#K.set_session(session)
 
 def _main():
-    annotation_path = 'train_val.txt'
+    annotation_path = 'roborock_2007_trainval.txt'
     log_dir = 'logs/000/'
-    classes_path = 'model_data/voc_classes.txt'
-    anchors_path = 'model_data/tiny_yolo_anchors.txt'
+    classes_path = 'model_data/roborock_classes.txt'
+    anchors_path = 'model_data/yolo_anchors.txt'
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
     anchors = get_anchors(anchors_path)
 
-    input_shape = (416,416) # multiple of 32, hw
+    input_shape = (608,608) # multiple of 32, hw
 
     is_tiny_version = len(anchors)==6 # default setting
     if is_tiny_version:
         model = create_tiny_model(input_shape, anchors, num_classes, load_pretrained=False,
             freeze_body=1, weights_path='model_data/tiny_yolo_weights.h5', transfer_learn=True)
     else:
-        model = create_model(input_shape, anchors, num_classes, load_pretrained=False,
-            freeze_body=1, weights_path='model_data/darknet53_weights.h5', transfer_learn=True) # make sure you know what you freeze
+        model = create_model(input_shape, anchors, num_classes, load_pretrained=True,
+            freeze_body=1, weights_path='logs/000/ep034-loss10.140-val_loss11.151.h5', transfer_learn=True) # make sure you know what you freeze
 
     logging = TensorBoard(log_dir=log_dir)
     checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
@@ -61,7 +61,7 @@ def _main():
 
     # Train with frozen layers first, to get a stable loss.
     # Adjust num epochs to your dataset. This step is enough to obtain a not bad model.
-    if True:
+    if False:
         model.compile(optimizer=Adam(lr=1e-3), loss={
             # use custom yolo_loss Lambda layer.
             'yolo_loss': lambda y_true, y_pred: y_pred})
@@ -86,7 +86,7 @@ def _main():
         model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
         print('Unfreeze all of the layers.')
 
-        batch_size = 16 # note that more GPU memory is required after unfreezing the body
+        batch_size = 4 # note that more GPU memory is required after unfreezing the body
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
