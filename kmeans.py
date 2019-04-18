@@ -1,11 +1,13 @@
 import numpy as np
+import argparse
 
 
 class YOLO_Kmeans:
 
-    def __init__(self, cluster_number, filename):
+    def __init__(self, cluster_number, filename, anchors_file):
         self.cluster_number = cluster_number
-        self.filename = "2012_train.txt"
+        self.filename = filename
+        self.anchors_file = anchors_file
 
     def iou(self, boxes, clusters):  # 1 box -> k clusters
         n = boxes.shape[0]
@@ -58,7 +60,7 @@ class YOLO_Kmeans:
         return clusters
 
     def result2txt(self, data):
-        f = open("yolo_anchors.txt", 'w')
+        f = open(self.anchors_file, 'w')
         row = np.shape(data)[0]
         for i in range(row):
             if i == 0:
@@ -95,7 +97,15 @@ class YOLO_Kmeans:
 
 
 if __name__ == "__main__":
-    cluster_number = 9
-    filename = "2012_train.txt"
-    kmeans = YOLO_Kmeans(cluster_number, filename)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--annotation_file', required=True,
+            help='annotation txt file for ground truth anchors', type=str)
+    parser.add_argument('--cluster_number', required=True,
+            help='anchor numbers to cluster', type=int)
+    parser.add_argument('--anchors_file', required=True,
+            help='anchor file to output', type=str)
+
+    args = parser.parse_args()
+
+    kmeans = YOLO_Kmeans(args.cluster_number, args.annotation_file, args.anchors_file)
     kmeans.txt2clusters()
