@@ -128,7 +128,7 @@ def box_iou(pred_box, gt_box):
     gt_area = (gt_box[2] - gt_box[0]) * (gt_box[3] - gt_box[1])
     inter_area = (inter_box[2] - inter_box[0]) * (inter_box[3] - inter_box[1])
     union_area = pred_area + gt_area - inter_area
-    return inter_area / union_area
+    return 0 if union_area == 0 else float(inter_area) / float(union_area)
 
 
 def match_gt_box(pred_record, gt_records, iou_threshold=0.5):

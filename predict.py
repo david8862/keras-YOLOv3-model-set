@@ -1,4 +1,5 @@
 import cv2
+from PIL import Image
 import os, colorsys
 import numpy as np
 from scipy.special import expit
@@ -76,7 +77,7 @@ def _yolo_head(prediction, num_classes, anchors, input_dims):
     return np.concatenate([box_xy, box_wh, objectness, class_scores], axis=2)
 
 
-def predict(model, image_arr, anchors, num_classes, model_image_size, confidence=0.5, iou_threshold=0.4):
+def predict(model, image_arr, anchors, num_classes, model_image_size, confidence=0.3, iou_threshold=0.4):
     image, image_data = preprocess_image(image_arr, model_image_size)
 
     predictions = yolo_head(model.predict([image_data]), anchors, num_classes, input_dims=model_image_size)
@@ -144,10 +145,25 @@ def get_colors(class_names):
     np.random.seed(None)  # Reset seed to default.
     return colors
 
+def letterbox_image(image_arr, size):
+    '''resize image with unchanged aspect ratio using padding'''
+    image = Image.fromarray(image_arr)
+    iw, ih = image.size
+    w, h = size
+    scale = min(w/iw, h/ih)
+    nw = int(iw*scale)
+    nh = int(ih*scale)
+
+    image = image.resize((nw,nh), Image.BICUBIC)
+    new_image = Image.new('RGB', size, (128,128,128))
+    new_image.paste(image, ((w-nw)//2, (h-nh)//2))
+    new_image = np.asarray(new_image)
+    return new_image
 
 def preprocess_image(img_arr, model_image_size):
     image = img_arr.astype('uint8')
-    resized_image = cv2.resize(image, tuple(reversed(model_image_size)), cv2.INTER_AREA)
+    #resized_image = cv2.resize(image, tuple(reversed(model_image_size)), cv2.INTER_AREA)
+    resized_image = letterbox_image(image, tuple(reversed(model_image_size)))
     image_data = resized_image.astype('float32')
     image_data /= 255.
     image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
@@ -203,17 +219,33 @@ def adjust_boxes(boxes, image, model_image_size):
     height, width = image.shape[:2]
     adjusted_boxes = []
 
-    ratio_x = width / model_image_size[1]
-    ratio_y = height / model_image_size[0]
+    model_image_size = np.array(model_image_size, dtype='float32')
+    image_shape = np.array([width, height], dtype='float32')
+
+    new_shape = np.round(image_shape * np.min(model_image_size/image_shape))
+    offset = (model_image_size-new_shape)/2.
+    # here scale should be a unique value
+    # for both width and height
+    scale = np.min(image_shape/new_shape)
+
+    #ratio_x = width / model_image_size[1]
+    #ratio_y = height / model_image_size[0]
 
     for box in boxes:
         x, y, w, h = box
 
+        w *= scale
+        h *= scale
+        xmin = (x - offset[0]) * scale
+        ymin = (y - offset[1]) * scale
+        xmax = (x - offset[0]) * scale + w
+        ymax = (y - offset[1]) * scale + h
+
         # Rescale box coordinates
-        xmin = int(x * ratio_x)
-        ymin = int(y * ratio_y)
-        xmax = int((x + w) * ratio_x)
-        ymax = int((y + h) * ratio_y)
+        #xmin = int(x * ratio_x)
+        #ymin = int(y * ratio_y)
+        #xmax = int((x + w) * ratio_x)
+        #ymax = int((y + h) * ratio_y)
 
         ymin = max(0, np.floor(ymin + 0.5).astype('int32'))
         xmin = max(0, np.floor(xmin + 0.5).astype('int32'))
