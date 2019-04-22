@@ -321,20 +321,21 @@ def compute_mAP(model, annotation_file, anchors, class_names, model_image_size):
     pred_classes_records = get_prediction_class_records(model, annotation_records, anchors, class_names, model_image_size)
 
     APs = []
+    class_names = sorted(gt_classes_records.keys())
     #get AP value for each of the ground truth classes
-    for _, class_name in enumerate(sorted(gt_classes_records.keys())):
+    for _, class_name in enumerate(class_names):
         gt_records = gt_classes_records[class_name]
-        #if we didn't detect any obj for a class, bypass it
+        #if we didn't detect any obj for a class, record 0
         if class_name not in pred_classes_records:
+            APs.append(0.)
             continue
         pred_records = pred_classes_records[class_name]
         ap = calc_AP(gt_records, pred_records)
         APs.append(ap)
 
     #get mAP from APs
-    print((sorted(gt_classes_records.keys())))
-    print(APs)
-    print(np.mean(APs)*100)
+    for class_name, AP in zip(class_names, APs):
+        print('AP for {}: {}'.format(class_name, AP))
 
     #return mAP percentage value
     return np.mean(APs)*100
