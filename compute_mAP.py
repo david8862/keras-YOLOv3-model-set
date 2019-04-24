@@ -321,7 +321,6 @@ def compute_mAP(model, annotation_file, anchors, class_names, model_image_size):
     pred_classes_records = get_prediction_class_records(model, annotation_records, anchors, class_names, model_image_size)
 
     APs = []
-    class_names = sorted(gt_classes_records.keys())
     #get AP value for each of the ground truth classes
     for _, class_name in enumerate(class_names):
         gt_records = gt_classes_records[class_name]
