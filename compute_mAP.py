@@ -33,7 +33,11 @@ def annotation_parse(annotation_file, class_names):
 
     ground truth class dict would be like:
     classes_records = {
-        'car': {'00001.jpg':'100,120,200,235', '00002.jpg':'85,63,156,128', ...},
+        'car': [
+                ['00001.jpg','100,120,200,235'],
+                ['00002.jpg','85,63,156,128'],
+                ...
+               ],
         ...
     }
     '''
@@ -70,9 +74,14 @@ def get_prediction_class_records(model, annotation_records, anchors, class_names
     '''
     Do the predict with YOLO model on annotation images to get predict class dict
 
-    predict class dict would be similar with ground truth class dict:
+    predict class dict would contain image_name, coordinary and score, and
+    sorted by score:
     pred_classes_records = {
-        'car': {'00001.jpg':'94,115,203,232', '00002.jpg':'82,64,154,128', ...},
+        'car': [
+                ['00001.jpg','94,115,203,232',0.98],
+                ['00002.jpg','82,64,154,128',0.93],
+                ...
+               ],
         ...
     }
     '''
@@ -103,9 +112,13 @@ def get_prediction_class_records(model, annotation_records, anchors, class_names
 
             #append or add predict class item
             if pred_class_name in pred_classes_records:
-                pred_classes_records[pred_class_name].append([image_name, coordinate])
+                pred_classes_records[pred_class_name].append([image_name, coordinate, score])
             else:
-                pred_classes_records[pred_class_name] = list([[image_name, coordinate]])
+                pred_classes_records[pred_class_name] = list([[image_name, coordinate, score]])
+
+    # sort pred_classes_records for each class according to score
+    for pred_class_list in pred_classes_records.values():
+        pred_class_list.sort(key=lambda ele: ele[2], reverse=True)
 
     return pred_classes_records
 
@@ -136,7 +149,7 @@ def match_gt_box(pred_record, gt_records, iou_threshold=0.5):
     Search gt_records list and try to find a matching box for the predict box
 
     Param
-         pred_record: with format ['image_file', 'xmin,ymin,xmax,ymax']
+         pred_record: with format ['image_file', 'xmin,ymin,xmax,ymax', score]
          gt_records: record list with format
                      [
                       ['image_file', 'xmin,ymin,xmax,ymax', 'usage'],
@@ -276,8 +289,12 @@ def calc_AP(gt_records, pred_records):
                       ['image_file', 'xmin,ymin,xmax,ymax'],
                       ...
                      ]
-         pred_record: predict records for one class, same format
-
+         pred_record: predict records for one class, with format:
+                     [
+                      ['image_file', 'xmin,ymin,xmax,ymax', score],
+                      ['image_file', 'xmin,ymin,xmax,ymax', score],
+                      ...
+                     ]
     Return
          AP value for the class
     '''
