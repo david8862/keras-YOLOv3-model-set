@@ -77,7 +77,7 @@ def _yolo_head(prediction, num_classes, anchors, input_dims):
     return np.concatenate([box_xy, box_wh, objectness, class_scores], axis=2)
 
 
-def predict(model, image_arr, anchors, num_classes, model_image_size, confidence=0.3, iou_threshold=0.4):
+def predict(model, image_arr, anchors, num_classes, model_image_size, confidence=0.1, iou_threshold=0.4):
     image, image_data = preprocess_image(image_arr, model_image_size)
 
     predictions = yolo_head(model.predict([image_data]), anchors, num_classes, input_dims=model_image_size)
