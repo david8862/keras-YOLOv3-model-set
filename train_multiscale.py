@@ -8,26 +8,37 @@ from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
-import os, random
+import os, random, time
 from yolo3.model import preprocess_true_boxes, yolo_body, tiny_yolo_body, custom_yolo_body, custom_tiny_yolo_body, yolo_loss
 from yolo3.utils import get_random_data
+from  multiprocessing import Process, Queue
 
-import tensorflow as tf
-config = tf.ConfigProto()
-config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
-config.gpu_options.per_process_gpu_memory_fraction = 0.9  #GPU memory threshold 0.3
-session = tf.Session(config=config)
 
-# set session
-K.set_session(session)
+#import tensorflow as tf
+#config = tf.ConfigProto()
+#config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
+#config.gpu_options.per_process_gpu_memory_fraction = 0.9  #GPU memory threshold 0.3
+#session = tf.Session(config=config)
+
+## set session
+#K.set_session(session)
 
 
 def train_on_scale(input_shape, lines, val_split, anchors, class_names,
-        callbacks, epochs, initial_epoch,
+        callbacks, log_dir, epochs, initial_epoch,
         batch_size=8,
         weights_path=None,
         load_pretrained=True,
         freeze=False):
+
+    import tensorflow as tf
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
+    config.gpu_options.per_process_gpu_memory_fraction = 0.9  #GPU memory threshold 0.3
+    session = tf.Session(config=config)
+
+    # set session
+    K.set_session(session)
 
     num_classes = len(class_names)
     num_val = int(len(lines)*val_split)
@@ -60,7 +71,9 @@ def train_on_scale(input_shape, lines, val_split, anchors, class_names,
         initial_epoch=initial_epoch,
         callbacks=callbacks)
 
-    return model
+    weights_path = log_dir + 'trained_epoch{}_shape{}.h5'.format(epochs, input_shape[0])
+    model.save(weights_path)
+    #return model
 
 
 
@@ -90,17 +103,24 @@ def _main():
         save_weights_only=False,
         save_best_only=True,
         period=1)
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=1)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=30, verbose=1)
 
     callbacks = [logging, checkpoint, reduce_lr, early_stopping]
 
-    # get initial base weights
+    # get initial base weights and input_shape/batch_size list
+    # input_shape/batch_size list will be used in multi scale training
     is_tiny_version = len(anchors)==6 # default setting
     if is_tiny_version:
         weights_path = 'model_data/tiny_yolo_weights.h5'
+        input_shape_list = [(320,320), (416,416), (512,512), (608,608)]
+        batch_size_list = [2, 4, 8, 16]
     else:
         weights_path = 'model_data/darknet53_weights.h5'
+        # due to GPU memory limit, we could only use small
+        # input_shape and batch_size for full YOLOv3 model
+        input_shape_list = [(320,320), (416,416), (480,480)]
+        batch_size_list = [2, 4, 8]
 
     # Train 40 epochs with frozen layers first, to get a stable loss.
     input_shape = (416,416) # multiple of 32, hw
@@ -108,15 +128,13 @@ def _main():
     initial_epoch = 0
     epochs = 40
 
-    model = train_on_scale(input_shape, lines, val_split, anchors, class_names, callbacks, epochs=epochs, initial_epoch=initial_epoch, batch_size=batch_size, weights_path=weights_path, load_pretrained=False,freeze=True)
+    p = Process(target=train_on_scale, args=(input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, False, True))
+    p.start()
+    p.join()
     weights_path = log_dir + 'trained_epoch{}_shape{}.h5'.format(epochs, input_shape[0])
-    model.save(weights_path)
 
-
-    # input shape and batch size list to
-    # choose from in multi scale training
-    input_shape_list = [(320,320), (416,416), (608,608)]
-    batch_size_list = [16, 8, 2]
+    # wait 3s for GPU free
+    time.sleep(3)
 
     # Do multi-scale training on different input shape
     # change every 20 epochs
@@ -126,10 +144,14 @@ def _main():
         initial_epoch = epochs
         epochs = epoch_step
 
-        model = train_on_scale(input_shape, lines, val_split, anchors, class_names, callbacks, epochs=epochs, initial_epoch=initial_epoch, batch_size=batch_size, weights_path=weights_path, load_pretrained=True,freeze=False)
+        p = Process(target=train_on_scale, args=(input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, True, False))
+        p.start()
+        p.join()
         # save the trained model and load in next round for different input shape
         weights_path = log_dir + 'trained_epoch{}_shape{}.h5'.format(epochs, input_shape[0])
-        model.save(weights_path)
+
+        # wait 3s for GPU free
+        time.sleep(3)
 
 
 
