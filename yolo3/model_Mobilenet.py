@@ -596,5 +596,9 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, print_loss=False):
         class_loss = K.sum(class_loss) / mf
         loss += xy_loss + wh_loss + confidence_loss + class_loss
         if print_loss:
-            loss = tf.Print(loss, [loss, xy_loss, wh_loss, confidence_loss, class_loss, K.sum(ignore_mask)], message='loss: ')
+            loss = tf.Print(loss, ['loss:', loss,
+                                   'xy_loss:', xy_loss,
+                                   'wh_loss:', wh_loss,
+                                   'confidence_loss:', confidence_loss,
+                                   'class_loss:', class_loss], message='loss: ')
     return loss
