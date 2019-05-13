@@ -7,7 +7,7 @@ from tensorflow.lite.python import interpreter as interpreter_wrapper
 from predict import preprocess_image, get_classes, get_anchors, get_colors, yolo_head, handle_predictions, adjust_boxes, draw_boxes
 
 
-def validate_yolo_model_tflite(model_path, image_file, anchors, class_names):
+def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, loop_count):
     interpreter = interpreter_wrapper.Interpreter(model_path=model_path)
     interpreter.allocate_tensors()
 
@@ -30,8 +30,9 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names):
     image, image_data = preprocess_image(img, (height, width))
 
     start = time.time()
-    interpreter.set_tensor(input_details[0]['index'], image_data)
-    interpreter.invoke()
+    for i in range(loop_count):
+        interpreter.set_tensor(input_details[0]['index'], image_data)
+        interpreter.invoke()
     end = time.time()
 
     out_list = []
@@ -50,7 +51,7 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names):
 
     colors = get_colors(class_names)
     image = draw_boxes(image, boxes, classes, scores, class_names, colors)
-    print("Inference time: {:.2f}s".format((end - start)))
+    print("Average Inference time: {:.8f}s".format((end - start)/loop_count))
 
     Image.fromarray(image).show()
 
@@ -61,6 +62,7 @@ def main():
     parser.add_argument('--image_file', help='image file to predict', type=str)
     parser.add_argument('--anchors_path',help='path to anchor definitions', type=str)
     parser.add_argument('--classes_path', help='path to class definitions, default model_data/voc_classes.txt', type=str, default='model_data/voc_classes.txt')
+    parser.add_argument('--loop_count', help='loop inference for certain times', type=int, default=1)
 
     args = parser.parse_args()
     if not args.model_path:
@@ -72,7 +74,7 @@ def main():
     anchors = get_anchors(args.anchors_path)
     class_names = get_classes(args.classes_path)
 
-    validate_yolo_model_tflite(args.model_path, args.image_file, anchors, class_names)
+    validate_yolo_model_tflite(args.model_path, args.image_file, anchors, class_names, args.loop_count)
 
 
 if __name__ == '__main__':
