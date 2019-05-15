@@ -5,7 +5,7 @@ from functools import wraps
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
+from tensorflow.keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D, DepthwiseConv2D
 from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.models import Model
@@ -13,6 +13,17 @@ from tensorflow.keras.applications.mobilenet import MobileNet
 from tensorflow.keras.regularizers import l2
 
 from yolo3.utils import compose
+
+
+def Depthwise_Separable_Conv2D(filters, kernel_size=(3, 3), block_id_str='1'):
+    """Depthwise Separable Convolution2D."""
+    return compose(
+        DepthwiseConv2D(kernel_size, padding='same', name='conv_dw_' + block_id_str),
+        BatchNormalization(name='conv_dw_%s_bn' % block_id_str),
+        LeakyReLU(alpha=0.1, name='conv_dw_%s_leaky_relu' % block_id_str),
+        Conv2D(filters, (1,1), padding='same', use_bias=False, strides=(1, 1), name='conv_pw_%s' % block_id_str),
+        BatchNormalization(name='conv_pw_%s_bn' % block_id_str),
+        LeakyReLU(alpha=0.1, name='conv_pw_%s_leaky_relu' % block_id_str))
 
 
 @wraps(Conv2D)
@@ -24,12 +35,6 @@ def DarknetConv2D(*args, **kwargs):
     return Conv2D(*args, **darknet_conv_kwargs)
 
 
-def leakyRelu(x, leak=0.2, name="LeakyRelu"):
-    with tf.variable_scope(name):
-        f1 = 0.5 * (1 + leak)
-        f2 = 0.5 * (1 - leak)
-        return f1 * x + f2 * tf.abs(x)
-
 def DarknetConv2D_BN_Leaky(*args, **kwargs):
     """Darknet Convolution2D followed by BatchNormalization and LeakyReLU."""
     no_bias_kwargs = {'use_bias': False}
@@ -39,40 +44,6 @@ def DarknetConv2D_BN_Leaky(*args, **kwargs):
         BatchNormalization(),
         LeakyReLU(alpha=0.1))
 
-def resblock_body(x, num_filters, num_blocks):
-    '''A series of resblocks starting with a downsampling Convolution2D'''
-    # Darknet uses left and top padding instead of 'same' mode
-    x = ZeroPadding2D(((1,0),(1,0)))(x)
-    x = DarknetConv2D_BN_Leaky(num_filters, (3,3), strides=(2,2))(x)
-    for i in range(num_blocks):
-        y = compose(
-                DarknetConv2D_BN_Leaky(num_filters//2, (1,1)),
-                DarknetConv2D_BN_Leaky(num_filters, (3,3)))(x)
-        x = Add()([x,y])
-    return x
-
-def darknet_body(x):
-    '''Darknent body having 52 Convolution2D layers'''
-    # 416 x 416 x 3
-    x = DarknetConv2D_BN_Leaky(32, (3,3))(x)
-
-    # 208 x 208 x 32
-    x = resblock_body(x, 64, 1)
-
-    # 208 x 208 x 64
-    x = resblock_body(x, 128, 2)
-
-    # 104 x 104 x 128
-    x = resblock_body(x, 256, 8)
-
-    # 52 x 52 x 256
-    x = resblock_body(x, 512, 8)
-
-    # 26 x 26 x 512
-    x = resblock_body(x, 1024, 4)
-
-    # 13 x 13 x 1024
-    return x
 
 def make_last_layers(x, num_filters, out_filters):
     '''6 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer'''
@@ -86,6 +57,20 @@ def make_last_layers(x, num_filters, out_filters):
             DarknetConv2D_BN_Leaky(num_filters*2, (3,3)),
             DarknetConv2D(out_filters, (1,1)))(x)
     return x, y
+
+def make_depthwise_separable_last_layers(x, num_filters, out_filters, block_id_str='1'):
+    '''6 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer'''
+    x = compose(
+            DarknetConv2D_BN_Leaky(num_filters, (1,1)),
+            Depthwise_Separable_Conv2D(filters=num_filters*2, kernel_size=(3, 3), block_id_str=block_id_str+'_1'),
+            DarknetConv2D_BN_Leaky(num_filters, (1,1)),
+            Depthwise_Separable_Conv2D(filters=num_filters*2, kernel_size=(3, 3), block_id_str=block_id_str+'_2'),
+            DarknetConv2D_BN_Leaky(num_filters, (1,1)))(x)
+    y = compose(
+            Depthwise_Separable_Conv2D(filters=num_filters*2, kernel_size=(3, 3), block_id_str=block_id_str+'_3'),
+            DarknetConv2D(out_filters, (1,1)))(x)
+    return x, y
+
 
 
 def yolo_mobilenet_body(inputs, num_anchors, num_classes):
@@ -237,41 +222,30 @@ def custom_yolo_mobilenet_body(inputs, num_anchors, num_classes):
     # conv_pw_11_relu :26 x 26 x 512
     # conv_pw_5_relu : 52 x 52 x 256
 
-    # f1 :13 x 13 x 1024
     f1 = mobilenet.get_layer('conv_pw_13_relu').output
-    x = DarknetConv2D_BN_Leaky(512, (1,1))(f1)
-    y1 = compose(
-            DarknetConv2D_BN_Leaky(1024, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x)
+    # f1 :13 x 13 x 1024
+    x, y1 = make_depthwise_separable_last_layers(f1, 512, num_anchors * (num_classes + 5), block_id_str='14')
 
     x = compose(
             DarknetConv2D_BN_Leaky(256, (1,1)),
             UpSampling2D(2))(x)
 
-    # f2: 26 x 26 x 512
     f2 = mobilenet.get_layer('conv_pw_11_relu').output
+    # f2: 26 x 26 x 512
     x = Concatenate()([x,f2])
 
-    x = DarknetConv2D_BN_Leaky(256, (1,1))(x)
-    y2 = compose(
-            DarknetConv2D_BN_Leaky(512, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x)
+    x, y2 = make_depthwise_separable_last_layers(x, 256, num_anchors * (num_classes + 5), block_id_str='15')
 
     x = compose(
             DarknetConv2D_BN_Leaky(128, (1,1)),
             UpSampling2D(2))(x)
 
-    # f3: 52 x 52 x 256
     f3 = mobilenet.get_layer('conv_pw_5_relu').output
+    # f3 : 52 x 52 x 256
     x = Concatenate()([x, f3])
+    x, y3 = make_depthwise_separable_last_layers(x, 128, num_anchors * (num_classes + 5), block_id_str='16')
 
-    x = DarknetConv2D_BN_Leaky(128, (1,1))(x)
-
-    y3 = compose(
-            DarknetConv2D_BN_Leaky(256, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x)
-
-    return Model(inputs, [y1,y2,y3])
+    return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
 def tiny_yolo_mobilenet_body(inputs, num_anchors, num_classes):
@@ -289,7 +263,8 @@ def tiny_yolo_mobilenet_body(inputs, num_anchors, num_classes):
     x2 = DarknetConv2D_BN_Leaky(512, (1,1))(x2)
 
     y1 = compose(
-            DarknetConv2D_BN_Leaky(1024, (3,3)),
+            #DarknetConv2D_BN_Leaky(1024, (3,3)),
+            Depthwise_Separable_Conv2D(filters=1024, kernel_size=(3, 3), block_id_str='14'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
     x2 = compose(
@@ -297,7 +272,8 @@ def tiny_yolo_mobilenet_body(inputs, num_anchors, num_classes):
             UpSampling2D(2))(x2)
     y2 = compose(
             Concatenate(),
-            DarknetConv2D_BN_Leaky(512, (3,3)),
+            #DarknetConv2D_BN_Leaky(512, (3,3)),
+            Depthwise_Separable_Conv2D(filters=512, kernel_size=(3, 3), block_id_str='15'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
 
     return Model(inputs, [y1,y2])
