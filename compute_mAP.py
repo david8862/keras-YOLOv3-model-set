@@ -70,7 +70,7 @@ def annotation_parse(annotation_file, class_names):
     return annotation_records, classes_records
 
 
-def get_prediction_class_records(model, annotation_records, anchors, class_names, model_image_size):
+def get_prediction_class_records(model, annotation_records, anchors, class_names, model_image_size, save_result):
     '''
     Do the predict with YOLO model on annotation images to get predict class dict
 
@@ -92,14 +92,18 @@ def get_prediction_class_records(model, annotation_records, anchors, class_names
         pred_boxes, pred_classes, pred_scores = predict(model, image_data, anchors, len(class_names), model_image_size)
         print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
 
-        # Try to show out the result for every image
-        # enable it when debugging
+        if save_result:
+            from predict import get_colors, draw_boxes
 
-        #from predict import get_colors, draw_boxes
-        #colors = get_colors(class_names)
-        #image = draw_boxes(image_data, pred_boxes, pred_classes, pred_scores, class_names, colors)
-        #Image.fromarray(image).show()
-        #a = input('Next: ')
+            def touchdir(path):
+                if not os.path.exists(path):
+                    os.makedirs(path)
+
+            result_dir='detection'
+            touchdir(result_dir)
+            colors = get_colors(class_names)
+            image = draw_boxes(image_data, pred_boxes, pred_classes, pred_scores, class_names, colors)
+            Image.fromarray(image).save(os.path.join(result_dir, image_name.split(os.path.sep)[-1]))
 
         # Nothing detected
         if pred_boxes is None or len(pred_boxes) == 0:
@@ -330,12 +334,12 @@ def calc_AP(gt_records, pred_records):
     return ap
 
 
-def compute_mAP(model, annotation_file, anchors, class_names, model_image_size):
+def compute_mAP(model, annotation_file, anchors, class_names, model_image_size, save_result):
     '''
     Compute mAP for YOLO model on annotation dataset
     '''
     annotation_records, gt_classes_records = annotation_parse(annotation_file, class_names)
-    pred_classes_records = get_prediction_class_records(model, annotation_records, anchors, class_names, model_image_size)
+    pred_classes_records = get_prediction_class_records(model, annotation_records, anchors, class_names, model_image_size, save_result)
 
     APs = []
     #get AP value for each of the ground truth classes
@@ -384,6 +388,11 @@ def main():
         '--annotation_file', type=str,
         help='annotation txt file to varify')
 
+    parser.add_argument(
+        '--save_result', default=False, action="store_true",
+        help='Save the detection result image in detection/ dir'
+    )
+
     args = parser.parse_args()
 
     if not args.model_path:
@@ -398,7 +407,7 @@ def main():
     height, width = args.model_image_size.split('x')
     model_image_size = (int(height), int(width))
 
-    mAP = compute_mAP(model, args.annotation_file, anchors, class_names, model_image_size)
+    mAP = compute_mAP(model, args.annotation_file, anchors, class_names, model_image_size, args.save_result)
     print('mAP result: {}'.format(mAP))
 
 

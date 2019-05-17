@@ -48,6 +48,7 @@ class YOLO(object):
         self.class_names = self._get_class()
         self.anchors = self._get_anchors()
         self.sess = K.get_session()
+        K.set_learning_phase(0)
         self.boxes, self.scores, self.classes = self.generate()
 
     def _get_class(self):
