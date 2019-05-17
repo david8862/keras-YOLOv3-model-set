@@ -275,17 +275,25 @@ def draw_label(image, text, color, coords):
 
     return image
 
-def draw_boxes(image, boxes, classes, scores, class_names, colors):
+def draw_boxes(image, boxes, classes, scores, class_names, colors, show_score=True):
     if classes is None or len(classes) == 0:
         return image
 
     for box, cls, score in zip(boxes, classes, scores):
         xmin, ymin, xmax, ymax = box
 
-        predicted_class = class_names[cls]
-        label = '{} {:.2f}'.format(predicted_class, score)
+        class_name = class_names[cls]
+        if show_score:
+            label = '{} {:.2f}'.format(class_name, score)
+        else:
+            label = '{}'.format(class_name)
         print(label, (xmin, ymin), (xmax, ymax))
-        cv2.rectangle(image, (xmin, ymin), (xmax, ymax), colors[cls], 1, cv2.LINE_AA)
-        image = draw_label(image, label, colors[cls], (xmin, ymin))
+        # if no color info, use black(0,0,0)
+        if colors == None:
+            color = (0,0,0)
+        else:
+            color = colors[cls]
+        cv2.rectangle(image, (xmin, ymin), (xmax, ymax), color, 1, cv2.LINE_AA)
+        image = draw_label(image, label, color, (xmin, ymin))
 
     return image

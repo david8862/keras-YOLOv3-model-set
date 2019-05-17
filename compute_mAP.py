@@ -70,6 +70,24 @@ def annotation_parse(annotation_file, class_names):
     return annotation_records, classes_records
 
 
+def transform_gt_record(gt_records, class_names):
+    if gt_records is None or len(gt_records) == 0:
+        return [], [], []
+
+    gt_boxes = []
+    gt_classes = []
+    gt_scores = []
+    for (coordinate, class_name) in gt_records.items():
+        gt_box = [int(x) for x in coordinate.split(',')]
+        gt_class = class_names.index(class_name)
+
+        gt_boxes.append(gt_box)
+        gt_classes.append(gt_class)
+        gt_scores.append(1.0)
+
+    return np.array(gt_boxes), np.array(gt_classes), np.array(gt_scores)
+
+
 def get_prediction_class_records(model, annotation_records, anchors, class_names, model_image_size, save_result):
     '''
     Do the predict with YOLO model on annotation images to get predict class dict
@@ -86,7 +104,7 @@ def get_prediction_class_records(model, annotation_records, anchors, class_names
     }
     '''
     pred_classes_records = {}
-    for (image_name, box_records) in annotation_records.items():
+    for (image_name, gt_records) in annotation_records.items():
         image = Image.open(image_name)
         image_data = np.array(image, dtype='uint8')
         pred_boxes, pred_classes, pred_scores = predict(model, image_data, anchors, len(class_names), model_image_size)
@@ -99,11 +117,14 @@ def get_prediction_class_records(model, annotation_records, anchors, class_names
                 if not os.path.exists(path):
                     os.makedirs(path)
 
+            gt_boxes, gt_classes, gt_scores = transform_gt_record(gt_records, class_names)
+
             result_dir='detection'
             touchdir(result_dir)
             colors = get_colors(class_names)
-            image = draw_boxes(image_data, pred_boxes, pred_classes, pred_scores, class_names, colors)
-            Image.fromarray(image).save(os.path.join(result_dir, image_name.split(os.path.sep)[-1]))
+            image_data = draw_boxes(image_data, gt_boxes, gt_classes, gt_scores, class_names, colors=None, show_score=False)
+            image_data = draw_boxes(image_data, pred_boxes, pred_classes, pred_scores, class_names, colors)
+            Image.fromarray(image_data).save(os.path.join(result_dir, image_name.split(os.path.sep)[-1]))
 
         # Nothing detected
         if pred_boxes is None or len(pred_boxes) == 0:
