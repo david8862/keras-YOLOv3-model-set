@@ -71,6 +71,16 @@ def annotation_parse(annotation_file, class_names):
 
 
 def transform_gt_record(gt_records, class_names):
+    '''
+    Transform the Ground Truth records of a image to prediction format, in
+    order to show & compare in result pic.
+
+    Ground Truth records is a dict with format:
+        {'100,120,200,235':'dog', '85,63,156,128':'car', ...}
+
+    Prediction format:
+        (boxes, classes, scores)
+    '''
     if gt_records is None or len(gt_records) == 0:
         return [], [], []
 
