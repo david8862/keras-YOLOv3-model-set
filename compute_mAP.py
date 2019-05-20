@@ -106,7 +106,38 @@ def transform_gt_record(gt_records, class_names):
     return np.array(gt_boxes), np.array(gt_classes), np.array(gt_scores)
 
 
-def get_prediction_class_records(model, annotation_records, anchors, class_names, model_image_size, save_result):
+
+def tflite_predict(interpreter, image_data, anchors, num_classes):
+    from predict import preprocess_image, yolo_head, handle_predictions, adjust_boxes
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+
+    # check the type of the input tensor
+    #if input_details[0]['dtype'] == np.float32:
+        #floating_model = True
+
+    height = input_details[0]['shape'][1]
+    width = input_details[0]['shape'][2]
+
+    image, image_data = preprocess_image(image_data, (height, width))
+
+    interpreter.set_tensor(input_details[0]['index'], image_data)
+    interpreter.invoke()
+
+    out_list = []
+    for output_detail in output_details:
+        output_data = interpreter.get_tensor(output_detail['index'])
+        out_list.append(output_data)
+
+    predictions = yolo_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
+
+    boxes, classes, scores = handle_predictions(predictions, confidence=0.1, iou_threshold=0.4)
+    boxes = adjust_boxes(boxes, image, (height, width))
+
+    return boxes, classes, scores
+
+
+def get_prediction_class_records(model_path, annotation_records, anchors, class_names, model_image_size, save_result):
     '''
     Do the predict with YOLO model on annotation images to get predict class dict
 
@@ -121,11 +152,26 @@ def get_prediction_class_records(model, annotation_records, anchors, class_names
         ...
     }
     '''
+
+    # support of tflite model
+    if model_path.endswith('.tflite'):
+        from tensorflow.lite.python import interpreter as interpreter_wrapper
+        interpreter = interpreter_wrapper.Interpreter(model_path=model_path)
+        interpreter.allocate_tensors()
+    # normal keras h5 model
+    else:
+        model = load_model(model_path, compile=False)
+
     pred_classes_records = {}
     for (image_name, gt_records) in annotation_records.items():
         image = Image.open(image_name)
         image_data = np.array(image, dtype='uint8')
-        pred_boxes, pred_classes, pred_scores = predict(model, image_data, anchors, len(class_names), model_image_size)
+
+        if model_path.endswith('.tflite'):
+            pred_boxes, pred_classes, pred_scores = tflite_predict(interpreter, image_data, anchors, len(class_names))
+        else:
+            pred_boxes, pred_classes, pred_scores = predict(model, image_data, anchors, len(class_names), model_image_size)
+
         print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
 
         if save_result:
@@ -514,12 +560,12 @@ def calc_AP(gt_records, pred_records, class_name):
     return ap, true_positive_count
 
 
-def compute_mAP(model, annotation_file, anchors, class_names, model_image_size, save_result):
+def compute_mAP(model_path, annotation_file, anchors, class_names, model_image_size, save_result):
     '''
     Compute mAP for YOLO model on annotation dataset
     '''
     annotation_records, gt_classes_records = annotation_parse(annotation_file, class_names)
-    pred_classes_records = get_prediction_class_records(model, annotation_records, anchors, class_names, model_image_size, save_result)
+    pred_classes_records = get_prediction_class_records(model_path, annotation_records, anchors, class_names, model_image_size, save_result)
 
     APs = {}
     count_true_positives = {}
@@ -627,13 +673,12 @@ def main():
         raise ValueError('annotation file is not specified')
 
     # param parse
-    model = load_model(args.model_path, compile=False)
     anchors = get_anchors(args.anchors_path)
     class_names = get_classes(args.classes_path)
     height, width = args.model_image_size.split('x')
     model_image_size = (int(height), int(width))
 
-    mAP = compute_mAP(model, args.annotation_file, anchors, class_names, model_image_size, args.save_result)
+    mAP = compute_mAP(args.model_path, args.annotation_file, anchors, class_names, model_image_size, args.save_result)
     print('mAP result: {}'.format(mAP))
 
 
