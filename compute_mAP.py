@@ -8,6 +8,8 @@ import random
 import os, argparse
 from predict import predict, get_classes, get_anchors
 from PIL import Image
+import operator
+import matplotlib.pyplot as plt
 
 import tensorflow as tf
 from tensorflow.keras.models import load_model
@@ -20,6 +22,12 @@ session = tf.Session(config=config)
 
 # set session
 KTF.set_session(session)
+
+
+def touchdir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
 
 def annotation_parse(annotation_file, class_names):
     '''
@@ -123,13 +131,9 @@ def get_prediction_class_records(model, annotation_records, anchors, class_names
         if save_result:
             from predict import get_colors, draw_boxes
 
-            def touchdir(path):
-                if not os.path.exists(path):
-                    os.makedirs(path)
-
             gt_boxes, gt_classes, gt_scores = transform_gt_record(gt_records, class_names)
 
-            result_dir='detection'
+            result_dir=os.path.join('result','detection')
             touchdir(result_dir)
             colors = get_colors(class_names)
             image_data = draw_boxes(image_data, gt_boxes, gt_classes, gt_scores, class_names, colors=None, show_score=False)
@@ -220,7 +224,6 @@ def match_gt_box(pred_record, gt_records, iou_threshold=0.5):
 
     return max_index
 
-'''
 def voc_ap(rec, prec):
     """
     --- Official matlab code VOC2012---
@@ -264,9 +267,9 @@ def voc_ap(rec, prec):
     ap = 0.0
     for i in i_list:
         ap += ((mrec[i] - mrec[i - 1]) * mpre[i])
-    return ap#, mrec, mpre
-'''
+    return ap, mrec, mpre
 
+'''
 def voc_ap(rec, prec, use_07_metric=False):
     if use_07_metric:
         # 11 point metric
@@ -284,7 +287,8 @@ def voc_ap(rec, prec, use_07_metric=False):
             mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
         i = np.where(mrec[1:] != mrec[:-1])[0]
         ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
-    return ap
+    return ap, mrec, mpre
+'''
 
 
 def get_rec_prec(true_positive, false_positive, gt_records):
@@ -313,7 +317,149 @@ def get_rec_prec(true_positive, false_positive, gt_records):
     return rec, prec
 
 
-def calc_AP(gt_records, pred_records):
+def draw_rec_prec(rec, prec, mrec, mprec, class_name, ap):
+    """
+     Draw plot
+    """
+    plt.plot(rec, prec, '-o')
+    # add a new penultimate point to the list (mrec[-2], 0.0)
+    # since the last line segment (and respective area) do not affect the AP value
+    area_under_curve_x = mrec[:-1] + [mrec[-2]] + [mrec[-1]]
+    area_under_curve_y = mprec[:-1] + [0.0] + [mprec[-1]]
+    plt.fill_between(area_under_curve_x, 0, area_under_curve_y, alpha=0.2, edgecolor='r')
+    # set window title
+    fig = plt.gcf() # gcf - get current figure
+    fig.canvas.set_window_title('AP ' + class_name)
+    # set plot title
+    plt.title('class: ' + class_name + ' AP = {}%'.format(ap*100))
+    #plt.suptitle('This is a somewhat long figure title', fontsize=16)
+    # set axis titles
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    # optional - set axes
+    axes = plt.gca() # gca - get current axes
+    axes.set_xlim([0.0,1.0])
+    axes.set_ylim([0.0,1.05]) # .05 to give some extra space
+    # Alternative option -> wait for button to be pressed
+    #while not plt.waitforbuttonpress(): pass # wait for key display
+    # Alternative option -> normal display
+    #plt.show()
+    # save the plot
+    rec_prec_plot_path = os.path.join('result','classes')
+    touchdir(rec_prec_plot_path)
+    fig.savefig(os.path.join(rec_prec_plot_path, class_name + ".jpg"))
+    plt.cla() # clear axes for next plot
+
+
+def adjust_axes(r, t, fig, axes):
+    """
+     Plot - adjust axes
+    """
+    # get text width for re-scaling
+    bb = t.get_window_extent(renderer=r)
+    text_width_inches = bb.width / fig.dpi
+    # get axis width in inches
+    current_fig_width = fig.get_figwidth()
+    new_fig_width = current_fig_width + text_width_inches
+    propotion = new_fig_width / current_fig_width
+    # get axis limit
+    x_lim = axes.get_xlim()
+    axes.set_xlim([x_lim[0], x_lim[1]*propotion])
+
+
+def draw_plot_func(dictionary, n_classes, window_title, plot_title, x_label, output_path, to_show, plot_color, true_p_bar):
+    """
+     Draw plot using Matplotlib
+    """
+    # sort the dictionary by decreasing value, into a list of tuples
+    sorted_dic_by_value = sorted(dictionary.items(), key=operator.itemgetter(1))
+    # unpacking the list of tuples into two lists
+    sorted_keys, sorted_values = zip(*sorted_dic_by_value)
+    #
+    if true_p_bar != "":
+        """
+         Special case to draw in (green=true predictions) & (red=false predictions)
+        """
+        fp_sorted = []
+        tp_sorted = []
+        for key in sorted_keys:
+            fp_sorted.append(dictionary[key] - true_p_bar[key])
+            tp_sorted.append(true_p_bar[key])
+        plt.barh(range(n_classes), fp_sorted, align='center', color='crimson', label='False Predictions')
+        plt.barh(range(n_classes), tp_sorted, align='center', color='forestgreen', label='True Predictions', left=fp_sorted)
+        # add legend
+        plt.legend(loc='lower right')
+        """
+         Write number on side of bar
+        """
+        fig = plt.gcf() # gcf - get current figure
+        axes = plt.gca()
+        r = fig.canvas.get_renderer()
+        for i, val in enumerate(sorted_values):
+            fp_val = fp_sorted[i]
+            tp_val = tp_sorted[i]
+            fp_str_val = " " + str(fp_val)
+            tp_str_val = fp_str_val + " " + str(tp_val)
+            # trick to paint multicolor with offset:
+            #   first paint everything and then repaint the first number
+            t = plt.text(val, i, tp_str_val, color='forestgreen', va='center', fontweight='bold')
+            plt.text(val, i, fp_str_val, color='crimson', va='center', fontweight='bold')
+            if i == (len(sorted_values)-1): # largest bar
+                adjust_axes(r, t, fig, axes)
+    else:
+      plt.barh(range(n_classes), sorted_values, color=plot_color)
+      """
+       Write number on side of bar
+      """
+      fig = plt.gcf() # gcf - get current figure
+      axes = plt.gca()
+      r = fig.canvas.get_renderer()
+      for i, val in enumerate(sorted_values):
+          str_val = " " + str(val) # add a space before
+          if val < 1.0:
+              str_val = " {0:.2f}".format(val)
+          t = plt.text(val, i, str_val, color=plot_color, va='center', fontweight='bold')
+          # re-set axes to show number inside the figure
+          if i == (len(sorted_values)-1): # largest bar
+              adjust_axes(r, t, fig, axes)
+    # set window title
+    fig.canvas.set_window_title(window_title)
+    # write classes in y axis
+    tick_font_size = 12
+    plt.yticks(range(n_classes), sorted_keys, fontsize=tick_font_size)
+    """
+     Re-scale height accordingly
+    """
+    init_height = fig.get_figheight()
+    # comput the matrix height in points and inches
+    dpi = fig.dpi
+    height_pt = n_classes * (tick_font_size * 1.4) # 1.4 (some spacing)
+    height_in = height_pt / dpi
+    # compute the required figure height
+    top_margin = 0.15    # in percentage of the figure height
+    bottom_margin = 0.05 # in percentage of the figure height
+    figure_height = height_in / (1 - top_margin - bottom_margin)
+    # set new height
+    if figure_height > init_height:
+        fig.set_figheight(figure_height)
+
+    # set plot title
+    plt.title(plot_title, fontsize=14)
+    # set axis titles
+    # plt.xlabel('classes')
+    plt.xlabel(x_label, fontsize='large')
+    # adjust size of window
+    fig.tight_layout()
+    # save the plot
+    fig.savefig(output_path)
+    # show image
+    if to_show:
+        plt.show()
+    # close the plot
+    plt.close()
+
+
+def calc_AP(gt_records, pred_records, class_name):
     '''
     Calculate AP value for one class records
 
@@ -340,6 +486,7 @@ def calc_AP(gt_records, pred_records):
     nd = len(pred_records)  # number of predict data
     true_positive = [0] * nd
     false_positive = [0] * nd
+    true_positive_count = 0
     # assign predictions to ground truth objects
     for idx, pred_record in enumerate(pred_records):
         # filter out gt record from same image
@@ -355,14 +502,16 @@ def calc_AP(gt_records, pred_records):
             # reference list
             image_gt_records[i][2] = 'used'
             true_positive[idx] = 1
+            true_positive_count += 1
         else:
             false_positive[idx] = 1
 
     # compute precision/recall
     rec, prec = get_rec_prec(true_positive, false_positive, gt_records)
-    ap = voc_ap(rec, prec)
+    ap, mrec, mprec = voc_ap(rec, prec)
+    draw_rec_prec(rec, prec, mrec, mprec, class_name, ap)
 
-    return ap
+    return ap, true_positive_count
 
 
 def compute_mAP(model, annotation_file, anchors, class_names, model_image_size, save_result):
@@ -372,24 +521,70 @@ def compute_mAP(model, annotation_file, anchors, class_names, model_image_size, 
     annotation_records, gt_classes_records = annotation_parse(annotation_file, class_names)
     pred_classes_records = get_prediction_class_records(model, annotation_records, anchors, class_names, model_image_size, save_result)
 
-    APs = []
+    APs = {}
+    count_true_positives = {}
     #get AP value for each of the ground truth classes
     for _, class_name in enumerate(class_names):
         gt_records = gt_classes_records[class_name]
         #if we didn't detect any obj for a class, record 0
         if class_name not in pred_classes_records:
-            APs.append(0.)
+            APs[class_name] = 0.
             continue
         pred_records = pred_classes_records[class_name]
-        ap = calc_AP(gt_records, pred_records)
-        APs.append(ap)
+        ap, true_positive_count = calc_AP(gt_records, pred_records, class_name)
+        APs[class_name] = ap
+        count_true_positives[class_name] = true_positive_count
+
+    #get mAP percentage value
+    mAP = np.mean(list(APs.values()))*100
+
+    '''
+     Plot the total number of occurences of each class in the ground-truth
+    '''
+    gt_counter_per_class = {}
+    for (class_name,info_list) in gt_classes_records.items():
+        gt_counter_per_class[class_name] = len(info_list)
+
+    window_title = "Ground-Truth Info"
+    plot_title = "Ground-Truth\n" + "(" + str(len(annotation_records)) + " files and " + str(len(gt_classes_records)) + " classes)"
+    x_label = "Number of objects per class"
+    output_path = os.path.join('result','Ground-Truth Info.jpg')
+    draw_plot_func(gt_counter_per_class, len(gt_classes_records), window_title, plot_title, x_label, output_path, to_show=False, plot_color='forestgreen', true_p_bar='')
+
+
+    '''
+     Plot the total number of occurences of each class in the "predicted" folder
+    '''
+    pred_counter_per_class = {}
+    for (class_name,info_list) in pred_classes_records.items():
+        pred_counter_per_class[class_name] = len(info_list)
+
+    window_title = "Predicted Objects Info"
+    # Plot title
+    plot_title = "Predicted Objects\n" + "(" + str(len(annotation_records)) + " files and "
+    count_non_zero_values_in_dictionary = sum(int(x) > 0 for x in list(pred_counter_per_class.values()))
+    plot_title += str(count_non_zero_values_in_dictionary) + " detected classes)"
+    # end Plot title
+    x_label = "Number of objects per class"
+    output_path = os.path.join('result','Predicted Objects Info.jpg')
+    draw_plot_func(pred_counter_per_class, len(pred_counter_per_class), window_title, plot_title, x_label, output_path, to_show=False, plot_color='forestgreen', true_p_bar=count_true_positives)
+
+
+    '''
+     Draw mAP plot (Show AP's of all classes in decreasing order)
+    '''
+    window_title = "mAP"
+    plot_title = "mAP = {0:.2f}%".format(mAP)
+    x_label = "Average Precision"
+    output_path = os.path.join('result','mAP.jpg')
+    draw_plot_func(APs, len(gt_classes_records), window_title, plot_title, x_label, output_path, to_show=True, plot_color='royalblue', true_p_bar='')
 
     #get mAP from APs
-    for class_name, AP in zip(class_names, APs):
+    for (class_name, AP) in APs.items():
         print('AP for {}: {}'.format(class_name, AP))
 
     #return mAP percentage value
-    return np.mean(APs)*100
+    return mAP
 
 
 
