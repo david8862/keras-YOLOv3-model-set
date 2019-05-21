@@ -28,9 +28,12 @@ def _main():
     anchors_path = 'model_data/yolo_anchors.txt'
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
-    anchors = get_anchors(anchors_path)
+    base_anchors = get_anchors(anchors_path)
 
     input_shape = (416,416) # multiple of 32, hw
+
+    # resize base anchors acoording to input shape
+    anchors = resize_anchors(base_anchors, input_shape)
 
     is_tiny_version = len(anchors)==6 # default setting
     if is_tiny_version:
@@ -124,6 +127,15 @@ def _main():
 
     # Finally store model
     model.save(log_dir + 'trained_final.h5')
+
+
+def resize_anchors(base_anchors, target_shape, base_shape=(416,416)):
+    '''
+    original anchor size is clustered from COCO dataset
+    under input shape (416,416). We need to resize it to
+    our train input shape for better performance
+    '''
+    return np.around(base_anchors*target_shape[::-1]/base_shape[::-1])
 
 
 def get_classes(classes_path):
