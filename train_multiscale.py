@@ -24,7 +24,7 @@ from  multiprocessing import Process, Queue
 #K.set_session(session)
 
 
-def train_on_scale(input_shape, lines, val_split, base_anchors, class_names,
+def train_on_scale(input_shape, lines, val_split, anchors, class_names,
         callbacks, log_dir, epochs, initial_epoch,
         batch_size=8,
         weights_path=None,
@@ -43,9 +43,6 @@ def train_on_scale(input_shape, lines, val_split, base_anchors, class_names,
     num_classes = len(class_names)
     num_val = int(len(lines)*val_split)
     num_train = len(lines) - num_val
-
-    # resize base anchors acoording to input shape
-    anchors = resize_anchors(base_anchors, input_shape)
 
     is_tiny_version = len(anchors)==6 # default setting
     if is_tiny_version:
@@ -87,7 +84,7 @@ def _main():
     anchors_path = 'model_data/yolo_anchors.txt'
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
-    base_anchors = get_anchors(anchors_path)
+    anchors = get_anchors(anchors_path)
 
     val_split = 0.1
     with open(annotation_path) as f:
@@ -113,7 +110,7 @@ def _main():
 
     # get initial base weights and input_shape/batch_size list
     # input_shape/batch_size list will be used in multi scale training
-    is_tiny_version = len(base_anchors)==6 # default setting
+    is_tiny_version = len(anchors)==6 # default setting
     if is_tiny_version:
         weights_path = 'model_data/tiny_yolo_weights.h5'
         input_shape_list = [(320,320), (416,416), (512,512), (608,608)]
@@ -131,7 +128,7 @@ def _main():
     initial_epoch = 0
     epochs = 40
 
-    p = Process(target=train_on_scale, args=(input_shape, lines, val_split, base_anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, False, True))
+    p = Process(target=train_on_scale, args=(input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, False, True))
     p.start()
     p.join()
     weights_path = log_dir + 'trained_epoch{}_shape{}.h5'.format(epochs, input_shape[0])
@@ -147,7 +144,7 @@ def _main():
         initial_epoch = epochs
         epochs = epoch_step
 
-        p = Process(target=train_on_scale, args=(input_shape, lines, val_split, base_anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, True, False))
+        p = Process(target=train_on_scale, args=(input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, True, False))
         p.start()
         p.join()
         # save the trained model and load in next round for different input shape
@@ -156,14 +153,6 @@ def _main():
         # wait 3s for GPU free
         time.sleep(3)
 
-
-def resize_anchors(base_anchors, target_shape, base_shape=(416,416)):
-    '''
-    original anchor size is clustered from COCO dataset
-    under input shape (416,416). We need to resize it to
-    our train input shape for better performance
-    '''
-    return np.around(base_anchors*target_shape[::-1]/base_shape[::-1])
 
 
 def get_classes(classes_path):
