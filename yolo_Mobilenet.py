@@ -233,7 +233,7 @@ class YOLO(object):
 
 def detect_video(yolo, video_path, output_path=""):
     import cv2
-    vid = cv2.VideoCapture(0)
+    vid = cv2.VideoCapture(0 if video_path == '0' else video_path)
     if not vid.isOpened():
         raise IOError("Couldn't open webcam or video")
     video_FourCC    = int(vid.get(cv2.CAP_PROP_FOURCC))

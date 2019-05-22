@@ -2,7 +2,7 @@ import cv2
 from PIL import Image
 import os, colorsys
 import numpy as np
-from scipy.special import expit
+from scipy.special import expit, softmax
 
 
 def yolo_head(predictions, anchors, num_classes, input_dims):
@@ -66,6 +66,7 @@ def _yolo_head(prediction, num_classes, anchors, input_dims):
 
     # Sigmoid class scores
     class_scores = expit(prediction[:, :, 5:])
+    #class_scores = softmax(prediction[:, :, 5:], axis=-1)
 
     # Resize detection map back to the input image size
     box_xy *= stride

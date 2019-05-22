@@ -201,7 +201,7 @@ class YOLO(object):
 
 def detect_video(yolo, video_path, output_path=""):
     import cv2
-    vid = cv2.VideoCapture(0)
+    vid = cv2.VideoCapture(0 if video_path == '0' else video_path)
     if not vid.isOpened():
         raise IOError("Couldn't open webcam or video")
     video_FourCC    = int(vid.get(cv2.CAP_PROP_FOURCC))
@@ -219,7 +219,7 @@ def detect_video(yolo, video_path, output_path=""):
     while True:
         return_value, frame = vid.read()
         image = Image.fromarray(frame)
-        image = yolo.detect_image(image)
+        image = yolo.detect_image2(image)
         result = np.asarray(image)
         curr_time = timer()
         exec_time = curr_time - prev_time
