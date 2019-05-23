@@ -46,21 +46,15 @@ def train_on_scale(input_shape, lines, val_split, anchors, class_names,
 
     is_tiny_version = len(anchors)==6 # default setting
     if is_tiny_version:
-        model = create_tiny_model(input_shape, anchors, num_classes, load_pretrained=load_pretrained,
-                             weights_path=weights_path,
+        model, _ = create_tiny_model(input_shape, anchors, num_classes, load_pretrained=load_pretrained,
+                             weights_path=weights_path, freeze=freeze,
             freeze_body=1, transfer_learn=True)
     else:
-        model = create_model(input_shape, anchors, num_classes, load_pretrained=load_pretrained,
-                             weights_path=weights_path,
+        model, _ = create_model(input_shape, anchors, num_classes, load_pretrained=load_pretrained,
+                             weights_path=weights_path, freeze=freeze,
             freeze_body=1, transfer_learn=True) # make sure you know what you freeze
 
 
-    print("Train with input_shape {}".format(input_shape))
-    if freeze == False:
-        print('Unfreeze all of the layers.')
-        for i in range(len(model.layers)):
-            model.layers[i].trainable= True
-    model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
     batch_size = batch_size
     print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
     model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
@@ -170,7 +164,27 @@ def get_anchors(anchors_path):
     return np.array(anchors).reshape(-1, 2)
 
 
-def create_model(input_shape, anchors, num_classes, freeze_body=1, load_pretrained=False,
+def add_metrics(model, loss_dict):
+    '''
+    add loss scalar into model, which could be tracked in training
+    log and tensorboard callback
+    '''
+    for (name, loss) in loss_dict.items():
+        # "_compile_metrics_names", "_compile_metrics_tensors" and
+        # "_compile_stateful_metrics_tensors" are internal properties
+        # used by tf.keras. If you want to customize metrics on raw
+        # keras model, just use "metrics_names" and "metrics_tensors"
+        # as follow:
+        #
+        #model.metrics_names.append(name)
+        #model.metrics_tensors.append(loss)
+
+        model._compile_metrics_names.append(name)
+        #model._compile_metrics_tensors[name] = loss
+        model._compile_stateful_metrics_tensors[name] = loss
+
+
+def create_model(input_shape, anchors, num_classes, freeze=True, freeze_body=1, load_pretrained=False,
             weights_path='model_data/darknet53_weights.h5', transfer_learn=True):
     '''create the training model'''
     K.clear_session() # get a new session
@@ -198,14 +212,25 @@ def create_model(input_shape, anchors, num_classes, freeze_body=1, load_pretrain
             for i in range(num): model_body.layers[i].trainable = False
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
-    model_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
+    model_loss, xy_loss, wh_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
         arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5})(
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)
 
-    return model
+    print("Train with input_shape {}".format(input_shape))
+    if freeze == False:
+        print('Unfreeze all of the layers.')
+        for i in range(len(model.layers)):
+            model.layers[i].trainable= True
+    model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
 
-def create_tiny_model(input_shape, anchors, num_classes, freeze_body=1, load_pretrained=False,
+    loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
+    add_metrics(model, loss_dict)
+
+    return model, loss_dict
+
+
+def create_tiny_model(input_shape, anchors, num_classes, freeze=True, freeze_body=1, load_pretrained=False,
             weights_path='model_data/tiny_yolo_weights.h5', transfer_learn=True):
     '''create the training model, for Tiny YOLOv3'''
     K.clear_session() # get a new session
@@ -233,12 +258,23 @@ def create_tiny_model(input_shape, anchors, num_classes, freeze_body=1, load_pre
             for i in range(num): model_body.layers[i].trainable = False
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
-    model_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
+    model_loss, xy_loss, wh_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
         arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.7})(
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)
 
-    return model
+    print("Train with input_shape {}".format(input_shape))
+    if freeze == False:
+        print('Unfreeze all of the layers.')
+        for i in range(len(model.layers)):
+            model.layers[i].trainable= True
+    model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
+
+    loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
+    add_metrics(model, loss_dict)
+
+    return model, loss_dict
+
 
 def data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes):
     '''data generator for fit_generator'''

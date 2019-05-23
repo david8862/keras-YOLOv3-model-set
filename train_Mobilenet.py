@@ -38,16 +38,6 @@ def _main():
     # resize base anchors acoording to input shape
     anchors = resize_anchors(base_anchors, input_shape)
 
-    is_tiny_version = len(anchors)==6 # default setting
-    if is_tiny_version:
-        model = create_tiny_model(input_shape, anchors, num_classes, load_pretrained=False,
-                             weights_path='model_data/tiny_yolo_weights.h5',
-            freeze_body=1, transfer_learn=True)
-    else:
-        model = create_model(input_shape, anchors, num_classes, load_pretrained=False,
-                             weights_path='model_data/yolo_weights.h5',
-            freeze_body=1, transfer_learn=True) # make sure you know what you freeze
-
     logging = TensorBoard(log_dir=log_dir)
     checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
         monitor='val_loss',
@@ -67,15 +57,21 @@ def _main():
     np.random.seed(None)
     num_val = int(len(lines)*val_split)
     num_train = len(lines) - num_val
+
+    is_tiny_version = len(anchors)==6 # default setting
+    if is_tiny_version:
+        model, loss_dict = create_tiny_model(input_shape, anchors, num_classes, load_pretrained=False,
+                             weights_path='model_data/tiny_yolo_weights.h5',
+            freeze_body=1, transfer_learn=True)
+    else:
+        model, loss_dict = create_model(input_shape, anchors, num_classes, load_pretrained=False,
+                             weights_path='model_data/yolo_weights.h5',
+            freeze_body=1, transfer_learn=True) # make sure you know what you freeze
     model.summary()
 
     # Train with frozen layers first, to get a stable loss.
     # Adjust num epochs to your dataset. This step is enough to obtain a not bad model.
     if True:
-        model.compile(optimizer=Adam(lr=1e-3), loss={
-            # use custom yolo_loss Lambda layer.
-            'yolo_loss': lambda y_true, y_pred: y_pred})
-
         batch_size = 16 # use batch_size 16 at freeze stage
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
@@ -94,6 +90,7 @@ def _main():
         for i in range(len(model.layers)):
             model.layers[i].trainable= True
         model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
+        add_metrics(model, loss_dict)
         batch_size = 16 # note that more GPU memory is required after unfreezing the body
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
@@ -159,6 +156,26 @@ def get_anchors(anchors_path):
     return np.array(anchors).reshape(-1, 2)
 
 
+def add_metrics(model, loss_dict):
+    '''
+    add loss scalar into model, which could be tracked in training
+    log and tensorboard callback
+    '''
+    for (name, loss) in loss_dict.items():
+        # "_compile_metrics_names", "_compile_metrics_tensors" and
+        # "_compile_stateful_metrics_tensors" are internal properties
+        # used by tf.keras. If you want to customize metrics on raw
+        # keras model, just use "metrics_names" and "metrics_tensors"
+        # as follow:
+        #
+        #model.metrics_names.append(name)
+        #model.metrics_tensors.append(loss)
+
+        model._compile_metrics_names.append(name)
+        #model._compile_metrics_tensors[name] = loss
+        model._compile_stateful_metrics_tensors[name] = loss
+
+
 def create_model(input_shape, anchors, num_classes, freeze_body=1, load_pretrained=False,
             weights_path='model_data/yolo_weights.h5', transfer_learn=True):
     '''create the training model'''
@@ -185,12 +202,19 @@ def create_model(input_shape, anchors, num_classes, freeze_body=1, load_pretrain
             for i in range(num): model_body.layers[i].trainable = False
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
-    model_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
+    model_loss, xy_loss, wh_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
         arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5})(
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)
 
-    return model
+    model.compile(optimizer=Adam(lr=1e-3), loss={
+        # use custom yolo_loss Lambda layer.
+        'yolo_loss': lambda y_true, y_pred: y_pred})
+
+    loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
+    add_metrics(model, loss_dict)
+
+    return model, loss_dict
 
 def create_tiny_model(input_shape, anchors, num_classes, freeze_body=1, load_pretrained=False,
             weights_path='model_data/tiny_yolo_weights.h5', transfer_learn=True):
@@ -217,12 +241,19 @@ def create_tiny_model(input_shape, anchors, num_classes, freeze_body=1, load_pre
             for i in range(num): model_body.layers[i].trainable = False
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
-    model_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
+    model_loss, xy_loss, wh_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
         arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.7})(
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)
 
-    return model
+    model.compile(optimizer=Adam(lr=1e-3), loss={
+        # use custom yolo_loss Lambda layer.
+        'yolo_loss': lambda y_true, y_pred: y_pred})
+
+    loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
+    add_metrics(model, loss_dict)
+
+    return model, loss_dict
 
 def data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes):
     '''data generator for fit_generator'''
