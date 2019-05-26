@@ -44,10 +44,10 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 4.train_Mobilenet_multiscale.py
 > * Multiscale training script for YOLOv3_Lite-Mobilnet & YOLOv3_Lite-Mobilnet-Tiny model
 
-#### Checkpoints during training could be found at logs/000/. Choose a best one as result
+Checkpoints during training could be found at logs/000/. Choose a best one as result
 
 ### Model dump
-#### We need to dump out inference model from training checkpoint. Following script cmd work for that.
+We need to dump out inference model from training checkpoint. Following script cmd work for that.
 
 1.YOLOv3 & YOLOv3-Tiny model
 ```
@@ -58,13 +58,38 @@ python yolo_video.py --model_path=logs/000/<checkpoint>.h5 --anchors_path=model_
 ```
 python yolo_Mobilenet.py --model_path=logs/000/<checkpoint>.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --dump_model --output_model_file=test.h5
 ```
-#### Change anchors file & class file for different training mode
+Change anchors file & class file for different training mode
 
 ### Evaluation
 Use "compute_mAP.py" to do evaluation on the inference model. It will draw out rec/pre curve for each class and AP/mAP result chart under "result" dir, and optionally save all the detection result on evaluation dataset as images
 ```
 python compute_mAP.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --model_image_size=416x416 --annotation_file=2007_test.txt --save_result
 ```
+
+### Demo
+1.yolo_video.py
+> * Demo script for YOLOv3 & YOLOv3-Tiny model
+image detection mode
+```
+python yolo_video.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/roborock_classes.txt --image
+```
+video detection mode
+```
+python yolo_video.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/roborock_classes.txt --input=test.mp4
+```
+For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
+
+2.yolo_Mobilenet.py
+> * Demo script for YOLOv3_Lite-Mobilnet & YOLOv3_Lite-Mobilnet-Tiny model
+image detection mode
+```
+python yolo_Mobilenet.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/roborock_classes.txt --image
+```
+video detection mode
+```
+python yolo_Mobilenet.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/roborock_classes.txt --input=test.mp4
+```
+
 
 ### TFLite convert & validate
 1. Use tflite_convert to generate TFLite inference model. We need to specify input node name and input shape since our inference model doesn't have input image shape. Only valid under tensorflow 1.13
