@@ -107,7 +107,7 @@ def handle_predictions(predictions, confidence=0.6, iou_threshold=0.5):
     scores = box_class_scores[pos]
 
     # Boxes, Classes and Scores returned from NMS
-    n_boxes, n_classes, n_scores = soft_nms_boxes(boxes, classes, scores, iou_threshold, confidence=confidence)
+    n_boxes, n_classes, n_scores = nms_boxes(boxes, classes, scores, iou_threshold, confidence=confidence)
 
     if n_boxes:
         boxes = np.concatenate(n_boxes)
