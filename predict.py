@@ -2,6 +2,7 @@ import cv2
 from PIL import Image
 import os, colorsys
 import numpy as np
+import copy
 from scipy.special import expit, softmax
 
 
@@ -106,7 +107,7 @@ def handle_predictions(predictions, confidence=0.6, iou_threshold=0.5):
     scores = box_class_scores[pos]
 
     # Boxes, Classes and Scores returned from NMS
-    n_boxes, n_classes, n_scores = nms_boxes(boxes, classes, scores, iou_threshold)
+    n_boxes, n_classes, n_scores = soft_nms_boxes(boxes, classes, scores, iou_threshold, confidence=confidence)
 
     if n_boxes:
         boxes = np.concatenate(n_boxes)
@@ -170,8 +171,88 @@ def preprocess_image(img_arr, model_image_size):
     image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
     return image, image_data
 
+def soft_nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.6, is_soft=True, use_exp=False, sigma=0.5):
+    nboxes, nclasses, nscores = [], [], []
+    for c in set(classes):
+        # handle data for one class
+        inds = np.where(classes == c)
+        b = boxes[inds]
+        c = classes[inds]
+        s = scores[inds]
 
-def nms_boxes(boxes, classes, scores, iou_threshold):
+        # make a data copy to avoid breaking
+        # during nms operation
+        b_nms = copy.deepcopy(b)
+        c_nms = copy.deepcopy(c)
+        s_nms = copy.deepcopy(s)
+
+        while len(s_nms) > 0:
+            # pick the max box and store, here
+            # we also use copy to persist result
+            i = np.argmax(s_nms, axis=-1)
+            nboxes.append(copy.deepcopy(b_nms[i]))
+            nclasses.append(copy.deepcopy(c_nms[i]))
+            nscores.append(copy.deepcopy(s_nms[i]))
+
+            # swap the max line and last line
+            b_nms[[i,-1],:] = b_nms[[-1,i],:]
+            c_nms[[i,-1]] = c_nms[[-1,i]]
+            s_nms[[i,-1]] = s_nms[[-1,i]]
+
+            # get box coordinate and area
+            x = b_nms[:, 0]
+            y = b_nms[:, 1]
+            w = b_nms[:, 2]
+            h = b_nms[:, 3]
+
+            areas = w * h
+
+            # check IOU
+            xx1 = np.maximum(x[-1], x[:-1])
+            yy1 = np.maximum(y[-1], y[-1])
+            xx2 = np.minimum(x[-1] + w[-1], x[:-1] + w[:-1])
+            yy2 = np.minimum(y[-1] + h[-1], y[:-1] + h[:-1])
+
+            w1 = np.maximum(0.0, xx2 - xx1 + 1)
+            h1 = np.maximum(0.0, yy2 - yy1 + 1)
+
+            inter = w1 * h1
+            iou = inter / (areas[-1] + areas[:-1] - inter)
+
+            # drop the last line since it has been record
+            b_nms = b_nms[:-1]
+            c_nms = c_nms[:-1]
+            s_nms = s_nms[:-1]
+
+            if is_soft:
+                # Soft-NMS
+                if use_exp:
+                    # score refresh formula:
+                    # score = score * exp(-(iou^2)/sigma)
+                    s_nms = s_nms * np.exp(-(iou * iou) / sigma)
+                else:
+                    # score refresh formula:
+                    # score = score * (1 - iou) if iou > threshold
+                    depress_mask = np.where(iou > iou_threshold)[0]
+                    s_nms[depress_mask] = s_nms[depress_mask]*(1-iou[depress_mask])
+                keep_mask = np.where(s_nms >= confidence)[0]
+            else:
+                # normal Hard-NMS
+                keep_mask = np.where(iou <= iou_threshold)[0]
+
+            # keep needed box for next loop
+            b_nms = b_nms[keep_mask]
+            c_nms = c_nms[keep_mask]
+            s_nms = s_nms[keep_mask]
+
+    # reformat result for output
+    nboxes = [np.array(nboxes)]
+    nclasses = [np.array(nclasses)]
+    nscores = [np.array(nscores)]
+    return nboxes, nclasses, nscores
+
+
+def nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.6):
     nboxes, nclasses, nscores = [], [], []
     for c in set(classes):
         inds = np.where(classes == c)
