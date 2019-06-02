@@ -1,10 +1,8 @@
 # -*- coding=utf-8 -*-
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys
 import os, argparse
-#import shutil
-#import numpy as np
 import json
 import xml.etree.ElementTree as ET
 
@@ -13,16 +11,11 @@ START_BOUNDING_BOX_ID = 1
 # 类别列表无必要预先创建，程序中会根据所有图像中包含的ID来创建并更新
 #PRE_DEFINE_CATEGORIES = {}
 # If necessary, pre-define category and its id
-PRE_DEFINE_CATEGORIES = {"aeroplane": 1, "bicycle": 2, "bird": 3, "boat": 4,
-                          "bottle":5, "bus": 6, "car": 7, "cat": 8, "chair": 9,
-                          "cow": 10, "diningtable": 11, "dog": 12, "horse": 13,
-                          "motorbike": 14, "person": 15, "pottedplant": 16,
-                          "sheep": 17, "sofa": 18, "train": 19, "tvmonitor": 20}
-
-
-def get(root, name):
-    vars = root.findall(name)
-    return vars
+#PRE_DEFINE_CATEGORIES = {"aeroplane": 1, "bicycle": 2, "bird": 3, "boat": 4,
+                          #"bottle":5, "bus": 6, "car": 7, "cat": 8, "chair": 9,
+                          #"cow": 10, "diningtable": 11, "dog": 12, "horse": 13,
+                          #"motorbike": 14, "person": 15, "pottedplant": 16,
+                          #"sheep": 17, "sofa": 18, "train": 19, "tvmonitor": 20}
 
 
 def get_and_check(root, name, length):
@@ -45,59 +38,77 @@ def get_filename_as_int(filename):
         raise NotImplementedError('Filename %s is supposed to be an integer.'%(filename))
 
 
-def convert(xml_list, xml_dir, json_file):
+def get_category(category_file):
+    '''loads the classes'''
+    category_dict = {}
+    with open(category_file) as f:
+        categories_names = f.readlines()
+    for index, category_name in enumerate(categories_names):
+        # handle underline in roborock class name
+        category_dict[category_name.strip().replace('_', ' ')] = index + 1
+    return category_dict
+
+
+def convert(xml_list, xml_dir, categories, json_file, merge_category=False):
     '''
     :param xml_list: 需要转换的XML文件列表
     :param xml_dir: XML的存储文件夹
+    :param categories: XML的存储文件夹
     :param json_file: 导出json文件的路径
     :return: None
     '''
-    list_fp = xml_list
-    # 标注基本结构
-    json_dict = {"images":[],
-                 "type": "instances",
-                 "annotations": [],
-                 "categories": []}
-    categories = PRE_DEFINE_CATEGORIES
+    # COCO instances data struct
+    json_dict = {"images":[], "type": "instances", "annotations": [], "categories": []}
+    #categories = PRE_DEFINE_CATEGORIES
     bnd_id = START_BOUNDING_BOX_ID
-    for line in list_fp:
+
+    for line in xml_list:
         line = line.strip()
         print("Processing {}".format(line))
-        # 解析XML
+
+        # parse XML
         xml_f = os.path.join(xml_dir, line)
         tree = ET.parse(xml_f)
         root = tree.getroot()
-        path = get(root, 'path')
-        # 取出图片名字
+
+        # get image filename
+        path = root.findall('path')
         if len(path) == 1:
             filename = os.path.basename(path[0].text)
         elif len(path) == 0:
             filename = get_and_check(root, 'filename', 1).text
         else:
             raise NotImplementedError('%d paths found in %s'%(len(path), line))
-        ## The filename must be a number
-        image_id = get_filename_as_int(filename)  # 图片ID
+
+        ## get image ID & size
+        image_id = get_filename_as_int(filename)  # image ID
         size = get_and_check(root, 'size', 1)
-        # 图片的基本信息
+
+        # form up image info
         width = int(get_and_check(size, 'width', 1).text)
         height = int(get_and_check(size, 'height', 1).text)
-        image = {'file_name': filename,
-                 'height': height,
-                 'width': width,
-                 'id':image_id}
+        image = {'file_name': filename, 'height': height, 'width': width, 'id':image_id}
         json_dict['images'].append(image)
-        ## Cruuently we do not support segmentation
+
+        ## Currently we do not support segmentation
         #  segmented = get_and_check(root, 'segmented', 1).text
         #  assert segmented == '0'
-        # 处理每个标注的检测框
-        for obj in get(root, 'object'):
-            # 取出检测框类别名称
+
+        # handle object bounding box
+        for obj in root.findall('object'):
+            # parse object name
             category = get_and_check(obj, 'name', 1).text
-            # 更新类别ID字典
+
+            # update category ID dict if allow merge
             if category not in categories:
-                new_id = len(categories)
-                categories[category] = new_id
+                if merge_category:
+                    new_id = len(categories)
+                    categories[category] = new_id
+                else:
+                    continue
             category_id = categories[category]
+
+            # get bounding box
             bndbox = get_and_check(obj, 'bndbox', 1)
             xmin = int(get_and_check(bndbox, 'xmin', 1).text) - 1
             ymin = int(get_and_check(bndbox, 'ymin', 1).text) - 1
@@ -107,10 +118,10 @@ def convert(xml_list, xml_dir, json_file):
             assert(ymax > ymin)
             o_width = abs(xmax - xmin)
             o_height = abs(ymax - ymin)
+
             annotation = dict()
             # 设置分割数据，点的顺序为逆时针方向
             annotation['segmentation'] = [[xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin]]
-
             annotation['area'] = o_width*o_height
             annotation['iscrowd'] = 0
             annotation['image_id'] = image_id
@@ -122,18 +133,19 @@ def convert(xml_list, xml_dir, json_file):
             json_dict['annotations'].append(annotation)
             bnd_id = bnd_id + 1
 
-    # 写入类别ID字典
+    # create category ID dict
     for cate, cid in categories.items():
         cat = {'supercategory': 'none', 'id': cid, 'name': cate}
         json_dict['categories'].append(cat)
-    # 导出到json
+
+    # save to COCO json file
     json_fp = open(json_file, 'w')
     json_str = json.dumps(json_dict)
     json_fp.write(json_str)
     json_fp.close()
 
 
-def pascalvoc_to_coco(dataset_file, voc_root_path, json_file):
+def pascalvoc_to_coco(voc_root_path, dataset_file, category_file, json_file, merge_category):
     xml_dir = os.path.join(voc_root_path, 'Annotations')
 
     # get dataset info
@@ -141,8 +153,11 @@ def pascalvoc_to_coco(dataset_file, voc_root_path, json_file):
         lines = f.readlines()
     xml_list = [line.split()[0]+'.xml' for line in lines]
 
+    # get category info
+    categories = get_category(category_file)
+
     # convert the xml list to COCO JSON file
-    convert(xml_list, xml_dir, json_file)
+    convert(xml_list, xml_dir, categories, json_file, merge_category)
 
 
 
@@ -151,11 +166,13 @@ def main():
 
     parser.add_argument('--voc_root_path', required=True, type=str, help='VOCdevkit root path, e.g VOCdevkit/VOC2007')
     parser.add_argument('--dataset_file', required=True, type=str, help='PascalVOC dataset file path')
+    parser.add_argument('--category_file', required=True, type=str, help='category definitions file')
     parser.add_argument('--json_file', required=True, type=str, help='Output COCO format JSON file path')
+    parser.add_argument('--merge_category', default=False, action="store_true", help='Merge the object class in dataset to category list if not exist')
 
     args = parser.parse_args()
 
-    pascalvoc_to_coco(args.dataset_file, args.voc_root_path, args.json_file)
+    pascalvoc_to_coco(args.voc_root_path, args.dataset_file, args.category_file, args.json_file, args.merge_category)
 
 
 if __name__ == '__main__':
