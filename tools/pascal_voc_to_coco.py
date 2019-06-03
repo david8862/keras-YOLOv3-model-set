@@ -33,6 +33,8 @@ def get_and_check(root, name, length):
 def get_filename_as_int(filename):
     try:
         filename = os.path.splitext(filename)[0]
+        # get rid of the underline in VOC2012 filename
+        filename = filename.replace('_', '')
         return int(filename)
     except:
         raise NotImplementedError('Filename %s is supposed to be an integer.'%(filename))
