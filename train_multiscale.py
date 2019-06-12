@@ -55,6 +55,7 @@ def train_on_scale(input_shape, lines, val_split, anchors, class_names,
             freeze_body=1, transfer_learn=True) # make sure you know what you freeze
 
 
+    model.summary()
     batch_size = batch_size
     print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
     model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
@@ -72,7 +73,7 @@ def train_on_scale(input_shape, lines, val_split, anchors, class_names,
 
 
 def _main():
-    annotation_path = 'roborock_2007_trainval.txt'
+    annotation_path = 'roborock_2007_train_0530.txt'
     log_dir = 'logs/000/'
     classes_path = 'model_data/roborock_classes.txt'
     anchors_path = 'model_data/yolo_anchors.txt'
