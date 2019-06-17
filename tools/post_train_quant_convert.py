@@ -38,7 +38,7 @@ def post_train_quant_convert(keras_model_file, annotation_file, sample_num, mode
     #converter.optimizations = [tf.lite.Optimize.OPTIMIZE_FOR_LATENCY]
     converter.representative_dataset = tf.lite.RepresentativeDataset(data_generator)
 
-    converter.target_ops = [tf.lite.OpSet.TFLITE_BUILTINS_INT8]
+    #converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
 
     tflite_model = converter.convert()
     with open(output_file, "wb") as f:
