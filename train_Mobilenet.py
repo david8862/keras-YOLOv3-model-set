@@ -8,6 +8,7 @@ from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping, LambdaCallback
+#from tensorflow_model_optimization.sparsity import keras as sparsity
 import os
 from yolo3.model_Mobilenet import preprocess_true_boxes, yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body, yolo_loss
 from yolo3.utils import get_random_data
@@ -67,20 +68,26 @@ def _main():
         model, loss_dict = create_model(input_shape, anchors, num_classes, load_pretrained=False,
                              weights_path='model_data/yolo_weights.h5',
             freeze_body=1, transfer_learn=True) # make sure you know what you freeze
-    model.summary()
+    #model.summary()
+
+    #pruning_callbacks = [sparsity.UpdatePruningStep(), sparsity.PruningSummaries(log_dir=log_dir, profile_batch=0)]
 
     # Train with frozen layers first, to get a stable loss.
     # Adjust num epochs to your dataset. This step is enough to obtain a not bad model.
     if True:
         batch_size = 16 # use batch_size 16 at freeze stage
+        epochs = 50
+        #end_step = np.ceil(1.0 * num_train / batch_size).astype(np.int32) * epochs
+        #model = add_pruning(model, begin_step=0, end_step=end_step)
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
                 steps_per_epoch=max(1, num_train//batch_size),
                 validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
                 validation_steps=max(1, num_val//batch_size),
-                epochs=50,
+                epochs=epochs,
                 initial_epoch=0,
                 callbacks=[logging, checkpoint])
+        #model = sparsity.strip_pruning(model)
         model.save(log_dir + 'trained_stage_1.h5')
 
     # Unfreeze and continue training, to fine-tune.
@@ -168,12 +175,31 @@ def add_metrics(model, loss_dict):
         # keras model, just use "metrics_names" and "metrics_tensors"
         # as follow:
         #
-        #model.metrics_names.append(name)
+        model.metrics_names.append(name)
         #model.metrics_tensors.append(loss)
 
-        model._compile_metrics_names.append(name)
+        #model._compile_metrics_names.append(name)
         #model._compile_metrics_tensors[name] = loss
-        model._compile_stateful_metrics_tensors[name] = loss
+        #model._all_metrics_tensors[name] = loss
+        #model._compile_stateful_metrics_tensors[name] = loss
+
+
+def add_pruning(model, begin_step, end_step):
+    print(type(model))
+    new_pruning_params = {
+      'pruning_schedule': sparsity.PolynomialDecay(initial_sparsity=0.50,
+                                                   final_sparsity=0.90,
+                                                   begin_step=begin_step,
+                                                   end_step=end_step,
+                                                   frequency=100)
+    }
+    pruned_model = sparsity.prune_low_magnitude(model, **new_pruning_params)
+    pruned_model.summary()
+    pruned_model.compile(optimizer=Adam(lr=1e-3), loss={
+        # use custom yolo_loss Lambda layer.
+        'prune_low_magnitude_yolo_loss': lambda y_true, y_pred: y_pred})
+
+    return pruned_model
 
 
 def create_model(input_shape, anchors, num_classes, freeze_body=1, load_pretrained=False,
