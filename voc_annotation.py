@@ -1,13 +1,15 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import xml.etree.ElementTree as ET
+import os, argparse
 from os import getcwd
 
 sets=[('2007', 'train'), ('2007', 'val'), ('2007', 'test'), ('2012', 'train'), ('2012', 'val')]
 classes = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
-dataset_root = 'VOCdevkit'
 
 
-def convert_annotation(year, image_id, list_file):
-    in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_root, year, image_id))
+def convert_annotation(dataset_path, year, image_id, list_file):
+    in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id))
     tree=ET.parse(in_file)
     root = tree.getroot()
 
@@ -21,14 +23,17 @@ def convert_annotation(year, image_id, list_file):
         b = (int(xmlbox.find('xmin').text), int(xmlbox.find('ymin').text), int(xmlbox.find('xmax').text), int(xmlbox.find('ymax').text))
         list_file.write(" " + ",".join([str(a) for a in b]) + ',' + str(cls_id))
 
-wd = getcwd()
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default is ./VOCdevkit', default=getcwd()+'/VOCdevkit')
+parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
+args = parser.parse_args()
 
 for year, image_set in sets:
-    image_ids = open('%s/VOC%s/ImageSets/Main/%s.txt'%(dataset_root, year, image_set)).read().strip().split()
-    list_file = open('%s_%s.txt'%(year, image_set), 'w')
+    image_ids = open('%s/VOC%s/ImageSets/Main/%s.txt'%(args.dataset_path, year, image_set)).read().strip().split()
+    list_file = open('%s/%s_%s.txt'%(args.output_path, year, image_set), 'w')
     for image_id in image_ids:
-        list_file.write('%s/%s/VOC%s/JPEGImages/%s.jpg'%(wd, dataset_root, year, image_id))
-        convert_annotation(year, image_id, list_file)
+        list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(args.dataset_path, year, image_id))
+        convert_annotation(args.dataset_path, year, image_id, list_file)
         list_file.write('\n')
     list_file.close()
-
