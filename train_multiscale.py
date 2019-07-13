@@ -73,9 +73,9 @@ def train_on_scale(input_shape, lines, val_split, anchors, class_names,
 
 
 def _main():
-    annotation_path = 'roborock_2007_train_0530.txt'
+    annotation_path = 'trainval.txt'
     log_dir = 'logs/000/'
-    classes_path = 'model_data/roborock_classes.txt'
+    classes_path = 'model_data/voc_classes.txt'
     anchors_path = 'model_data/yolo_anchors.txt'
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
@@ -226,7 +226,7 @@ def create_model(input_shape, anchors, num_classes, freeze=True, freeze_body=1, 
     model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
 
     loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
-    add_metrics(model, loss_dict)
+    #add_metrics(model, loss_dict)
 
     return model, loss_dict
 
@@ -272,7 +272,7 @@ def create_tiny_model(input_shape, anchors, num_classes, freeze=True, freeze_bod
     model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
 
     loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
-    add_metrics(model, loss_dict)
+    #add_metrics(model, loss_dict)
 
     return model, loss_dict
 

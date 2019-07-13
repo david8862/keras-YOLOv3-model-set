@@ -623,7 +623,7 @@ def compute_mAP(model_path, annotation_file, anchors, class_names, model_image_s
     plot_title = "mAP = {0:.2f}%".format(mAP)
     x_label = "Average Precision"
     output_path = os.path.join('result','mAP.jpg')
-    draw_plot_func(APs, len(gt_classes_records), window_title, plot_title, x_label, output_path, to_show=True, plot_color='royalblue', true_p_bar='')
+    draw_plot_func(APs, len(gt_classes_records), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 
     #get mAP from APs
     for (class_name, AP) in APs.items():

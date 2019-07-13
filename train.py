@@ -22,9 +22,9 @@ session = tf.Session(config=config)
 K.set_session(session)
 
 def _main():
-    annotation_path = 'roborock_2007_trainval.txt'
+    annotation_path = 'trainval.txt'
     log_dir = 'logs/000/'
-    classes_path = 'model_data/roborock_classes.txt'
+    classes_path = 'model_data/voc_classes.txt'
     anchors_path = 'model_data/yolo_anchors.txt'
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
@@ -83,7 +83,7 @@ def _main():
         for i in range(len(model.layers)):
             model.layers[i].trainable = True
         model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
-        add_metrics(model, loss_dict)
+        #add_metrics(model, loss_dict)
         print('Unfreeze all of the layers.')
 
         batch_size = 8 # note that more GPU memory is required after unfreezing the body
@@ -208,7 +208,7 @@ def create_model(input_shape, anchors, num_classes, freeze_body=1, load_pretrain
         'yolo_loss': lambda y_true, y_pred: y_pred})
 
     loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
-    add_metrics(model, loss_dict)
+    #add_metrics(model, loss_dict)
 
     return model, loss_dict
 
@@ -250,7 +250,7 @@ def create_tiny_model(input_shape, anchors, num_classes, freeze_body=1, load_pre
         'yolo_loss': lambda y_true, y_pred: y_pred})
 
     loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
-    add_metrics(model, loss_dict)
+    #add_metrics(model, loss_dict)
 
     return model, loss_dict
 
