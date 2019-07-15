@@ -13,6 +13,7 @@ from tensorflow.keras.applications.mobilenet import MobileNet
 from tensorflow.keras.regularizers import l2
 
 from yolo3.utils import compose
+from yolo3.focal_loss import softmax_focal_loss, sigmoid_focal_loss
 
 
 def Depthwise_Separable_Conv2D(filters, kernel_size=(3, 3), block_id_str='1'):
@@ -506,7 +507,7 @@ def box_iou(b1, b2):
     return iou
 
 
-def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, print_loss=False):
+def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False, use_softmax_loss=False, print_loss=False):
     '''Return yolo_loss tensor
 
     Parameters
@@ -568,10 +569,18 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, print_loss=False):
         wh_loss = object_mask * box_loss_scale * 0.5 * K.square(raw_true_wh-raw_pred[...,2:4])
         confidence_loss = object_mask * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True)+ \
             (1-object_mask) * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True) * ignore_mask
-        # use sigmoid style classification output
-        class_loss = object_mask * K.binary_crossentropy(true_class_probs, raw_pred[...,5:], from_logits=True)
-        # use softmax style classification output
-        #class_loss = object_mask * K.expand_dims(K.categorical_crossentropy(true_class_probs, raw_pred[...,5:], from_logits=True), axis=-1)
+        if use_focal_loss:
+            if use_softmax_loss:
+                class_loss = softmax_focal_loss(true_class_probs, raw_pred[...,5:])
+            else:
+                class_loss = sigmoid_focal_loss(true_class_probs, raw_pred[...,5:])
+        else:
+            if use_softmax_loss:
+                # use softmax style classification output
+                class_loss = object_mask * K.expand_dims(K.categorical_crossentropy(true_class_probs, raw_pred[...,5:], from_logits=True), axis=-1)
+            else:
+                # use sigmoid style classification output
+                class_loss = object_mask * K.binary_crossentropy(true_class_probs, raw_pred[...,5:], from_logits=True)
 
         xy_loss = K.sum(xy_loss) / mf
         wh_loss = K.sum(wh_loss) / mf

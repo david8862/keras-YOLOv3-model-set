@@ -199,7 +199,7 @@ def create_model(input_shape, anchors, num_classes, freeze_body=1, load_pretrain
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
     model_loss, xy_loss, wh_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
-        arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5})(
+        arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5, 'use_focal_loss': False, 'use_softmax_loss': False})(
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)
 
@@ -241,7 +241,7 @@ def create_tiny_model(input_shape, anchors, num_classes, freeze_body=1, load_pre
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
 
     model_loss, xy_loss, wh_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
-        arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.7})(
+        arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.7, 'use_focal_loss': False, 'use_softmax_loss': False})(
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)
 
