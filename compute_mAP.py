@@ -184,7 +184,12 @@ def get_prediction_class_records(model_path, annotation_records, anchors, class_
             colors = get_colors(class_names)
             image_data = draw_boxes(image_data, gt_boxes, gt_classes, gt_scores, class_names, colors=None, show_score=False)
             image_data = draw_boxes(image_data, pred_boxes, pred_classes, pred_scores, class_names, colors)
-            Image.fromarray(image_data).save(os.path.join(result_dir, image_name.split(os.path.sep)[-1]))
+            image = Image.fromarray(image_data)
+            # here we handle the RGBA image
+            if(len(image.split()) == 4):
+                r, g, b, a = image.split()
+                image = Image.merge("RGB", (r, g, b))
+            image.save(os.path.join(result_dir, image_name.split(os.path.sep)[-1]))
 
         # Nothing detected
         if pred_boxes is None or len(pred_boxes) == 0:
