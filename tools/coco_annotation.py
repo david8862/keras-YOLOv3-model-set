@@ -1,4 +1,4 @@
-import json
+import json, argparse
 from collections import defaultdict
 from os import getcwd
 
@@ -6,22 +6,24 @@ from os import getcwd
 #sets=[('instances_train2017', 'train2017'), ('instances_val2017', 'val2017'), ('image_info_test-dev2017', 'test2017')]
 sets=[('instances_train2017', 'train2017'), ('instances_val2017', 'val2017')]
 
-wd = getcwd()
-dataset_root = 'mscoco2017'
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--dataset_path', type=str, help='path to MSCOCO dataset, default is ./mscoco2017', default=getcwd()+'/mscoco2017')
+parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
+args = parser.parse_args()
 
 for dataset, datatype in sets:
     name_box_id = defaultdict(list)
     id_name = dict()
     f = open(
-        "%s/annotations/%s.json"%(dataset_root, dataset),
+        "%s/annotations/%s.json"%(args.dataset_path, dataset),
         encoding='utf-8')
     data = json.load(f)
 
     annotations = data['annotations']
     for ant in annotations:
         id = ant['image_id']
-        name = '%s/%s/%s/%012d.jpg' % (wd, dataset_root, datatype, id)
+        name = '%s/%s/%012d.jpg' % (args.dataset_path, datatype, id)
         cat = ant['category_id']
 
         if cat >= 1 and cat <= 11:
@@ -45,7 +47,7 @@ for dataset, datatype in sets:
 
         name_box_id[name].append([ant['bbox'], cat])
 
-    f = open('%s.txt'%datatype, 'w')
+    f = open('%s/%s.txt'%(args.output_path, datatype), 'w')
     for key in name_box_id.keys():
         f.write(key)
         box_infos = name_box_id[key]

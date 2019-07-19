@@ -1,13 +1,13 @@
 import xml.etree.ElementTree as ET
+import os, argparse
 from os import getcwd
 
 sets=[('2007', 'train'), ('2007', 'val'), ('2007', 'test')]
 classes = ["bar stool a", "shoe", "pet feces", "wire"]
-dataset_root = 'det_trainset'
 
 
-def convert_annotation(year, image_id, list_file):
-    in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_root, year, image_id))
+def convert_annotation(dataset_path, year, image_id, list_file):
+    in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id))
     tree=ET.parse(in_file)
     root = tree.getroot()
 
@@ -22,8 +22,8 @@ def convert_annotation(year, image_id, list_file):
         list_file.write(" " + ",".join([str(a) for a in b]) + ',' + str(cls_id))
 
 
-def has_object(year, image_id):
-    in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_root, year, image_id))
+def has_object(dataset_path, year, image_id):
+    in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id))
     tree=ET.parse(in_file)
     root = tree.getroot()
     count = 0
@@ -36,15 +36,20 @@ def has_object(year, image_id):
         count = count +1
     return count != 0
 
-wd = getcwd()
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--dataset_path', type=str, help='path to Roborock dataset, default is ./det_trainset', default=getcwd()+'/det_trainset')
+parser.add_argument('--output_path', type=str,  help='output path to generate annotation txt files, default is ./', default='./')
+args = parser.parse_args()
+
 
 for year, image_set in sets:
-    image_ids = open('%s/VOC%s/ImageSets/Main/%s.txt'%(dataset_root, year, image_set)).read().strip().split()
-    list_file = open('roborock_%s_%s.txt'%(year, image_set), 'w')
+    image_ids = open('%s/VOC%s/ImageSets/Main/%s.txt'%(args.dataset_path, year, image_set)).read().strip().split()
+    list_file = open('%s/roborock_%s_%s.txt'%(args.output_path, year, image_set), 'w')
     for image_id in image_ids:
-        if has_object(year, image_id):
-            list_file.write('%s/%s/VOC%s/JPEGImages/%s.jpg'%(wd, dataset_root, year, image_id))
-            convert_annotation(year, image_id, list_file)
+        if has_object(args.dataset_path, year, image_id):
+            list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(args.dataset_path, year, image_id))
+            convert_annotation(args.dataset_path, year, image_id, list_file)
             list_file.write('\n')
     list_file.close()
 
