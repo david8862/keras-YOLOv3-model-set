@@ -8,7 +8,7 @@ sets=[('instances_train2017', 'train2017'), ('instances_val2017', 'val2017')]
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset_path', type=str, help='path to MSCOCO dataset, default is ./mscoco2017', default=getcwd()+'/mscoco2017')
+parser.add_argument('--dataset_path', type=str, help='path to MSCOCO dataset, default is ../mscoco2017', default=getcwd()+'/../mscoco2017')
 parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
 args = parser.parse_args()
 

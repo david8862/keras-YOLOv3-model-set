@@ -38,7 +38,7 @@ def has_object(dataset_path, year, image_id):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset_path', type=str, help='path to Roborock dataset, default is ./det_trainset', default=getcwd()+'/det_trainset')
+parser.add_argument('--dataset_path', type=str, help='path to Roborock dataset, default is ../det_trainset', default=getcwd()+'/../det_trainset')
 parser.add_argument('--output_path', type=str,  help='output path to generate annotation txt files, default is ./', default='./')
 args = parser.parse_args()
 

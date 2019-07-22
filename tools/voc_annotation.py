@@ -25,7 +25,7 @@ def convert_annotation(dataset_path, year, image_id, list_file):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default is ./VOCdevkit', default=getcwd()+'/VOCdevkit')
+parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default is ../VOCdevkit', default=getcwd()+'/../VOCdevkit')
 parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
 args = parser.parse_args()
 
