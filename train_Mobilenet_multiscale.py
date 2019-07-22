@@ -92,7 +92,7 @@ def _main():
     num_train = len(lines) - num_val
 
     # Callbacks config
-    logging = TensorBoard(log_dir=log_dir)
+    logging = TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=False, write_grads=False, write_images=False, update_freq='batch')
     checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
         monitor='val_loss',
         verbose=1,
@@ -170,18 +170,13 @@ def add_metrics(model, loss_dict):
     log and tensorboard callback
     '''
     for (name, loss) in loss_dict.items():
-        # "_compile_metrics_names", "_compile_metrics_tensors" and
-        # "_compile_stateful_metrics_tensors" are internal properties
-        # used by tf.keras. If you want to customize metrics on raw
-        # keras model, just use "metrics_names" and "metrics_tensors"
-        # as follow:
+        # seems add_metric() is newly added in tf.keras. So if you
+        # want to customize metrics on raw keras model, just use
+        # "metrics_names" and "metrics_tensors" as follow:
         #
         #model.metrics_names.append(name)
         #model.metrics_tensors.append(loss)
-
-        model._compile_metrics_names.append(name)
-        #model._compile_metrics_tensors[name] = loss
-        model._compile_stateful_metrics_tensors[name] = loss
+        model.add_metric(loss, name=name, aggregation='mean')
 
 
 def create_model(input_shape, anchors, num_classes, freeze=True, freeze_body=1, load_pretrained=False,
@@ -223,7 +218,7 @@ def create_model(input_shape, anchors, num_classes, freeze=True, freeze_body=1, 
     model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
 
     loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
-    #add_metrics(model, loss_dict)
+    add_metrics(model, loss_dict)
 
     return model, loss_dict
 
@@ -265,7 +260,7 @@ def create_tiny_model(input_shape, anchors, num_classes, freeze=True, freeze_bod
     model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
 
     loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
-    #add_metrics(model, loss_dict)
+    add_metrics(model, loss_dict)
 
     return model, loss_dict
 
