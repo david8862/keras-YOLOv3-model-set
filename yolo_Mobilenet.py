@@ -16,7 +16,8 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import Input
 from PIL import Image, ImageFont, ImageDraw
 
-from yolo3.model_Mobilenet import yolo_eval, yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body
+from yolo3.model_Mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body
+from yolo3.predict import yolo_eval
 from yolo3.utils import letterbox_image
 from predict import predict, draw_boxes
 import os

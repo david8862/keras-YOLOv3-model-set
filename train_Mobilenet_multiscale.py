@@ -9,8 +9,9 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 import os, random, time
-from yolo3.model_Mobilenet import preprocess_true_boxes, yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body, yolo_loss
-from yolo3.utils import get_random_data
+from yolo3.model_Mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body
+from yolo3.utils import get_random_data, preprocess_true_boxes, get_classes, get_anchors, add_metrics
+from yolo3.loss import yolo_loss
 from  multiprocessing import Process, Queue
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -147,36 +148,6 @@ def _main():
 
         # wait 3s for GPU free
         time.sleep(3)
-
-
-def get_classes(classes_path):
-    '''loads the classes'''
-    with open(classes_path) as f:
-        class_names = f.readlines()
-    class_names = [c.strip() for c in class_names]
-    return class_names
-
-def get_anchors(anchors_path):
-    '''loads the anchors from a file'''
-    with open(anchors_path) as f:
-        anchors = f.readline()
-    anchors = [float(x) for x in anchors.split(',')]
-    return np.array(anchors).reshape(-1, 2)
-
-
-def add_metrics(model, loss_dict):
-    '''
-    add loss scalar into model, which could be tracked in training
-    log and tensorboard callback
-    '''
-    for (name, loss) in loss_dict.items():
-        # seems add_metric() is newly added in tf.keras. So if you
-        # want to customize metrics on raw keras model, just use
-        # "metrics_names" and "metrics_tensors" as follow:
-        #
-        #model.metrics_names.append(name)
-        #model.metrics_tensors.append(loss)
-        model.add_metric(loss, name=name, aggregation='mean')
 
 
 def create_model(input_shape, anchors, num_classes, freeze=True, freeze_body=1, load_pretrained=False,

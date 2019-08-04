@@ -15,7 +15,8 @@ from tensorflow.keras.layers import Input
 from PIL import Image, ImageFont, ImageDraw
 import cv2
 
-from yolo3.model import yolo_eval, yolo_body, tiny_yolo_body
+from yolo3.model import yolo_body, tiny_yolo_body
+from yolo3.predict import yolo_eval
 from yolo3.utils import letterbox_image
 from tensorflow.keras.utils import multi_gpu_model
 from predict import predict, draw_boxes, get_colors
