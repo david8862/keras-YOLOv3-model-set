@@ -17,9 +17,9 @@ import cv2
 
 from yolo3.model import yolo_body, tiny_yolo_body
 from yolo3.predict import yolo_eval
-from yolo3.utils import letterbox_image
+from yolo3.predict_np import yolo_eval_np
+from yolo3.utils import letterbox_image, get_colors, draw_boxes
 from tensorflow.keras.utils import multi_gpu_model
-from predict import predict, draw_boxes, get_colors
 
 class YOLO(object):
     _defaults = {
@@ -169,7 +169,7 @@ class YOLO(object):
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
         image_data = np.array(image, dtype='uint8')
 
-        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, self.anchors, len(self.class_names), self.model_image_size)
+        out_boxes, out_classes, out_scores = yolo_eval_np(self.yolo_model, image_data, self.anchors, len(self.class_names), self.model_image_size)
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
         image_data = draw_boxes(image_data, out_boxes, out_classes, out_scores, self.class_names, self.colors)
@@ -187,7 +187,7 @@ class YOLO(object):
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
         image_data = np.array(image, dtype='uint8')
 
-        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, self.anchors, len(self.class_names), self.model_image_size)
+        out_boxes, out_classes, out_scores = yolo_eval_np(self.yolo_model, image_data, self.anchors, len(self.class_names), self.model_image_size)
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
         end = time.time()

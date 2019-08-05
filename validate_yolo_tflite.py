@@ -4,7 +4,8 @@ import os, argparse
 import numpy as np
 
 from tensorflow.lite.python import interpreter as interpreter_wrapper
-from predict import preprocess_image, get_classes, get_anchors, get_colors, yolo_head, handle_predictions, adjust_boxes, draw_boxes
+from yolo3.predict_np import yolo_head, handle_predictions, adjust_boxes
+from yolo3.utils import preprocess_image, get_classes, get_anchors, get_colors, draw_boxes
 
 
 def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, loop_count):

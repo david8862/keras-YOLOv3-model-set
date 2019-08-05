@@ -18,9 +18,9 @@ from PIL import Image, ImageFont, ImageDraw
 
 from yolo3.model_Mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body
 from yolo3.predict import yolo_eval
-from yolo3.utils import letterbox_image
-from predict import predict, draw_boxes
-import os
+from yolo3.predict_np import yolo_eval_np
+from yolo3.utils import letterbox_image, draw_boxes
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 from tensorflow.keras.utils import multi_gpu_model
 gpu_num=1
@@ -141,12 +141,12 @@ class YOLO(object):
         #
         # Returns:Either a single value if fetches is a single graph element, or a
         # list of values if fetches is a list(described above).
+        K.set_learning_phase(0)
         out_boxes, out_scores, out_classes = self.sess.run(
             [self.boxes, self.scores, self.classes],
             feed_dict={
                 self.yolo_model.input: image_data,
-                self.input_image_shape: [image.size[1], image.size[0]],
-                K.learning_phase(): 0
+                self.input_image_shape: [image.size[1], image.size[0]]
             })
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
@@ -201,7 +201,7 @@ class YOLO(object):
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
         image_data = np.array(image, dtype='uint8')
 
-        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, self.anchors, len(self.class_names), self.model_image_size)
+        out_boxes, out_classes, out_scores = yolo_eval_np(self.yolo_model, image_data, self.anchors, len(self.class_names), self.model_image_size)
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
         image_data = draw_boxes(image_data, out_boxes, out_classes, out_scores, self.class_names, self.colors)
@@ -218,7 +218,7 @@ class YOLO(object):
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
         image_data = np.array(image, dtype='uint8')
 
-        out_boxes, out_classes, out_scores = predict(self.yolo_model, image_data, self.anchors, len(self.class_names), self.model_image_size)
+        out_boxes, out_classes, out_scores = yolo_eval_np(self.yolo_model, image_data, self.anchors, len(self.class_names), self.model_image_size)
 
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
         end = time.time()

@@ -1,9 +1,7 @@
-import cv2
-from PIL import Image
-import os, colorsys
 import numpy as np
 import copy
 from scipy.special import expit, softmax
+from yolo3.utils import preprocess_image
 
 
 def yolo_head(predictions, anchors, num_classes, input_dims):
@@ -79,7 +77,7 @@ def _yolo_head(prediction, num_classes, anchors, input_dims):
     return np.concatenate([box_xy, box_wh, objectness, class_scores], axis=2)
 
 
-def predict(model, image_arr, anchors, num_classes, model_image_size, confidence=0.1, iou_threshold=0.4):
+def yolo_eval_np(model, image_arr, anchors, num_classes, model_image_size, confidence=0.1, iou_threshold=0.4):
     image, image_data = preprocess_image(image_arr, model_image_size)
 
     predictions = yolo_head(model.predict([image_data]), anchors, num_classes, input_dims=model_image_size)
@@ -119,57 +117,6 @@ def handle_predictions(predictions, confidence=0.6, iou_threshold=0.5):
     else:
         return [], [], []
 
-def get_classes(classes_path):
-    classes_file = os.path.expanduser(classes_path)
-    with open(classes_path) as f:
-        class_names = f.readlines()
-    class_names = [c.strip() for c in class_names]
-    return class_names
-
-
-def get_anchors(anchors_path):
-    anchors_file = os.path.expanduser(anchors_path)
-    with open(anchors_file) as f:
-        anchors = f.readline()
-    anchors = [float(x) for x in anchors.split(',')]
-    return np.array(anchors).reshape(-1, 2)
-
-def get_colors(class_names):
-    # Generate colors for drawing bounding boxes.
-    hsv_tuples = [(x / len(class_names), 1., 1.)
-                  for x in range(len(class_names))]
-    colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
-    colors = list(
-        map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)),
-            colors))
-    np.random.seed(10101)  # Fixed seed for consistent colors across runs.
-    np.random.shuffle(colors)  # Shuffle colors to decorrelate adjacent classes.
-    np.random.seed(None)  # Reset seed to default.
-    return colors
-
-def letterbox_image(image_arr, size):
-    '''resize image with unchanged aspect ratio using padding'''
-    image = Image.fromarray(image_arr)
-    iw, ih = image.size
-    w, h = size
-    scale = min(w/iw, h/ih)
-    nw = int(iw*scale)
-    nh = int(ih*scale)
-
-    image = image.resize((nw,nh), Image.BICUBIC)
-    new_image = Image.new('RGB', size, (128,128,128))
-    new_image.paste(image, ((w-nw)//2, (h-nh)//2))
-    new_image = np.asarray(new_image)
-    return new_image
-
-def preprocess_image(img_arr, model_image_size):
-    image = img_arr.astype('uint8')
-    #resized_image = cv2.resize(image, tuple(reversed(model_image_size)), cv2.INTER_AREA)
-    resized_image = letterbox_image(image, tuple(reversed(model_image_size)))
-    image_data = resized_image.astype('float32')
-    image_data /= 255.
-    image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
-    return image, image_data
 
 def soft_nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.6, is_soft=True, use_exp=False, sigma=0.5):
     nboxes, nclasses, nscores = [], [], []
@@ -337,45 +284,3 @@ def adjust_boxes(boxes, image, model_image_size):
 
     return np.array(adjusted_boxes)
 
-
-def draw_label(image, text, color, coords):
-    font = cv2.FONT_HERSHEY_PLAIN
-    font_scale = 1.
-    (text_width, text_height) = cv2.getTextSize(text, font, fontScale=font_scale, thickness=1)[0]
-
-    padding = 5
-    rect_height = text_height + padding * 2
-    rect_width = text_width + padding * 2
-
-    (x, y) = coords
-
-    cv2.rectangle(image, (x, y), (x + rect_width, y - rect_height), color, cv2.FILLED)
-    cv2.putText(image, text, (x + padding, y - text_height + padding), font,
-                fontScale=font_scale,
-                color=(255, 255, 255),
-                lineType=cv2.LINE_AA)
-
-    return image
-
-def draw_boxes(image, boxes, classes, scores, class_names, colors, show_score=True):
-    if classes is None or len(classes) == 0:
-        return image
-
-    for box, cls, score in zip(boxes, classes, scores):
-        xmin, ymin, xmax, ymax = box
-
-        class_name = class_names[cls]
-        if show_score:
-            label = '{} {:.2f}'.format(class_name, score)
-        else:
-            label = '{}'.format(class_name)
-        print(label, (xmin, ymin), (xmax, ymax))
-        # if no color info, use black(0,0,0)
-        if colors == None:
-            color = (0,0,0)
-        else:
-            color = colors[cls]
-        cv2.rectangle(image, (xmin, ymin), (xmax, ymax), color, 1, cv2.LINE_AA)
-        image = draw_label(image, label, color, (xmin, ymin))
-
-    return image

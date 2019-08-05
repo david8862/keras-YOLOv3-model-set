@@ -6,7 +6,8 @@ Calculate mAP for YOLO model on some annotation dataset
 import numpy as np
 import random
 import os, argparse
-from predict import predict, get_classes, get_anchors
+from yolo3.predict_np import yolo_eval_np, yolo_head, handle_predictions, adjust_boxes
+from yolo3.utils import preprocess_image, get_classes, get_anchors, get_colors, draw_boxes
 from PIL import Image
 import operator
 import matplotlib.pyplot as plt
@@ -107,8 +108,7 @@ def transform_gt_record(gt_records, class_names):
 
 
 
-def tflite_predict(interpreter, image_data, anchors, num_classes):
-    from predict import preprocess_image, yolo_head, handle_predictions, adjust_boxes
+def yolo_eval_tflite(interpreter, image_data, anchors, num_classes):
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
 
@@ -168,14 +168,13 @@ def get_prediction_class_records(model_path, annotation_records, anchors, class_
         image_data = np.array(image, dtype='uint8')
 
         if model_path.endswith('.tflite'):
-            pred_boxes, pred_classes, pred_scores = tflite_predict(interpreter, image_data, anchors, len(class_names))
+            pred_boxes, pred_classes, pred_scores = yolo_eval_tflite(interpreter, image_data, anchors, len(class_names))
         else:
-            pred_boxes, pred_classes, pred_scores = predict(model, image_data, anchors, len(class_names), model_image_size)
+            pred_boxes, pred_classes, pred_scores = yolo_eval_np(model, image_data, anchors, len(class_names), model_image_size)
 
         print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
 
         if save_result:
-            from predict import get_colors, draw_boxes
 
             gt_boxes, gt_classes, gt_scores = transform_gt_record(gt_records, class_names)
 

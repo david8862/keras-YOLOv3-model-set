@@ -3,7 +3,8 @@ from PIL import Image
 import os, argparse
 import numpy as np
 
-from predict import predict, get_classes, get_colors, get_anchors, draw_boxes
+from yolo3.predict_np import yolo_eval_np
+from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes
 from tensorflow.keras.models import load_model
 
 
@@ -13,7 +14,7 @@ def validate_yolo_model(model, image_file, anchors, class_names, model_image_siz
 
     start = time.time()
     for i in range(loop_count):
-        boxes, classes, scores = predict(model, image, anchors, len(class_names), model_image_size)
+        boxes, classes, scores = yolo_eval_np(model, image, anchors, len(class_names), model_image_size)
     end = time.time()
 
     print('Found {} boxes for {}'.format(len(boxes), image_file))
