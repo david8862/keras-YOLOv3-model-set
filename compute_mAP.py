@@ -7,7 +7,8 @@ import numpy as np
 import random
 import os, argparse
 from yolo3.predict_np import yolo_eval_np, yolo_head, handle_predictions, adjust_boxes
-from yolo3.utils import preprocess_image, get_classes, get_anchors, get_colors, draw_boxes
+from yolo3.data import preprocess_image
+from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes
 from PIL import Image
 import operator
 import matplotlib.pyplot as plt

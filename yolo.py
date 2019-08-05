@@ -18,7 +18,8 @@ import cv2
 from yolo3.model import yolo_body, tiny_yolo_body
 from yolo3.predict import yolo_eval
 from yolo3.predict_np import yolo_eval_np
-from yolo3.utils import letterbox_image, get_colors, draw_boxes
+from yolo3.data import letterbox_image
+from yolo3.utils import get_colors, draw_boxes
 from tensorflow.keras.utils import multi_gpu_model
 
 class YOLO(object):

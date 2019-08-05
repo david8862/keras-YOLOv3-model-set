@@ -11,8 +11,9 @@ from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnP
 #from tensorflow_model_optimization.sparsity import keras as sparsity
 import os
 from yolo3.model_Mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body
-from yolo3.utils import get_random_data, preprocess_true_boxes, resize_anchors, get_classes, get_anchors, add_metrics
+from yolo3.data import data_generator_wrapper
 from yolo3.loss import yolo_loss
+from yolo3.utils import resize_anchors, get_classes, get_anchors, add_metrics
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -236,29 +237,29 @@ def create_tiny_model(input_shape, anchors, num_classes, freeze_body=1, load_pre
 
     return model, loss_dict
 
-def data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes):
-    '''data generator for fit_generator'''
-    n = len(annotation_lines)
-    i = 0
-    while True:
-        image_data = []
-        box_data = []
-        for b in range(batch_size):
-            if i==0:
-                np.random.shuffle(annotation_lines)
-            image, box = get_random_data(annotation_lines[i], input_shape, random=True)
-            image_data.append(image)
-            box_data.append(box)
-            i = (i+1) % n
-        image_data = np.array(image_data)
-        box_data = np.array(box_data)
-        y_true = preprocess_true_boxes(box_data, input_shape, anchors, num_classes)
-        yield [image_data, *y_true], np.zeros(batch_size)
+#def data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes):
+    #'''data generator for fit_generator'''
+    #n = len(annotation_lines)
+    #i = 0
+    #while True:
+        #image_data = []
+        #box_data = []
+        #for b in range(batch_size):
+            #if i==0:
+                #np.random.shuffle(annotation_lines)
+            #image, box = get_random_data(annotation_lines[i], input_shape, random=True)
+            #image_data.append(image)
+            #box_data.append(box)
+            #i = (i+1) % n
+        #image_data = np.array(image_data)
+        #box_data = np.array(box_data)
+        #y_true = preprocess_true_boxes(box_data, input_shape, anchors, num_classes)
+        #yield [image_data, *y_true], np.zeros(batch_size)
 
-def data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes):
-    n = len(annotation_lines)
-    if n==0 or batch_size<=0: return None
-    return data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes)
+#def data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes):
+    #n = len(annotation_lines)
+    #if n==0 or batch_size<=0: return None
+    #return data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes)
 
 if __name__ == '__main__':
     _main()

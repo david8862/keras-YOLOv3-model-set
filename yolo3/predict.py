@@ -1,5 +1,5 @@
-# -*- coding=utf-8 -*-
 #!/usr/bin/python3
+# -*- coding=utf-8 -*-
 
 import tensorflow as tf
 from tensorflow.keras import backend as K

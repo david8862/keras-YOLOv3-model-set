@@ -19,7 +19,8 @@ from PIL import Image, ImageFont, ImageDraw
 from yolo3.model_Mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body
 from yolo3.predict import yolo_eval
 from yolo3.predict_np import yolo_eval_np
-from yolo3.utils import letterbox_image, draw_boxes
+from yolo3.data import letterbox_image
+from yolo3.utils import draw_boxes
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 from tensorflow.keras.utils import multi_gpu_model

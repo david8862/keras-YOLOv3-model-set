@@ -1,7 +1,9 @@
+#!/usr/bin/python3
+# -*- coding=utf-8 -*-
 import numpy as np
 import copy
 from scipy.special import expit, softmax
-from yolo3.utils import preprocess_image
+from yolo3.data import preprocess_image
 
 
 def yolo_head(predictions, anchors, num_classes, input_dims):
