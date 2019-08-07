@@ -33,7 +33,7 @@ def _main(model_type):
     annotation_path = 'trainval.txt'
     log_dir = 'logs/000/'
     classes_path = 'model_data/voc_classes.txt'
-    anchors_path = 'model_data/tiny_yolo_anchors.txt'
+    anchors_path = 'model_data/yolo_anchors.txt'
     #model_type = 'mobilenet'
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
