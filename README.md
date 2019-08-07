@@ -34,17 +34,14 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 ### Train
 1.train.py
 > * Support following models:
-  1. YOLOv3
-  2. Tiny-YOLOv3
-  3. YOLOv3_Lite-Mobilnet (YOLOv3-Lite use Depthwise Conv in yolo head part)
-  4. Tiny-YOLOv3_Lite-Mobilnet
-  * related param (dataset, pretrained weights, epochs num etc.) could be changed in code
+>  1. YOLOv3
+>  2. Tiny-YOLOv3
+>  3. YOLOv3_Lite-Mobilnet (YOLOv3-Lite use Depthwise Conv in yolo head part)
+>  4. Tiny-YOLOv3_Lite-Mobilnet
+>  * related param (dataset, pretrained weights, epochs num etc.) could be changed in code
 
 2.train_multiscale.py
-> * Multiscale training script for YOLOv3 & YOLOv3-Tiny model
-
-3.train_Mobilenet_multiscale.py
-> * Multiscale training script for YOLOv3_Lite-Mobilnet & YOLOv3_Lite-Mobilnet-Tiny model
+> * Multiscale training script for the supported models
 
 Checkpoints during training could be found at logs/000/. Choose a best one as result
 

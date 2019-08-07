@@ -8,8 +8,9 @@ from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
-import os, random, time
+import os, random, time, argparse
 from yolo3.model import yolo_body, tiny_yolo_body, custom_yolo_body, custom_tiny_yolo_body
+from yolo3.model_Mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body
 from yolo3.data import data_generator_wrapper
 from yolo3.loss import yolo_loss
 from yolo3.utils import get_classes, get_anchors, add_metrics
@@ -26,7 +27,7 @@ from  multiprocessing import Process, Queue
 #K.set_session(session)
 
 
-def train_on_scale(input_shape, lines, val_split, anchors, class_names,
+def train_on_scale(model_fn, input_shape, lines, val_split, anchors, class_names,
         callbacks, log_dir, epochs, initial_epoch,
         batch_size=8,
         weights_path=None,
@@ -47,17 +48,12 @@ def train_on_scale(input_shape, lines, val_split, anchors, class_names,
     num_train = len(lines) - num_val
 
     is_tiny_version = len(anchors)==6 # default setting
-    if is_tiny_version:
-        model, _ = create_tiny_model(input_shape, anchors, num_classes, load_pretrained=load_pretrained,
-                             weights_path=weights_path, freeze=freeze,
-            freeze_body=1, transfer_learn=True)
-    else:
-        model, _ = create_model(input_shape, anchors, num_classes, load_pretrained=load_pretrained,
-                             weights_path=weights_path, freeze=freeze,
-            freeze_body=1, transfer_learn=True) # make sure you know what you freeze
-
+    model, _ = model_fn(input_shape, anchors, num_classes, load_pretrained=load_pretrained,
+                        weights_path=weights_path, freeze=freeze,
+        freeze_body=1, transfer_learn=True) # make sure you know what you freeze
 
     model.summary()
+
     batch_size = batch_size
     print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
     model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
@@ -73,12 +69,12 @@ def train_on_scale(input_shape, lines, val_split, anchors, class_names,
     #return model
 
 
-
-def _main():
+def _main(model_type):
     annotation_path = 'trainval.txt'
     log_dir = 'logs/000/'
     classes_path = 'model_data/voc_classes.txt'
     anchors_path = 'model_data/yolo_anchors.txt'
+    #model_type = 'mobilenet'
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
     anchors = get_anchors(anchors_path)
@@ -112,12 +108,21 @@ def _main():
         weights_path = 'model_data/tiny_yolo_weights.h5'
         input_shape_list = [(320,320), (416,416), (512,512), (608,608)]
         batch_size_list = [2, 4, 8, 16]
+        if model_type == 'mobilenet':
+            model_fn = create_mobilenet_tiny_model
+        elif model_type == 'darknet':
+            model_fn = create_tiny_model
     else:
-        weights_path = 'model_data/darknet53_weights.h5'
         # due to GPU memory limit, we could only use small
         # input_shape and batch_size for full YOLOv3 model
         input_shape_list = [(320,320), (416,416), (480,480)]
         batch_size_list = [2, 4, 8]
+        if model_type == 'mobilenet':
+            model_fn = create_mobilenet_model
+            weights_path = 'model_data/yolo_weights.h5'
+        elif model_type == 'darknet':
+            model_fn = create_model
+            weights_path = 'model_data/darknet53_weights.h5'
 
     # Train 40 epochs with frozen layers first, to get a stable loss.
     input_shape = (416,416) # multiple of 32, hw
@@ -125,9 +130,10 @@ def _main():
     initial_epoch = 0
     epochs = 40
 
-    p = Process(target=train_on_scale, args=(input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, False, True))
+    p = Process(target=train_on_scale, args=(model_fn, input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, False, True))
     p.start()
     p.join()
+
     weights_path = log_dir + 'trained_epoch{}_shape{}.h5'.format(epochs, input_shape[0])
 
     # wait 3s for GPU free
@@ -141,7 +147,7 @@ def _main():
         initial_epoch = epochs
         epochs = epoch_step
 
-        p = Process(target=train_on_scale, args=(input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, True, False))
+        p = Process(target=train_on_scale, args=(model_fn, input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, True, False))
         p.start()
         p.join()
         # save the trained model and load in next round for different input shape
@@ -243,31 +249,99 @@ def create_tiny_model(input_shape, anchors, num_classes, freeze=True, freeze_bod
     return model, loss_dict
 
 
-#def data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes):
-    #'''data generator for fit_generator'''
-    #n = len(annotation_lines)
-    #i = 0
-    #while True:
-        #image_data = []
-        #box_data = []
-        #for b in range(batch_size):
-            #if i==0:
-                #np.random.shuffle(annotation_lines)
-            #image, box = get_random_data(annotation_lines[i], input_shape, random=True)
-            #image_data.append(image)
-            #box_data.append(box)
-            #i = (i+1) % n
-        #image_data = np.array(image_data)
-        #box_data = np.array(box_data)
-        #y_true = preprocess_true_boxes(box_data, input_shape, anchors, num_classes)
-        #yield [image_data, *y_true], np.zeros(batch_size)
+def create_mobilenet_model(input_shape, anchors, num_classes, freeze=True, freeze_body=1, load_pretrained=False,
+            weights_path='model_data/yolo_weights.h5', transfer_learn=True):
+    '''create the training model'''
+    K.clear_session() # get a new session
+    image_input = Input(shape=(None, None, 3))
+    h, w = input_shape
+    num_anchors = len(anchors)
 
-#def data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes):
-    #n = len(annotation_lines)
-    #if n==0 or batch_size<=0: return None
-    #return data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes)
+    y_true = [Input(shape=(h//{0:32, 1:16, 2:8}[l], w//{0:32, 1:16, 2:8}[l], \
+        num_anchors//3, num_classes+5)) for l in range(3)]
+
+    #model_body = yolo_mobilenet_body(image_input, num_anchors//3, num_classes)
+    model_body = custom_yolo_mobilenet_body(image_input, num_anchors//3, num_classes)
+    print('Create YOLOv3 MobileNet model with {} anchors and {} classes.'.format(num_anchors, num_classes))
+
+    if load_pretrained:
+        model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
+        print('Load weights {}.'.format(weights_path))
+
+    if transfer_learn:
+        if freeze_body in [1, 2]:
+            # Freeze the mobilenet body or freeze all but final feature map & input layers.
+            num = (87, len(model_body.layers)-3)[freeze_body-1]
+            for i in range(num): model_body.layers[i].trainable = False
+            print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
+
+    model_loss, xy_loss, wh_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(5,), name='yolo_loss',
+        arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5, 'use_focal_loss': False, 'use_softmax_loss': False})(
+        [*model_body.output, *y_true])
+    model = Model([model_body.input, *y_true], model_loss)
+
+    print("Train with input_shape {}".format(input_shape))
+    if freeze == False:
+        print('Unfreeze all of the layers.')
+        for i in range(len(model.layers)):
+            model.layers[i].trainable= True
+    model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
+
+    loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
+    add_metrics(model, loss_dict)
+
+    return model, loss_dict
+
+
+def create_mobilenet_tiny_model(input_shape, anchors, num_classes, freeze=True, freeze_body=1, load_pretrained=False,
+            weights_path='model_data/tiny_yolo_weights.h5', transfer_learn=True):
+    '''create the training model, for Tiny YOLOv3 MobileNet'''
+    K.clear_session() # get a new session
+    image_input = Input(shape=(None, None, 3))
+    h, w = input_shape
+    num_anchors = len(anchors)
+
+    y_true = [Input(shape=(h//{0:32, 1:16}[l], w//{0:32, 1:16}[l], \
+        num_anchors//2, num_classes+5)) for l in range(2)]
+
+    model_body = tiny_yolo_mobilenet_body(image_input, num_anchors//2, num_classes)
+    print('Create Tiny YOLOv3 MobileNet model with {} anchors and {} classes.'.format(num_anchors, num_classes))
+
+    if load_pretrained:
+        model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
+        print('Load weights {}.'.format(weights_path))
+
+    if transfer_learn:
+        if freeze_body in [1, 2]:
+            # Freeze the mobilenet body or freeze all but final feature map & input layers.
+            num = (87, len(model_body.layers)-2)[freeze_body-1]
+            for i in range(num): model_body.layers[i].trainable = False
+            print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
+
+    model_loss, xy_loss, wh_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(5,), name='yolo_loss',
+        arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.7, 'use_focal_loss': False, 'use_softmax_loss': False})(
+        [*model_body.output, *y_true])
+    model = Model([model_body.input, *y_true], model_loss)
+
+    print("Train with input_shape {}".format(input_shape))
+    if freeze == False:
+        print('Unfreeze all of the layers.')
+        for i in range(len(model.layers)):
+            model.layers[i].trainable= True
+    model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
+
+    loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
+    add_metrics(model, loss_dict)
+
+    return model, loss_dict
+
+
 
 if __name__ == '__main__':
-    _main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model_type', required=False,
+            help='YOLO model type: mobilnet/darknet, default=mobilenet', type=str, default='mobilenet')
 
+    args = parser.parse_args()
+    _main(args.model_type)
 
