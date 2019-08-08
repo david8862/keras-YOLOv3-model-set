@@ -36,8 +36,8 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 > * Support following models:
 >  1. YOLOv3
 >  2. Tiny-YOLOv3
->  3. YOLOv3_Lite-Mobilnet (YOLOv3-Lite use Depthwise Conv in yolo head part)
->  4. Tiny-YOLOv3_Lite-Mobilnet
+>  3. YOLOv3_Lite-Mobilenet (YOLOv3-Lite use Depthwise Conv in yolo head part)
+>  4. Tiny-YOLOv3_Lite-Mobilenet
 >  * related param (dataset, pretrained weights, epochs num etc.) could be changed in code
 
 2.train_multiscale.py
@@ -53,7 +53,7 @@ We need to dump out inference model from training checkpoint. Following script c
 python yolo_video.py --model_path=logs/000/<checkpoint>.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --dump_model --output_model_file=test.h5
 ```
 
-2.YOLOv3_Lite-Mobilnet & YOLOv3_Lite-Mobilnet-Tiny model
+2.YOLOv3_Lite-Mobilenet & YOLOv3_Lite-Mobilenet-Tiny model
 ```
 python yolo_Mobilenet.py --model_path=logs/000/<checkpoint>.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --dump_model --output_model_file=test.h5
 ```
@@ -79,7 +79,7 @@ python yolo_video.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 
 2.yolo_Mobilenet.py
-> * Demo script for YOLOv3_Lite-Mobilnet & YOLOv3_Lite-Mobilnet-Tiny model
+> * Demo script for YOLOv3_Lite-Mobilenet & YOLOv3_Lite-Mobilenet-Tiny model
 image detection mode
 ```
 python yolo_Mobilenet.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/roborock_classes.txt --image

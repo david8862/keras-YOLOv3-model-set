@@ -2,9 +2,6 @@
 
 from functools import wraps
 
-#import numpy as np
-#import tensorflow as tf
-#from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
 from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.layers import BatchNormalization
@@ -24,12 +21,6 @@ def DarknetConv2D(*args, **kwargs):
     return Conv2D(*args, **darknet_conv_kwargs)
 
 
-#def leakyRelu(x, leak=0.2, name="LeakyRelu"):
-    #with tf.variable_scope(name):
-        #f1 = 0.5 * (1 + leak)
-        #f2 = 0.5 * (1 - leak)
-        #return f1 * x + f2 * tf.abs(x)
-
 def DarknetConv2D_BN_Leaky(*args, **kwargs):
     """Darknet Convolution2D followed by BatchNormalization and LeakyReLU."""
     no_bias_kwargs = {'use_bias': False}
@@ -39,40 +30,6 @@ def DarknetConv2D_BN_Leaky(*args, **kwargs):
         BatchNormalization(),
         LeakyReLU(alpha=0.1))
 
-def resblock_body(x, num_filters, num_blocks):
-    '''A series of resblocks starting with a downsampling Convolution2D'''
-    # Darknet uses left and top padding instead of 'same' mode
-    x = ZeroPadding2D(((1,0),(1,0)))(x)
-    x = DarknetConv2D_BN_Leaky(num_filters, (3,3), strides=(2,2))(x)
-    for i in range(num_blocks):
-        y = compose(
-                DarknetConv2D_BN_Leaky(num_filters//2, (1,1)),
-                DarknetConv2D_BN_Leaky(num_filters, (3,3)))(x)
-        x = Add()([x,y])
-    return x
-
-def darknet_body(x):
-    '''Darknent body having 52 Convolution2D layers'''
-    # 416 x 416 x 3
-    x = DarknetConv2D_BN_Leaky(32, (3,3))(x)
-
-    # 208 x 208 x 32
-    x = resblock_body(x, 64, 1)
-
-    # 208 x 208 x 64
-    x = resblock_body(x, 128, 2)
-
-    # 104 x 104 x 128
-    x = resblock_body(x, 256, 8)
-
-    # 52 x 52 x 256
-    x = resblock_body(x, 512, 8)
-
-    # 26 x 26 x 512
-    x = resblock_body(x, 1024, 4)
-
-    # 13 x 13 x 1024
-    return x
 
 def make_last_layers(x, num_filters, out_filters):
     '''6 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer'''
@@ -88,7 +45,7 @@ def make_last_layers(x, num_filters, out_filters):
     return x, y
 
 
-def yolo_body(inputs, num_anchors, num_classes):
+def yolo_vgg16_body(inputs, num_anchors, num_classes):
     """Create YOLO_V3 model CNN body in Keras."""
     '''
     Layer Name input_1 Output: Tensor("input_1:0", shape=(?, 416, 416, 3), dtype=float32)
@@ -150,7 +107,7 @@ def yolo_body(inputs, num_anchors, num_classes):
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
-def tiny_yolo_body(inputs, num_anchors, num_classes):
+def tiny_yolo_vgg16_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 model CNN body in keras.'''
     x1 = compose(
             DarknetConv2D_BN_Leaky(16, (3,3)),

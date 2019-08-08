@@ -12,8 +12,9 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping, LambdaCallback
 #from tensorflow_model_optimization.sparsity import keras as sparsity
-from yolo3.model_Mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body
 from yolo3.model import yolo_body, tiny_yolo_body, custom_yolo_body, custom_tiny_yolo_body
+from yolo3.model_Mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body
+from yolo3.model_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
 from yolo3.data import data_generator_wrapper
 from yolo3.loss import yolo_loss
 from yolo3.utils import resize_anchors, get_classes, get_anchors, add_metrics
@@ -79,6 +80,9 @@ def _main(model_type):
         elif model_type == 'darknet':
             model, loss_dict = create_model(input_shape, anchors, num_classes, load_pretrained=False,
                 freeze_body=1, weights_path='model_data/darknet53_weights.h5', transfer_learn=True) # make sure you know what you freeze
+        elif model_type == 'vgg16':
+            model, loss_dict = create_vgg16_model(input_shape, anchors, num_classes, load_pretrained=False,
+                freeze_body=1, weights_path='model_data/yolo_weights.h5', transfer_learn=False) # make sure you know what you freeze
     model.summary()
 
     #pruning_callbacks = [sparsity.UpdatePruningStep(), sparsity.PruningSummaries(log_dir=log_dir, profile_batch=0)]
@@ -332,11 +336,51 @@ def create_mobilenet_tiny_model(input_shape, anchors, num_classes, freeze_body=1
     return model, loss_dict
 
 
+def create_vgg16_model(input_shape, anchors, num_classes, freeze_body=1, load_pretrained=False,
+            weights_path='model_data/yolo_weights.h5', transfer_learn=True):
+    '''create the training model, for YOLOv3 VGG16'''
+    K.clear_session() # get a new session
+    image_input = Input(shape=(None, None, 3))
+    h, w = input_shape
+    num_anchors = len(anchors)
+
+    y_true = [Input(shape=(h//{0:32, 1:16, 2:8}[l], w//{0:32, 1:16, 2:8}[l], \
+        num_anchors//3, num_classes+5)) for l in range(3)]
+
+    model_body = yolo_vgg16_body(image_input, num_anchors//3, num_classes)
+    print('Create YOLOv3 VGG16 model with {} anchors and {} classes.'.format(num_anchors, num_classes))
+
+    if load_pretrained:
+        model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
+        print('Load weights {}.'.format(weights_path))
+
+    if transfer_learn:
+        if freeze_body in [1, 2]:
+            # Freeze the VGG16 body or freeze all but final feature map & input layers.
+            num = (19, len(model_body.layers)-3)[freeze_body-1]
+            for i in range(num): model_body.layers[i].trainable = False
+            print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
+
+    model_loss, xy_loss, wh_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
+        arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5, 'use_focal_loss': False, 'use_softmax_loss': False})(
+        [*model_body.output, *y_true])
+    model = Model([model_body.input, *y_true], model_loss)
+
+    model.compile(optimizer=Adam(lr=1e-3), loss={
+        # use custom yolo_loss Lambda layer.
+        'yolo_loss': lambda y_true, y_pred: y_pred})
+
+    loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
+    add_metrics(model, loss_dict)
+
+    return model, loss_dict
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_type', required=False,
-            help='YOLO model type: mobilnet/darknet, default=mobilenet', type=str, default='mobilenet')
+            help='YOLO model type: mobilnet/darknet/vgg16, default=mobilenet', type=str, default='mobilenet')
 
     args = parser.parse_args()
     _main(args.model_type)
