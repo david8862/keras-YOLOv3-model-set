@@ -38,6 +38,7 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 >  2. Tiny-YOLOv3
 >  3. YOLOv3_Lite-Mobilenet (YOLOv3-Lite use Depthwise Conv in yolo head part)
 >  4. Tiny-YOLOv3_Lite-Mobilenet
+>  5. YOLOv3-VGG16
 >  * related param (dataset, pretrained weights, epochs num etc.) could be changed in code
 
 2.train_multiscale.py
@@ -60,9 +61,9 @@ python yolo_Mobilenet.py --model_path=logs/000/<checkpoint>.h5 --anchors_path=mo
 Change anchors file & class file for different training mode
 
 ### Evaluation
-Use "compute_mAP.py" to do evaluation on the inference model. It will draw out rec/pre curve for each class and AP/mAP result chart under "result" dir, and optionally save all the detection result on evaluation dataset as images
+Use "eval.py" to do evaluation on the inference model. It will draw out rec/pre curve for each class and AP/mAP result chart under "result" dir, and optionally save all the detection result on evaluation dataset as images
 ```
-python compute_mAP.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --model_image_size=416x416 --annotation_file=2007_test.txt --save_result
+python eval.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --model_image_size=416x416 --annotation_file=2007_test.txt --save_result
 ```
 
 ### Demo
@@ -99,7 +100,7 @@ tflite_convert [--post_training_quantize] --input_arrays=input_1 --input_shapes=
 ```
 python validate_yolo_tflite.py --model_path=test.tflite --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --image_file=test.jpg --loop_count=1
 ```
-#### You can also use "compute_mAP.py" to do evaluate on the TFLite model
+#### You can also use "eval.py" to do evaluate on the TFLite model
 
 3. TODO item
 - [] TFLite C++ inplementation of yolo head

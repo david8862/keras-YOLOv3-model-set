@@ -30,9 +30,12 @@ def darknet_body(x):
     return x
 
 
-def yolo_body(inputs, num_anchors, num_classes):
+def yolo_body(inputs, num_anchors, num_classes, weights_path=None):
     """Create YOLO_V3 model CNN body in Keras."""
     darknet = Model(inputs, darknet_body(inputs))
+    if weights_path is not None:
+        darknet.load_weights(weights_path, by_name=True)
+        print('Load weights {}.'.format(weights_path))
     x, y1 = make_last_layers(darknet.output, 512, num_anchors*(num_classes+5))
 
     x = compose(

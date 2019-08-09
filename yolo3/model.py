@@ -7,7 +7,7 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
-from yolo3.models.yolo3_darknet import yolo_body, tiny_yolo_body, custom_yolo_body, custom_tiny_yolo_body
+from yolo3.models.yolo3_darknet import yolo_body, tiny_yolo_body, custom_tiny_yolo_body
 from yolo3.models.yolo3_mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body
 from yolo3.models.yolo3_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
 from yolo3.loss import yolo_loss
@@ -31,11 +31,8 @@ def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_cl
             model_body = custom_yolo_mobilenet_body(image_input, num_anchors//3, num_classes)
             backbone_len = 87
         elif model_type == 'darknet':
-            if transfer_learn:
-                weights_path='model_data/darknet53_weights.h5'
-                model_body = custom_yolo_body(image_input, num_anchors//3, num_classes, weights_path)
-            else:
-                model_body = yolo_body(image_input, num_anchors//3, num_classes)
+            weights_path='model_data/darknet53_weights.h5'
+            model_body = yolo_body(image_input, num_anchors//3, num_classes, weights_path=weights_path)
             backbone_len = 185
         elif model_type == 'vgg16':
             model_body = yolo_vgg16_body(image_input, num_anchors//3, num_classes)

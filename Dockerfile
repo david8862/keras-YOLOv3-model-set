@@ -154,11 +154,11 @@ RUN git clone https://github.com/david8862/keras-YOLOv3-mobilenet.git && \
     popd && \
     wget -O keras-YOLOv3-mobilenet/model_data/yolov3.weights https://pjreddie.com/media/files/yolov3.weights && \
     wget -O keras-YOLOv3-mobilenet/model_data/yolov3-tiny.weights https://pjreddie.com/media/files/yolov3-tiny.weights && \
-    wget -O keras-YOLOv3-mobilenet/model_data/darknet53.weights https://pjreddie.com/media/files/darknet53.weights && \
+    wget -O keras-YOLOv3-mobilenet/model_data/darknet53.conv.74.weights https://pjreddie.com/media/files/darknet53.conv.74 && \
     pushd keras-YOLOv3-mobilenet/tools/ && \
     python convert.py yolov3.cfg ../model_data/yolov3.weights ../model_data/yolov3.h5 && \
     python convert.py yolov3-tiny.cfg ../model_data/yolov3-tiny.weights ../model_data/tiny_yolo_weights.h5 && \
-    python convert.py darknet53.cfg ../model_data/darknet53.weights ../model_data/darknet53_weights.h5
+    python convert.py darknet53.cfg ../model_data/darknet53.conv.74.weights ../model_data/darknet53_weights.h5
 
 
 
