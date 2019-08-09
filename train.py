@@ -10,7 +10,7 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping, LambdaCallback
 #from tensorflow_model_optimization.sparsity import keras as sparsity
-from yolo3.model import yolo_model
+from yolo3.model import get_yolo3_model
 from yolo3.data import data_generator_wrapper
 from yolo3.utils import resize_anchors, get_classes, get_anchors
 
@@ -59,7 +59,7 @@ def _main(model_type):
     num_val = int(len(lines)*val_split)
     num_train = len(lines) - num_val
 
-    model = yolo_model(model_type, input_shape, anchors, num_classes, load_pretrained=False, weights_path=None, transfer_learn=True, freeze_level=1)
+    model = get_yolo3_model(model_type, input_shape, anchors, num_classes, load_pretrained=False, weights_path=None, transfer_learn=True, freeze_level=1)
     model.summary()
 
     #pruning_callbacks = [sparsity.UpdatePruningStep(), sparsity.PruningSummaries(log_dir=log_dir, profile_batch=0)]

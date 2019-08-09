@@ -6,7 +6,7 @@ import numpy as np
 import tensorflow.keras.backend as K
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 import os, random, time, argparse
-from yolo3.model import yolo_model
+from yolo3.model import get_yolo3_model
 from yolo3.data import data_generator_wrapper
 from yolo3.utils import get_classes, get_anchors
 from  multiprocessing import Process, Queue
@@ -43,7 +43,7 @@ def train_on_scale(model_type, input_shape, lines, val_split, anchors, class_nam
     num_train = len(lines) - num_val
 
     is_tiny_version = len(anchors)==6 # default setting
-    model = yolo_model(model_type, input_shape, anchors, num_classes, load_pretrained=load_pretrained,
+    model = get_yolo3_model(model_type, input_shape, anchors, num_classes, load_pretrained=load_pretrained,
                         weights_path=weights_path, transfer_learn=True, freeze_level=freeze_level) # make sure you know what you freeze
     model.summary()
 

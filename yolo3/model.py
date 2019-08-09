@@ -14,7 +14,7 @@ from yolo3.loss import yolo_loss
 from yolo3.utils import add_metrics
 
 
-def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_classes, transfer_learn):
+def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_classes, transfer_learn=False):
     if is_tiny_version:
         if model_type == 'mobilenet':
             model_body = tiny_yolo_mobilenet_body(image_input, num_anchors//2, num_classes)
@@ -41,7 +41,7 @@ def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_cl
     return model_body, backbone_len
 
 
-def yolo_model(model_type, input_shape, anchors, num_classes, load_pretrained=False, weights_path=None, transfer_learn=True, freeze_level=1):
+def get_yolo3_model(model_type, input_shape, anchors, num_classes, load_pretrained=False, weights_path=None, transfer_learn=True, freeze_level=1):
     '''create the training model, for YOLOv3'''
     K.clear_session() # get a new session
     num_anchors = len(anchors)

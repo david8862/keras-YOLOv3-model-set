@@ -53,28 +53,28 @@ def yolo_body(inputs, num_anchors, num_classes, weights_path=None):
     return Model(inputs, [y1,y2,y3])
 
 
-def custom_yolo_body(inputs, num_anchors, num_classes, weights_path):
-    '''Create a custom YOLO_v3 model, use
-       pre-trained weights from darknet and fit
-       for our target classes.'''
-    #TODO: get darknet class number from class file
-    num_classes_coco = 80
-    base_model = yolo_body(inputs, num_anchors, num_classes_coco)
-    base_model.load_weights(weights_path, by_name=True)
-    print('Load weights {}.'.format(weights_path))
+#def custom_yolo_body(inputs, num_anchors, num_classes, weights_path):
+    #'''Create a custom YOLO_v3 model, use
+       #pre-trained weights from darknet and fit
+       #for our target classes.'''
+    ##TODO: get darknet class number from class file
+    #num_classes_coco = 80
+    #base_model = yolo_body(inputs, num_anchors, num_classes_coco)
+    #base_model.load_weights(weights_path, by_name=True)
+    #print('Load weights {}.'.format(weights_path))
 
-    #base_model.summary()
-    #from tensorflow.keras.utils import plot_model as plot
-    #plot(base_model, to_file='model.png', show_shapes=True)
+    ##base_model.summary()
+    ##from tensorflow.keras.utils import plot_model as plot
+    ##plot(base_model, to_file='model.png', show_shapes=True)
 
-    #get conv output in original network
-    y1 = base_model.get_layer('leaky_re_lu_57').output
-    y2 = base_model.get_layer('leaky_re_lu_64').output
-    y3 = base_model.get_layer('leaky_re_lu_71').output
-    y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_13')(y1)
-    y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_26')(y2)
-    y3 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_52')(y3)
-    return Model(inputs, [y1,y2,y3])
+    ##get conv output in original network
+    #y1 = base_model.get_layer('leaky_re_lu_57').output
+    #y2 = base_model.get_layer('leaky_re_lu_64').output
+    #y3 = base_model.get_layer('leaky_re_lu_71').output
+    #y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_13')(y1)
+    #y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_26')(y2)
+    #y3 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_52')(y3)
+    #return Model(inputs, [y1,y2,y3])
 
 def tiny_yolo_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 model CNN body in keras.'''
