@@ -5,7 +5,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.applications.vgg16 import VGG16
 
 from yolo3.utils import compose
-from yolo3.layers import DarknetConv2D, DarknetConv2D_BN_Leaky, make_last_layers
+from yolo3.models.layers import DarknetConv2D, DarknetConv2D_BN_Leaky, make_last_layers
 
 
 def yolo_vgg16_body(inputs, num_anchors, num_classes):

@@ -1,124 +1,92 @@
-"""YOLO_v3 Model Defined in Keras."""
-
-from tensorflow.keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+create YOLOv3 models with different backbone & head
+"""
+import tensorflow.keras.backend as K
+from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
-
-from yolo3.utils import compose
-from yolo3.layers import DarknetConv2D, DarknetConv2D_BN_Leaky, make_last_layers
-
-
-def resblock_body(x, num_filters, num_blocks):
-    '''A series of resblocks starting with a downsampling Convolution2D'''
-    # Darknet uses left and top padding instead of 'same' mode
-    x = ZeroPadding2D(((1,0),(1,0)))(x)
-    x = DarknetConv2D_BN_Leaky(num_filters, (3,3), strides=(2,2))(x)
-    for i in range(num_blocks):
-        y = compose(
-                DarknetConv2D_BN_Leaky(num_filters//2, (1,1)),
-                DarknetConv2D_BN_Leaky(num_filters, (3,3)))(x)
-        x = Add()([x,y])
-    return x
-
-def darknet_body(x):
-    '''Darknent body having 52 Convolution2D layers'''
-    x = DarknetConv2D_BN_Leaky(32, (3,3))(x)
-    x = resblock_body(x, 64, 1)
-    x = resblock_body(x, 128, 2)
-    x = resblock_body(x, 256, 8)
-    x = resblock_body(x, 512, 8)
-    x = resblock_body(x, 1024, 4)
-    return x
+from tensorflow.keras.optimizers import Adam
+from yolo3.models.yolo3_darknet import yolo_body, tiny_yolo_body, custom_yolo_body, custom_tiny_yolo_body
+from yolo3.models.yolo3_mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, custom_yolo_mobilenet_body
+from yolo3.models.yolo3_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
+from yolo3.loss import yolo_loss
+from yolo3.utils import add_metrics
 
 
-def yolo_body(inputs, num_anchors, num_classes):
-    """Create YOLO_V3 model CNN body in Keras."""
-    darknet = Model(inputs, darknet_body(inputs))
-    x, y1 = make_last_layers(darknet.output, 512, num_anchors*(num_classes+5))
+def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_classes, transfer_learn):
+    if is_tiny_version:
+        if model_type == 'mobilenet':
+            model_body = tiny_yolo_mobilenet_body(image_input, num_anchors//2, num_classes)
+            backbone_len = 87
+        elif model_type == 'darknet':
+            if transfer_learn:
+                weights_path='model_data/tiny_yolo_weights.h5'
+                model_body = custom_tiny_yolo_body(image_input, num_anchors//2, num_classes, weights_path)
+            else:
+                model_body = tiny_yolo_body(image_input, num_anchors//2, num_classes)
+            backbone_len = 20
+    else:
+        if model_type == 'mobilenet':
+            model_body = custom_yolo_mobilenet_body(image_input, num_anchors//3, num_classes)
+            backbone_len = 87
+        elif model_type == 'darknet':
+            if transfer_learn:
+                weights_path='model_data/darknet53_weights.h5'
+                model_body = custom_yolo_body(image_input, num_anchors//3, num_classes, weights_path)
+            else:
+                model_body = yolo_body(image_input, num_anchors//3, num_classes)
+            backbone_len = 185
+        elif model_type == 'vgg16':
+            model_body = yolo_vgg16_body(image_input, num_anchors//3, num_classes)
+            backbone_len = 19
 
-    x = compose(
-            DarknetConv2D_BN_Leaky(256, (1,1)),
-            UpSampling2D(2))(x)
-    x = Concatenate()([x,darknet.layers[152].output])
-    x, y2 = make_last_layers(x, 256, num_anchors*(num_classes+5))
-
-    x = compose(
-            DarknetConv2D_BN_Leaky(128, (1,1)),
-            UpSampling2D(2))(x)
-    x = Concatenate()([x,darknet.layers[92].output])
-    x, y3 = make_last_layers(x, 128, num_anchors*(num_classes+5))
-
-    return Model(inputs, [y1,y2,y3])
+    return model_body, backbone_len
 
 
-def custom_yolo_body(inputs, num_anchors, num_classes, weights_path):
-    '''Create a custom YOLO_v3 model, use
-       pre-trained weights from darknet and fit
-       for our target classes.'''
-    #TODO: get darknet class number from class file
-    num_classes_coco = 80
-    base_model = yolo_body(inputs, num_anchors, num_classes_coco)
-    base_model.load_weights(weights_path, by_name=True)
-    print('Load weights {}.'.format(weights_path))
+def yolo_model(model_type, input_shape, anchors, num_classes, load_pretrained=False, weights_path=None, transfer_learn=True, freeze_level=1):
+    '''create the training model, for YOLOv3'''
+    K.clear_session() # get a new session
+    num_anchors = len(anchors)
+    is_tiny_version = num_anchors==6 # default setting
 
-    #base_model.summary()
-    #from tensorflow.keras.utils import plot_model as plot
-    #plot(base_model, to_file='model.png', show_shapes=True)
+    h, w = input_shape
+    image_input = Input(shape=(None, None, 3))
+    if is_tiny_version:
+        y_true = [Input(shape=(h//{0:32, 1:16}[l], w//{0:32, 1:16}[l], \
+            num_anchors//2, num_classes+5)) for l in range(2)]
+    else:
+        y_true = [Input(shape=(h//{0:32, 1:16, 2:8}[l], w//{0:32, 1:16, 2:8}[l], \
+            num_anchors//3, num_classes+5)) for l in range(3)]
 
-    #get conv output in original network
-    y1 = base_model.get_layer('leaky_re_lu_57').output
-    y2 = base_model.get_layer('leaky_re_lu_64').output
-    y3 = base_model.get_layer('leaky_re_lu_71').output
-    y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_13')(y1)
-    y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_26')(y2)
-    y3 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_52')(y3)
-    return Model(inputs, [y1,y2,y3])
+    model_body, backbone_len = get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_classes, transfer_learn)
+    print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if is_tiny_version else '', model_type, num_anchors, num_classes))
 
-def tiny_yolo_body(inputs, num_anchors, num_classes):
-    '''Create Tiny YOLO_v3 model CNN body in keras.'''
-    x1 = compose(
-            DarknetConv2D_BN_Leaky(16, (3,3)),
-            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            DarknetConv2D_BN_Leaky(32, (3,3)),
-            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            DarknetConv2D_BN_Leaky(64, (3,3)),
-            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            DarknetConv2D_BN_Leaky(128, (3,3)),
-            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            DarknetConv2D_BN_Leaky(256, (3,3)))(inputs)
-    x2 = compose(
-            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            DarknetConv2D_BN_Leaky(512, (3,3)),
-            MaxPooling2D(pool_size=(2,2), strides=(1,1), padding='same'),
-            DarknetConv2D_BN_Leaky(1024, (3,3)),
-            DarknetConv2D_BN_Leaky(256, (1,1)))(x1)
-    y1 = compose(
-            DarknetConv2D_BN_Leaky(512, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
+    if load_pretrained:
+        model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
+        print('Load weights {}.'.format(weights_path))
 
-    x2 = compose(
-            DarknetConv2D_BN_Leaky(128, (1,1)),
-            UpSampling2D(2))(x2)
-    y2 = compose(
-            Concatenate(),
-            DarknetConv2D_BN_Leaky(256, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
+    if transfer_learn:
+        if freeze_level in [1, 2]:
+            # Freeze the backbone part or freeze all but final feature map & input layers.
+            num = (backbone_len, len(model_body.layers)-3)[freeze_level-1]
+            for i in range(num): model_body.layers[i].trainable = False
+            print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
+        elif freeze_level == 0:
+            # Unfreeze all layers.
+            for i in range(len(model.layers)):
+                model_body.layers[i].trainable= True
+            print('Unfreeze all of the layers.')
+    model_loss, xy_loss, wh_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
+        arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5, 'use_focal_loss': False, 'use_softmax_loss': False})(
+        [*model_body.output, *y_true])
+    model = Model([model_body.input, *y_true], model_loss)
 
-    return Model(inputs, [y1,y2])
+    model.compile(optimizer=Adam(lr=1e-3), loss={
+        # use custom yolo_loss Lambda layer.
+        'yolo_loss': lambda y_true, y_pred: y_pred})
 
-def custom_tiny_yolo_body(inputs, num_anchors, num_classes, weights_path):
-    '''Create a custom Tiny YOLO_v3 model, use
-       pre-trained weights from darknet and fit
-       for our target classes.'''
-    #TODO: get darknet class number from class file
-    num_classes_coco = 80
-    base_model = tiny_yolo_body(inputs, num_anchors, num_classes_coco)
-    base_model.load_weights(weights_path, by_name=True)
-    print('Load weights {}.'.format(weights_path))
+    loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
+    add_metrics(model, loss_dict)
 
-    #get conv output in original network
-    y1 = base_model.get_layer('leaky_re_lu_8').output
-    y2 = base_model.get_layer('leaky_re_lu_10').output
-    y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_13')(y1)
-    y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_26')(y2)
-    return Model(inputs, [y1,y2])
-
+    return model
