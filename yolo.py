@@ -28,7 +28,7 @@ gpu_num=1
 
 class YOLO(object):
     _defaults = {
-        "model_type": 'mobilenet',
+        "model_type": 'mobilenet_lite',
         "model_path": 'model_data/yolov3-tiny.h5',
         "anchors_path": 'model_data/tiny_yolo_anchors.txt',
         "classes_path": 'model_data/coco_classes.txt',
@@ -300,8 +300,8 @@ if __name__ == '__main__':
     Command line options
     '''
     parser.add_argument(
-        '--model_type', type=str, required=True,
-        help='YOLO model type: mobilnet/darknet/vgg16, default ' + YOLO.get_defaults("model_type")
+        '--model_type', type=str,
+        help='YOLO model type: mobilenet_lite/mobilenet/darknet/vgg16, default ' + YOLO.get_defaults("model_type")
     )
 
     parser.add_argument(

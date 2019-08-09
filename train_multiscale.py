@@ -145,7 +145,7 @@ def _main(model_type):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_type', required=False,
-            help='YOLO model type: mobilnet/darknet/vgg16, default=mobilenet', type=str, default='mobilenet')
+            help='YOLO model type: mobilenet_lite/mobilenet/darknet/vgg16, default=mobilenet_lite', type=str, default='mobilenet_lite')
 
     args = parser.parse_args()
     _main(args.model_type)

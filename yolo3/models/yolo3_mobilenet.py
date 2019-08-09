@@ -148,7 +148,7 @@ def yolo_mobilenet_body(inputs, num_anchors, num_classes):
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def custom_yolo_mobilenet_body(inputs, num_anchors, num_classes):
+def yololite_mobilenet_body(inputs, num_anchors, num_classes):
     '''Create Custom YOLO_v3 MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs,weights='imagenet')
 
@@ -183,7 +183,7 @@ def custom_yolo_mobilenet_body(inputs, num_anchors, num_classes):
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def tiny_yolo_mobilenet_body(inputs, num_anchors, num_classes):
+def tiny_yololite_mobilenet_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs,weights='imagenet')
 

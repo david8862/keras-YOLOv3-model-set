@@ -36,9 +36,10 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 > * Support following models:
 >  1. YOLOv3
 >  2. Tiny-YOLOv3
->  3. YOLOv3_Lite-Mobilenet (YOLOv3-Lite use Depthwise Conv in yolo head part)
->  4. Tiny-YOLOv3_Lite-Mobilenet
->  5. YOLOv3-VGG16
+>  3. YOLOv3-Mobilenet
+>  4. YOLOv3_Lite-Mobilenet (YOLOv3-Lite use Depthwise Conv in yolo head part)
+>  5. Tiny-YOLOv3_Lite-Mobilenet
+>  6. YOLOv3-VGG16
 >  * related param (dataset, pretrained weights, epochs num etc.) could be changed in code
 
 2.train_multiscale.py
@@ -49,16 +50,11 @@ Checkpoints during training could be found at logs/000/. Choose a best one as re
 ### Model dump
 We need to dump out inference model from training checkpoint. Following script cmd work for that.
 
-1.YOLOv3 & YOLOv3-Tiny model
 ```
-python yolo_video.py --model_path=logs/000/<checkpoint>.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --dump_model --output_model_file=test.h5
+python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --dump_model --output_model_file=test.h5
 ```
 
-2.YOLOv3_Lite-Mobilenet & YOLOv3_Lite-Mobilenet-Tiny model
-```
-python yolo_Mobilenet.py --model_path=logs/000/<checkpoint>.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --dump_model --output_model_file=test.h5
-```
-Change anchors file & class file for different training mode
+Change model_type, anchors file & class file for different training mode
 
 ### Evaluation
 Use "eval.py" to do evaluation on the inference model. It will draw out rec/pre curve for each class and AP/mAP result chart under "result" dir, and optionally save all the detection result on evaluation dataset as images
@@ -67,28 +63,18 @@ python eval.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt -
 ```
 
 ### Demo
-1.yolo_video.py
-> * Demo script for YOLOv3 & YOLOv3-Tiny model
+1.yolo.py
+> * Demo script for trained model
 image detection mode
 ```
-python yolo_video.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/roborock_classes.txt --image
+python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --image
 ```
 video detection mode
 ```
-python yolo_video.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/roborock_classes.txt --input=test.mp4
+python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --input=test.mp4
 ```
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 
-2.yolo_Mobilenet.py
-> * Demo script for YOLOv3_Lite-Mobilenet & YOLOv3_Lite-Mobilenet-Tiny model
-image detection mode
-```
-python yolo_Mobilenet.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/roborock_classes.txt --image
-```
-video detection mode
-```
-python yolo_Mobilenet.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/roborock_classes.txt --input=test.mp4
-```
 
 
 ### TFLite convert & validate
