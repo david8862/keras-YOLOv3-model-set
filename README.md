@@ -37,15 +37,20 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 >  1. YOLOv3
 >  2. Tiny-YOLOv3
 >  3. YOLOv3-Mobilenet
->  4. YOLOv3_Lite-Mobilenet (YOLOv3-Lite use Depthwise Conv in yolo head part)
->  5. Tiny-YOLOv3_Lite-Mobilenet
->  6. YOLOv3-VGG16
+>  4. Tiny-YOLOv3-Mobilenet
+>  5. YOLOv3_Lite-Mobilenet (YOLOv3-Lite use Depthwise Conv in yolo head part)
+>  6. Tiny-YOLOv3_Lite-Mobilenet
+>  7. YOLOv3-VGG16
+>  8. Tiny-YOLOv3-VGG16
 >  * related param (dataset, pretrained weights, epochs num etc.) could be changed in code
 
 2.train_multiscale.py
 > * Multiscale training script for the supported models
 
 Checkpoints during training could be found at logs/000/. Choose a best one as result
+
+3.SoftMax Loss & Focal Loss
+> * Could be tried by changing loss config code. See yolo3/model.py
 
 ### Model dump
 We need to dump out inference model from training checkpoint. Following script cmd work for that.

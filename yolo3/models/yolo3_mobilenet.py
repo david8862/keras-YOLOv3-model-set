@@ -9,7 +9,7 @@ from yolo3.models.layers import DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise
 
 
 def yolo_mobilenet_body(inputs, num_anchors, num_classes):
-    """Create YOLO_V3 model CNN body in Keras."""
+    """Create YOLO_V3 MobileNet model CNN body in Keras."""
     '''
     Layer Name: input_1 Output: Tensor("input_1:0", shape=(?, 416, 416, 3), dtype=float32)
     Layer Name: conv1_pad Output: Tensor("conv1_pad/Pad:0", shape=(?, 417, 417, 3), dtype=float32)
@@ -149,7 +149,7 @@ def yolo_mobilenet_body(inputs, num_anchors, num_classes):
 
 
 def yololite_mobilenet_body(inputs, num_anchors, num_classes):
-    '''Create Custom YOLO_v3 MobileNet model CNN body in keras.'''
+    '''Create YOLO_v3 Lite MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs,weights='imagenet')
 
     # input: 416 x 416 x 3
@@ -182,9 +182,39 @@ def yololite_mobilenet_body(inputs, num_anchors, num_classes):
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
+def tiny_yolo_mobilenet_body(inputs, num_anchors, num_classes):
+    '''Create Tiny YOLO_v3 MobileNet model CNN body in keras.'''
+    mobilenet = MobileNet(input_tensor=inputs,weights='imagenet')
+
+    # input: 416 x 416 x 3
+    # conv_pw_13_relu :13 x 13 x 1024
+    # conv_pw_11_relu :26 x 26 x 512
+    # conv_pw_5_relu : 52 x 52 x 256
+
+    x1 = mobilenet.get_layer('conv_pw_11_relu').output
+
+    x2 = mobilenet.get_layer('conv_pw_13_relu').output
+    x2 = DarknetConv2D_BN_Leaky(512, (1,1))(x2)
+
+    y1 = compose(
+            DarknetConv2D_BN_Leaky(1024, (3,3)),
+            #Depthwise_Separable_Conv2D(filters=1024, kernel_size=(3, 3), block_id_str='14'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
+
+    x2 = compose(
+            DarknetConv2D_BN_Leaky(256, (1,1)),
+            UpSampling2D(2))(x2)
+    y2 = compose(
+            Concatenate(),
+            DarknetConv2D_BN_Leaky(512, (3,3)),
+            #Depthwise_Separable_Conv2D(filters=512, kernel_size=(3, 3), block_id_str='15'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
+
+    return Model(inputs, [y1,y2])
+
 
 def tiny_yololite_mobilenet_body(inputs, num_anchors, num_classes):
-    '''Create Tiny YOLO_v3 MobileNet model CNN body in keras.'''
+    '''Create Tiny YOLO_v3 Lite MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs,weights='imagenet')
 
     # input: 416 x 416 x 3

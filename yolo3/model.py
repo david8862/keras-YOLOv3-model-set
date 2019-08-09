@@ -8,7 +8,7 @@ from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from yolo3.models.yolo3_darknet import yolo_body, tiny_yolo_body, custom_tiny_yolo_body
-from yolo3.models.yolo3_mobilenet import yolo_mobilenet_body, tiny_yololite_mobilenet_body, yololite_mobilenet_body
+from yolo3.models.yolo3_mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, yololite_mobilenet_body, tiny_yololite_mobilenet_body
 from yolo3.models.yolo3_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
 from yolo3.loss import yolo_loss
 from yolo3.utils import add_metrics
@@ -19,6 +19,9 @@ def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_cl
         if model_type == 'mobilenet_lite':
             model_body = tiny_yololite_mobilenet_body(image_input, num_anchors//2, num_classes)
             backbone_len = 87
+        elif model_type == 'mobilenet':
+            model_body = tiny_yolo_mobilenet_body(image_input, num_anchors//2, num_classes)
+            backbone_len = 87
         elif model_type == 'darknet':
             if transfer_learn:
                 weights_path='model_data/tiny_yolo_weights.h5'
@@ -26,6 +29,9 @@ def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_cl
             else:
                 model_body = tiny_yolo_body(image_input, num_anchors//2, num_classes)
             backbone_len = 20
+        elif model_type == 'vgg16':
+            model_body = tiny_yolo_vgg16_body(image_input, num_anchors//2, num_classes)
+            backbone_len = 19
     else:
         if model_type == 'mobilenet_lite':
             model_body = yololite_mobilenet_body(image_input, num_anchors//3, num_classes)

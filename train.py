@@ -25,13 +25,16 @@ session = tf.Session(config=config)
 # set session
 K.set_session(session)
 
-def _main(model_type):
+def _main(model_type, tiny_version):
     annotation_path = 'trainval.txt'
     log_dir = 'logs/000/'
     classes_path = 'model_data/voc_classes.txt'
-    anchors_path = 'model_data/yolo_anchors.txt'
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
+    if tiny_version:
+        anchors_path = 'model_data/tiny_yolo_anchors.txt'
+    else:
+        anchors_path = 'model_data/yolo_anchors.txt'
     base_anchors = get_anchors(anchors_path)
 
     input_shape = (416,416) # multiple of 32, hw
@@ -151,6 +154,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_type', required=False,
             help='YOLO model type: mobilenet_lite/mobilenet/darknet/vgg16, default=mobilenet_lite', type=str, default='mobilenet_lite')
-
+    parser.add_argument('--tiny_version', default=False, action="store_true",
+            help='Whether to use a tiny YOLO version')
     args = parser.parse_args()
-    _main(args.model_type)
+    _main(args.model_type, args.tiny_version)
