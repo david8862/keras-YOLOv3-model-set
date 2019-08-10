@@ -62,7 +62,7 @@ def train_on_scale(model_type, input_shape, lines, val_split, anchors, class_nam
     #return model
 
 
-def _main(model_type, tiny_version):
+def _main(model_type, tiny_version, weights_path):
     annotation_path = 'trainval.txt'
     log_dir = 'logs/000/'
     classes_path = 'model_data/voc_classes.txt'
@@ -74,6 +74,12 @@ def _main(model_type, tiny_version):
     else:
         anchors_path = 'model_data/yolo_anchors.txt'
     anchors = get_anchors(anchors_path)
+    if weights_path:
+        load_pretrained = True
+        freeze_level = 0
+    else:
+        load_pretrained = False
+        freeze_level = 1
 
     val_split = 0.1
     with open(annotation_path) as f:
@@ -115,13 +121,15 @@ def _main(model_type, tiny_version):
     batch_size = 8
     initial_epoch = 0
     epochs = 40
-    weights_path = None
+    #weights_path = None
 
-    p = Process(target=train_on_scale, args=(model_type, input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, False, 1))
+    p = Process(target=train_on_scale, args=(model_type, input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, load_pretrained, freeze_level))
     p.start()
     p.join()
 
     weights_path = log_dir + 'trained_epoch{}_shape{}.h5'.format(epochs, input_shape[0])
+    load_pretrained = True
+    freeze_level = 0
 
     # wait 3s for GPU free
     time.sleep(3)
@@ -134,7 +142,7 @@ def _main(model_type, tiny_version):
         initial_epoch = epochs
         epochs = epoch_step
 
-        p = Process(target=train_on_scale, args=(model_type, input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, True, 0))
+        p = Process(target=train_on_scale, args=(model_type, input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, load_pretrained, freeze_level))
         p.start()
         p.join()
         # save the trained model and load in next round for different input shape
@@ -151,7 +159,9 @@ if __name__ == '__main__':
             help='YOLO model type: mobilenet_lite/mobilenet/darknet/vgg16, default=mobilenet_lite', type=str, default='mobilenet_lite')
     parser.add_argument('--tiny_version', default=False, action="store_true",
             help='Whether to use a tiny YOLO version')
+    parser.add_argument('--weights_path', type=str,required=False, default=None,
+        help = "Pretrained model/weights file for fine tune")
 
     args = parser.parse_args()
-    _main(args.model_type, args.tiny_version)
+    _main(args.model_type, args.tiny_version, args.weights_path)
 

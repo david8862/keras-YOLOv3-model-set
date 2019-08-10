@@ -25,7 +25,7 @@ session = tf.Session(config=config)
 # set session
 K.set_session(session)
 
-def _main(model_type, tiny_version):
+def _main(model_type, tiny_version, weights_path):
     annotation_path = 'trainval.txt'
     log_dir = 'logs/000/'
     classes_path = 'model_data/voc_classes.txt'
@@ -36,6 +36,12 @@ def _main(model_type, tiny_version):
     else:
         anchors_path = 'model_data/yolo_anchors.txt'
     base_anchors = get_anchors(anchors_path)
+    if weights_path:
+        load_pretrained = True
+        freeze_level = 0
+    else:
+        load_pretrained = False
+        freeze_level = 1
 
     input_shape = (416,416) # multiple of 32, hw
 
@@ -62,7 +68,7 @@ def _main(model_type, tiny_version):
     num_val = int(len(lines)*val_split)
     num_train = len(lines) - num_val
 
-    model = get_yolo3_model(model_type, input_shape, anchors, num_classes, load_pretrained=False, weights_path=None, transfer_learn=True, freeze_level=1)
+    model = get_yolo3_model(model_type, input_shape, anchors, num_classes, load_pretrained=load_pretrained, weights_path=weights_path, transfer_learn=True, freeze_level=freeze_level)
     model.summary()
 
     #pruning_callbacks = [sparsity.UpdatePruningStep(), sparsity.PruningSummaries(log_dir=log_dir, profile_batch=0)]
@@ -156,5 +162,8 @@ if __name__ == '__main__':
             help='YOLO model type: mobilenet_lite/mobilenet/darknet/vgg16, default=mobilenet_lite', type=str, default='mobilenet_lite')
     parser.add_argument('--tiny_version', default=False, action="store_true",
             help='Whether to use a tiny YOLO version')
+    parser.add_argument('--weights_path', type=str,required=False, default=None,
+        help = "Pretrained model/weights file for fine tune")
+
     args = parser.parse_args()
-    _main(args.model_type, args.tiny_version)
+    _main(args.model_type, args.tiny_version, args.weights_path)
