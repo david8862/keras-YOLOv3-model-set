@@ -80,7 +80,7 @@ def get_yolo3_model(model_type, input_shape, anchors, num_classes, load_pretrain
             print('Freeze the first {} layers of total {} layers.'.format(num, len(model_body.layers)))
         elif freeze_level == 0:
             # Unfreeze all layers.
-            for i in range(len(model.layers)):
+            for i in range(len(model_body.layers)):
                 model_body.layers[i].trainable= True
             print('Unfreeze all of the layers.')
     model_loss, xy_loss, wh_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
