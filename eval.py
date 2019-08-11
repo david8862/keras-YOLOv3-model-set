@@ -6,7 +6,7 @@ Calculate mAP for YOLO model on some annotation dataset
 import numpy as np
 import random
 import os, argparse
-from yolo3.predict_np import yolo_eval_np, yolo_head, handle_predictions, adjust_boxes
+from yolo3.postprocess_np import yolo3_postprocess_np, yolo_head, handle_predictions, adjust_boxes
 from yolo3.data import preprocess_image
 from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes
 from PIL import Image
@@ -109,7 +109,7 @@ def transform_gt_record(gt_records, class_names):
 
 
 
-def yolo_eval_tflite(interpreter, image_data, anchors, num_classes):
+def yolo_predict_tflite(interpreter, image, anchors, num_classes):
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
 
@@ -120,7 +120,8 @@ def yolo_eval_tflite(interpreter, image_data, anchors, num_classes):
     height = input_details[0]['shape'][1]
     width = input_details[0]['shape'][2]
 
-    image, image_data = preprocess_image(image_data, (height, width))
+    image_data = preprocess_image(image, (height, width))
+    image_shape = image.size
 
     interpreter.set_tensor(input_details[0]['index'], image_data)
     interpreter.invoke()
@@ -133,7 +134,7 @@ def yolo_eval_tflite(interpreter, image_data, anchors, num_classes):
     predictions = yolo_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
 
     boxes, classes, scores = handle_predictions(predictions, confidence=0.1, iou_threshold=0.4)
-    boxes = adjust_boxes(boxes, image, (height, width))
+    boxes = adjust_boxes(boxes, image_shape, (height, width))
 
     return boxes, classes, scores
 
@@ -166,12 +167,14 @@ def get_prediction_class_records(model_path, annotation_records, anchors, class_
     pred_classes_records = {}
     for (image_name, gt_records) in annotation_records.items():
         image = Image.open(image_name)
-        image_data = np.array(image, dtype='uint8')
+        image_array = np.array(image, dtype='uint8')
+        image_data = preprocess_image(image, model_image_size)
+        image_shape = image.size
 
         if model_path.endswith('.tflite'):
-            pred_boxes, pred_classes, pred_scores = yolo_eval_tflite(interpreter, image_data, anchors, len(class_names))
+            pred_boxes, pred_classes, pred_scores = yolo_predict_tflite(interpreter, image, anchors, len(class_names))
         else:
-            pred_boxes, pred_classes, pred_scores = yolo_eval_np(model, image_data, anchors, len(class_names), model_image_size)
+            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size)
 
         print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
 
@@ -182,9 +185,9 @@ def get_prediction_class_records(model_path, annotation_records, anchors, class_
             result_dir=os.path.join('result','detection')
             touchdir(result_dir)
             colors = get_colors(class_names)
-            image_data = draw_boxes(image_data, gt_boxes, gt_classes, gt_scores, class_names, colors=None, show_score=False)
-            image_data = draw_boxes(image_data, pred_boxes, pred_classes, pred_scores, class_names, colors)
-            image = Image.fromarray(image_data)
+            image_array = draw_boxes(image_array, gt_boxes, gt_classes, gt_scores, class_names, colors=None, show_score=False)
+            image_array = draw_boxes(image_array, pred_boxes, pred_classes, pred_scores, class_names, colors)
+            image = Image.fromarray(image_array)
             # here we handle the RGBA image
             if(len(image.split()) == 4):
                 r, g, b, a = image.split()

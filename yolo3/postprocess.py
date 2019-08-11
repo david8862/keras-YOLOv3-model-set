@@ -69,14 +69,14 @@ def yolo_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape)
     return boxes, box_scores
 
 
-def yolo_eval(yolo_outputs,
+def yolo3_postprocess(yolo_outputs,
               anchors,
               num_classes,
               image_shape,
               max_boxes=20,
-              score_threshold=.6,
-              iou_threshold=.5):
-    """Evaluate YOLO model on given input and return filtered boxes."""
+              score_threshold=.1,
+              iou_threshold=.4):
+    """Postprocess for YOLO model on given input and return filtered boxes."""
 
     num_layers = len(yolo_outputs)
 

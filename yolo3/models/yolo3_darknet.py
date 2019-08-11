@@ -3,8 +3,7 @@
 from tensorflow.keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
 from tensorflow.keras.models import Model
 
-from yolo3.utils import compose
-from yolo3.models.layers import DarknetConv2D, DarknetConv2D_BN_Leaky, make_last_layers
+from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, make_last_layers
 
 
 def resblock_body(x, num_filters, num_blocks):

@@ -3,18 +3,21 @@ from PIL import Image
 import os, argparse
 import numpy as np
 
-from yolo3.predict_np import yolo_eval_np
+from yolo3.data import preprocess_image
+from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes
 from tensorflow.keras.models import load_model
 
 
 def validate_yolo_model(model, image_file, anchors, class_names, model_image_size, loop_count):
     image = Image.open(image_file)
-    image = np.array(image, dtype='uint8')
+    image_array = np.array(image, dtype='uint8')
+    image_data = preprocess_image(image, model_image_size)
+    image_shape = image.size
 
     start = time.time()
     for i in range(loop_count):
-        boxes, classes, scores = yolo_eval_np(model, image, anchors, len(class_names), model_image_size)
+        boxes, classes, scores = yolo3_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size)
     end = time.time()
 
     print('Found {} boxes for {}'.format(len(boxes), image_file))
@@ -23,10 +26,10 @@ def validate_yolo_model(model, image_file, anchors, class_names, model_image_siz
         print("Class: {}, Score: {}".format(class_names[cls], score))
 
     colors = get_colors(class_names)
-    image = draw_boxes(image, boxes, classes, scores, class_names, colors)
+    image_array = draw_boxes(image_array, boxes, classes, scores, class_names, colors)
     print("Average Inference time: {:.8f}s".format((end - start)/loop_count))
 
-    Image.fromarray(image).show()
+    Image.fromarray(image_array).show()
 
 def main():
     parser = argparse.ArgumentParser()

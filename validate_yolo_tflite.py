@@ -4,7 +4,7 @@ import os, argparse
 import numpy as np
 
 from tensorflow.lite.python import interpreter as interpreter_wrapper
-from yolo3.predict_np import yolo_head, handle_predictions, adjust_boxes
+from yolo3.postprocess_np import yolo_head, handle_predictions, adjust_boxes
 from yolo3.data import preprocess_image
 from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes
 
@@ -24,12 +24,13 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, loo
         floating_model = True
 
     img = Image.open(image_file)
-    img = np.array(img, dtype='uint8')
+    image = np.array(img, dtype='uint8')
 
     height = input_details[0]['shape'][1]
     width = input_details[0]['shape'][2]
 
-    image, image_data = preprocess_image(img, (height, width))
+    image_data = preprocess_image(img, (height, width))
+    image_shape = img.size
 
     start = time.time()
     for i in range(loop_count):
@@ -44,8 +45,8 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, loo
 
     predictions = yolo_head(out_list, anchors, num_classes=len(class_names), input_dims=(height, width))
 
-    boxes, classes, scores = handle_predictions(predictions, confidence=0.3, iou_threshold=0.4)
-    boxes = adjust_boxes(boxes, image, (height, width))
+    boxes, classes, scores = handle_predictions(predictions, confidence=0.1, iou_threshold=0.4)
+    boxes = adjust_boxes(boxes, image_shape, (height, width))
     print('Found {} boxes for {}'.format(len(boxes), image_file))
 
     for box, cls, score in zip(boxes, classes, scores):

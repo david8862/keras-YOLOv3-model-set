@@ -3,7 +3,7 @@
 
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from yolo3.predict import yolo_head
+from yolo3.postprocess import yolo_head
 
 def softmax_focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
     """Compute softmax focal loss.

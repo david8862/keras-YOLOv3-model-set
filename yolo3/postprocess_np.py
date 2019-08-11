@@ -3,7 +3,6 @@
 import numpy as np
 import copy
 from scipy.special import expit, softmax
-from yolo3.data import preprocess_image
 
 
 def yolo_head(predictions, anchors, num_classes, input_dims):
@@ -79,15 +78,13 @@ def _yolo_head(prediction, num_classes, anchors, input_dims):
     return np.concatenate([box_xy, box_wh, objectness, class_scores], axis=2)
 
 
-def yolo_eval_np(model, image_arr, anchors, num_classes, model_image_size, confidence=0.1, iou_threshold=0.4):
-    image, image_data = preprocess_image(image_arr, model_image_size)
-
-    predictions = yolo_head(model.predict([image_data]), anchors, num_classes, input_dims=model_image_size)
+def yolo3_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_image_size, confidence=0.1, iou_threshold=0.4):
+    predictions = yolo_head(yolo_outputs, anchors, num_classes, input_dims=model_image_size)
 
     boxes, classes, scores = handle_predictions(predictions,
                                                 confidence=confidence,
                                                 iou_threshold=iou_threshold)
-    boxes = adjust_boxes(boxes, image_arr, model_image_size)
+    boxes = adjust_boxes(boxes, image_shape, model_image_size)
 
     return boxes, classes, scores
 
@@ -243,15 +240,16 @@ def nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.6):
     return nboxes, nclasses, nscores
 
 
-def adjust_boxes(boxes, image, model_image_size):
+def adjust_boxes(boxes, img_shape, model_image_size):
     if boxes is None or len(boxes) == 0:
         return []
 
-    height, width = image.shape[:2]
+    image_shape = np.array(img_shape, dtype='float32')
+    #height, width = image_shape
+    width, height = image_shape
     adjusted_boxes = []
 
     model_image_size = np.array(model_image_size, dtype='float32')
-    image_shape = np.array([width, height], dtype='float32')
 
     new_shape = np.round(image_shape * np.min(model_image_size/image_shape))
     offset = (model_image_size-new_shape)/2.
@@ -284,5 +282,5 @@ def adjust_boxes(boxes, image, model_image_size):
         xmax = min(width, np.floor(xmax + 0.5).astype('int32'))
         adjusted_boxes.append([xmin,ymin,xmax,ymax])
 
-    return np.array(adjusted_boxes)
+    return np.array(adjusted_boxes,dtype=np.int32)
 

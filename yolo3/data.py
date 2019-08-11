@@ -22,14 +22,13 @@ def letterbox_image(image, size):
     return new_image
 
 
-def preprocess_image(img_arr, model_image_size):
-    image = img_arr.astype('uint8')
+def preprocess_image(image, model_image_size):
     #resized_image = cv2.resize(image, tuple(reversed(model_image_size)), cv2.INTER_AREA)
-    resized_image = letterbox_image(Image.fromarray(image), tuple(reversed(model_image_size)))
+    resized_image = letterbox_image(image, tuple(reversed(model_image_size)))
     image_data = np.asarray(resized_image).astype('float32')
     image_data /= 255.
     image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
-    return image, image_data
+    return image_data
 
 
 def rand(a=0, b=1):
