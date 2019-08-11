@@ -37,10 +37,8 @@ def _main(model_type, tiny_version, weights_path):
         anchors_path = 'model_data/yolo_anchors.txt'
     base_anchors = get_anchors(anchors_path)
     if weights_path:
-        load_pretrained = True
         freeze_level = 0
     else:
-        load_pretrained = False
         freeze_level = 1
 
     input_shape = (416,416) # multiple of 32, hw
@@ -68,7 +66,7 @@ def _main(model_type, tiny_version, weights_path):
     num_val = int(len(lines)*val_split)
     num_train = len(lines) - num_val
 
-    model = get_yolo3_model(model_type, input_shape, anchors, num_classes, load_pretrained=load_pretrained, weights_path=weights_path, freeze_level=freeze_level)
+    model = get_yolo3_model(model_type, input_shape, anchors, num_classes, weights_path=weights_path, freeze_level=freeze_level)
     model.summary()
 
     #pruning_callbacks = [sparsity.UpdatePruningStep(), sparsity.PruningSummaries(log_dir=log_dir, profile_batch=0)]

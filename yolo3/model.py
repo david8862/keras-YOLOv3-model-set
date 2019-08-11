@@ -47,7 +47,7 @@ def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_cl
     return model_body, backbone_len
 
 
-def get_yolo3_model(model_type, input_shape, anchors, num_classes, load_pretrained=False, weights_path=None, freeze_level=1):
+def get_yolo3_model(model_type, input_shape, anchors, num_classes, weights_path=None, freeze_level=1):
     '''create the training model, for YOLOv3'''
     K.clear_session() # get a new session
     num_anchors = len(anchors)
@@ -65,7 +65,7 @@ def get_yolo3_model(model_type, input_shape, anchors, num_classes, load_pretrain
     model_body, backbone_len = get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_classes)
     print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if is_tiny_version else '', model_type, num_anchors, num_classes))
 
-    if load_pretrained:
+    if weights_path:
         model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
         print('Load weights {}.'.format(weights_path))
 
