@@ -151,7 +151,7 @@ def _main(model_type, tiny_version, weights_path):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_type', required=False,
-            help='YOLO model type: mobilenet_lite/mobilenet/darknet/vgg16, default=mobilenet_lite', type=str, default='mobilenet_lite')
+            help='YOLO model type: mobilenet_lite/mobilenet/darknet/vgg16/xception/xception_lite, default=mobilenet_lite', type=str, default='mobilenet_lite')
     parser.add_argument('--tiny_version', default=False, action="store_true",
             help='Whether to use a tiny YOLO version')
     parser.add_argument('--weights_path', type=str,required=False, default=None,

@@ -42,6 +42,10 @@ A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/
 >  6. Tiny-YOLOv3_Lite-Mobilenet
 >  7. YOLOv3-VGG16
 >  8. Tiny-YOLOv3-VGG16
+>  9. YOLOv3-Xception
+>  10. Tiny-YOLOv3-Xception
+>  11. YOLOv3_Lite-Xception
+>  12. Tiny-YOLOv3_Lite-Xception
 >  * related param (dataset, pretrained weights, epochs num etc.) could be changed in code
 
 2.train_multiscale.py

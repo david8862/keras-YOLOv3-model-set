@@ -10,6 +10,7 @@ from tensorflow.keras.optimizers import Adam
 from yolo3.models.yolo3_darknet import yolo_body, tiny_yolo_body, custom_tiny_yolo_body
 from yolo3.models.yolo3_mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, yololite_mobilenet_body, tiny_yololite_mobilenet_body
 from yolo3.models.yolo3_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
+from yolo3.models.yolo3_xception import yolo_xception_body, yololite_xception_body, tiny_yolo_xception_body, tiny_yololite_xception_body
 from yolo3.loss import yolo_loss
 from yolo3.utils import add_metrics
 
@@ -29,6 +30,14 @@ def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_cl
         elif model_type == 'vgg16':
             model_body = tiny_yolo_vgg16_body(image_input, num_anchors//2, num_classes)
             backbone_len = 19
+        elif model_type == 'xception':
+            model_body = tiny_yolo_xception_body(image_input, num_anchors//2, num_classes)
+            backbone_len = 132
+        elif model_type == 'xception_lite':
+            model_body = tiny_yololite_xception_body(image_input, num_anchors//2, num_classes)
+            backbone_len = 132
+        else:
+            raise ValueError('Unsupported model type')
     else:
         if model_type == 'mobilenet_lite':
             model_body = yololite_mobilenet_body(image_input, num_anchors//3, num_classes)
@@ -43,7 +52,14 @@ def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_cl
         elif model_type == 'vgg16':
             model_body = yolo_vgg16_body(image_input, num_anchors//3, num_classes)
             backbone_len = 19
-
+        elif model_type == 'xception':
+            model_body = yolo_xception_body(image_input, num_anchors//3, num_classes)
+            backbone_len = 132
+        elif model_type == 'xception_lite':
+            model_body = yololite_xception_body(image_input, num_anchors//3, num_classes)
+            backbone_len = 132
+        else:
+            raise ValueError('Unsupported model type')
     return model_body, backbone_len
 
 
