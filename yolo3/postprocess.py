@@ -34,23 +34,21 @@ def yolo_head(feats, anchors, num_classes, input_shape, calc_loss=False):
 
 def yolo_correct_boxes(box_xy, box_wh, input_shape, image_shape):
     '''Get corrected boxes'''
-    box_yx = box_xy[..., ::-1]
-    box_hw = box_wh[..., ::-1]
-    input_shape = K.cast(input_shape, K.dtype(box_yx))
-    image_shape = K.cast(image_shape, K.dtype(box_yx))
+    input_shape = K.cast(input_shape, K.dtype(box_xy))
+    image_shape = K.cast(image_shape, K.dtype(box_xy))
     new_shape = K.round(image_shape * K.min(input_shape/image_shape))
     offset = (input_shape-new_shape)/2./input_shape
     scale = input_shape/new_shape
-    box_yx = (box_yx - offset) * scale
-    box_hw *= scale
+    box_xy = (box_xy - offset) * scale
+    box_wh *= scale
 
-    box_mins = box_yx - (box_hw / 2.)
-    box_maxes = box_yx + (box_hw / 2.)
+    box_mins = box_xy - (box_wh / 2.)
+    box_maxes = box_xy + (box_wh / 2.)
     boxes =  K.concatenate([
-        box_mins[..., 0:1],  # y_min
-        box_mins[..., 1:2],  # x_min
-        box_maxes[..., 0:1],  # y_max
-        box_maxes[..., 1:2]  # x_max
+        box_mins[..., 0:1],  # x_min
+        box_mins[..., 1:2],  # y_min
+        box_maxes[..., 0:1],  # x_max
+        box_maxes[..., 1:2]  # y_max
     ])
 
     # Scale boxes back to original image shape.
