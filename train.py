@@ -68,7 +68,7 @@ def _main(model_type, tiny_version, weights_path):
     num_val = int(len(lines)*val_split)
     num_train = len(lines) - num_val
 
-    model = get_yolo3_model(model_type, input_shape, anchors, num_classes, load_pretrained=load_pretrained, weights_path=weights_path, transfer_learn=True, freeze_level=freeze_level)
+    model = get_yolo3_model(model_type, input_shape, anchors, num_classes, load_pretrained=load_pretrained, weights_path=weights_path, freeze_level=freeze_level)
     model.summary()
 
     #pruning_callbacks = [sparsity.UpdatePruningStep(), sparsity.PruningSummaries(log_dir=log_dir, profile_batch=0)]
