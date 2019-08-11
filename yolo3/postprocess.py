@@ -67,15 +67,16 @@ def yolo_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape)
     return boxes, box_scores
 
 
-def yolo3_postprocess(yolo_outputs,
+def yolo3_postprocess(args,
               anchors,
               num_classes,
-              image_shape,
               max_boxes=20,
               score_threshold=.1,
               iou_threshold=.4):
     """Postprocess for YOLO model on given input and return filtered boxes."""
 
+    yolo_outputs = args[0]
+    image_shape = args[1]
     num_layers = len(yolo_outputs)
 
     anchor_mask = [[6,7,8], [3,4,5], [0,1,2]] if num_layers==3 else [[3,4,5], [0,1,2]] # default setting
@@ -114,4 +115,3 @@ def yolo3_postprocess(yolo_outputs,
     classes_ = K.concatenate(classes_, axis=0)
 
     return boxes_, scores_, classes_
-
