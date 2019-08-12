@@ -3,7 +3,7 @@
 from tensorflow.keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
 from tensorflow.keras.models import Model
 
-from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, make_last_layers
+from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, Darknet_Depthwise_Separable_Conv2D_BN_Leaky, make_last_layers, make_depthwise_separable_last_layers
 
 
 def resblock_body(x, num_filters, num_blocks):
@@ -26,6 +26,29 @@ def darknet_body(x):
     x = resblock_body(x, 256, 8)
     x = resblock_body(x, 512, 8)
     x = resblock_body(x, 1024, 4)
+    return x
+
+
+def depthwise_separable_resblock_body(x, num_filters, num_blocks):
+    '''A series of resblocks starting with a downsampling Convolution2D'''
+    # Darknet uses left and top padding instead of 'same' mode
+    x = ZeroPadding2D(((1,0),(1,0)))(x)
+    x = Darknet_Depthwise_Separable_Conv2D_BN_Leaky(num_filters, (3,3), strides=(2,2))(x)
+    for i in range(num_blocks):
+        y = compose(
+                DarknetConv2D_BN_Leaky(num_filters//2, (1,1)),
+                Darknet_Depthwise_Separable_Conv2D_BN_Leaky(num_filters, (3,3)))(x)
+        x = Add()([x,y])
+    return x
+
+def darknetlite_body(x):
+    '''Darknent body having 52 Convolution2D layers'''
+    x = Darknet_Depthwise_Separable_Conv2D_BN_Leaky(32, (3,3))(x)
+    x = depthwise_separable_resblock_body(x, 64, 1)
+    x = depthwise_separable_resblock_body(x, 128, 2)
+    x = depthwise_separable_resblock_body(x, 256, 8)
+    x = depthwise_separable_resblock_body(x, 512, 8)
+    x = depthwise_separable_resblock_body(x, 1024, 4)
     return x
 
 
@@ -74,6 +97,27 @@ def yolo_body(inputs, num_anchors, num_classes, weights_path=None):
     #y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_26')(y2)
     #y3 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_52')(y3)
     #return Model(inputs, [y1,y2,y3])
+
+
+def yololite_body(inputs, num_anchors, num_classes):
+    """Create YOLO_V3 Lite model CNN body in Keras."""
+    darknetlite = Model(inputs, darknetlite_body(inputs))
+    x, y1 = make_depthwise_separable_last_layers(darknetlite.output, 512, num_anchors*(num_classes+5))
+
+    x = compose(
+            DarknetConv2D_BN_Leaky(256, (1,1)),
+            UpSampling2D(2))(x)
+    x = Concatenate()([x,darknetlite.layers[152].output])
+    x, y2 = make_depthwise_separable_last_layers(x, 256, num_anchors*(num_classes+5))
+
+    x = compose(
+            DarknetConv2D_BN_Leaky(128, (1,1)),
+            UpSampling2D(2))(x)
+    x = Concatenate()([x,darknetlite.layers[92].output])
+    x, y3 = make_depthwise_separable_last_layers(x, 128, num_anchors*(num_classes+5))
+
+    return Model(inputs, [y1,y2,y3])
+
 
 def tiny_yolo_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 model CNN body in keras.'''
@@ -128,23 +172,23 @@ def custom_tiny_yolo_body(inputs, num_anchors, num_classes, weights_path):
 def tiny_yololite_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 Lite model CNN body in keras.'''
     x1 = compose(
-            Depthwise_Separable_Conv2D_BN_Leaky(16, (3,3), block_id_str='1'),
+            Depthwise_Separable_Conv2D_BN_Leaky(16, (3,3)),
             MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            Depthwise_Separable_Conv2D_BN_Leaky(32, (3,3), block_id_str='2'),
+            Depthwise_Separable_Conv2D_BN_Leaky(32, (3,3)),
             MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            Depthwise_Separable_Conv2D_BN_Leaky(64, (3,3), block_id_str='3'),
+            Depthwise_Separable_Conv2D_BN_Leaky(64, (3,3)),
             MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            Depthwise_Separable_Conv2D_BN_Leaky(128, (3,3), block_id_str='4'),
+            Depthwise_Separable_Conv2D_BN_Leaky(128, (3,3)),
             MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            Depthwise_Separable_Conv2D_BN_Leaky(256, (3,3), block_id_str='5'))(inputs)
+            Depthwise_Separable_Conv2D_BN_Leaky(256, (3,3)))(inputs)
     x2 = compose(
             MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
-            Depthwise_Separable_Conv2D_BN_Leaky(512, (3,3), block_id_str='6'),
+            Depthwise_Separable_Conv2D_BN_Leaky(512, (3,3)),
             MaxPooling2D(pool_size=(2,2), strides=(1,1), padding='same'),
-            Depthwise_Separable_Conv2D_BN_Leaky(1024, (3,3), block_id_str='7'),
+            Depthwise_Separable_Conv2D_BN_Leaky(1024, (3,3)),
             DarknetConv2D_BN_Leaky(256, (1,1)))(x1)
     y1 = compose(
-            Depthwise_Separable_Conv2D_BN_Leaky(512, (3,3), block_id_str='8'),
+            Depthwise_Separable_Conv2D_BN_Leaky(512, (3,3)),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
     x2 = compose(
@@ -152,7 +196,7 @@ def tiny_yololite_body(inputs, num_anchors, num_classes):
             UpSampling2D(2))(x2)
     y2 = compose(
             Concatenate(),
-            Depthwise_Separable_Conv2D_BN_Leaky(256, (3,3), block_id_str='9'),
+            Depthwise_Separable_Conv2D_BN_Leaky(256, (3,3)),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
 
     return Model(inputs, [y1,y2])
