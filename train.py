@@ -25,18 +25,18 @@ session = tf.Session(config=config)
 # set session
 K.set_session(session)
 
-def _main(model_type, tiny_version, weights_path):
+def _main(args):
     annotation_path = 'trainval.txt'
     log_dir = 'logs/000/'
     classes_path = 'model_data/voc_classes.txt'
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
-    if tiny_version:
+    if args.tiny_version:
         anchors_path = 'model_data/tiny_yolo_anchors.txt'
     else:
         anchors_path = 'model_data/yolo_anchors.txt'
     base_anchors = get_anchors(anchors_path)
-    if weights_path:
+    if args.weights_path:
         freeze_level = 0
     else:
         freeze_level = 1
@@ -66,7 +66,7 @@ def _main(model_type, tiny_version, weights_path):
     num_val = int(len(lines)*val_split)
     num_train = len(lines) - num_val
 
-    model = get_yolo3_model(model_type, input_shape, anchors, num_classes, weights_path=weights_path, freeze_level=freeze_level)
+    model = get_yolo3_model(args.model_type, input_shape, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate)
     model.summary()
 
     #pruning_callbacks = [sparsity.UpdatePruningStep(), sparsity.PruningSummaries(log_dir=log_dir, profile_batch=0)]
@@ -95,7 +95,7 @@ def _main(model_type, tiny_version, weights_path):
         print("Unfreeze and continue training, to fine-tune.")
         for i in range(len(model.layers)):
             model.layers[i].trainable = True
-        model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
+        model.compile(optimizer=Adam(lr=args.learning_rate/10), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
         batch_size = 16 # note that more GPU memory is required after unfreezing the body
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
@@ -162,6 +162,8 @@ if __name__ == '__main__':
             help='Whether to use a tiny YOLO version')
     parser.add_argument('--weights_path', type=str,required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
+    parser.add_argument('--learning_rate', type=float,required=False, default=1e-3,
+        help = "Initial learning rate")
 
     args = parser.parse_args()
-    _main(args.model_type, args.tiny_version, args.weights_path)
+    _main(args)

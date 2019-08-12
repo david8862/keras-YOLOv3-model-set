@@ -26,7 +26,8 @@ def train_on_scale(model_type, input_shape, lines, val_split, anchors, class_nam
         callbacks, log_dir, epochs, initial_epoch,
         batch_size=8,
         weights_path=None,
-        freeze_level=0):
+        freeze_level=0,
+        learning_rate=1e-3):
 
     import tensorflow as tf
     config = tf.ConfigProto()
@@ -43,7 +44,8 @@ def train_on_scale(model_type, input_shape, lines, val_split, anchors, class_nam
 
     is_tiny_version = len(anchors)==6 # default setting
     model = get_yolo3_model(model_type, input_shape, anchors, num_classes,
-                        weights_path=weights_path, freeze_level=freeze_level) # make sure you know what you freeze
+                        weights_path=weights_path, freeze_level=freeze_level,
+                        learning_rate=learning_rate) # make sure you know what you freeze
     model.summary()
 
     batch_size = batch_size
@@ -61,18 +63,18 @@ def train_on_scale(model_type, input_shape, lines, val_split, anchors, class_nam
     #return model
 
 
-def _main(model_type, tiny_version, weights_path):
+def _main(args):
     annotation_path = 'trainval.txt'
     log_dir = 'logs/000/'
     classes_path = 'model_data/voc_classes.txt'
-    #model_type = 'mobilenet'
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
-    if tiny_version:
+    if args.tiny_version:
         anchors_path = 'model_data/tiny_yolo_anchors.txt'
     else:
         anchors_path = 'model_data/yolo_anchors.txt'
     anchors = get_anchors(anchors_path)
+    weights_path = args.weights_path
     if weights_path:
         freeze_level = 0
     else:
@@ -115,11 +117,11 @@ def _main(model_type, tiny_version, weights_path):
 
     # Train 40 epochs with frozen layers first, to get a stable loss.
     input_shape = (416,416) # multiple of 32, hw
-    batch_size = 8
+    batch_size = 16
     initial_epoch = 0
     epochs = 40
 
-    p = Process(target=train_on_scale, args=(model_type, input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, freeze_level))
+    p = Process(target=train_on_scale, args=(args.model_type, input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, freeze_level, args.learning_rate))
     p.start()
     p.join()
 
@@ -137,7 +139,7 @@ def _main(model_type, tiny_version, weights_path):
         initial_epoch = epochs
         epochs = epoch_step
 
-        p = Process(target=train_on_scale, args=(model_type, input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, freeze_level))
+        p = Process(target=train_on_scale, args=(args.model_type, input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, freeze_level, args.learning_rate/10))
         p.start()
         p.join()
         # save the trained model and load in next round for different input shape
@@ -156,7 +158,9 @@ if __name__ == '__main__':
             help='Whether to use a tiny YOLO version')
     parser.add_argument('--weights_path', type=str,required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
+    parser.add_argument('--learning_rate', type=float,required=False, default=1e-3,
+        help = "Initial learning rate")
 
     args = parser.parse_args()
-    _main(args.model_type, args.tiny_version, args.weights_path)
+    _main(args)
 

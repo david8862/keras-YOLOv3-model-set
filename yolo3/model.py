@@ -67,7 +67,7 @@ def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_cl
     return model_body, backbone_len
 
 
-def get_yolo3_model(model_type, input_shape, anchors, num_classes, weights_path=None, freeze_level=1):
+def get_yolo3_model(model_type, input_shape, anchors, num_classes, weights_path=None, freeze_level=1, learning_rate=1e-3):
     '''create the training model, for YOLOv3'''
     K.clear_session() # get a new session
     num_anchors = len(anchors)
@@ -105,7 +105,7 @@ def get_yolo3_model(model_type, input_shape, anchors, num_classes, weights_path=
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)
 
-    model.compile(optimizer=Adam(lr=1e-3), loss={
+    model.compile(optimizer=Adam(lr=learning_rate), loss={
         # use custom yolo_loss Lambda layer.
         'yolo_loss': lambda y_true, y_pred: y_pred})
 
