@@ -32,7 +32,7 @@ def DarknetConv2D(*args, **kwargs):
     return Conv2D(*args, **darknet_conv_kwargs)
 
 
-def Depthwise_Separable_Conv2D(filters, kernel_size=(3, 3), block_id_str='1'):
+def Depthwise_Separable_Conv2D_BN_Leaky(filters, kernel_size=(3, 3), block_id_str='1'):
     """Depthwise Separable Convolution2D."""
     return compose(
         DepthwiseConv2D(kernel_size, padding='same', name='conv_dw_' + block_id_str),
@@ -71,12 +71,12 @@ def make_depthwise_separable_last_layers(x, num_filters, out_filters, block_id_s
     '''6 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer'''
     x = compose(
             DarknetConv2D_BN_Leaky(num_filters, (1,1)),
-            Depthwise_Separable_Conv2D(filters=num_filters*2, kernel_size=(3, 3), block_id_str=block_id_str+'_1'),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=num_filters*2, kernel_size=(3, 3), block_id_str=block_id_str+'_1'),
             DarknetConv2D_BN_Leaky(num_filters, (1,1)),
-            Depthwise_Separable_Conv2D(filters=num_filters*2, kernel_size=(3, 3), block_id_str=block_id_str+'_2'),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=num_filters*2, kernel_size=(3, 3), block_id_str=block_id_str+'_2'),
             DarknetConv2D_BN_Leaky(num_filters, (1,1)))(x)
     y = compose(
-            Depthwise_Separable_Conv2D(filters=num_filters*2, kernel_size=(3, 3), block_id_str=block_id_str+'_3'),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=num_filters*2, kernel_size=(3, 3), block_id_str=block_id_str+'_3'),
             DarknetConv2D(out_filters, (1,1)))(x)
     return x, y
 

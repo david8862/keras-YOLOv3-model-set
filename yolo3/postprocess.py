@@ -67,6 +67,25 @@ def yolo_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape)
     return boxes, box_scores
 
 
+def get_anchorset(anchors, num_layers, l):
+    if num_layers == 3: #YOLOv3 arch
+        if l == 0:
+            anchorset = anchors[6:]
+        elif l == 1:
+            anchorset = anchors[3:6]
+        elif l == 2:
+            anchorset = anchors[:3]
+    elif num_layers == 2: # Tiny YOLOv3 arch
+        if l == 0:
+            anchorset = anchors[3:]
+        elif l == 1:
+            anchorset = anchors[:3]
+    else:
+        raise ValueError('Invalid layer number')
+
+    return anchorset
+
+
 def yolo3_postprocess(args,
               anchors,
               num_classes,

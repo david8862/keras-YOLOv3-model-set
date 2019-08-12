@@ -3,7 +3,7 @@
 from tensorflow.keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
 from tensorflow.keras.models import Model
 
-from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, make_last_layers
+from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, make_last_layers
 
 
 def resblock_body(x, num_filters, num_blocks):
@@ -124,3 +124,35 @@ def custom_tiny_yolo_body(inputs, num_anchors, num_classes, weights_path):
     y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_26')(y2)
     return Model(inputs, [y1,y2])
 
+
+def tiny_yololite_body(inputs, num_anchors, num_classes):
+    '''Create Tiny YOLO_v3 Lite model CNN body in keras.'''
+    x1 = compose(
+            Depthwise_Separable_Conv2D_BN_Leaky(16, (3,3), block_id_str='1'),
+            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
+            Depthwise_Separable_Conv2D_BN_Leaky(32, (3,3), block_id_str='2'),
+            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
+            Depthwise_Separable_Conv2D_BN_Leaky(64, (3,3), block_id_str='3'),
+            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
+            Depthwise_Separable_Conv2D_BN_Leaky(128, (3,3), block_id_str='4'),
+            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
+            Depthwise_Separable_Conv2D_BN_Leaky(256, (3,3), block_id_str='5'))(inputs)
+    x2 = compose(
+            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
+            Depthwise_Separable_Conv2D_BN_Leaky(512, (3,3), block_id_str='6'),
+            MaxPooling2D(pool_size=(2,2), strides=(1,1), padding='same'),
+            Depthwise_Separable_Conv2D_BN_Leaky(1024, (3,3), block_id_str='7'),
+            DarknetConv2D_BN_Leaky(256, (1,1)))(x1)
+    y1 = compose(
+            Depthwise_Separable_Conv2D_BN_Leaky(512, (3,3), block_id_str='8'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
+
+    x2 = compose(
+            DarknetConv2D_BN_Leaky(128, (1,1)),
+            UpSampling2D(2))(x2)
+    y2 = compose(
+            Concatenate(),
+            Depthwise_Separable_Conv2D_BN_Leaky(256, (3,3), block_id_str='9'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
+
+    return Model(inputs, [y1,y2])

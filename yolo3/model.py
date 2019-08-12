@@ -7,7 +7,7 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
-from yolo3.models.yolo3_darknet import yolo_body, tiny_yolo_body, custom_tiny_yolo_body
+from yolo3.models.yolo3_darknet import yolo_body, tiny_yolo_body, custom_tiny_yolo_body, tiny_yololite_body
 from yolo3.models.yolo3_mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, yololite_mobilenet_body, tiny_yololite_mobilenet_body
 from yolo3.models.yolo3_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
 from yolo3.models.yolo3_xception import yolo_xception_body, yololite_xception_body, tiny_yolo_xception_body, tiny_yololite_xception_body
@@ -27,6 +27,10 @@ def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_cl
             weights_path='model_data/tiny_yolo_weights.h5'
             model_body = custom_tiny_yolo_body(image_input, num_anchors//2, num_classes, weights_path)
             backbone_len = 20
+        elif model_type == 'darknet_lite':
+            model_body = tiny_yololite_body(image_input, num_anchors//2, num_classes)
+            #Doesn't have pretrained weights, so no need to return backbone length
+            backbone_len = 0
         elif model_type == 'vgg16':
             model_body = tiny_yolo_vgg16_body(image_input, num_anchors//2, num_classes)
             backbone_len = 19

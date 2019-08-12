@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import UpSampling2D, Concatenate
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications.xception import Xception
-from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D, make_last_layers, make_depthwise_separable_last_layers
+from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, make_last_layers, make_depthwise_separable_last_layers
 
 
 def yolo_xception_body(inputs, num_anchors, num_classes):
@@ -100,7 +100,7 @@ def tiny_yolo_xception_body(inputs, num_anchors, num_classes):
 
     y1 = compose(
             DarknetConv2D_BN_Leaky(2048, (3,3)),
-            #Depthwise_Separable_Conv2D(filters=2048, kernel_size=(3, 3), block_id_str='14'),
+            #Depthwise_Separable_Conv2D_BN_Leaky(filters=2048, kernel_size=(3, 3), block_id_str='14'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
     x2 = compose(
@@ -109,7 +109,7 @@ def tiny_yolo_xception_body(inputs, num_anchors, num_classes):
     y2 = compose(
             Concatenate(),
             DarknetConv2D_BN_Leaky(1024, (3,3)),
-            #Depthwise_Separable_Conv2D(filters=1024, kernel_size=(3, 3), block_id_str='15'),
+            #Depthwise_Separable_Conv2D_BN_Leaky(filters=1024, kernel_size=(3, 3), block_id_str='15'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
 
     return Model(inputs, [y1,y2])
@@ -134,7 +134,7 @@ def tiny_yololite_xception_body(inputs, num_anchors, num_classes):
 
     y1 = compose(
             #DarknetConv2D_BN_Leaky(2048, (3,3)),
-            Depthwise_Separable_Conv2D(filters=2048, kernel_size=(3, 3), block_id_str='14'),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=2048, kernel_size=(3, 3), block_id_str='14'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
     x2 = compose(
@@ -143,7 +143,7 @@ def tiny_yololite_xception_body(inputs, num_anchors, num_classes):
     y2 = compose(
             Concatenate(),
             #DarknetConv2D_BN_Leaky(1024, (3,3)),
-            Depthwise_Separable_Conv2D(filters=1024, kernel_size=(3, 3), block_id_str='15'),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=1024, kernel_size=(3, 3), block_id_str='15'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
 
     return Model(inputs, [y1,y2])

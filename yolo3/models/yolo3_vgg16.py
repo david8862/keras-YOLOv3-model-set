@@ -90,7 +90,7 @@ def tiny_yolo_vgg16_body(inputs, num_anchors, num_classes):
 
     y1 = compose(
             DarknetConv2D_BN_Leaky(1024, (3,3)),
-            #Depthwise_Separable_Conv2D(filters=1024, kernel_size=(3, 3), block_id_str='14'),
+            #Depthwise_Separable_Conv2D_BN_Leaky(filters=1024, kernel_size=(3, 3), block_id_str='14'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
     x2 = compose(
@@ -99,7 +99,7 @@ def tiny_yolo_vgg16_body(inputs, num_anchors, num_classes):
     y2 = compose(
             Concatenate(),
             DarknetConv2D_BN_Leaky(512, (3,3)),
-            #Depthwise_Separable_Conv2D(filters=512, kernel_size=(3, 3), block_id_str='15'),
+            #Depthwise_Separable_Conv2D_BN_Leaky(filters=512, kernel_size=(3, 3), block_id_str='15'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
 
     return Model(inputs, [y1,y2])
