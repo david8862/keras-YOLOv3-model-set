@@ -15,8 +15,9 @@ from yolo3.loss import yolo_loss
 from yolo3.utils import add_metrics
 
 
-def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_classes):
-    if is_tiny_version:
+def get_model_body(model_type, num_feature_layers, image_input, num_anchors, num_classes):
+    #Tiny YOLOv3 model has 6 anchors and 2 feature layers
+    if num_feature_layers == 2:
         if model_type == 'mobilenet_lite':
             model_body = tiny_yololite_mobilenet_body(image_input, num_anchors//2, num_classes)
             backbone_len = 87
@@ -42,7 +43,8 @@ def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_cl
             backbone_len = 132
         else:
             raise ValueError('Unsupported model type')
-    else:
+    #YOLOv3 model has 9 anchors and 3 feature layers
+    elif num_feature_layers == 3:
         if model_type == 'mobilenet_lite':
             model_body = yololite_mobilenet_body(image_input, num_anchors//3, num_classes)
             backbone_len = 87
@@ -68,6 +70,8 @@ def get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_cl
             backbone_len = 132
         else:
             raise ValueError('Unsupported model type')
+    else:
+        raise ValueError('Unsupported model type')
     return model_body, backbone_len
 
 
@@ -75,19 +79,19 @@ def get_yolo3_model(model_type, input_shape, anchors, num_classes, weights_path=
     '''create the training model, for YOLOv3'''
     K.clear_session() # get a new session
     num_anchors = len(anchors)
-    is_tiny_version = num_anchors==6 # default setting
+    #YOLOv3 model has 9 anchors and 3 feature layers but
+    #Tiny YOLOv3 model has 6 anchors and 2 feature layers,
+    #so we can calculate feature layers number to get model type
+    num_feature_layers = num_anchors//3
 
     h, w = input_shape
     image_input = Input(shape=(None, None, 3))
-    if is_tiny_version:
-        y_true = [Input(shape=(h//{0:32, 1:16}[l], w//{0:32, 1:16}[l], \
-            num_anchors//2, num_classes+5)) for l in range(2)]
-    else:
-        y_true = [Input(shape=(h//{0:32, 1:16, 2:8}[l], w//{0:32, 1:16, 2:8}[l], \
-            num_anchors//3, num_classes+5)) for l in range(3)]
 
-    model_body, backbone_len = get_model_body(model_type, is_tiny_version, image_input, num_anchors, num_classes)
-    print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if is_tiny_version else '', model_type, num_anchors, num_classes))
+    y_true = [Input(shape=(h//{0:32, 1:16, 2:8}[l], w//{0:32, 1:16, 2:8}[l], \
+        num_anchors//3, num_classes+5)) for l in range(num_feature_layers)]
+
+    model_body, backbone_len = get_model_body(model_type, num_feature_layers, image_input, num_anchors, num_classes)
+    print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))
 
     if weights_path:
         model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)

@@ -76,12 +76,16 @@ class YOLO(object):
         # Load model, or construct model and load weights.
         num_anchors = len(self.anchors)
         num_classes = len(self.class_names)
-        is_tiny_version = num_anchors==6 # default setting
+        #YOLOv3 model has 9 anchors and 3 feature layers but
+        #Tiny YOLOv3 model has 6 anchors and 2 feature layers,
+        #so we can calculate feature layers number to get model type
+        num_feature_layers = num_anchors//3
+
         try:
             self.yolo_model = load_model(model_path, compile=False)
         except:
             image_input = Input(shape=(None,None,3))
-            self.yolo_model, _ = get_model_body(self.model_type, is_tiny_version, image_input, num_anchors, num_classes)
+            self.yolo_model, _ = get_model_body(self.model_type, num_feature_layers, image_input, num_anchors, num_classes)
             self.yolo_model.load_weights(self.model_path) # make sure model, anchors and classes match
             self.yolo_model.summary()
         else:
@@ -93,16 +97,15 @@ class YOLO(object):
 
         self.colors = get_colors(self.class_names)
 
-        # Generate output tensor targets for filtered bounding boxes.
-        self.input_image_shape = K.placeholder(shape=(2, ))
+        # Generate input/output tensors for postprocess model.
+        self.yolo_outputs = [K.placeholder(shape=(None, None, None, 3*(num_classes+5)),
+                             name='yolo_outputs_{}'.format(l)) for l in range(num_feature_layers)]
+        self.input_image_shape = K.placeholder(shape=(2, ), name='input_image_shape')
         if self.gpu_num>=2:
             self.yolo_model = multi_gpu_model(self.yolo_model, gpus=self.gpu_num)
-        boxes, scores, classes = yolo3_postprocess([self.yolo_model.output, self.input_image_shape],
+        boxes, scores, classes = yolo3_postprocess([self.yolo_outputs, self.input_image_shape],
                 self.anchors, len(self.class_names),
                 score_threshold=self.score, iou_threshold=self.iou)
-        # default arg
-        # self.yolo_model->'model_data/yolo.h5'
-        # self.anchors->'model_data/yolo_anchors.txt'-> 9 scales for anchors
         return boxes, scores, classes
 
 
@@ -130,13 +133,18 @@ class YOLO(object):
         #
         # Returns:Either a single value if fetches is a single graph element, or a
         # list of values if fetches is a list(described above).
+
+        #feed the yolo_model output to postprocess model
         K.set_learning_phase(0)
+        yolo_outputs = self.yolo_model.predict([image_data])
+        feed_dict={}
+        for l in range(len(yolo_outputs)):
+            feed_dict[self.yolo_outputs[l]] = yolo_outputs[l]
+        feed_dict[self.input_image_shape] = [image.size[0], image.size[1]]
+
         out_boxes, out_scores, out_classes = self.sess.run(
             [self.boxes, self.scores, self.classes],
-            feed_dict={
-                self.yolo_model.input: image_data,
-                self.input_image_shape: [image.size[0], image.size[1]]
-            })
+            feed_dict=feed_dict)
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
         end = time.time()
         print("Inference time: {:.2f}s".format(end - start))

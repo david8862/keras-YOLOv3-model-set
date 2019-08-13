@@ -42,7 +42,6 @@ def train_on_scale(model_type, input_shape, lines, val_split, anchors, class_nam
     num_val = int(len(lines)*val_split)
     num_train = len(lines) - num_val
 
-    is_tiny_version = len(anchors)==6 # default setting
     model = get_yolo3_model(model_type, input_shape, anchors, num_classes,
                         weights_path=weights_path, freeze_level=freeze_level,
                         learning_rate=learning_rate) # make sure you know what you freeze
