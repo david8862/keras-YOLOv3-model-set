@@ -24,7 +24,7 @@ from  multiprocessing import Process, Queue
 
 def train_on_scale(model_type, input_shape, lines, val_split, anchors, class_names,
         callbacks, log_dir, epochs, initial_epoch,
-        batch_size=8,
+        batch_size=16,
         weights_path=None,
         freeze_level=0,
         learning_rate=1e-3):
@@ -117,7 +117,7 @@ def _main(args):
 
     # Train 40 epochs with frozen layers first, to get a stable loss.
     input_shape = (416,416) # multiple of 32, hw
-    batch_size = 16
+    batch_size = args.batch_size
     initial_epoch = 0
     epochs = 40
 
@@ -160,6 +160,8 @@ if __name__ == '__main__':
         help = "Pretrained model/weights file for fine tune")
     parser.add_argument('--learning_rate', type=float,required=False, default=1e-3,
         help = "Initial learning rate")
+    parser.add_argument('--batch_size', type=int,required=False, default=16,
+        help = "Initial batch size for train")
 
     args = parser.parse_args()
     _main(args)

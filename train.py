@@ -74,7 +74,7 @@ def _main(args):
     # Train with frozen layers first, to get a stable loss.
     # Adjust num epochs to your dataset. This step is enough to obtain a not bad model.
     if True:
-        batch_size = 16 # use batch_size 16 at freeze stage
+        batch_size = args.batch_size
         epochs = 50
         #end_step = np.ceil(1.0 * num_train / batch_size).astype(np.int32) * epochs
         #model = add_pruning(model, begin_step=0, end_step=end_step)
@@ -96,7 +96,7 @@ def _main(args):
         for i in range(len(model.layers)):
             model.layers[i].trainable = True
         model.compile(optimizer=Adam(lr=args.learning_rate/10), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
-        batch_size = 16 # note that more GPU memory is required after unfreezing the body
+        batch_size = args.batch_size # note that more GPU memory is required after unfreezing the body
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
@@ -109,7 +109,7 @@ def _main(args):
     # Lower down batch size for another 50 epochs
     if True:
         print("Lower batch_size to fine-tune.")
-        batch_size = 8 # change batch_size to 8 for more random gradient search
+        batch_size = batch_size//2 # lower down batch_size for more random gradient search
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
@@ -122,7 +122,7 @@ def _main(args):
     # Keep lower down batch size for another 50 epochs
     if True:
         print("Keep lower batch_size to fine-tune.")
-        batch_size = 2 # change batch_size to 2 for more random gradient search
+        batch_size = batch_size//2 # lower down batch_size for more random gradient search
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
@@ -164,6 +164,8 @@ if __name__ == '__main__':
         help = "Pretrained model/weights file for fine tune")
     parser.add_argument('--learning_rate', type=float,required=False, default=1e-3,
         help = "Initial learning rate")
+    parser.add_argument('--batch_size', type=int,required=False, default=16,
+        help = "Initial batch size for train")
 
     args = parser.parse_args()
     _main(args)

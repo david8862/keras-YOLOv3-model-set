@@ -166,8 +166,14 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False
         # K.binary_crossentropy is helpful to avoid exp overflow.
         xy_loss = object_mask * box_loss_scale * K.binary_crossentropy(raw_true_xy, raw_pred[...,0:2], from_logits=True)
         wh_loss = object_mask * box_loss_scale * 0.5 * K.square(raw_true_wh-raw_pred[...,2:4])
-        confidence_loss = object_mask * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True)+ \
-            (1-object_mask) * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True) * ignore_mask
+
+        if use_focal_loss:
+            # Focal loss for objectness confidence
+            confidence_loss = sigmoid_focal_loss(object_mask, raw_pred[...,4:5])
+        else:
+            confidence_loss = object_mask * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True)+ \
+                (1-object_mask) * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True) * ignore_mask
+
         if use_focal_loss:
             if use_softmax_loss:
                 class_loss = softmax_focal_loss(true_class_probs, raw_pred[...,5:])
