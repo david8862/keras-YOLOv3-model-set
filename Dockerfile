@@ -174,7 +174,7 @@ RUN git clone https://github.com/david8862/keras-YOLOv3-mobilenet.git && \
     #popd && \
     #pushd keras-YOLOv3-mobilenet/tools/ && \
     #python coco_annotation.py --dataset_path=/root/data/COCO2017/ --output_path=/root/data/COCO2017 && \
-    #pushd data/COCO2017 && mv -rf train2017.txt trainval.txt && cat val2017.txt >> trainval.txt && \
+    #pushd data/COCO2017 && cp -rf train2017.txt trainval.txt && cat val2017.txt >> trainval.txt && \
     #cp -rf trainval.txt /root/keras-YOLOv3-mobilenet/ && \
     #popd
 
