@@ -158,18 +158,27 @@ RUN git clone https://github.com/david8862/keras-YOLOv3-mobilenet.git && \
     pushd keras-YOLOv3-mobilenet/tools/ && \
     python convert.py yolov3.cfg ../model_data/yolov3.weights ../model_data/yolov3.h5 && \
     python convert.py yolov3-tiny.cfg ../model_data/yolov3-tiny.weights ../model_data/tiny_yolo_weights.h5 && \
-    python convert.py darknet53.cfg ../model_data/darknet53.conv.74.weights ../model_data/darknet53_weights.h5
+    python convert.py darknet53.cfg ../model_data/darknet53.conv.74.weights ../model_data/darknet53_weights.h5 && \
+    popd
+
+# Optional: Prepare MS COCO 2017 dataset
+#RUN mkdir -p data/COCO2017 && \
+    #wget -O data/COCO2017/train2017.zip http://images.cocodataset.org/zips/train2017.zip && \
+    #wget -O data/COCO2017/val2017.zip http://images.cocodataset.org/zips/val2017.zip && \
+    #wget -O data/COCO2017/test2017.zip http://images.cocodataset.org/zips/test2017.zip && \
+    #wget -O data/COCO2017/annotations_trainval2017.zip http://images.cocodataset.org/annotations/annotations_trainval2017.zip && \
+    #wget -O data/COCO2017/image_info_test2017.zip http://images.cocodataset.org/annotations/image_info_test2017.zip && \
+    #pushd data/COCO2017 && \
+    #unzip -e train2017.zip && unzip -e val2017.zip && unzip -e test2017.zip && \
+    #unzip -e annotations_trainval2017.zip && unzip -e image_info_test2017.zip && \
+    #popd && \
+    #pushd keras-YOLOv3-mobilenet/tools/ && \
+    #python coco_annotation.py --dataset_path=/root/data/COCO2017/ --output_path=/root/data/COCO2017 && \
+    #pushd data/COCO2017 && mv -rf train2017.txt trainval.txt && cat val2017.txt >> trainval.txt && \
+    #cp -rf trainval.txt /root/keras-YOLOv3-mobilenet/ && \
+    #popd
 
 
-
-# Install bazel
-#ARG BAZEL_VERSION=0.24.1
-#RUN mkdir /bazel && \
-    #wget -O /bazel/installer.sh "https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-installer-linux-x86_64.sh" && \
-    #wget -O /bazel/LICENSE.txt "https://raw.githubusercontent.com/bazelbuild/bazel/master/LICENSE" && \
-    #chmod +x /bazel/installer.sh && \
-    #/bazel/installer.sh && \
-    #rm -f /bazel/installer.sh
 
 #COPY bashrc /etc/bash.bashrc
 #RUN chmod a+rwx /etc/bash.bashrc
