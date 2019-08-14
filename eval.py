@@ -13,10 +13,10 @@ from PIL import Image
 import operator
 import matplotlib.pyplot as plt
 
-import tensorflow as tf
 from tensorflow.keras.models import load_model
 import tensorflow.keras.backend as KTF
 
+import tensorflow as tf
 config = tf.ConfigProto()
 config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
 config.gpu_options.per_process_gpu_memory_fraction = 0.3  #GPU memory threshold 0.3
@@ -513,7 +513,7 @@ def draw_plot_func(dictionary, n_classes, window_title, plot_title, x_label, out
     plt.close()
 
 
-def calc_AP(gt_records, pred_records, class_name):
+def calc_AP(gt_records, pred_records, class_name, iou_threshold, show_result):
     '''
     Calculate AP value for one class records
 
@@ -546,7 +546,7 @@ def calc_AP(gt_records, pred_records, class_name):
         # filter out gt record from same image
         image_gt_records = [ gt_record for gt_record in gt_records if gt_record[0] == pred_record[0]]
 
-        i = match_gt_box(pred_record, image_gt_records, iou_threshold=0.5)
+        i = match_gt_box(pred_record, image_gt_records, iou_threshold=iou_threshold)
         if i != -1:
             # find a valid gt obj to assign, set
             # true_positive list and mark image_gt_records.
@@ -563,66 +563,42 @@ def calc_AP(gt_records, pred_records, class_name):
     # compute precision/recall
     rec, prec = get_rec_prec(true_positive, false_positive, gt_records)
     ap, mrec, mprec = voc_ap(rec, prec)
-    draw_rec_prec(rec, prec, mrec, mprec, class_name, ap)
+    if show_result:
+        draw_rec_prec(rec, prec, mrec, mprec, class_name, ap)
 
     return ap, true_positive_count
 
 
-def compute_mAP(model_path, annotation_file, anchors, class_names, model_image_size, save_result):
-    '''
-    Compute mAP for YOLO model on annotation dataset
-    '''
-    annotation_records, gt_classes_records = annotation_parse(annotation_file, class_names)
-    pred_classes_records = get_prediction_class_records(model_path, annotation_records, anchors, class_names, model_image_size, save_result)
-
-    APs = {}
-    count_true_positives = {}
-    #get AP value for each of the ground truth classes
-    for _, class_name in enumerate(class_names):
-        gt_records = gt_classes_records[class_name]
-        #if we didn't detect any obj for a class, record 0
-        if class_name not in pred_classes_records:
-            APs[class_name] = 0.
-            continue
-        pred_records = pred_classes_records[class_name]
-        ap, true_positive_count = calc_AP(gt_records, pred_records, class_name)
-        APs[class_name] = ap
-        count_true_positives[class_name] = true_positive_count
-
-    #get mAP percentage value
-    mAP = np.mean(list(APs.values()))*100
-
+def plot_Pascal_AP_result(count_images, count_true_positives, gt_classes_records, pred_classes_records, APs, mAP):
     '''
      Plot the total number of occurences of each class in the ground-truth
     '''
     gt_counter_per_class = {}
-    for (class_name,info_list) in gt_classes_records.items():
+    for (class_name, info_list) in gt_classes_records.items():
         gt_counter_per_class[class_name] = len(info_list)
 
     window_title = "Ground-Truth Info"
-    plot_title = "Ground-Truth\n" + "(" + str(len(annotation_records)) + " files and " + str(len(gt_classes_records)) + " classes)"
+    plot_title = "Ground-Truth\n" + "(" + str(count_images) + " files and " + str(len(gt_classes_records)) + " classes)"
     x_label = "Number of objects per class"
     output_path = os.path.join('result','Ground-Truth Info.jpg')
     draw_plot_func(gt_counter_per_class, len(gt_classes_records), window_title, plot_title, x_label, output_path, to_show=False, plot_color='forestgreen', true_p_bar='')
-
 
     '''
      Plot the total number of occurences of each class in the "predicted" folder
     '''
     pred_counter_per_class = {}
-    for (class_name,info_list) in pred_classes_records.items():
+    for (class_name, info_list) in pred_classes_records.items():
         pred_counter_per_class[class_name] = len(info_list)
 
     window_title = "Predicted Objects Info"
     # Plot title
-    plot_title = "Predicted Objects\n" + "(" + str(len(annotation_records)) + " files and "
+    plot_title = "Predicted Objects\n" + "(" + str(count_images) + " files and "
     count_non_zero_values_in_dictionary = sum(int(x) > 0 for x in list(pred_counter_per_class.values()))
     plot_title += str(count_non_zero_values_in_dictionary) + " detected classes)"
     # end Plot title
     x_label = "Number of objects per class"
     output_path = os.path.join('result','Predicted Objects Info.jpg')
     draw_plot_func(pred_counter_per_class, len(pred_counter_per_class), window_title, plot_title, x_label, output_path, to_show=False, plot_color='forestgreen', true_p_bar=count_true_positives)
-
 
     '''
      Draw mAP plot (Show AP's of all classes in decreasing order)
@@ -633,12 +609,115 @@ def compute_mAP(model_path, annotation_file, anchors, class_names, model_image_s
     output_path = os.path.join('result','mAP.jpg')
     draw_plot_func(APs, len(gt_classes_records), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 
-    #get mAP from APs
-    for (class_name, AP) in APs.items():
-        print('AP for {}: {}'.format(class_name, AP))
+    '''
+     Get the precision & recall rate
+    '''
+    precision_dict = {}
+    recall_dict = {}
+    for (class_name, gt_count) in gt_counter_per_class.items():
+        precision_dict[class_name] = float(count_true_positives[class_name]) / pred_counter_per_class[class_name]
+        recall_dict[class_name] = float(count_true_positives[class_name]) / gt_count
+
+    '''
+     Draw Precision plot (Show Precision of all classes in decreasing order)
+    '''
+    window_title = "Precision"
+    plot_title = "Precision rate"
+    x_label = "Precision rate"
+    output_path = os.path.join('result','Precision.jpg')
+    draw_plot_func(precision_dict, len(precision_dict), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
+
+    '''
+     Draw Recall plot (Show Recall of all classes in decreasing order)
+    '''
+    window_title = "Recall"
+    plot_title = "Recall rate"
+    x_label = "Recall rate"
+    output_path = os.path.join('result','Recall.jpg')
+    draw_plot_func(recall_dict, len(recall_dict), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
+
+    return precision_dict, recall_dict
+
+
+def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold, show_result=True):
+    '''
+    Compute PascalVOC style mAP
+    '''
+    APs = {}
+    count_true_positives = {}
+    #get AP value for each of the ground truth classes
+    for _, class_name in enumerate(class_names):
+        gt_records = gt_classes_records[class_name]
+        #if we didn't detect any obj for a class, record 0
+        if class_name not in pred_classes_records:
+            APs[class_name] = 0.
+            continue
+        pred_records = pred_classes_records[class_name]
+        ap, true_positive_count = calc_AP(gt_records, pred_records, class_name, iou_threshold, show_result)
+        APs[class_name] = ap
+        count_true_positives[class_name] = true_positive_count
+
+    #get mAP percentage value
+    mAP = np.mean(list(APs.values()))*100
+
+    if show_result:
+        precision_dict, recall_dict = plot_Pascal_AP_result(len(annotation_records), count_true_positives, gt_classes_records, pred_classes_records, APs, mAP)
+        #show result
+        for (class_name, AP) in APs.items():
+            print('{}: AP {}, precision {}, recall {}'.format(class_name, AP, precision_dict[class_name], recall_dict[class_name]))
+        print('mAP result: {}'.format(mAP))
 
     #return mAP percentage value
     return mAP
+
+
+
+def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names):
+    '''
+    Compute MSCOCO AP list on AP 0.5:0.05:0.95
+    '''
+    iou_threshold_list = np.arange(0.50,0.95,0.05)
+    APs = {}
+    for iou_threshold in iou_threshold_list:
+        iou_threshold = round(iou_threshold, 2)
+        mAP = compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold, show_result=False)
+        APs[iou_threshold] = round(mAP, 6)
+
+    #get overall AP percentage value
+    AP = np.mean(list(APs.values()))
+
+    '''
+     Draw MS COCO AP plot (Show Recall of all classes in decreasing order)
+    '''
+    touchdir('result')
+    window_title = "MSCOCO AP on different IOU"
+    plot_title = "total AP = {0:.2f}%".format(AP)
+    x_label = "AP"
+    output_path = os.path.join('result','COCO AP.jpg')
+    draw_plot_func(APs, len(APs), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
+
+    print('MS COCO'.format(AP))
+    for (iou_threshold, AP_value) in APs.items():
+        print('IOU %.2f: AP %f' % (iou_threshold, AP_value))
+    print('total AP: {}'.format(AP))
+    #return AP percentage value
+    return AP
+
+
+
+def eval_AP(eval_type, model_path, annotation_file, anchors, class_names, iou_threshold, model_image_size, save_result):
+    '''
+    Compute AP for detection model on annotation dataset
+    '''
+    annotation_records, gt_classes_records = annotation_parse(annotation_file, class_names)
+    pred_classes_records = get_prediction_class_records(model_path, annotation_records, anchors, class_names, model_image_size, save_result)
+
+    if eval_type == 'VOC':
+        compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold)
+    elif eval_type == 'COCO':
+        compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names)
+    else:
+        raise ValueError('Unsupported evaluation type')
 
 
 
@@ -649,36 +728,39 @@ def main():
     Command line options
     '''
     parser.add_argument(
-        '--model_path', type=str,
+        '--model_path', type=str, required=True,
         help='path to model weight file')
 
     parser.add_argument(
-        '--anchors_path', type=str,
+        '--anchors_path', type=str, required=True,
         help='path to anchor definitions')
 
     parser.add_argument(
-        '--classes_path', type=str,
+        '--classes_path', type=str, required=True,
         help='path to class definitions, default model_data/voc_classes.txt', default='model_data/voc_classes.txt')
+
+    parser.add_argument(
+        '--annotation_file', type=str, required=True,
+        help='annotation txt file to varify')
+
+    parser.add_argument(
+        '--eval_type', type=str,
+        help='evaluation type (VOC/COCO), default=VOC', default='VOC')
+
+    parser.add_argument(
+        '--iou_threshold', type=float,
+        help='IOU threshold for PascalVOC mAP, default=0.5', default=0.5)
 
     parser.add_argument(
         '--model_image_size', type=str,
         help='model image input size as <num>x<num>, default 416x416', default='416x416')
 
     parser.add_argument(
-        '--annotation_file', type=str,
-        help='annotation txt file to varify')
-
-    parser.add_argument(
         '--save_result', default=False, action="store_true",
-        help='Save the detection result image in detection/ dir'
+        help='Save the detection result image in result/detection dir'
     )
 
     args = parser.parse_args()
-
-    if not args.model_path:
-        raise ValueError('model file is not specified')
-    if not args.annotation_file:
-        raise ValueError('annotation file is not specified')
 
     # param parse
     anchors = get_anchors(args.anchors_path)
@@ -686,8 +768,7 @@ def main():
     height, width = args.model_image_size.split('x')
     model_image_size = (int(height), int(width))
 
-    mAP = compute_mAP(args.model_path, args.annotation_file, anchors, class_names, model_image_size, args.save_result)
-    print('mAP result: {}'.format(mAP))
+    eval_AP(args.eval_type, args.model_path, args.annotation_file, anchors, class_names, args.iou_threshold, model_image_size, args.save_result)
 
 
 if __name__ == '__main__':
