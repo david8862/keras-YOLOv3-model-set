@@ -663,9 +663,10 @@ def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_r
     if show_result:
         precision_dict, recall_dict = plot_Pascal_AP_result(len(annotation_records), count_true_positives, gt_classes_records, pred_classes_records, APs, mAP)
         #show result
+        print('Pascal VOC AP evaluation')
         for (class_name, AP) in APs.items():
-            print('{}: AP {}, precision {}, recall {}'.format(class_name, AP, precision_dict[class_name], recall_dict[class_name]))
-        print('mAP result: {}'.format(mAP))
+            print('%s: AP %.4f, precision %.4f, recall %.4f' % (class_name, AP, precision_dict[class_name], recall_dict[class_name]))
+        print('mAP result: %f' % (mAP))
 
     #return mAP percentage value
     return mAP
@@ -696,10 +697,10 @@ def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records
     output_path = os.path.join('result','COCO AP.jpg')
     draw_plot_func(APs, len(APs), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 
-    print('MS COCO'.format(AP))
+    print('MS COCO AP evaluation')
     for (iou_threshold, AP_value) in APs.items():
         print('IOU %.2f: AP %f' % (iou_threshold, AP_value))
-    print('total AP: {}'.format(AP))
+    print('total AP: %f' % (AP))
     #return AP percentage value
     return AP
 
