@@ -88,7 +88,7 @@ def get_yolo3_model(model_type, input_shape, anchors, num_classes, weights_path=
     image_input = Input(shape=(None, None, 3))
 
     y_true = [Input(shape=(h//{0:32, 1:16, 2:8}[l], w//{0:32, 1:16, 2:8}[l], \
-        num_anchors//3, num_classes+5)) for l in range(num_feature_layers)]
+        3, num_classes+5)) for l in range(num_feature_layers)]
 
     model_body, backbone_len = get_model_body(model_type, num_feature_layers, image_input, num_anchors, num_classes)
     print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))
@@ -108,8 +108,8 @@ def get_yolo3_model(model_type, input_shape, anchors, num_classes, weights_path=
             model_body.layers[i].trainable= True
         print('Unfreeze all of the layers.')
 
-    model_loss, xy_loss, wh_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
-        arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5, 'use_focal_loss': False, 'use_softmax_loss': False})(
+    model_loss, location_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
+            arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5, 'use_focal_loss': False, 'use_softmax_loss': False, 'use_giou_loss': False})(
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)
 
@@ -117,7 +117,7 @@ def get_yolo3_model(model_type, input_shape, anchors, num_classes, weights_path=
         # use custom yolo_loss Lambda layer.
         'yolo_loss': lambda y_true, y_pred: y_pred})
 
-    loss_dict = {'xy_loss':xy_loss, 'wh_loss':wh_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
+    loss_dict = {'location_loss':location_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
     add_metrics(model, loss_dict)
 
     return model

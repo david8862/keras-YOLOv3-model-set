@@ -106,7 +106,54 @@ def box_iou(b1, b2):
     return iou
 
 
-def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False, use_softmax_loss=False, print_loss=False):
+def box_giou(b1, b2):
+    '''Return giou tensor
+
+    Parameters
+    ----------
+    b1: tensor, shape=(batch, feat_w, feat_h, anchor_num, 4), xywh
+    b2: tensor, shape=(batch, feat_w, feat_h, anchor_num, 4), xywh
+
+    Returns
+    -------
+    iou: tensor, shape=(batch, feat_w, feat_h, anchor_num, 1)
+
+    '''
+    b1_xy = b1[..., :2]
+    b1_wh = b1[..., 2:4]
+    b1_wh_half = b1_wh/2.
+    b1_mins = b1_xy - b1_wh_half
+    b1_maxes = b1_xy + b1_wh_half
+
+    b2_xy = b2[..., :2]
+    b2_wh = b2[..., 2:4]
+    b2_wh_half = b2_wh/2.
+    b2_mins = b2_xy - b2_wh_half
+    b2_maxes = b2_xy + b2_wh_half
+
+    intersect_mins = K.maximum(b1_mins, b2_mins)
+    intersect_maxes = K.minimum(b1_maxes, b2_maxes)
+    intersect_wh = K.maximum(intersect_maxes - intersect_mins, 0.)
+    intersect_area = intersect_wh[..., 0] * intersect_wh[..., 1]
+    b1_area = b1_wh[..., 0] * b1_wh[..., 1]
+    b2_area = b2_wh[..., 0] * b2_wh[..., 1]
+    union_area = b1_area + b2_area - intersect_area
+    iou = intersect_area / union_area
+
+    # 计算最小闭合凸面 C 左上角和右下角的坐标
+    enclose_mins = K.minimum(b1_mins, b2_mins)
+    enclose_maxes = K.maximum(b1_maxes, b2_maxes)
+    enclose_wh = K.maximum(enclose_maxes - enclose_mins, 0.0)
+    # 计算最小闭合凸面 C 的面积
+    enclose_area = enclose_wh[..., 0] * enclose_wh[..., 1]
+    # 根据 GIoU 公式计算 GIoU 值
+    giou = iou - 1.0 * (enclose_area - union_area) / enclose_area
+    giou = K.expand_dims(giou, -1)
+
+    return giou
+
+
+def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False, use_softmax_loss=False, use_giou_loss=False):
     '''Return yolo_loss tensor
 
     Parameters
@@ -129,8 +176,7 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False
     input_shape = K.cast(K.shape(yolo_outputs[0])[1:3] * 32, K.dtype(y_true[0]))
     grid_shapes = [K.cast(K.shape(yolo_outputs[l])[1:3], K.dtype(y_true[0])) for l in range(num_layers)]
     loss = 0
-    total_xy_loss = 0
-    total_wh_loss = 0
+    total_location_loss = 0
     total_confidence_loss = 0
     total_class_loss = 0
     m = K.shape(yolo_outputs[0])[0] # batch size, tensor
@@ -163,6 +209,11 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False
         ignore_mask = ignore_mask.stack()
         ignore_mask = K.expand_dims(ignore_mask, -1)
 
+        # Calculate GIoU loss between prediction and groundtruth box
+        raw_true_box = y_true[l][...,0:4]
+        giou = box_giou(pred_box, raw_true_box)
+        giou_loss = object_mask * box_loss_scale * (1 - giou)
+
         # K.binary_crossentropy is helpful to avoid exp overflow.
         xy_loss = object_mask * box_loss_scale * K.binary_crossentropy(raw_true_xy, raw_pred[...,0:2], from_logits=True)
         wh_loss = object_mask * box_loss_scale * 0.5 * K.square(raw_true_wh-raw_pred[...,2:4])
@@ -189,17 +240,19 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False
 
         xy_loss = K.sum(xy_loss) / mf
         wh_loss = K.sum(wh_loss) / mf
+        giou_loss = K.sum(giou_loss) / mf
+        if use_giou_loss:
+            # Use GIoU loss as location loss
+            location_loss = giou_loss
+        else:
+            location_loss = xy_loss + wh_loss
+
         confidence_loss = K.sum(confidence_loss) / mf
         class_loss = K.sum(class_loss) / mf
-        loss += xy_loss + wh_loss + confidence_loss + class_loss
-        total_xy_loss += xy_loss
-        total_wh_loss += wh_loss
+        loss += location_loss + confidence_loss + class_loss
+        total_location_loss += location_loss
         total_confidence_loss += confidence_loss
         total_class_loss += class_loss
-        if print_loss:
-            loss = tf.Print(loss, ['loss:', loss,
-                                   'xy_loss:', xy_loss,
-                                   'wh_loss:', wh_loss,
-                                   'confidence_loss:', confidence_loss,
-                                   'class_loss:', class_loss], message='loss: ')
-    return loss, total_xy_loss, total_wh_loss, total_confidence_loss, total_class_loss
+
+    return loss, total_location_loss, total_confidence_loss, total_class_loss
+
