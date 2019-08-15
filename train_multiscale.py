@@ -4,7 +4,7 @@ Retrain the YOLO model for your own dataset.
 
 import numpy as np
 import tensorflow.keras.backend as K
-from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping, TerminateOnNaN
 import os, random, time, argparse
 from yolo3.model import get_yolo3_model
 from yolo3.data import data_generator_wrapper
@@ -98,8 +98,9 @@ def _main(args):
         period=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=1)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=30, verbose=1)
+    terminate_on_nan = TerminateOnNaN()
 
-    callbacks = [logging, checkpoint, reduce_lr, early_stopping]
+    callbacks = [logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan]
 
     # get initial base weights and input_shape/batch_size list
     # input_shape/batch_size list will be used in multi scale training
@@ -158,9 +159,9 @@ if __name__ == '__main__':
     parser.add_argument('--weights_path', type=str,required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
     parser.add_argument('--learning_rate', type=float,required=False, default=1e-3,
-        help = "Initial learning rate")
+        help = "Initial learning rate, default=0.001")
     parser.add_argument('--batch_size', type=int,required=False, default=16,
-        help = "Initial batch size for train")
+        help = "Initial batch size for train, default=16")
 
     args = parser.parse_args()
     _main(args)

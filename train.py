@@ -8,7 +8,7 @@ import os, argparse
 import numpy as np
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping, LambdaCallback
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping, TerminateOnNaN, LambdaCallback
 #from tensorflow_model_optimization.sparsity import keras as sparsity
 from yolo3.model import get_yolo3_model
 from yolo3.data import data_generator_wrapper
@@ -55,6 +55,7 @@ def _main(args):
         period=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, verbose=1)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=30, verbose=1)
+    terminate_on_nan = TerminateOnNaN()
     sess_saver_callback = LambdaCallback(on_epoch_end=lambda epoch, logs: tf.train.Saver().save(sess, log_dir+'model-epoch%03d-loss%.3f-val_loss%.3f' % (epoch, logs['loss'], logs['val_loss'])))
 
     val_split = 0.1
@@ -85,7 +86,7 @@ def _main(args):
                 validation_steps=max(1, num_val//batch_size),
                 epochs=epochs,
                 initial_epoch=0,
-                callbacks=[logging, checkpoint])
+                callbacks=[logging, checkpoint, terminate_on_nan])
         #model = sparsity.strip_pruning(model)
         model.save(log_dir + 'trained_stage_1.h5')
 
@@ -104,7 +105,7 @@ def _main(args):
             validation_steps=max(1, num_val//batch_size),
             epochs=150,
             initial_epoch=50,
-            callbacks=[logging, checkpoint, reduce_lr, early_stopping])
+            callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan])
 
     # Lower down batch size for another 50 epochs
     if True:
@@ -117,7 +118,7 @@ def _main(args):
             validation_steps=max(1, num_val//batch_size),
             epochs=200,
             initial_epoch=150,
-            callbacks=[logging, checkpoint, reduce_lr, early_stopping])
+            callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan])
 
     # Keep lower down batch size for another 50 epochs
     if True:
@@ -130,7 +131,7 @@ def _main(args):
             validation_steps=max(1, num_val//batch_size),
             epochs=250,
             initial_epoch=200,
-            callbacks=[logging, checkpoint, reduce_lr, early_stopping])
+            callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan])
 
     # Finally store model
     model.save(log_dir + 'trained_final.h5')
@@ -163,9 +164,9 @@ if __name__ == '__main__':
     parser.add_argument('--weights_path', type=str,required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
     parser.add_argument('--learning_rate', type=float,required=False, default=1e-3,
-        help = "Initial learning rate")
+        help = "Initial learning rate, default=0.001")
     parser.add_argument('--batch_size', type=int,required=False, default=16,
-        help = "Initial batch size for train")
+        help = "Initial batch size for train, default=16")
 
     args = parser.parse_args()
     _main(args)
