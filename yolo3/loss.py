@@ -146,8 +146,8 @@ def box_giou(b1, b2):
     enclose_wh = K.maximum(enclose_maxes - enclose_mins, 0.0)
     # 计算最小闭合凸面 C 的面积
     enclose_area = enclose_wh[..., 0] * enclose_wh[..., 1]
-    # 根据 GIoU 公式计算 GIoU 值
-    giou = iou - 1.0 * (enclose_area - union_area) / enclose_area
+    # 根据 GIoU 公式计算 GIoU 值, 分母加上模糊因子常量以避免被0除
+    giou = iou - 1.0 * (enclose_area - union_area) / (enclose_area + K.epsilon())
     giou = K.expand_dims(giou, -1)
 
     return giou
