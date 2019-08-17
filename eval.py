@@ -688,7 +688,7 @@ def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records
     AP = np.mean(list(APs.values()))
 
     '''
-     Draw MS COCO AP plot (Show Recall of all classes in decreasing order)
+     Draw MS COCO AP plot
     '''
     touchdir('result')
     window_title = "MSCOCO AP on different IOU"

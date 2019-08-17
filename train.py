@@ -36,12 +36,18 @@ def _main(args):
     else:
         anchors_path = 'model_data/yolo_anchors.txt'
     base_anchors = get_anchors(anchors_path)
+
+    # get freeze level according to CLI option
     if args.weights_path:
         freeze_level = 0
     else:
         freeze_level = 1
 
-    input_shape = (416,416) # multiple of 32, hw
+    if args.freeze_level:
+        freeze_level = args.freeze_level
+
+    input_shape = args.model_image_size
+    assert (input_shape[0]%32 == 0 and input_shape[1]%32 == 0), 'Multiples of 32 required'
 
     # resize base anchors acoording to input shape
     anchors = resize_anchors(base_anchors, input_shape)
@@ -53,12 +59,13 @@ def _main(args):
         save_weights_only=False,
         save_best_only=True,
         period=1)
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=10, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, verbose=1)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=30, verbose=1)
     terminate_on_nan = TerminateOnNaN()
     sess_saver_callback = LambdaCallback(on_epoch_end=lambda epoch, logs: tf.train.Saver().save(sess, log_dir+'model-epoch%03d-loss%.3f-val_loss%.3f' % (epoch, logs['loss'], logs['val_loss'])))
 
-    val_split = 0.1
+    # get train&val dataset
+    val_split = args.val_split
     with open(annotation_path) as f:
         lines = f.readlines()
     np.random.seed(10101)
@@ -76,7 +83,7 @@ def _main(args):
     # Adjust num epochs to your dataset. This step is enough to obtain a not bad model.
     if True:
         batch_size = args.batch_size
-        epochs = 50
+        epochs = 20
         #end_step = np.ceil(1.0 * num_train / batch_size).astype(np.int32) * epochs
         #model = add_pruning(model, begin_step=0, end_step=end_step)
         print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
@@ -88,7 +95,6 @@ def _main(args):
                 initial_epoch=0,
                 callbacks=[logging, checkpoint, terminate_on_nan])
         #model = sparsity.strip_pruning(model)
-        model.save(log_dir + 'trained_stage_1.h5')
 
     # Unfreeze and continue training, to fine-tune.
     # Train longer if the result is not good.
@@ -104,7 +110,7 @@ def _main(args):
             validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
             epochs=150,
-            initial_epoch=50,
+            initial_epoch=20,
             callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan])
 
     # Lower down batch size for another 50 epochs
@@ -167,6 +173,16 @@ if __name__ == '__main__':
         help = "Initial learning rate, default=0.001")
     parser.add_argument('--batch_size', type=int,required=False, default=16,
         help = "Initial batch size for train, default=16")
+    parser.add_argument('--freeze_level', type=int,required=False, default=None,
+        help = "Freeze level of the training model. 0:NA/1:backbone")
+    parser.add_argument('--val_split', type=float,required=False, default=0.1,
+        help = "validation data persentage in dataset, default=0.1")
+    parser.add_argument('--model_image_size', type=str,required=False, default='416x416',
+        help='model image input size as <num>x<num>, default 416x416')
 
     args = parser.parse_args()
+
+    height, width = args.model_image_size.split('x')
+    args.model_image_size = (int(height), int(width))
+
     _main(args)

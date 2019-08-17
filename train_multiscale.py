@@ -74,12 +74,18 @@ def _main(args):
         anchors_path = 'model_data/yolo_anchors.txt'
     anchors = get_anchors(anchors_path)
     weights_path = args.weights_path
+
+    # get freeze level according to CLI option
     if weights_path:
         freeze_level = 0
     else:
         freeze_level = 1
 
-    val_split = 0.1
+    if args.freeze_level:
+        freeze_level = args.freeze_level
+
+    # get train&val dataset
+    val_split = args.val_split
     with open(annotation_path) as f:
         lines = f.readlines()
     np.random.seed(10101)
@@ -96,7 +102,7 @@ def _main(args):
         save_weights_only=False,
         save_best_only=True,
         period=1)
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, verbose=1)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=30, verbose=1)
     terminate_on_nan = TerminateOnNaN()
 
@@ -115,11 +121,11 @@ def _main(args):
         batch_size_list = [2, 4, 8]
 
 
-    # Train 40 epochs with frozen layers first, to get a stable loss.
+    # Train 20 epochs with frozen layers first, to get a stable loss.
     input_shape = (416,416) # multiple of 32, hw
     batch_size = args.batch_size
     initial_epoch = 0
-    epochs = 40
+    epochs = 20
 
     p = Process(target=train_on_scale, args=(args.model_type, input_shape, lines, val_split, anchors, class_names, callbacks, log_dir, epochs, initial_epoch, batch_size, weights_path, freeze_level, args.learning_rate))
     p.start()
@@ -133,7 +139,7 @@ def _main(args):
 
     # Do multi-scale training on different input shape
     # change every 20 epochs
-    for epoch_step in range(60, 300, 20):
+    for epoch_step in range(20, 300, 20):
         input_shape = input_shape_list[random.randint(0,len(input_shape_list)-1)]
         batch_size = batch_size_list[random.randint(0,len(batch_size_list)-1)]
         initial_epoch = epochs
@@ -162,6 +168,10 @@ if __name__ == '__main__':
         help = "Initial learning rate, default=0.001")
     parser.add_argument('--batch_size', type=int,required=False, default=16,
         help = "Initial batch size for train, default=16")
+    parser.add_argument('--freeze_level', type=int,required=False, default=None,
+        help = "Initial freeze level of the training model. 0:NA/1:backbone")
+    parser.add_argument('--val_split', type=float,required=False, default=0.1,
+        help = "validation data persentage in dataset, default=0.1")
 
     args = parser.parse_args()
     _main(args)
