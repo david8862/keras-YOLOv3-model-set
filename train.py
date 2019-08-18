@@ -26,9 +26,9 @@ session = tf.Session(config=config)
 K.set_session(session)
 
 def _main(args):
-    annotation_path = 'trainval.txt'
+    annotation_file = args.annotation_file
     log_dir = 'logs/000/'
-    classes_path = 'model_data/voc_classes.txt'
+    classes_path = args.classes_path
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
     if args.tiny_version:
@@ -66,7 +66,7 @@ def _main(args):
 
     # get train&val dataset
     val_split = args.val_split
-    with open(annotation_path) as f:
+    with open(annotation_file) as f:
         lines = f.readlines()
     np.random.seed(10101)
     np.random.shuffle(lines)
@@ -163,10 +163,14 @@ def add_pruning(model, begin_step, end_step):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_type', required=False,
-            help='YOLO model type: mobilenet_lite/mobilenet/darknet/vgg16/xception/xception_lite, default=mobilenet_lite', type=str, default='mobilenet_lite')
+    parser.add_argument('--model_type', type=str, required=False, default='mobilenet_lite',
+        help='YOLO model type: mobilenet_lite/mobilenet/darknet/vgg16/xception/xception_lite, default=mobilenet_lite')
     parser.add_argument('--tiny_version', default=False, action="store_true",
-            help='Whether to use a tiny YOLO version')
+        help='Whether to use a tiny YOLO version')
+    parser.add_argument('--annotation_file', type=str, required=False, default='trainval.txt',
+        help='train&val annotation txt file, default=trainval.txt')
+    parser.add_argument('--classes_path', type=str, required=False, default='model_data/voc_classes.txt',
+        help='path to class definitions, default=model_data/voc_classes.txt')
     parser.add_argument('--weights_path', type=str,required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
     parser.add_argument('--learning_rate', type=float,required=False, default=1e-3,

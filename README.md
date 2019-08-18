@@ -77,9 +77,11 @@ For Tiny YOLOv3, just do in a similar way, but specify different model path and 
 ```
 # python train.py -h
 usage: train.py [-h] [--model_type MODEL_TYPE] [--tiny_version]
-                [--weights_path WEIGHTS_PATH] [--learning_rate LEARNING_RATE]
-                [--batch_size BATCH_SIZE] [--freeze_level FREEZE_LEVEL]
-                [--val_split VAL_SPLIT] [--model_image_size MODEL_IMAGE_SIZE]
+                [--annotation_file ANNOTATION_FILE]
+                [--classes_path CLASSES_PATH] [--weights_path WEIGHTS_PATH]
+                [--learning_rate LEARNING_RATE] [--batch_size BATCH_SIZE]
+                [--freeze_level FREEZE_LEVEL] [--val_split VAL_SPLIT]
+                [--model_image_size MODEL_IMAGE_SIZE]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -87,6 +89,11 @@ optional arguments:
                         YOLO model type: mobilenet_lite/mobilenet/darknet/vgg1
                         6/xception/xception_lite, default=mobilenet_lite
   --tiny_version        Whether to use a tiny YOLO version
+  --annotation_file ANNOTATION_FILE
+                        train&val annotation txt file, default=trainval.txt
+  --classes_path CLASSES_PATH
+                        path to class definitions,
+                        default=model_data/voc_classes.txt
   --weights_path WEIGHTS_PATH
                         Pretrained model/weights file for fine tune
   --learning_rate LEARNING_RATE

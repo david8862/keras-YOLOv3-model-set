@@ -136,7 +136,7 @@ RUN ${PIP} --no-cache-dir install \
 WORKDIR /root
 
 # Prepare code & dataset (PascalVOC)
-RUN git clone https://github.com/david8862/keras-YOLOv3-mobilenet.git && \
+RUN git clone https://github.com/david8862/keras-YOLOv3-model-set.git && \
     mkdir -p data/PascalVOC && \
     wget -O data/PascalVOC/VOCtest_06-Nov-2007.tar http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar && \
     wget -O data/PascalVOC/VOCtrainval_06-Nov-2007.tar http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtrainval_06-Nov-2007.tar && \
@@ -146,16 +146,16 @@ RUN git clone https://github.com/david8862/keras-YOLOv3-mobilenet.git && \
     tar xf VOCtrainval_06-Nov-2007.tar && \
     tar xf VOCtrainval_11-May-2012.tar && \
     popd && \
-    pushd keras-YOLOv3-mobilenet/tools/ && \
+    pushd keras-YOLOv3-model-set/tools/ && \
     python voc_annotation.py --dataset_path=/root/data/PascalVOC/VOCdevkit/ --output_path=/root/data/PascalVOC && \
     popd && \
     pushd data/PascalVOC && cp -rf 2007_train.txt trainval.txt && cat 2007_val.txt >> trainval.txt && cat 2012_train.txt >> trainval.txt && cat 2012_val.txt >> trainval.txt && \
-    cp -rf trainval.txt 2007_test.txt /root/keras-YOLOv3-mobilenet/ && \
+    cp -rf trainval.txt 2007_test.txt /root/keras-YOLOv3-model-set/ && \
     popd && \
-    wget -O keras-YOLOv3-mobilenet/model_data/yolov3.weights https://pjreddie.com/media/files/yolov3.weights && \
-    wget -O keras-YOLOv3-mobilenet/model_data/yolov3-tiny.weights https://pjreddie.com/media/files/yolov3-tiny.weights && \
-    wget -O keras-YOLOv3-mobilenet/model_data/darknet53.conv.74.weights https://pjreddie.com/media/files/darknet53.conv.74 && \
-    pushd keras-YOLOv3-mobilenet/tools/ && \
+    wget -O keras-YOLOv3-model-set/model_data/yolov3.weights https://pjreddie.com/media/files/yolov3.weights && \
+    wget -O keras-YOLOv3-model-set/model_data/yolov3-tiny.weights https://pjreddie.com/media/files/yolov3-tiny.weights && \
+    wget -O keras-YOLOv3-model-set/model_data/darknet53.conv.74.weights https://pjreddie.com/media/files/darknet53.conv.74 && \
+    pushd keras-YOLOv3-model-set/tools/ && \
     python convert.py yolov3.cfg ../model_data/yolov3.weights ../model_data/yolov3.h5 && \
     python convert.py yolov3-tiny.cfg ../model_data/yolov3-tiny.weights ../model_data/tiny_yolo_weights.h5 && \
     python convert.py darknet53.cfg ../model_data/darknet53.conv.74.weights ../model_data/darknet53_weights.h5 && \
@@ -172,10 +172,10 @@ RUN git clone https://github.com/david8862/keras-YOLOv3-mobilenet.git && \
     #unzip -e train2017.zip && unzip -e val2017.zip && unzip -e test2017.zip && \
     #unzip -e annotations_trainval2017.zip && unzip -e image_info_test2017.zip && \
     #popd && \
-    #pushd keras-YOLOv3-mobilenet/tools/ && \
+    #pushd keras-YOLOv3-model-set/tools/ && \
     #python coco_annotation.py --dataset_path=/root/data/COCO2017/ --output_path=/root/data/COCO2017 && \
     #pushd data/COCO2017 && cp -rf train2017.txt trainval.txt && cat val2017.txt >> trainval.txt && \
-    #cp -rf trainval.txt /root/keras-YOLOv3-mobilenet/ && \
+    #cp -rf trainval.txt /root/keras-YOLOv3-model-set/ && \
     #popd
 
 
