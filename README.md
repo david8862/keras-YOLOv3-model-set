@@ -1,63 +1,114 @@
-# keras-yolo3-Mobilenet
+# TF Keras YOLOv3 Modelset
 
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](LICENSE)
 
 ## Introduction
 
-A Keras implementation of YOLOv3 (Tensorflow backend) inspired by [allanzelener/YAD2K](https://github.com/allanzelener/YAD2K).
-#### And I change the backend of darknet53 into
-- [x] Mobilenet
+A tf.keras implementation of a common YOLOv3 object detection architecture with different Backbone/Head/Loss/Postprocess.
+#### Backbone
+- [x] Darknet53/Tiny Darknet
+- [x] MobilenetV1
 - [x] VGG16
-- [x] ResNet101
-- [x] ResNeXt101
+- [x] Xception
 
-## Experiment on open datasets
+#### Head
+- [x] YOLOv3
+- [x] YOLOv3 Lite
+- [x] Tiny YOLOv3
+- [x] Tiny YOLOv3 Lite
 
-| Model name | InputSize | TrainSet | TestSet | mAP | Speed | Ps |
-| ----- | ------ | ------ | ------ | ----- | ----- | ----- |
-| YOLOv3-Mobilenet | 320x320 | VOC07 | VOC07 | 64.22% | 29fps | Keras on 1080Ti |
-| YOLOv3-Mobilenet | 320x320 | VOC07+12 | VOC07 | 74.56% | 29fps | Keras on 1080Ti |
-| YOLOv3-Mobilenet | 416x416 | VOC07+12 | VOC07 | 76.82% | 25fps | Keras on 1080Ti |
-| [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12+coco | VOC07 | 72.7% | (unknown) ||
-| [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12 | VOC07 | 68% | (unknown) ||
-| [Faster RCNN, VGG-16](https://github.com/ShaoqingRen/faster_rcnn)| ~1000x600 | VOC07+12| VOC07 | 73.2% | 151ms | Caffe on Titan X |
-|[SSD,VGG-16](https://github.com/pierluigiferrari/ssd_keras) | 300x300 | VOC07+12 | VOC07	| 77.5% | 39fps | Keras on Titan X |
+#### Loss
+- [x] Standard YOLOv3 loss
+- [x] Binary focal classification loss
+- [x] Softmax focal classification loss
+- [x] GIoU localization loss
+- [x] Binary focal loss for objectness (experimental)
 
-#### PS:
-1. Compared with MobileNet-SSD, YOLOv3-Mobilenet is much better on VOC2007 test, even without pre-training on Ms-COCO
-2. I use the default anchor size that the author cluster on COCO with inputsize of 416\*416, whereas the anchors for VOC 320 input should be smaller. The change of anchor size could gain performance improvement.
-3. Evaluation on https://github.com/Adamdad/Object-Detection-Metrics.git
-4. I only use the pure model of YOLOv3-Mobilenet with no additional tricks.
+#### Postprocess
+- [x] TF YOLOv3 postprocess model
+- [x] Numpy YOLOv3 postprocess implementation
 
-# Guide of refreshed train & evaluate & demo process
+
+## Quick Start
+
+1. Download Darknet/YOLOv3/Tiny YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
+2. Convert the Darknet YOLO model to a Keras model.
+3. Run YOLO detection on your image or video.
+
+```
+# wget -O model_data/darknet53.conv.74.weights https://pjreddie.com/media/files/darknet53.conv.74
+# wget -O model_data/yolov3.weights https://pjreddie.com/media/files/yolov3.weights
+# wget -O model_data/yolov3-tiny.weights https://pjreddie.com/media/files/yolov3-tiny.weights
+
+# cd tools && python convert.py yolov3.cfg ../model_data/yolov3.weights ../model_data/yolov3.h5
+# python convert.py yolov3-tiny.cfg ../model_data/yolov3-tiny.weights ../model_data/tiny_yolo_weights.h5
+# python convert.py darknet53.cfg ../model_data/darknet53.conv.74.weights ../model_data/darknet53_weights.h5
+# cd ..
+
+# python yolo.py --model_type=darknet --model_path=model_data/yolov3.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/coco_classes.txt --image
+# python yolo.py --model_type=darknet --model_path=model_data/yolov3.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/coco_classes.txt --input=<your video file>
+```
+For Tiny YOLOv3, just do in a similar way, but specify different model path and anchor path with `--model_path` and `--anchors_path`.
+
+
+## Guide of train & evaluate & demo process
 
 ### Train
-1.train.py
-> * Support following models:
->  1. YOLOv3
->  2. Tiny-YOLOv3
->  3. YOLOv3-Mobilenet
->  4. Tiny-YOLOv3-Mobilenet
->  5. YOLOv3_Lite-Mobilenet (YOLOv3-Lite use Depthwise Conv in yolo head part)
->  6. Tiny-YOLOv3_Lite-Mobilenet
->  7. YOLOv3-VGG16
->  8. Tiny-YOLOv3-VGG16
->  9. YOLOv3-Xception
->  10. Tiny-YOLOv3-Xception
->  11. YOLOv3_Lite-Xception
->  12. Tiny-YOLOv3_Lite-Xception
->  * related param (dataset, pretrained weights, epochs num etc.) could be changed in code
+1. Generate your own train/val/test annotation file and class names file.
+    One row for one image in annotation file;
+    Row format: `image_file_path box1 box2 ... boxN`;
+    Box format: `x_min,y_min,x_max,y_max,class_id` (no space).
+    For VOC style dataset, try `python tools/voc_annotation.py`
+    For COCO style dataset, try `python tools/coco_annotation.py`
+    Here is an example:
+    ```
+    path/to/img1.jpg 50,100,150,200,0 30,50,200,120,3
+    path/to/img2.jpg 120,300,250,600,2
+    ...
+    ```
+   Merge train & val annotation file as train script needed
+   If you want to download PascalVOC or COCO dataset, refer to Dockerfile for cmd
 
-2.train_multiscale.py
+   For class names file, refer to model_data/coco_classes.txt
+
+2. If you're training Darknet YOLOv3/Tiny YOLOv3, make sure you have converted pretrain model weights as in "Quick Start" part
+
+3. train.py
+```
+# python train.py -h
+usage: train.py [-h] [--model_type MODEL_TYPE] [--tiny_version]
+                [--weights_path WEIGHTS_PATH] [--learning_rate LEARNING_RATE]
+                [--batch_size BATCH_SIZE] [--freeze_level FREEZE_LEVEL]
+                [--val_split VAL_SPLIT] [--model_image_size MODEL_IMAGE_SIZE]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --model_type MODEL_TYPE
+                        YOLO model type: mobilenet_lite/mobilenet/darknet/vgg1
+                        6/xception/xception_lite, default=mobilenet_lite
+  --tiny_version        Whether to use a tiny YOLO version
+  --weights_path WEIGHTS_PATH
+                        Pretrained model/weights file for fine tune
+  --learning_rate LEARNING_RATE
+                        Initial learning rate, default=0.001
+  --batch_size BATCH_SIZE
+                        Initial batch size for train, default=16
+  --freeze_level FREEZE_LEVEL
+                        Freeze level of the training model. 0:NA/1:backbone
+  --val_split VAL_SPLIT
+                        validation data persentage in dataset, default=0.1
+  --model_image_size MODEL_IMAGE_SIZE
+                        model image input size as <num>x<num>, default 416x416
+```
+Loss type couldn't be changed from CLI options. You can try them by changing params in yolo3/model.py
+
+4. train_multiscale.py
 > * Multiscale training script for the supported models
 
 Checkpoints during training could be found at logs/000/. Choose a best one as result
 
-3.SoftMax Loss & Focal Loss
-> * Could be tried by changing loss config code. See yolo3/model.py
-
 ### Model dump
-We need to dump out inference model from training checkpoint. Following script cmd work for that.
+We need to dump out inference model from training checkpoint for eval or demo. Following script cmd work for that.
 
 ```
 python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --dump_model --output_model_file=test.h5
@@ -66,13 +117,18 @@ python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5
 Change model_type, anchors file & class file for different training mode
 
 ### Evaluation
-Use "eval.py" to do evaluation on the inference model. It will draw out rec/pre curve for each class and AP/mAP result chart under "result" dir, and optionally save all the detection result on evaluation dataset as images
+Use "eval.py" to do evaluation on the inference model with your test data. It support following metrics:
+
+1. Pascal VOC mAP: draw rec/pre curve for each class and AP/mAP result chart in "result" dir with default 0.5 IOU or specified IOU, and optionally save all the detection result on evaluation dataset as images
+
+2. MS COCO AP evaluation. Will draw AP chart and optionally save all the detection result
+
 ```
-python eval.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --model_image_size=416x416 --annotation_file=2007_test.txt --save_result
+python eval.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --annotation_file=2007_test.txt --save_result
 ```
 
 ### Demo
-1.yolo.py
+1. yolo.py
 > * Demo script for trained model
 image detection mode
 ```
@@ -84,7 +140,7 @@ python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=m
 ```
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 
-
+2. MultiGPU usage: use `--gpu_num N` to use N GPUs. It is passed to the [Keras multi_gpu_model()](https://keras.io/utils/#multi_gpu_model).
 
 ### TFLite convert & validate
 1. Use tflite_convert to generate TFLite inference model. We need to specify input node name and input shape since our inference model doesn't have input image shape. Only valid under tensorflow 1.13
@@ -101,141 +157,48 @@ python validate_yolo_tflite.py --model_path=test.tflite --anchors_path=model_dat
 - [] TFLite C++ inplementation of yolo head
 
 
-# Origin Guide of keras-yolov3-Mobilenet
-
-1.train_Mobilenet.py
-
-> * **Code for training**
-> * I change some of the code to read in the annotaions seperately (train.txt and val.txt), remember to change that, and the .txt file are in the same form descibed below
-
-2.yolo3/model_Mobilenet.py
-
-> * **Model_Mobilenet is the yolo model based on Mobilenet**
-> * If you want to go through the source code,ignore the other function,please see the yolo_body
-(I extract three layers from the Mobilenet to make the prediction)
-
-3.yolo_Mobilenet.py
-
- > * **Testing on images**
-
-
-###### Be sure that you do not load pretrained model when training because I did it on keras_applications,and the keras will load the pretrained model for you
-##### if you find anything tricky, contact me as you wish
----
-# Evaluation
-#### Please use this repo to draw the RP curve calculate the MAP https://github.com/Adamdad/Object-Detection-Metrics.git
----
-# Guide of keras-yolov3
-[this is the guide for darknet53 not mobilenet]
-## Quick Start
-
-1. Download YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
-2. Convert the Darknet YOLO model to a Keras model.
-3. Run YOLO detection.
-
-```
-wget https://pjreddie.com/media/files/yolov3.weights
-python convert.py yolov3.cfg yolov3.weights model_data/yolo.h5
-python yolo_video.py [OPTIONS...] --image, for image detection mode, OR
-python yolo_video.py [video_path] [output_path (optional)]
-```
-
-For Tiny YOLOv3, just do in a similar way, just specify model path and anchor path with `--model model_file` and `--anchors anchor_file`.
-
-### Usage
-Use --help to see usage of yolo_video.py:
-```
-usage: yolo_video.py [-h] [--model MODEL] [--anchors ANCHORS]
-                     [--classes CLASSES] [--gpu_num GPU_NUM] [--image]
-                     [--input] [--output]
-
-positional arguments:
-  --input        Video input path
-  --output       Video output path
-
-optional arguments:
-  -h, --help         show this help message and exit
-  --model MODEL      path to model weight file, default model_data/yolo.h5
-  --anchors ANCHORS  path to anchor definitions, default
-                     model_data/yolo_anchors.txt
-  --classes CLASSES  path to class definitions, default
-                     model_data/coco_classes.txt
-  --gpu_num GPU_NUM  Number of GPU to use, default 1
-  --image            Image detection mode, will ignore all positional arguments
-```
----
-
-4. MultiGPU usage: use `--gpu_num N` to use N GPUs. It is passed to the [Keras multi_gpu_model()](https://keras.io/utils/#multi_gpu_model).
-
-## Training
-
-1. Generate your own annotation file and class names file.
-    One row for one image;
-    Row format: `image_file_path box1 box2 ... boxN`;
-    Box format: `x_min,y_min,x_max,y_max,class_id` (no space).
-    For VOC dataset, try `python voc_annotation.py`
-    Here is an example:
-    ```
-    path/to/img1.jpg 50,100,150,200,0 30,50,200,120,3
-    path/to/img2.jpg 120,300,250,600,2
-    ...
-    ```
-
-2. Make sure you have run `python convert.py -w yolov3.cfg yolov3.weights model_data/yolo_weights.h5`
-    The file model_data/yolo_weights.h5 is used to load pretrained weights.
-
-3. Modify train.py and start training.
-    `python train.py`
-    Use your trained weights or checkpoint weights with command line option `--model model_file` when using yolo_video.py
-    Remember to modify class path or anchor path, with `--classes class_file` and `--anchors anchor_file`.
-
-If you want to use original pretrained weights for YOLOv3:
-    1. `wget https://pjreddie.com/media/files/darknet53.conv.74`
-    2. rename it as darknet53.weights
-    3. `python convert.py -w darknet53.cfg darknet53.weights model_data/darknet53_weights.h5`
-    4. use model_data/darknet53_weights.h5 in train.py
-
----
-
 ## Some issues to know
 
 1. The test environment is
-    - Python 3.5.2
-    - Keras 2.1.5
-    - tensorflow 1.6.0
+    - Python 3.6.7
+    - tensorflow 1.14.0
+    - tf.keras 2.2.4-tf
 
-2. Default anchors are used. If you use your own anchors, probably some changes are needed.
+2. Default YOLOv3 anchors are used. If you want to use your own anchors, probably some changes are needed. tools/kmeans.py could be used to do K-Means anchor clustering on your dataset
 
-3. The inference result is not totally the same as Darknet but the difference is small.
+3. Always load pretrained weights and freeze layers in the first stage of training.
 
-4. The speed is slower than Darknet. Replacing PIL with opencv may help a little.
-
-5. Always load pretrained weights and freeze layers in the first stage of training. Or try Darknet training. It's OK if there is a mismatch warning.
-
-6. The training strategy is for reference only. Adjust it according to your dataset and your goal. And add further strategy if needed.
-
-7. For speeding up the training process with frozen layers train_bottleneck.py can be used. It will compute the bottleneck features of the frozen model first and then only trains the last layers. This makes training on CPU possible in a reasonable time. See [this](https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html) for more information on bottleneck features.
-
-
+4. The training strategy is for reference only. Adjust it according to your dataset and your goal. And add further strategy if needed.
 
 
 # Citation
-Please cite MobileNet-YOLO in your publications if it helps your research:
+Please cite keras-YOLOv3-model-set in your publications if it helps your research:
 ```
 @article{MobileNet-Yolov3,
      Author = {Adam Yang},
      Year = {2018}
 }
- @article{yolov3,
+@article{keras-yolo3,
+     Author = {qqwweee},
+     Year = {2018}
+}
+@article{yolov3,
      title={YOLOv3: An Incremental Improvement},
      author={Redmon, Joseph and Farhadi, Ali},
      journal = {arXiv},
      year={2018}
 }
-@article{mobilenets,
-     title={MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications},
-     author={Andrew G. Howard, Menglong Zhu, Bo Chen,Dmitry Kalenichenko,Weijun Wang, Tobias Weyand,Marco Andreetto, Hartwig Adam},
+@article{Focal Loss,
+     title={Focal Loss for Dense Object Detection},
+     author={Tsung-Yi Lin, Priya Goyal, Ross Girshick, Kaiming He, Piotr Dollár},
      journal = {arXiv},
-     year = {2017}
+     year={2017}
+}
+@article{GIoU,
+     title={Generalized Intersection over Union: A Metric and A Loss for Bounding Box
+Regression},
+     author={Hamid Rezatofighi, Nathan Tsoi1, JunYoung Gwak1, Amir Sadeghian, Ian Reid, Silvio Savarese},
+     journal = {arXiv},
+     year={2019}
 }
 ```
