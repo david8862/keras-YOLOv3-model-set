@@ -89,7 +89,7 @@ def yolo3_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_
     return boxes, classes, scores
 
 
-def handle_predictions(predictions, confidence=0.6, iou_threshold=0.5):
+def handle_predictions(predictions, confidence=0.1, iou_threshold=0.4):
     boxes = predictions[:, :, :4]
     box_confidences = np.expand_dims(predictions[:, :, 4], -1)
     box_class_probs = predictions[:, :, 5:]

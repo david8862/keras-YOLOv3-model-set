@@ -67,9 +67,10 @@ For Tiny YOLOv3, just do in a similar way, but specify different model path and 
     ...
     ```
    Merge train & val annotation file as train script needed
+
    If you want to download PascalVOC or COCO dataset, refer to Dockerfile for cmd
 
-   For class names file, refer to model_data/coco_classes.txt
+   For class names file format, refer to model_data/coco_classes.txt
 
 2. If you're training Darknet YOLOv3/Tiny YOLOv3, make sure you have converted pretrain model weights as in "Quick Start" part
 

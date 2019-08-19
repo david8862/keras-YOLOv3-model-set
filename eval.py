@@ -109,7 +109,7 @@ def transform_gt_record(gt_records, class_names):
 
 
 
-def yolo_predict_tflite(interpreter, image, anchors, num_classes):
+def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold):
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
 
@@ -133,13 +133,13 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes):
 
     predictions = yolo_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
 
-    boxes, classes, scores = handle_predictions(predictions, confidence=0.1, iou_threshold=0.4)
+    boxes, classes, scores = handle_predictions(predictions, confidence=conf_threshold, iou_threshold=0.4)
     boxes = adjust_boxes(boxes, image_shape, (height, width))
 
     return boxes, classes, scores
 
 
-def get_prediction_class_records(model_path, annotation_records, anchors, class_names, model_image_size, save_result):
+def get_prediction_class_records(model_path, annotation_records, anchors, class_names, model_image_size, conf_threshold, save_result):
     '''
     Do the predict with YOLO model on annotation images to get predict class dict
 
@@ -172,9 +172,9 @@ def get_prediction_class_records(model_path, annotation_records, anchors, class_
         image_shape = image.size
 
         if model_path.endswith('.tflite'):
-            pred_boxes, pred_classes, pred_scores = yolo_predict_tflite(interpreter, image, anchors, len(class_names))
+            pred_boxes, pred_classes, pred_scores = yolo_predict_tflite(interpreter, image, anchors, len(class_names), conf_threshold)
         else:
-            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size)
+            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size, confidence=conf_threshold)
 
         print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
 
@@ -706,12 +706,12 @@ def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records
 
 
 
-def eval_AP(eval_type, model_path, annotation_file, anchors, class_names, iou_threshold, model_image_size, save_result):
+def eval_AP(eval_type, model_path, annotation_file, anchors, class_names, iou_threshold, conf_threshold, model_image_size, save_result):
     '''
     Compute AP for detection model on annotation dataset
     '''
     annotation_records, gt_classes_records = annotation_parse(annotation_file, class_names)
-    pred_classes_records = get_prediction_class_records(model_path, annotation_records, anchors, class_names, model_image_size, save_result)
+    pred_classes_records = get_prediction_class_records(model_path, annotation_records, anchors, class_names, model_image_size, conf_threshold, save_result)
 
     if eval_type == 'VOC':
         compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold)
@@ -753,6 +753,10 @@ def main():
         help='IOU threshold for PascalVOC mAP, default=0.5', default=0.5)
 
     parser.add_argument(
+        '--conf_threshold', type=float,
+        help='confidence threshold for filtering box in postprocess, default=0.1', default=0.1)
+
+    parser.add_argument(
         '--model_image_size', type=str,
         help='model image input size as <num>x<num>, default 416x416', default='416x416')
 
@@ -769,7 +773,7 @@ def main():
     height, width = args.model_image_size.split('x')
     model_image_size = (int(height), int(width))
 
-    eval_AP(args.eval_type, args.model_path, args.annotation_file, anchors, class_names, args.iou_threshold, model_image_size, args.save_result)
+    eval_AP(args.eval_type, args.model_path, args.annotation_file, anchors, class_names, args.iou_threshold, args.conf_threshold, model_image_size, args.save_result)
 
 
 if __name__ == '__main__':

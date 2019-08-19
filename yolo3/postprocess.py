@@ -90,8 +90,8 @@ def yolo3_postprocess(args,
               anchors,
               num_classes,
               max_boxes=20,
-              score_threshold=.1,
-              iou_threshold=.4):
+              confidence=0.1,
+              iou_threshold=0.4):
     """Postprocess for YOLO model on given input and return filtered boxes."""
 
     yolo_outputs = args[0]
@@ -112,7 +112,7 @@ def yolo3_postprocess(args,
     boxes = K.concatenate(boxes, axis=0)
     box_scores = K.concatenate(box_scores, axis=0)
 
-    mask = box_scores >= score_threshold
+    mask = box_scores >= confidence
     max_boxes_tensor = K.constant(max_boxes, dtype='int32')
     boxes_ = []
     scores_ = []
