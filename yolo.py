@@ -28,8 +28,8 @@ from tensorflow.keras.utils import multi_gpu_model
 
 class YOLO(object):
     _defaults = {
-        "model_type": 'mobilenet_lite',
-        "model_path": 'model_data/yolov3-tiny.h5',
+        "model_type": 'darknet',
+        "model_path": 'model_data/tiny_yolo_weights.h5',
         "anchors_path": 'model_data/tiny_yolo_anchors.txt',
         "classes_path": 'model_data/coco_classes.txt',
         "score" : 0.1,
@@ -105,7 +105,7 @@ class YOLO(object):
             self.yolo_model = multi_gpu_model(self.yolo_model, gpus=self.gpu_num)
         boxes, scores, classes = yolo3_postprocess([self.yolo_outputs, self.input_image_shape],
                 self.anchors, len(self.class_names),
-                score_threshold=self.score, iou_threshold=self.iou)
+                confidence=self.score, iou_threshold=self.iou)
         return boxes, scores, classes
 
 
