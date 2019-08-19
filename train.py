@@ -9,10 +9,9 @@ import numpy as np
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping, TerminateOnNaN, LambdaCallback
-#from tensorflow_model_optimization.sparsity import keras as sparsity
 from yolo3.model import get_yolo3_model
 from yolo3.data import data_generator_wrapper
-from yolo3.utils import resize_anchors, get_classes, get_anchors
+from yolo3.utils import get_classes, get_anchors
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -35,7 +34,7 @@ def _main(args):
         anchors_path = 'model_data/tiny_yolo_anchors.txt'
     else:
         anchors_path = 'model_data/yolo_anchors.txt'
-    base_anchors = get_anchors(anchors_path)
+    anchors = get_anchors(anchors_path)
 
     # get freeze level according to CLI option
     if args.weights_path:
@@ -46,11 +45,6 @@ def _main(args):
     if args.freeze_level:
         freeze_level = args.freeze_level
 
-    input_shape = args.model_image_size
-    assert (input_shape[0]%32 == 0 and input_shape[1]%32 == 0), 'Multiples of 32 required'
-
-    # resize base anchors acoording to input shape
-    anchors = resize_anchors(base_anchors, input_shape)
 
     logging = TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=False, write_grads=False, write_images=False, update_freq='batch')
     checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
@@ -74,91 +68,59 @@ def _main(args):
     num_val = int(len(lines)*val_split)
     num_train = len(lines) - num_val
 
-    model = get_yolo3_model(args.model_type, input_shape, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate)
+    # get input_shape & batch_size list for multiscale training
+    is_tiny_version = len(anchors)==6 # default setting
+    if is_tiny_version:
+        input_shape_list = [(320,320), (416,416), (512,512), (608,608)]
+        batch_size_list = [4, 8, 16]
+    else:
+        # due to GPU memory limit, we could only use small
+        # input_shape and batch_size for full YOLOv3 model
+        input_shape_list = [(320,320), (416,416), (480,480)]
+        batch_size_list = [4, 8]
+
+    model = get_yolo3_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate)
     model.summary()
 
-    #pruning_callbacks = [sparsity.UpdatePruningStep(), sparsity.PruningSummaries(log_dir=log_dir, profile_batch=0)]
+    # Train 20 epochs with frozen layers first if needed, to get a stable loss.
+    input_shape = args.model_image_size
+    assert (input_shape[0]%32 == 0 and input_shape[1]%32 == 0), 'Multiples of 32 required'
+    batch_size = args.batch_size
+    initial_epoch = 0
+    epochs = 20
+    print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
+    model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
+            steps_per_epoch=max(1, num_train//batch_size),
+            validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
+            validation_steps=max(1, num_val//batch_size),
+            epochs=epochs,
+            initial_epoch=initial_epoch,
+            callbacks=[logging, checkpoint, terminate_on_nan])
 
-    # Train with frozen layers first, to get a stable loss.
-    # Adjust num epochs to your dataset. This step is enough to obtain a not bad model.
-    if True:
-        batch_size = args.batch_size
-        epochs = 20
-        #end_step = np.ceil(1.0 * num_train / batch_size).astype(np.int32) * epochs
-        #model = add_pruning(model, begin_step=0, end_step=end_step)
-        print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
-        model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
-                steps_per_epoch=max(1, num_train//batch_size),
-                validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
-                validation_steps=max(1, num_val//batch_size),
-                epochs=epochs,
-                initial_epoch=0,
-                callbacks=[logging, checkpoint, terminate_on_nan])
-        #model = sparsity.strip_pruning(model)
+    # free the whole network for further training
+    print("Unfreeze and continue training, to fine-tune.")
+    for i in range(len(model.layers)):
+        model.layers[i].trainable = True
+    model.compile(optimizer=Adam(lr=args.learning_rate/2), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
 
-    # Unfreeze and continue training, to fine-tune.
-    # Train longer if the result is not good.
-    if True:
-        print("Unfreeze and continue training, to fine-tune.")
-        for i in range(len(model.layers)):
-            model.layers[i].trainable = True
-        model.compile(optimizer=Adam(lr=args.learning_rate/10), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
-        batch_size = args.batch_size # note that more GPU memory is required after unfreezing the body
-        print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
+    # Do multi-scale training on different input shape
+    # change every 20 epochs
+    for epoch_step in range(20, 300, 20):
+        input_shape = input_shape_list[random.randint(0,len(input_shape_list)-1)]
+        batch_size = batch_size_list[random.randint(0,len(batch_size_list)-1)]
+        initial_epoch = epochs
+        epochs = epoch_step
+        print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
             validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
-            epochs=150,
-            initial_epoch=20,
-            callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan])
-
-    # Lower down batch size for another 50 epochs
-    if True:
-        print("Lower batch_size to fine-tune.")
-        batch_size = batch_size//2 # lower down batch_size for more random gradient search
-        print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
-        model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
-            steps_per_epoch=max(1, num_train//batch_size),
-            validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
-            validation_steps=max(1, num_val//batch_size),
-            epochs=200,
-            initial_epoch=150,
-            callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan])
-
-    # Keep lower down batch size for another 50 epochs
-    if True:
-        print("Keep lower batch_size to fine-tune.")
-        batch_size = batch_size//2 # lower down batch_size for more random gradient search
-        print('Train on {} samples, val on {} samples, with batch size {}.'.format(num_train, num_val, batch_size))
-        model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
-            steps_per_epoch=max(1, num_train//batch_size),
-            validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
-            validation_steps=max(1, num_val//batch_size),
-            epochs=250,
-            initial_epoch=200,
+            epochs=epochs,
+            initial_epoch=initial_epoch,
             callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan])
 
     # Finally store model
     model.save(log_dir + 'trained_final.h5')
-
-
-def add_pruning(model, begin_step, end_step):
-    print(type(model))
-    new_pruning_params = {
-      'pruning_schedule': sparsity.PolynomialDecay(initial_sparsity=0.50,
-                                                   final_sparsity=0.90,
-                                                   begin_step=begin_step,
-                                                   end_step=end_step,
-                                                   frequency=100)
-    }
-    pruned_model = sparsity.prune_low_magnitude(model, **new_pruning_params)
-    pruned_model.summary()
-    pruned_model.compile(optimizer=Adam(lr=1e-3), loss={
-        # use custom yolo_loss Lambda layer.
-        'prune_low_magnitude_yolo_loss': lambda y_true, y_pred: y_pred})
-
-    return pruned_model
 
 
 if __name__ == '__main__':
@@ -178,14 +140,13 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int,required=False, default=16,
         help = "Initial batch size for train, default=16")
     parser.add_argument('--freeze_level', type=int,required=False, default=None,
-        help = "Freeze level of the training model. 0:NA/1:backbone")
+        help = "Freeze level of the training model. 0:NA/1:backbone/2:only open feature_map")
     parser.add_argument('--val_split', type=float,required=False, default=0.1,
         help = "validation data persentage in dataset, default=0.1")
     parser.add_argument('--model_image_size', type=str,required=False, default='416x416',
-        help='model image input size as <num>x<num>, default 416x416')
+        help = "Initial model image input size as <num>x<num>, default 416x416")
 
     args = parser.parse_args()
-
     height, width = args.model_image_size.split('x')
     args.model_image_size = (int(height), int(width))
 

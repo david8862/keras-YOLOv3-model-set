@@ -75,7 +75,7 @@ def get_model_body(model_type, num_feature_layers, image_input, num_anchors, num
     return model_body, backbone_len
 
 
-def get_yolo3_model(model_type, input_shape, anchors, num_classes, weights_path=None, freeze_level=1, learning_rate=1e-3):
+def get_yolo3_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, learning_rate=1e-3):
     '''create the training model, for YOLOv3'''
     K.clear_session() # get a new session
     num_anchors = len(anchors)
@@ -84,11 +84,15 @@ def get_yolo3_model(model_type, input_shape, anchors, num_classes, weights_path=
     #so we can calculate feature layers number to get model type
     num_feature_layers = num_anchors//3
 
-    h, w = input_shape
     image_input = Input(shape=(None, None, 3))
 
-    y_true = [Input(shape=(h//{0:32, 1:16, 2:8}[l], w//{0:32, 1:16, 2:8}[l], \
-        3, num_classes+5)) for l in range(num_feature_layers)]
+    #feature map target value, so its shape should be like:
+    # [
+    #  (image_height/32, image_width/32, 3, num_classes+5),
+    #  (image_height/16, image_width/16, 3, num_classes+5),
+    #  (image_height/8, image_width/8, 3, num_classes+5)
+    # ]
+    y_true = [Input(shape=(None, None, 3, num_classes+5)) for l in range(num_feature_layers)]
 
     model_body, backbone_len = get_model_body(model_type, num_feature_layers, image_input, num_anchors, num_classes)
     print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))
