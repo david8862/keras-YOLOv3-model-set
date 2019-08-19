@@ -115,7 +115,7 @@ def _main(args):
 
     # Do multi-scale training on different input shape
     # change every 20 epochs
-    for epoch_step in range(epochs, args.total_epoch, 20):
+    for epoch_step in range(epochs+20, args.total_epoch, 20):
         input_shape = input_shape_list[random.randint(0,len(input_shape_list)-1)]
         batch_size = batch_size_list[random.randint(0,len(batch_size_list)-1)]
         initial_epoch = epochs
