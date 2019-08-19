@@ -132,7 +132,7 @@ Use "eval.py" to do evaluation on the inference model with your test data. It su
 2. MS COCO AP evaluation. Will draw AP chart and optionally save all the detection result
 
 ```
-python eval.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --annotation_file=2007_test.txt --save_result
+python eval.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.01 --annotation_file=2007_test.txt --save_result
 ```
 
 ### Demo
