@@ -78,11 +78,12 @@ For Tiny YOLOv3, just do in a similar way, but specify different model path and 
 ```
 # python train.py -h
 usage: train.py [-h] [--model_type MODEL_TYPE] [--tiny_version]
-                [--annotation_file ANNOTATION_FILE]
-                [--classes_path CLASSES_PATH] [--weights_path WEIGHTS_PATH]
-                [--learning_rate LEARNING_RATE] [--batch_size BATCH_SIZE]
-                [--freeze_level FREEZE_LEVEL] [--val_split VAL_SPLIT]
                 [--model_image_size MODEL_IMAGE_SIZE]
+                [--weights_path WEIGHTS_PATH] [--freeze_level FREEZE_LEVEL]
+                [--annotation_file ANNOTATION_FILE] [--val_split VAL_SPLIT]
+                [--classes_path CLASSES_PATH] [--learning_rate LEARNING_RATE]
+                [--batch_size BATCH_SIZE] [--init_epoch INIT_EPOCH]
+                [--total_epoch TOTAL_EPOCH] [--multiscale]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -90,30 +91,34 @@ optional arguments:
                         YOLO model type: mobilenet_lite/mobilenet/darknet/vgg1
                         6/xception/xception_lite, default=mobilenet_lite
   --tiny_version        Whether to use a tiny YOLO version
+  --model_image_size MODEL_IMAGE_SIZE
+                        Initial model image input size as <num>x<num>, default
+                        416x416
+  --weights_path WEIGHTS_PATH
+                        Pretrained model/weights file for fine tune
+  --freeze_level FREEZE_LEVEL
+                        Freeze level of the training model.
+                        0:NA/1:backbone/2:only open feature_map
   --annotation_file ANNOTATION_FILE
                         train&val annotation txt file, default=trainval.txt
+  --val_split VAL_SPLIT
+                        validation data persentage in dataset, default=0.1
   --classes_path CLASSES_PATH
                         path to class definitions,
                         default=model_data/voc_classes.txt
-  --weights_path WEIGHTS_PATH
-                        Pretrained model/weights file for fine tune
   --learning_rate LEARNING_RATE
                         Initial learning rate, default=0.001
   --batch_size BATCH_SIZE
                         Initial batch size for train, default=16
-  --freeze_level FREEZE_LEVEL
-                        Freeze level of the training model. 0:NA/1:backbone
-  --val_split VAL_SPLIT
-                        validation data persentage in dataset, default=0.1
-  --model_image_size MODEL_IMAGE_SIZE
-                        model image input size as <num>x<num>, default 416x416
+  --init_epoch INIT_EPOCH
+                        Initial stage training epochs, default=40
+  --total_epoch TOTAL_EPOCH
+                        Total training epochs, default=300
+  --multiscale          Whether to use multiscale training
 ```
-Loss type couldn't be changed from CLI options. You can try them by changing params in yolo3/model.py
-
-4. train_multiscale.py
-> * Multiscale training script for the supported models
-
 Checkpoints during training could be found at logs/000/. Choose a best one as result
+
+Loss type couldn't be changed from CLI options. You can try them by changing params in yolo3/model.py
 
 ### Model dump
 We need to dump out inference model from training checkpoint for eval or demo. Following script cmd work for that.
