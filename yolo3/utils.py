@@ -87,16 +87,3 @@ def draw_boxes(image, boxes, classes, scores, class_names, colors, show_score=Tr
 
     return image
 
-def add_metrics(model, loss_dict):
-    '''
-    add loss scalar into model, which could be tracked in training
-    log and tensorboard callback
-    '''
-    for (name, loss) in loss_dict.items():
-        # seems add_metric() is newly added in tf.keras. So if you
-        # want to customize metrics on raw keras model, just use
-        # "metrics_names" and "metrics_tensors" as follow:
-        #
-        #model.metrics_names.append(name)
-        #model.metrics_tensors.append(loss)
-        model.add_metric(loss, name=name, aggregation='mean')

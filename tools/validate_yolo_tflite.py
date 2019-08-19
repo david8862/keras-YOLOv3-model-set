@@ -1,9 +1,10 @@
 import time
 from PIL import Image
-import os, argparse
+import os, sys, argparse
 import numpy as np
-
 from tensorflow.lite.python import interpreter as interpreter_wrapper
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from yolo3.postprocess_np import yolo_head, handle_predictions, adjust_boxes
 from yolo3.data import preprocess_image
 from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes

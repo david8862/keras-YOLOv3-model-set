@@ -12,7 +12,21 @@ from yolo3.models.yolo3_mobilenet import yolo_mobilenet_body, tiny_yolo_mobilene
 from yolo3.models.yolo3_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
 from yolo3.models.yolo3_xception import yolo_xception_body, yololite_xception_body, tiny_yolo_xception_body, tiny_yololite_xception_body
 from yolo3.loss import yolo_loss
-from yolo3.utils import add_metrics
+
+
+def add_metrics(model, loss_dict):
+    '''
+    add loss scalar into model, which could be tracked in training
+    log and tensorboard callback
+    '''
+    for (name, loss) in loss_dict.items():
+        # seems add_metric() is newly added in tf.keras. So if you
+        # want to customize metrics on raw keras model, just use
+        # "metrics_names" and "metrics_tensors" as follow:
+        #
+        #model.metrics_names.append(name)
+        #model.metrics_tensors.append(loss)
+        model.add_metric(loss, name=name, aggregation='mean')
 
 
 def get_model_body(model_type, num_feature_layers, image_input, num_anchors, num_classes):

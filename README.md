@@ -124,7 +124,7 @@ Loss type couldn't be changed from CLI options. You can try them by changing par
 We need to dump out inference model from training checkpoint for eval or demo. Following script cmd work for that.
 
 ```
-python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --dump_model --output_model_file=test.h5
+# python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --dump_model --output_model_file=test.h5
 ```
 
 Change model_type, anchors file & class file for different training mode
@@ -137,7 +137,7 @@ Use "eval.py" to do evaluation on the inference model with your test data. It su
 2. MS COCO AP evaluation. Will draw AP chart and optionally save all the detection result
 
 ```
-python eval.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.01 --annotation_file=2007_test.txt --save_result
+# python eval.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.01 --annotation_file=2007_test.txt --save_result
 ```
 
 ### Demo
@@ -145,11 +145,11 @@ python eval.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt -
 > * Demo script for trained model
 image detection mode
 ```
-python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --image
+# python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --image
 ```
 video detection mode
 ```
-python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --input=test.mp4
+# python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --input=test.mp4
 ```
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 
@@ -158,11 +158,12 @@ For video detection mode, you can use "input=0" to capture live video from web c
 ### TFLite convert & validate
 1. Use tflite_convert to generate TFLite inference model. We need to specify input node name and input shape since our inference model doesn't have input image shape. Only valid under tensorflow 1.13
 ```
-tflite_convert [--post_training_quantize] --input_arrays=input_1 --input_shapes=1,416,416,3 --output_file=test[_quant].tflite --keras_model_file=test.h5
+# tflite_convert [--post_training_quantize] --input_arrays=input_1 --input_shapes=1,416,416,3 --output_file=test[_quant].tflite --keras_model_file=test.h5
 ```
 2. Run TFLite validate script
 ```
-python validate_yolo_tflite.py --model_path=test.tflite --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --image_file=test.jpg --loop_count=1
+# cd tools/
+# python validate_yolo_tflite.py --model_path=test.tflite --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --image_file=test.jpg --loop_count=1
 ```
 #### You can also use "eval.py" to do evaluate on the TFLite model
 
