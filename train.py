@@ -69,15 +69,14 @@ def _main(args):
     num_train = len(lines) - num_val
 
     # get input_shape & batch_size list for multiscale training
-    is_tiny_version = len(anchors)==6 # default setting
-    if is_tiny_version:
-        input_shape_list = [(320,320), (416,416), (512,512), (608,608)]
-        batch_size_list = [4, 8, 16]
-    else:
-        # due to GPU memory limit, we could only use small
-        # input_shape and batch_size for full YOLOv3 model
+    if (args.model_type == 'darknet' or args.model_type == 'xception') and not args.tiny_version:
+        # due to GPU memory limit, we could only use small input_shape and batch_size
+        # for full YOLOv3 and Xception models
         input_shape_list = [(320,320), (416,416), (480,480)]
         batch_size_list = [4, 8]
+    else:
+        input_shape_list = [(320,320), (416,416), (512,512), (608,608)]
+        batch_size_list = [4, 8, 16]
 
     model = get_yolo3_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate)
     model.summary()
