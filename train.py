@@ -92,7 +92,7 @@ def _main(args):
     model = get_yolo3_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate)
     model.summary()
 
-    # Train 20 epochs with frozen layers first if needed, to get a stable loss.
+    # Train some initial epochs with frozen layers first if needed, to get a stable loss.
     input_shape = args.model_image_size
     assert (input_shape[0]%32 == 0 and input_shape[1]%32 == 0), 'Multiples of 32 required'
     batch_size = args.batch_size
@@ -114,8 +114,9 @@ def _main(args):
     model.compile(optimizer=Adam(lr=args.learning_rate/2), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
 
     # Do multi-scale training on different input shape
-    # change every 20 epochs
-    for epoch_step in range(epochs+20, args.total_epoch, 20):
+    # change every "rescale_interval" epochs
+    interval = args.rescale_interval
+    for epoch_step in range(epochs+interval, args.total_epoch, interval):
         input_shape = input_shape_list[random.randint(0,len(input_shape_list)-1)]
         batch_size = batch_size_list[random.randint(0,len(batch_size_list)-1)]
         initial_epoch = epochs
@@ -166,6 +167,8 @@ if __name__ == '__main__':
         help = "Total training epochs, default=300")
     parser.add_argument('--multiscale', default=False, action="store_true",
         help='Whether to use multiscale training')
+    parser.add_argument('--rescale_interval', type=int,required=False, default=10,
+        help = "Number of epochs to rescale input image in, default=10")
 
     args = parser.parse_args()
     height, width = args.model_image_size.split('x')
