@@ -25,8 +25,9 @@ from yolo3.utils import get_colors, draw_boxes
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 from tensorflow.keras.utils import multi_gpu_model
 
+tf.enable_eager_execution()
 
-class YOLO(object):
+class YOLO(tf.keras.Model):
     _defaults = {
         "model_type": 'darknet',
         "model_path": 'model_data/tiny_yolo_weights.h5',
@@ -46,6 +47,7 @@ class YOLO(object):
             return "Unrecognized attribute name '" + n + "'"
 
     def __init__(self, **kwargs):
+        super(YOLO, self).__init__()
         self.__dict__.update(self._defaults) # set up default values
         self.__dict__.update(kwargs) # and update with user overrides
         self.class_names = self._get_class()
@@ -101,6 +103,22 @@ class YOLO(object):
         postprocess_model = PostProcess(self.anchors, len(self.class_names), confidence=self.score, iou_threshold=self.iou)
         return yolo_model, postprocess_model
 
+    @tf.function
+    def call(self, inputs):
+        image_data = inputs[0]
+        image_shape = inputs[1]
+        yolo_outputs = self.yolo_model(image_data)
+        out_boxes, out_scores, out_classes = self.postprocess_model([yolo_outputs, image_shape])
+        return out_boxes, out_scores, out_classes
+
+    #@tf.function
+    def predict(self, image_data, image_shape):
+        boxes, scores, classes = self([image_data, image_shape])
+
+        out_boxes, out_scores, out_classes = K.eval(boxes), K.eval(scores), K.eval(classes)
+        out_boxes = out_boxes.astype(np.int32)
+        out_classes = out_classes.astype(np.int32)
+        return out_boxes, out_classes, out_scores
 
     def detect_image(self, image):
         if self.model_image_size != (None, None):
@@ -120,17 +138,6 @@ class YOLO(object):
         image_array = np.array(image, dtype='uint8')
         image_array = draw_boxes(image_array, out_boxes, out_classes, out_scores, self.class_names, self.colors)
         return Image.fromarray(image_array)
-
-
-    def predict(self, image_data, image_shape):
-        #feed the yolo_model output to postprocess model
-        yolo_outputs = self.yolo_model.predict(image_data)
-        out_boxes, out_scores, out_classes = self.postprocess_model.predict([yolo_outputs, image_shape])
-
-        out_boxes = out_boxes.astype(np.int32)
-        out_classes = out_classes.astype(np.int32)
-        return out_boxes, out_classes, out_scores
-
 
     def detect_image_np(self, image):
         if self.model_image_size != (None, None):
@@ -182,7 +189,7 @@ def detect_video(yolo, video_path, output_path=""):
     while True:
         return_value, frame = vid.read()
         image = Image.fromarray(frame)
-        image = yolo.detect_image_np(image)
+        image = yolo.detect_image(image)
         result = np.asarray(image)
         curr_time = timer()
         exec_time = curr_time - prev_time
