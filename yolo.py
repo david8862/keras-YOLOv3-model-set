@@ -17,7 +17,7 @@ from tensorflow.keras.layers import Input, Lambda
 from PIL import Image
 
 from yolo3.model import get_model_body
-from yolo3.postprocess import yolo3_postprocess
+from yolo3.postprocess import PostProcess
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo3.data import preprocess_image, letterbox_image
 from yolo3.utils import get_colors, draw_boxes
@@ -50,9 +50,8 @@ class YOLO(object):
         self.__dict__.update(kwargs) # and update with user overrides
         self.class_names = self._get_class()
         self.anchors = self._get_anchors()
-        self.sess = K.get_session()
         K.set_learning_phase(0)
-        self.boxes, self.scores, self.classes = self.generate()
+        self.yolo_model, self.postprocess_model = self._generate_model()
 
     def _get_class(self):
         classes_path = os.path.expanduser(self.classes_path)
@@ -68,7 +67,7 @@ class YOLO(object):
         anchors = [float(x) for x in anchors.split(',')]
         return np.array(anchors).reshape(-1, 2)
 
-    def generate(self):
+    def _generate_model(self):
         '''to generate the bounding boxes'''
         model_path = os.path.expanduser(self.model_path)
         assert model_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
@@ -82,105 +81,85 @@ class YOLO(object):
         num_feature_layers = num_anchors//3
 
         try:
-            self.yolo_model = load_model(model_path, compile=False)
+            yolo_model = load_model(model_path, compile=False)
         except:
             image_input = Input(shape=(None,None,3))
-            self.yolo_model, _ = get_model_body(self.model_type, num_feature_layers, image_input, num_anchors, num_classes)
-            self.yolo_model.load_weights(self.model_path) # make sure model, anchors and classes match
-            self.yolo_model.summary()
+            yolo_model, _ = get_model_body(self.model_type, num_feature_layers, image_input, num_anchors, num_classes)
+            yolo_model.load_weights(self.model_path) # make sure model, anchors and classes match
+            yolo_model.summary()
         else:
-            assert self.yolo_model.layers[-1].output_shape[-1] == \
-                num_anchors/len(self.yolo_model.output) * (num_classes + 5), \
+            assert yolo_model.layers[-1].output_shape[-1] == \
+                num_anchors/len(yolo_model.output) * (num_classes + 5), \
                 'Mismatch between model and given anchor and class sizes'
 
         print('{} model, anchors, and classes loaded.'.format(model_path))
 
         self.colors = get_colors(self.class_names)
 
-        # Generate input/output tensors for postprocess model.
-        self.yolo_outputs = [K.placeholder(shape=(None, None, None, 3*(num_classes+5)),
-                             name='yolo_outputs_{}'.format(l)) for l in range(num_feature_layers)]
-        self.input_image_shape = K.placeholder(shape=(2, ), name='input_image_shape')
         if self.gpu_num>=2:
-            self.yolo_model = multi_gpu_model(self.yolo_model, gpus=self.gpu_num)
-        boxes, scores, classes = yolo3_postprocess([self.yolo_outputs, self.input_image_shape],
-                self.anchors, len(self.class_names),
-                confidence=self.score, iou_threshold=self.iou)
-        return boxes, scores, classes
+            yolo_model = multi_gpu_model(yolo_model, gpus=self.gpu_num)
+        postprocess_model = PostProcess(self.anchors, len(self.class_names), confidence=self.score, iou_threshold=self.iou)
+        return yolo_model, postprocess_model
 
 
     def detect_image(self, image):
-        image_array = np.array(image, dtype='uint8')
-        out_boxes, out_classes, out_scores = self.predict(image)
-        image_array = draw_boxes(image_array, out_boxes, out_classes, out_scores, self.class_names, self.colors)
-        return Image.fromarray(image_array)
-
-    def predict(self, image):
         if self.model_image_size != (None, None):
             assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
-        start = time.time()
+
         image_data = preprocess_image(image, self.model_image_size)
-        image_shape = image.size
+        image_shape = [image.size[0], image.size[1]]
 
-        # tf.Session.run(fetches, feed_dict=None)
-        # Runs the operations and evaluates the tensors in fetches.
-        #
-        # Args:
-        # fetches: A single graph element, or a list of graph elements(described above).
-        #
-        # feed_dict: A dictionary that maps graph elements to values(described above).
-        #
-        # Returns:Either a single value if fetches is a single graph element, or a
-        # list of values if fetches is a list(described above).
-
-        #feed the yolo_model output to postprocess model
-        K.set_learning_phase(0)
-        yolo_outputs = self.yolo_model.predict([image_data])
-        feed_dict={}
-        for l in range(len(yolo_outputs)):
-            feed_dict[self.yolo_outputs[l]] = yolo_outputs[l]
-        feed_dict[self.input_image_shape] = [image.size[0], image.size[1]]
-
-        out_boxes, out_scores, out_classes = self.sess.run(
-            [self.boxes, self.scores, self.classes],
-            feed_dict=feed_dict)
-        print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
+        start = time.time()
+        out_boxes, out_classes, out_scores = self.predict(image_data, image_shape)
         end = time.time()
+        print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
         print("Inference time: {:.2f}s".format(end - start))
+
+        #draw result on input image
+        image_array = np.array(image, dtype='uint8')
+        image_array = draw_boxes(image_array, out_boxes, out_classes, out_scores, self.class_names, self.colors)
+        return Image.fromarray(image_array)
+
+
+    def predict(self, image_data, image_shape):
+        #feed the yolo_model output to postprocess model
+        yolo_outputs = self.yolo_model.predict(image_data)
+        out_boxes, out_scores, out_classes = self.postprocess_model.predict([yolo_outputs, image_shape])
+
         out_boxes = out_boxes.astype(np.int32)
         out_classes = out_classes.astype(np.int32)
         return out_boxes, out_classes, out_scores
 
 
     def detect_image_np(self, image):
+        if self.model_image_size != (None, None):
+            assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
+            assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
+
+        image_data = preprocess_image(image, self.model_image_size)
+        image_shape = image.size
+
+        start = time.time()
+        out_boxes, out_classes, out_scores = self.predict_np(image_data, image_shape)
+        print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
+        end = time.time()
+        print("Inference time: {:.2f}s".format(end - start))
+
+        #draw result on input image
         image_array = np.array(image, dtype='uint8')
-        out_boxes, out_classes, out_scores = self.predict_np(image)
         image_array = draw_boxes(image_array, out_boxes, out_classes, out_scores, self.class_names, self.colors)
         return Image.fromarray(image_array)
 
 
-    def predict_np(self, image):
-        if self.model_image_size != (None, None):
-            assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
-            assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
-        start = time.time()
-        image_data = preprocess_image(image, self.model_image_size)
-        image_shape = image.size
+    def predict_np(self, image_data, image_shape):
+        out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size)
 
-        out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict([image_data]), image_shape, self.anchors, len(self.class_names), self.model_image_size)
-
-        print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
-        end = time.time()
-        print("Inference time: {:.2f}s".format(end - start))
         return out_boxes, out_classes, out_scores
 
 
     def dump_model_file(self, output_model_file):
         self.yolo_model.save(output_model_file)
-
-    def close_session(self):
-        self.sess.close()
 
 
 def detect_video(yolo, video_path, output_path=""):
@@ -227,7 +206,6 @@ def detect_video(yolo, video_path, output_path=""):
     if isOutput:
         out.release()
     cv2.destroyAllWindows()
-    yolo.close_session()
 
 
 def detect_img(yolo):
@@ -239,9 +217,8 @@ def detect_img(yolo):
             print('Open Error! Try again!')
             continue
         else:
-            r_image = yolo.detect_image_np(image)
+            r_image = yolo.detect_image(image)
             r_image.show()
-    yolo.close_session()
 
 
 if __name__ == '__main__':

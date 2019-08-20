@@ -134,3 +134,29 @@ def yolo3_postprocess(args,
     classes_ = K.concatenate(classes_, axis=0)
 
     return boxes_, scores_, classes_
+
+
+class PostProcess(tf.keras.Model):
+    def __init__(self, anchors, num_classes, max_boxes=20, confidence=0.1, iou_threshold=0.4):
+        super(PostProcess, self).__init__()
+        self.anchors = anchors
+        self.num_classes = num_classes
+        self.max_boxes = max_boxes
+        self.confidence = confidence
+        self.iou_threshold = iou_threshold
+        self.postprocess = yolo3_postprocess
+
+    def call(self, inputs):
+        boxes, scores, classes = self.postprocess(inputs,
+                                                  self.anchors,
+                                                  self.num_classes,
+                                                  self.max_boxes,
+                                                  self.confidence,
+                                                  self.iou_threshold)
+        return boxes, scores, classes
+
+
+    def predict(self, inputs):
+        boxes, scores, classes = self(inputs)
+        return K.eval(boxes), K.eval(scores), K.eval(classes)
+
