@@ -33,7 +33,7 @@ A tf.keras implementation of a common YOLOv3 object detection architecture with 
 
 1. Download Darknet/YOLOv3/Tiny YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
 2. Convert the Darknet YOLO model to a Keras model.
-3. Run YOLO detection on your image or video.
+3. Run YOLO detection on your image or video, default using Tiny YOLOv3 model.
 
 ```
 # wget -O model_data/darknet53.conv.74.weights https://pjreddie.com/media/files/darknet53.conv.74
@@ -45,8 +45,8 @@ A tf.keras implementation of a common YOLOv3 object detection architecture with 
 # python convert.py darknet53.cfg ../model_data/darknet53.conv.74.weights ../model_data/darknet53_weights.h5
 # cd ..
 
-# python yolo.py --model_type=darknet --model_path=model_data/yolov3.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/coco_classes.txt --image
-# python yolo.py --model_type=darknet --model_path=model_data/yolov3.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/coco_classes.txt --input=<your video file>
+# python yolo.py --image
+# python yolo.py --input=<your video file>
 ```
 For Tiny YOLOv3, just do in a similar way, but specify different model path and anchor path with `--model_path` and `--anchors_path`.
 
