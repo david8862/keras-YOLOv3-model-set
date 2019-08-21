@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping, TerminateOnNaN, LambdaCallback
-from yolo3.model import get_yolo3_model
+from yolo3.model import get_yolo3_train_model
 from yolo3.data import data_generator_wrapper
 from yolo3.utils import get_classes, get_anchors
 
@@ -89,7 +89,7 @@ def _main(args):
         input_shape_list = [args.model_image_size]
         batch_size_list = [args.batch_size]
 
-    model = get_yolo3_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate)
+    model = get_yolo3_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate)
     model.summary()
 
     # Train some initial epochs with frozen layers first if needed, to get a stable loss.

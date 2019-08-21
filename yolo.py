@@ -16,11 +16,11 @@ from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Lambda
 from PIL import Image
 
-from yolo3.model import get_model_body
+from yolo3.model import get_yolo3_model, get_yolo3_inference_model
 from yolo3.postprocess import PostProcess
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo3.data import preprocess_image, letterbox_image
-from yolo3.utils import get_colors, draw_boxes
+from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 from tensorflow.keras.utils import multi_gpu_model
@@ -50,24 +50,25 @@ class YOLO(tf.keras.Model):
         super(YOLO, self).__init__()
         self.__dict__.update(self._defaults) # set up default values
         self.__dict__.update(kwargs) # and update with user overrides
-        self.class_names = self._get_class()
-        self.anchors = self._get_anchors()
+        self.class_names = get_classes(self.classes_path)
+        self.anchors = get_anchors(self.anchors_path)
+        self.colors = get_colors(self.class_names)
         K.set_learning_phase(0)
         self.yolo_model, self.postprocess_model = self._generate_model()
 
-    def _get_class(self):
-        classes_path = os.path.expanduser(self.classes_path)
-        with open(classes_path) as f:
-            class_names = f.readlines()
-        class_names = [c.strip() for c in class_names]
-        return class_names
+    #def _get_class(self):
+        #classes_path = os.path.expanduser(self.classes_path)
+        #with open(classes_path) as f:
+            #class_names = f.readlines()
+        #class_names = [c.strip() for c in class_names]
+        #return class_names
 
-    def _get_anchors(self):
-        anchors_path = os.path.expanduser(self.anchors_path)
-        with open(anchors_path) as f:
-            anchors = f.readline()
-        anchors = [float(x) for x in anchors.split(',')]
-        return np.array(anchors).reshape(-1, 2)
+    #def _get_anchors(self):
+        #anchors_path = os.path.expanduser(self.anchors_path)
+        #with open(anchors_path) as f:
+            #anchors = f.readline()
+        #anchors = [float(x) for x in anchors.split(',')]
+        #return np.array(anchors).reshape(-1, 2)
 
     def _generate_model(self):
         '''to generate the bounding boxes'''
@@ -85,22 +86,19 @@ class YOLO(tf.keras.Model):
         try:
             yolo_model = load_model(model_path, compile=False)
         except:
-            image_input = Input(shape=(None,None,3))
-            yolo_model, _ = get_model_body(self.model_type, num_feature_layers, image_input, num_anchors, num_classes)
+            yolo_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes)
             yolo_model.load_weights(self.model_path) # make sure model, anchors and classes match
             yolo_model.summary()
         else:
             assert yolo_model.layers[-1].output_shape[-1] == \
                 num_anchors/len(yolo_model.output) * (num_classes + 5), \
                 'Mismatch between model and given anchor and class sizes'
-
         print('{} model, anchors, and classes loaded.'.format(model_path))
-
-        self.colors = get_colors(self.class_names)
-
         if self.gpu_num>=2:
             yolo_model = multi_gpu_model(yolo_model, gpus=self.gpu_num)
+
         postprocess_model = PostProcess(self.anchors, len(self.class_names), confidence=self.score, iou_threshold=self.iou)
+
         return yolo_model, postprocess_model
 
     @tf.function
@@ -116,6 +114,7 @@ class YOLO(tf.keras.Model):
         boxes, scores, classes = self([image_data, image_shape])
 
         out_boxes, out_scores, out_classes = K.eval(boxes), K.eval(scores), K.eval(classes)
+
         out_boxes = out_boxes.astype(np.int32)
         out_classes = out_classes.astype(np.int32)
         return out_boxes, out_classes, out_scores
@@ -126,7 +125,7 @@ class YOLO(tf.keras.Model):
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
 
         image_data = preprocess_image(image, self.model_image_size)
-        image_shape = [image.size[0], image.size[1]]
+        image_shape = np.array([image.size[0], image.size[1]])
 
         start = time.time()
         out_boxes, out_classes, out_scores = self.predict(image_data, image_shape)

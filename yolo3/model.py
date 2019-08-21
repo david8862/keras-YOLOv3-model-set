@@ -12,6 +12,7 @@ from yolo3.models.yolo3_mobilenet import yolo_mobilenet_body, tiny_yolo_mobilene
 from yolo3.models.yolo3_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
 from yolo3.models.yolo3_xception import yolo_xception_body, yololite_xception_body, tiny_yolo_xception_body, tiny_yololite_xception_body
 from yolo3.loss import yolo_loss
+from yolo3.postprocess import yolo3_postprocess
 
 
 def add_metrics(model, loss_dict):
@@ -29,7 +30,11 @@ def add_metrics(model, loss_dict):
         model.add_metric(loss, name=name, aggregation='mean')
 
 
-def get_model_body(model_type, num_feature_layers, image_input, num_anchors, num_classes):
+def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, image_input=None):
+    #prepare input tensor if not from caller
+    if image_input == None:
+        image_input = Input(shape=(None, None, 3), name='image_input')
+
     #Tiny YOLOv3 model has 6 anchors and 2 feature layers
     if num_feature_layers == 2:
         if model_type == 'mobilenet_lite':
@@ -89,7 +94,7 @@ def get_model_body(model_type, num_feature_layers, image_input, num_anchors, num
     return model_body, backbone_len
 
 
-def get_yolo3_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, learning_rate=1e-3):
+def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, learning_rate=1e-3):
     '''create the training model, for YOLOv3'''
     K.clear_session() # get a new session
     num_anchors = len(anchors)
@@ -97,8 +102,6 @@ def get_yolo3_model(model_type, anchors, num_classes, weights_path=None, freeze_
     #Tiny YOLOv3 model has 6 anchors and 2 feature layers,
     #so we can calculate feature layers number to get model type
     num_feature_layers = num_anchors//3
-
-    image_input = Input(shape=(None, None, 3))
 
     #feature map target value, so its shape should be like:
     # [
@@ -108,7 +111,7 @@ def get_yolo3_model(model_type, anchors, num_classes, weights_path=None, freeze_
     # ]
     y_true = [Input(shape=(None, None, 3, num_classes+5)) for l in range(num_feature_layers)]
 
-    model_body, backbone_len = get_model_body(model_type, num_feature_layers, image_input, num_anchors, num_classes)
+    model_body, backbone_len = get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes)
     print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))
 
     if weights_path:
@@ -126,7 +129,7 @@ def get_yolo3_model(model_type, anchors, num_classes, weights_path=None, freeze_
             model_body.layers[i].trainable= True
         print('Unfreeze all of the layers.')
 
-    model_loss, location_loss, confidence_loss, class_loss = Lambda(yolo_loss, output_shape=(1,), name='yolo_loss',
+    model_loss, location_loss, confidence_loss, class_loss = Lambda(yolo_loss, name='yolo_loss',
             arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5, 'use_focal_loss': False, 'use_softmax_loss': False, 'use_giou_loss': False})(
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)
@@ -139,3 +142,30 @@ def get_yolo3_model(model_type, anchors, num_classes, weights_path=None, freeze_
     add_metrics(model, loss_dict)
 
     return model
+
+
+def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=None, confidence=0.1):
+    '''create the inference model, for YOLOv3'''
+    K.clear_session() # get a new session
+    num_anchors = len(anchors)
+    #YOLOv3 model has 9 anchors and 3 feature layers but
+    #Tiny YOLOv3 model has 6 anchors and 2 feature layers,
+    #so we can calculate feature layers number to get model type
+    num_feature_layers = num_anchors//3
+
+    image_shape = Input(shape=(2,))
+
+    model_body, _ = get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes)
+    print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))
+
+    if weights_path:
+        model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
+        print('Load weights {}.'.format(weights_path))
+
+    boxes, scores, classes = Lambda(yolo3_postprocess, name='yolo3_postprocess',
+            arguments={'anchors': anchors, 'num_classes': num_classes, 'confidence': confidence})(
+        [model_body.output, image_shape])
+    model = Model([model_body.input, image_shape], [boxes, scores, classes])
+
+    return model
+
