@@ -147,6 +147,8 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
     return model
 
 
+# TODO(david8862): Unfinished work, need to implement
+# a batch-wise postprocess layer/model for inference
 def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=None, confidence=0.1):
     '''create the inference model, for YOLOv3'''
     K.clear_session() # get a new session
