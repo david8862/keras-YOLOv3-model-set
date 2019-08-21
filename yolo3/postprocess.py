@@ -94,9 +94,9 @@ def yolo3_postprocess(args,
               iou_threshold=0.4):
     """Postprocess for YOLO model on given input and return filtered boxes."""
 
-    yolo_outputs = args[0]
-    image_shape = args[1]
-    num_layers = len(yolo_outputs)
+    num_layers = len(anchors)//3 # default setting
+    yolo_outputs = args[:num_layers]
+    image_shape = args[num_layers]
 
     anchor_mask = [[6,7,8], [3,4,5], [0,1,2]] if num_layers==3 else [[3,4,5], [0,1,2]] # default setting
     input_shape = K.shape(yolo_outputs[0])[1:3] * 32

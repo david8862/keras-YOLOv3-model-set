@@ -164,7 +164,7 @@ def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=Non
 
     boxes, scores, classes = Lambda(yolo3_postprocess, name='yolo3_postprocess',
             arguments={'anchors': anchors, 'num_classes': num_classes, 'confidence': confidence})(
-        [model_body.output, image_shape])
+        [*model_body.output, image_shape])
     model = Model([model_body.input, image_shape], [boxes, scores, classes])
 
     return model

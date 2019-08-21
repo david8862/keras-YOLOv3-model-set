@@ -16,7 +16,7 @@ from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Lambda
 from PIL import Image
 
-from yolo3.model import get_yolo3_model, get_yolo3_inference_model
+from yolo3.model import get_yolo3_model
 from yolo3.postprocess import PostProcess
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo3.data import preprocess_image, letterbox_image
@@ -56,20 +56,6 @@ class YOLO(tf.keras.Model):
         K.set_learning_phase(0)
         self.yolo_model, self.postprocess_model = self._generate_model()
 
-    #def _get_class(self):
-        #classes_path = os.path.expanduser(self.classes_path)
-        #with open(classes_path) as f:
-            #class_names = f.readlines()
-        #class_names = [c.strip() for c in class_names]
-        #return class_names
-
-    #def _get_anchors(self):
-        #anchors_path = os.path.expanduser(self.anchors_path)
-        #with open(anchors_path) as f:
-            #anchors = f.readline()
-        #anchors = [float(x) for x in anchors.split(',')]
-        #return np.array(anchors).reshape(-1, 2)
-
     def _generate_model(self):
         '''to generate the bounding boxes'''
         model_path = os.path.expanduser(self.model_path)
@@ -87,7 +73,7 @@ class YOLO(tf.keras.Model):
             yolo_model = load_model(model_path, compile=False)
         except:
             yolo_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes)
-            yolo_model.load_weights(self.model_path) # make sure model, anchors and classes match
+            yolo_model.load_weights(model_path) # make sure model, anchors and classes match
             yolo_model.summary()
         else:
             assert yolo_model.layers[-1].output_shape[-1] == \
@@ -106,7 +92,7 @@ class YOLO(tf.keras.Model):
         image_data = inputs[0]
         image_shape = inputs[1]
         yolo_outputs = self.yolo_model(image_data)
-        out_boxes, out_scores, out_classes = self.postprocess_model([yolo_outputs, image_shape])
+        out_boxes, out_scores, out_classes = self.postprocess_model([*yolo_outputs, image_shape])
         return out_boxes, out_scores, out_classes
 
     #@tf.function
