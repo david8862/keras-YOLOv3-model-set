@@ -615,8 +615,15 @@ def plot_Pascal_AP_result(count_images, count_true_positives, gt_classes_records
     precision_dict = {}
     recall_dict = {}
     for (class_name, gt_count) in gt_counter_per_class.items():
-        precision_dict[class_name] = float(count_true_positives[class_name]) / pred_counter_per_class[class_name]
-        recall_dict[class_name] = float(count_true_positives[class_name]) / gt_count
+        if (class_name not in pred_counter_per_class) or (class_name not in count_true_positives):
+            precision_dict[class_name] = 0.
+        else:
+            precision_dict[class_name] = float(count_true_positives[class_name]) / pred_counter_per_class[class_name]
+
+        if class_name not in count_true_positives:
+            recall_dict[class_name] = 0.
+        else:
+            recall_dict[class_name] = float(count_true_positives[class_name]) / gt_count
 
     '''
      Draw Precision plot (Show Precision of all classes in decreasing order)
