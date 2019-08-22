@@ -8,7 +8,7 @@ import os, random, argparse
 import numpy as np
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping, TerminateOnNaN, LambdaCallback
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback
 from yolo3.model import get_yolo3_train_model
 from yolo3.data import data_generator_wrapper
 from yolo3.utils import get_classes, get_anchors
@@ -39,7 +39,68 @@ def get_multiscale_param(model_type, tiny_version):
     return input_shape_list, batch_size_list
 
 
+# some global value for lr scheduler
+# need to update to CLI option in main()
+lr_base = 1e-3
+total_epochs = 250
+
+def learning_rate_scheduler(epoch, curr_lr, mode='cosine_decay'):
+    lr_power = 0.9
+    lr = curr_lr
+
+    # adam default lr
+    if mode is 'adam':
+        lr = 0.001
+
+    # original lr scheduler
+    if mode is 'power_decay':
+        lr = lr_base * ((1 - float(epoch) / total_epochs) ** lr_power)
+
+    # exponential decay policy
+    if mode is 'exp_decay':
+        lr = (float(lr_base) ** float(lr_power)) ** float(epoch + 1)
+
+    # cosine decay policy, including warmup and hold stage
+    if mode is 'cosine_decay':
+        #warmup & hold hyperparams, adjust for your training
+        warmup_epochs = 0
+        hold_base_rate_epochs = 0
+        warmup_lr = 1e-8
+        lr = 0.5 * lr_base * (1 + np.cos(
+             np.pi * float(epoch - warmup_epochs - hold_base_rate_epochs) /
+             float(total_epochs - warmup_epochs - hold_base_rate_epochs)))
+
+        if hold_base_rate_epochs > 0 and epoch < warmup_epochs + hold_base_rate_epochs:
+            lr = lr_base
+
+        if warmup_epochs > 0 and epoch < warmup_epochs:
+            if lr_base < warmup_lr:
+                raise ValueError('learning_rate_base must be larger or equal to '
+                                 'warmup_learning_rate.')
+            slope = (lr_base - warmup_lr) / float(warmup_epochs)
+            warmup_rate = slope * float(epoch) + warmup_lr
+            lr = warmup_rate
+
+    if mode is 'progressive_drops':
+        # drops as progression proceeds, good for sgd
+        if epoch > 0.9 * total_epochs:
+            lr = 0.0001
+        elif epoch > 0.75 * total_epochs:
+            lr = 0.001
+        elif epoch > 0.5 * total_epochs:
+            lr = 0.01
+        else:
+            lr = 0.1
+
+    print('learning_rate change to: {}'.format(lr))
+    return lr
+
+
 def _main(args):
+    global lr_base, total_epochs
+    lr_base = args.learning_rate
+    total_epochs = args.total_epoch
+
     annotation_file = args.annotation_file
     log_dir = 'logs/000/'
     classes_path = args.classes_path
@@ -61,6 +122,7 @@ def _main(args):
         freeze_level = args.freeze_level
 
 
+    # callbacks for training process
     logging = TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=False, write_grads=False, write_images=False, update_freq='batch')
     checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
         monitor='val_loss',
@@ -68,7 +130,8 @@ def _main(args):
         save_weights_only=False,
         save_best_only=True,
         period=1)
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, verbose=1, cooldown=0, min_lr=1e-10)
+    lr_scheduler = LearningRateScheduler(learning_rate_scheduler)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=30, verbose=1)
     terminate_on_nan = TerminateOnNaN()
     sess_saver_callback = LambdaCallback(on_epoch_end=lambda epoch, logs: tf.train.Saver().save(sess, log_dir+'model-epoch%03d-loss%.3f-val_loss%.3f' % (epoch, logs['loss'], logs['val_loss'])))
@@ -83,12 +146,14 @@ def _main(args):
     num_val = int(len(lines)*val_split)
     num_train = len(lines) - num_val
 
+    # prepare multiscale config
     if args.multiscale:
         input_shape_list, batch_size_list = get_multiscale_param(args.model_type, args.tiny_version)
     else:
         input_shape_list = [args.model_image_size]
         batch_size_list = [args.batch_size]
 
+    # get train model
     model = get_yolo3_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate)
     model.summary()
 
@@ -107,11 +172,23 @@ def _main(args):
             initial_epoch=initial_epoch,
             callbacks=[logging, checkpoint, terminate_on_nan])
 
-    # free the whole network for further training
+    # Unfreeze the whole network for further training, but still on
+    # the same input_shape, for "rescale_interval" epochs
+    # NOTE: more GPU memory is required after unfreezing the body
     print("Unfreeze and continue training, to fine-tune.")
     for i in range(len(model.layers)):
         model.layers[i].trainable = True
-    model.compile(optimizer=Adam(lr=args.learning_rate/2), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
+    initial_epoch = epochs
+    epochs = epochs + args.rescale_interval
+    model.compile(optimizer=Adam(lr=args.learning_rate), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
+    print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
+    model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
+            steps_per_epoch=max(1, num_train//batch_size),
+            validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
+            validation_steps=max(1, num_val//batch_size),
+            epochs=epochs,
+            initial_epoch=initial_epoch,
+            callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan])
 
     # Do multi-scale training on different input shape
     # change every "rescale_interval" epochs
@@ -167,8 +244,8 @@ if __name__ == '__main__':
         help = "Total training epochs, default=300")
     parser.add_argument('--multiscale', default=False, action="store_true",
         help='Whether to use multiscale training')
-    parser.add_argument('--rescale_interval', type=int,required=False, default=10,
-        help = "Number of epochs to rescale input image in, default=10")
+    parser.add_argument('--rescale_interval', type=int,required=False, default=20,
+        help = "Number of epochs to rescale input image in, default=20")
 
     args = parser.parse_args()
     height, width = args.model_image_size.split('x')
