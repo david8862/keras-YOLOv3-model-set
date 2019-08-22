@@ -145,7 +145,7 @@ class YOLO(tf.keras.Model):
 
 
     def predict_np(self, image_data, image_shape):
-        out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size)
+        out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100)
 
         return out_boxes, out_classes, out_scores
 

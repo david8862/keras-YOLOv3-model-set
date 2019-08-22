@@ -89,7 +89,7 @@ def get_anchorset(anchors, num_layers, l):
 def yolo3_postprocess(args,
               anchors,
               num_classes,
-              max_boxes=20,
+              max_boxes=100,
               confidence=0.1,
               iou_threshold=0.4):
     """Postprocess for YOLO model on given input and return filtered boxes."""
@@ -137,7 +137,7 @@ def yolo3_postprocess(args,
 
 
 class PostProcess(tf.keras.Model):
-    def __init__(self, anchors, num_classes, max_boxes=20, confidence=0.1, iou_threshold=0.4):
+    def __init__(self, anchors, num_classes, max_boxes=100, confidence=0.1, iou_threshold=0.4):
         super(PostProcess, self).__init__()
         self.anchors = anchors
         self.num_classes = num_classes

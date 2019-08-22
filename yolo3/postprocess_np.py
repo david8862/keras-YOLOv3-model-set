@@ -78,10 +78,11 @@ def _yolo_head(prediction, num_classes, anchors, input_dims):
     return np.concatenate([box_xy, box_wh, objectness, class_scores], axis=2)
 
 
-def yolo3_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_image_size, confidence=0.1, iou_threshold=0.4):
+def yolo3_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=0.1, iou_threshold=0.4):
     predictions = yolo_head(yolo_outputs, anchors, num_classes, input_dims=model_image_size)
 
     boxes, classes, scores = handle_predictions(predictions,
+                                                max_boxes=max_boxes,
                                                 confidence=confidence,
                                                 iou_threshold=iou_threshold)
     boxes = adjust_boxes(boxes, image_shape, model_image_size)
@@ -89,7 +90,7 @@ def yolo3_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_
     return boxes, classes, scores
 
 
-def handle_predictions(predictions, confidence=0.1, iou_threshold=0.4):
+def handle_predictions(predictions, max_boxes=100, confidence=0.1, iou_threshold=0.4):
     boxes = predictions[:, :, :4]
     box_confidences = np.expand_dims(predictions[:, :, 4], -1)
     box_class_probs = predictions[:, :, 5:]
@@ -110,6 +111,7 @@ def handle_predictions(predictions, confidence=0.1, iou_threshold=0.4):
         boxes = np.concatenate(n_boxes)
         classes = np.concatenate(n_classes)
         scores = np.concatenate(n_scores)
+        boxes, classes, scores = filter_boxes(boxes, classes, scores, max_boxes)
 
         return boxes, classes, scores
 
@@ -117,7 +119,28 @@ def handle_predictions(predictions, confidence=0.1, iou_threshold=0.4):
         return [], [], []
 
 
-def soft_nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.6, is_soft=True, use_exp=False, sigma=0.5):
+def filter_boxes(boxes, classes, scores, max_boxes):
+    '''
+    Sort the prediction boxes according to score
+    and only pick top "max_boxes" ones
+    '''
+    # sort result according to scores
+    sorted_indices = np.argsort(scores)
+    sorted_indices = sorted_indices[::-1]
+    nboxes = boxes[sorted_indices]
+    nclasses = classes[sorted_indices]
+    nscores = scores[sorted_indices]
+
+    # only pick max_boxes
+    nboxes = nboxes[:max_boxes]
+    nclasses = nclasses[:max_boxes]
+    nscores = nscores[:max_boxes]
+
+    return nboxes, nclasses, nscores
+
+
+
+def soft_nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.1, is_soft=True, use_exp=False, sigma=0.5):
     nboxes, nclasses, nscores = [], [], []
     for c in set(classes):
         # handle data for one class
@@ -198,7 +221,7 @@ def soft_nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.6, is_sof
     return nboxes, nclasses, nscores
 
 
-def nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.6):
+def nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.1):
     nboxes, nclasses, nscores = [], [], []
     for c in set(classes):
         inds = np.where(classes == c)

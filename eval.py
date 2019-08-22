@@ -133,7 +133,7 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
 
     predictions = yolo_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
 
-    boxes, classes, scores = handle_predictions(predictions, confidence=conf_threshold, iou_threshold=0.4)
+    boxes, classes, scores = handle_predictions(predictions, max_boxes=100, confidence=conf_threshold, iou_threshold=0.4)
     boxes = adjust_boxes(boxes, image_shape, (height, width))
 
     return boxes, classes, scores
@@ -174,7 +174,7 @@ def get_prediction_class_records(model_path, annotation_records, anchors, class_
         if model_path.endswith('.tflite'):
             pred_boxes, pred_classes, pred_scores = yolo_predict_tflite(interpreter, image, anchors, len(class_names), conf_threshold)
         else:
-            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size, confidence=conf_threshold)
+            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size, max_boxes=100, confidence=conf_threshold)
 
         print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
 
