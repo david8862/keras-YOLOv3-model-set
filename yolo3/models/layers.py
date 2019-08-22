@@ -6,7 +6,7 @@ Common layer definition for YOLOv3 models building
 from functools import wraps, reduce
 
 import tensorflow.keras.backend as K
-from tensorflow.keras.layers import Conv2D, DepthwiseConv2D
+from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Concatenate, MaxPooling2D
 from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.regularizers import l2
@@ -78,6 +78,17 @@ def DarknetConv2D_BN_Leaky(*args, **kwargs):
         LeakyReLU(alpha=0.1))
 
 
+def Spp_Conv2D_BN_Leaky(x, num_filters):
+    y1 = MaxPooling2D(pool_size=(5,5), strides=(1,1), padding='same')(x)
+    y2 = MaxPooling2D(pool_size=(9,9), strides=(1,1), padding='same')(x)
+    y3 = MaxPooling2D(pool_size=(13,13), strides=(1,1), padding='same')(x)
+
+    y = compose(
+            Concatenate(),
+            DarknetConv2D_BN_Leaky(num_filters, (1,1)))([y1, y2, y3, x])
+    return y
+
+
 def make_last_layers(x, num_filters, out_filters):
     '''6 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer'''
     x = compose(
@@ -91,6 +102,22 @@ def make_last_layers(x, num_filters, out_filters):
             DarknetConv2D(out_filters, (1,1)))(x)
     return x, y
 
+def make_spp_last_layers(x, num_filters, out_filters):
+    '''6 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer'''
+    x = compose(
+            DarknetConv2D_BN_Leaky(num_filters, (1,1)),
+            DarknetConv2D_BN_Leaky(num_filters*2, (3,3)),
+            DarknetConv2D_BN_Leaky(num_filters, (1,1)))(x)
+
+    x = Spp_Conv2D_BN_Leaky(x, num_filters)
+
+    x = compose(
+            DarknetConv2D_BN_Leaky(num_filters*2, (3,3)),
+            DarknetConv2D_BN_Leaky(num_filters, (1,1)))(x)
+    y = compose(
+            DarknetConv2D_BN_Leaky(num_filters*2, (3,3)),
+            DarknetConv2D(out_filters, (1,1)))(x)
+    return x, y
 
 def make_depthwise_separable_last_layers(x, num_filters, out_filters, block_id_str=None):
     '''6 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer'''

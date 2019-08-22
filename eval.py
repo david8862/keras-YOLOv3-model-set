@@ -761,7 +761,7 @@ def main():
 
     parser.add_argument(
         '--conf_threshold', type=float,
-        help='confidence threshold for filtering box in postprocess, default=0.01', default=0.01)
+        help='confidence threshold for filtering box in postprocess, default=0.001', default=0.001)
 
     parser.add_argument(
         '--model_image_size', type=str,

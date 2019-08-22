@@ -3,7 +3,8 @@
 from tensorflow.keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
 from tensorflow.keras.models import Model
 
-from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, Darknet_Depthwise_Separable_Conv2D_BN_Leaky, make_last_layers, make_depthwise_separable_last_layers
+from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, Darknet_Depthwise_Separable_Conv2D_BN_Leaky
+from yolo3.models.layers import make_last_layers, make_depthwise_separable_last_layers, make_spp_last_layers
 
 
 def resblock_body(x, num_filters, num_blocks):
@@ -97,6 +98,50 @@ def yolo_body(inputs, num_anchors, num_classes, weights_path=None):
     #y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_26')(y2)
     #y3 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_52')(y3)
     #return Model(inputs, [y1,y2,y3])
+
+
+def yolo_spp_body(inputs, num_anchors, num_classes, weights_path=None):
+    """Create YOLO_V3 model CNN body in Keras."""
+    darknet = Model(inputs, darknet_body(inputs))
+    if weights_path is not None:
+        darknet.load_weights(weights_path, by_name=True)
+        print('Load weights {}.'.format(weights_path))
+    #x, y1 = make_last_layers(darknet.output, 512, num_anchors*(num_classes+5))
+    x, y1 = make_spp_last_layers(darknet.output, 512, num_anchors*(num_classes+5))
+
+    x = compose(
+            DarknetConv2D_BN_Leaky(256, (1,1)),
+            UpSampling2D(2))(x)
+    x = Concatenate()([x,darknet.layers[152].output])
+    x, y2 = make_last_layers(x, 256, num_anchors*(num_classes+5))
+
+    x = compose(
+            DarknetConv2D_BN_Leaky(128, (1,1)),
+            UpSampling2D(2))(x)
+    x = Concatenate()([x,darknet.layers[92].output])
+    x, y3 = make_last_layers(x, 128, num_anchors*(num_classes+5))
+
+    return Model(inputs, [y1,y2,y3])
+
+
+def custom_yolo_spp_body(inputs, num_anchors, num_classes, weights_path):
+    '''Create a custom YOLO_v3 SPP model, use
+       pre-trained weights from darknet and fit
+       for our target classes.'''
+    #TODO: get darknet class number from class file
+    num_classes_coco = 80
+    base_model = yolo_spp_body(inputs, num_anchors, num_classes_coco)
+    base_model.load_weights(weights_path, by_name=True)
+    print('Load weights {}.'.format(weights_path))
+
+    #get conv output in original network
+    y1 = base_model.get_layer('leaky_re_lu_58').output
+    y2 = base_model.get_layer('leaky_re_lu_65').output
+    y3 = base_model.get_layer('leaky_re_lu_72').output
+    y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_13')(y1)
+    y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_26')(y2)
+    y3 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='feature_map_52')(y3)
+    return Model(inputs, [y1,y2,y3])
 
 
 def yololite_body(inputs, num_anchors, num_classes):
