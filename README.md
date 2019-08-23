@@ -32,9 +32,15 @@ A tf.keras implementation of a common YOLOv3 object detection architecture with 
 
 ## Quick Start
 
-1. Download Darknet/YOLOv3/YOLOv3-spp/Tiny YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
-2. Convert the Darknet YOLO model to a Keras model.
-3. Run YOLO detection on your image or video, default using Tiny YOLOv3 model.
+1. Install the requirements:
+
+```
+# pip install -r requirements.txt
+```
+
+2. Download Darknet/YOLOv3/YOLOv3-spp/Tiny YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
+3. Convert the Darknet YOLO model to a Keras model.
+4. Run YOLO detection on your image or video, default using Tiny YOLOv3 model.
 
 ```
 # wget -O weights/darknet53.conv.74.weights https://pjreddie.com/media/files/darknet53.conv.74
@@ -118,7 +124,7 @@ optional arguments:
                         Total training epochs, default=300
   --multiscale          Whether to use multiscale training
   --rescale_interval RESCALE_INTERVAL
-                        Number of epochs to rescale input image in, default=20
+                        Number of epoch interval to rescale input image, default=20
 ```
 Checkpoints during training could be found at logs/000/. Choose a best one as result
 
@@ -144,6 +150,11 @@ Use "eval.py" to do evaluation on the inference model with your test data. It su
 # python eval.py --model_path=test.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.01 --annotation_file=2007_test.txt --save_result
 ```
 
+Following is a sample result trained on Mobilenet YOLOv3 Lite model:
+<p align="center"> 
+  <img src="assets/mAP.jpg">
+  <img src="assets/COCO_AP.jpg">
+</p>
 ### Demo
 1. yolo.py
 > * Demo script for trained model

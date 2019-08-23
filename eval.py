@@ -569,27 +569,22 @@ def calc_AP(gt_records, pred_records, class_name, iou_threshold, show_result):
     return ap, true_positive_count
 
 
-def plot_Pascal_AP_result(count_images, count_true_positives, gt_classes_records, pred_classes_records, APs, mAP):
+def plot_Pascal_AP_result(count_images, count_true_positives, num_classes,
+                          gt_counter_per_class, pred_counter_per_class,
+                          precision_dict, recall_dict, mPrec, mRec,
+                          APs, mAP, iou_threshold):
     '''
      Plot the total number of occurences of each class in the ground-truth
     '''
-    gt_counter_per_class = {}
-    for (class_name, info_list) in gt_classes_records.items():
-        gt_counter_per_class[class_name] = len(info_list)
-
     window_title = "Ground-Truth Info"
-    plot_title = "Ground-Truth\n" + "(" + str(count_images) + " files and " + str(len(gt_classes_records)) + " classes)"
+    plot_title = "Ground-Truth\n" + "(" + str(count_images) + " files and " + str(num_classes) + " classes)"
     x_label = "Number of objects per class"
-    output_path = os.path.join('result','Ground-Truth Info.jpg')
-    draw_plot_func(gt_counter_per_class, len(gt_classes_records), window_title, plot_title, x_label, output_path, to_show=False, plot_color='forestgreen', true_p_bar='')
+    output_path = os.path.join('result','Ground-Truth_Info.jpg')
+    draw_plot_func(gt_counter_per_class, num_classes, window_title, plot_title, x_label, output_path, to_show=False, plot_color='forestgreen', true_p_bar='')
 
     '''
      Plot the total number of occurences of each class in the "predicted" folder
     '''
-    pred_counter_per_class = {}
-    for (class_name, info_list) in pred_classes_records.items():
-        pred_counter_per_class[class_name] = len(info_list)
-
     window_title = "Predicted Objects Info"
     # Plot title
     plot_title = "Predicted Objects\n" + "(" + str(count_images) + " files and "
@@ -597,39 +592,23 @@ def plot_Pascal_AP_result(count_images, count_true_positives, gt_classes_records
     plot_title += str(count_non_zero_values_in_dictionary) + " detected classes)"
     # end Plot title
     x_label = "Number of objects per class"
-    output_path = os.path.join('result','Predicted Objects Info.jpg')
+    output_path = os.path.join('result','Predicted_Objects_Info.jpg')
     draw_plot_func(pred_counter_per_class, len(pred_counter_per_class), window_title, plot_title, x_label, output_path, to_show=False, plot_color='forestgreen', true_p_bar=count_true_positives)
 
     '''
      Draw mAP plot (Show AP's of all classes in decreasing order)
     '''
     window_title = "mAP"
-    plot_title = "mAP = {0:.2f}%".format(mAP)
+    plot_title = "mAP@IoU={0}: {1:.2f}%".format(iou_threshold, mAP)
     x_label = "Average Precision"
     output_path = os.path.join('result','mAP.jpg')
-    draw_plot_func(APs, len(gt_classes_records), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
-
-    '''
-     Get the precision & recall rate
-    '''
-    precision_dict = {}
-    recall_dict = {}
-    for (class_name, gt_count) in gt_counter_per_class.items():
-        if (class_name not in pred_counter_per_class) or (class_name not in count_true_positives):
-            precision_dict[class_name] = 0.
-        else:
-            precision_dict[class_name] = float(count_true_positives[class_name]) / pred_counter_per_class[class_name]
-
-        if class_name not in count_true_positives:
-            recall_dict[class_name] = 0.
-        else:
-            recall_dict[class_name] = float(count_true_positives[class_name]) / gt_count
+    draw_plot_func(APs, num_classes, window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 
     '''
      Draw Precision plot (Show Precision of all classes in decreasing order)
     '''
     window_title = "Precision"
-    plot_title = "Precision rate"
+    plot_title = "mPrec@IoU={0}: {1:.2f}%".format(iou_threshold, mPrec)
     x_label = "Precision rate"
     output_path = os.path.join('result','Precision.jpg')
     draw_plot_func(precision_dict, len(precision_dict), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
@@ -638,12 +617,10 @@ def plot_Pascal_AP_result(count_images, count_true_positives, gt_classes_records
      Draw Recall plot (Show Recall of all classes in decreasing order)
     '''
     window_title = "Recall"
-    plot_title = "Recall rate"
+    plot_title = "mRec@IoU={0}: {1:.2f}%".format(iou_threshold, mRec)
     x_label = "Recall rate"
     output_path = os.path.join('result','Recall.jpg')
     draw_plot_func(recall_dict, len(recall_dict), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
-
-    return precision_dict, recall_dict
 
 
 def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold, show_result=True):
@@ -667,13 +644,48 @@ def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_r
     #get mAP percentage value
     mAP = np.mean(list(APs.values()))*100
 
+    #get GroundTruth count per class
+    gt_counter_per_class = {}
+    for (class_name, info_list) in gt_classes_records.items():
+        gt_counter_per_class[class_name] = len(info_list)
+
+    #get Precision count per class
+    pred_counter_per_class = {}
+    for (class_name, info_list) in pred_classes_records.items():
+        pred_counter_per_class[class_name] = len(info_list)
+
+
+    #get the precision & recall
+    precision_dict = {}
+    recall_dict = {}
+    for (class_name, gt_count) in gt_counter_per_class.items():
+        if (class_name not in pred_counter_per_class) or (class_name not in count_true_positives):
+            precision_dict[class_name] = 0.
+        else:
+            precision_dict[class_name] = float(count_true_positives[class_name]) / pred_counter_per_class[class_name]
+
+        if class_name not in count_true_positives:
+            recall_dict[class_name] = 0.
+        else:
+            recall_dict[class_name] = float(count_true_positives[class_name]) / gt_count
+
+    #get mPrec, mRec
+    mPrec = np.mean(list(precision_dict.values()))*100
+    mRec = np.mean(list(recall_dict.values()))*100
+
+
     if show_result:
-        precision_dict, recall_dict = plot_Pascal_AP_result(len(annotation_records), count_true_positives, gt_classes_records, pred_classes_records, APs, mAP)
+        plot_Pascal_AP_result(len(annotation_records), count_true_positives, len(gt_classes_records),
+                                  gt_counter_per_class, pred_counter_per_class,
+                                  precision_dict, recall_dict, mPrec, mRec,
+                                  APs, mAP, iou_threshold)
         #show result
-        print('Pascal VOC AP evaluation')
+        print('\nPascal VOC AP evaluation')
         for (class_name, AP) in APs.items():
             print('%s: AP %.4f, precision %.4f, recall %.4f' % (class_name, AP, precision_dict[class_name], recall_dict[class_name]))
-        print('mAP result: %f' % (mAP))
+        print('mAP@IoU=%.2f result: %f' % (iou_threshold, mAP))
+        print('mPrec@IoU=%.2f result: %f' % (iou_threshold, mPrec))
+        print('mRec@IoU=%.2f result: %f' % (iou_threshold, mRec))
 
     #return mAP percentage value
     return mAP
@@ -701,7 +713,7 @@ def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records
     window_title = "MSCOCO AP on different IOU"
     plot_title = "total AP = {0:.2f}%".format(AP)
     x_label = "AP"
-    output_path = os.path.join('result','COCO AP.jpg')
+    output_path = os.path.join('result','COCO_AP.jpg')
     draw_plot_func(APs, len(APs), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 
     print('MS COCO AP evaluation')

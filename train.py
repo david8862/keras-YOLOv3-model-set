@@ -245,7 +245,7 @@ if __name__ == '__main__':
     parser.add_argument('--multiscale', default=False, action="store_true",
         help='Whether to use multiscale training')
     parser.add_argument('--rescale_interval', type=int,required=False, default=20,
-        help = "Number of epochs to rescale input image in, default=20")
+        help = "Number of epoch interval to rescale input image, default=20")
 
     args = parser.parse_args()
     height, width = args.model_image_size.split('x')
