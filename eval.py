@@ -711,8 +711,8 @@ def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records
     '''
     touchdir('result')
     window_title = "MSCOCO AP on different IOU"
-    plot_title = "total AP = {0:.2f}%".format(AP)
-    x_label = "AP"
+    plot_title = "COCO AP = {0:.2f}%".format(AP)
+    x_label = "Average Precision"
     output_path = os.path.join('result','COCO_AP.jpg')
     draw_plot_func(APs, len(APs), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 

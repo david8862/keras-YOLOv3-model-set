@@ -150,7 +150,7 @@ Use "eval.py" to do evaluation on the inference model with your test data. It su
 # python eval.py --model_path=test.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.01 --annotation_file=2007_test.txt --save_result
 ```
 
-Following is a sample result trained on Mobilenet YOLOv3 Lite model:
+Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalVOC dataset:
 <p align="center"> 
   <img src="assets/mAP.jpg">
   <img src="assets/COCO_AP.jpg">
