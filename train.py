@@ -107,9 +107,9 @@ def _main(args):
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
     if args.tiny_version:
-        anchors_path = 'model_data/tiny_yolo_anchors.txt'
+        anchors_path = 'configs/tiny_yolo_anchors.txt'
     else:
-        anchors_path = 'model_data/yolo_anchors.txt'
+        anchors_path = 'configs/yolo_anchors.txt'
     anchors = get_anchors(anchors_path)
 
     # get freeze level according to CLI option
@@ -230,8 +230,8 @@ if __name__ == '__main__':
         help='train&val annotation txt file, default=trainval.txt')
     parser.add_argument('--val_split', type=float,required=False, default=0.1,
         help = "validation data persentage in dataset, default=0.1")
-    parser.add_argument('--classes_path', type=str, required=False, default='model_data/voc_classes.txt',
-        help='path to class definitions, default=model_data/voc_classes.txt')
+    parser.add_argument('--classes_path', type=str, required=False, default='configs/voc_classes.txt',
+        help='path to class definitions, default=configs/voc_classes.txt')
 
     # Training options
     parser.add_argument('--learning_rate', type=float,required=False, default=1e-3,

@@ -47,7 +47,7 @@ def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, in
             model_body = tiny_yolo_mobilenet_body(input_tensor, num_anchors//2, num_classes)
             backbone_len = 87
         elif model_type == 'darknet':
-            weights_path='model_data/tiny_yolo_weights.h5'
+            weights_path='weights/yolov3-tiny.h5'
             model_body = custom_tiny_yolo_body(input_tensor, num_anchors//2, num_classes, weights_path)
             backbone_len = 20
         elif model_type == 'darknet_lite':
@@ -74,11 +74,11 @@ def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, in
             model_body = yolo_mobilenet_body(input_tensor, num_anchors//3, num_classes)
             backbone_len = 87
         elif model_type == 'darknet':
-            weights_path='model_data/darknet53_weights.h5'
+            weights_path='weights/darknet53.h5'
             model_body = yolo_body(input_tensor, num_anchors//3, num_classes, weights_path=weights_path)
             backbone_len = 185
         elif model_type == 'darknet_spp':
-            weights_path='model_data/yolov3-spp.h5'
+            weights_path='weights/yolov3-spp.h5'
             model_body = custom_yolo_spp_body(input_tensor, num_anchors//3, num_classes, weights_path=weights_path)
             backbone_len = 185
         elif model_type == 'darknet_lite':

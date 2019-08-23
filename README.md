@@ -14,6 +14,7 @@ A tf.keras implementation of a common YOLOv3 object detection architecture with 
 #### Head
 - [x] YOLOv3
 - [x] YOLOv3 Lite
+- [x] YOLOv3 spp
 - [x] Tiny YOLOv3
 - [x] Tiny YOLOv3 Lite
 
@@ -31,19 +32,20 @@ A tf.keras implementation of a common YOLOv3 object detection architecture with 
 
 ## Quick Start
 
-1. Download Darknet/YOLOv3/Tiny YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
+1. Download Darknet/YOLOv3/YOLOv3-spp/Tiny YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
 2. Convert the Darknet YOLO model to a Keras model.
 3. Run YOLO detection on your image or video, default using Tiny YOLOv3 model.
 
 ```
-# wget -O model_data/darknet53.conv.74.weights https://pjreddie.com/media/files/darknet53.conv.74
-# wget -O model_data/yolov3.weights https://pjreddie.com/media/files/yolov3.weights
-# wget -O model_data/yolov3-tiny.weights https://pjreddie.com/media/files/yolov3-tiny.weights
+# wget -O weights/darknet53.conv.74.weights https://pjreddie.com/media/files/darknet53.conv.74
+# wget -O weights/yolov3.weights https://pjreddie.com/media/files/yolov3.weights
+# wget -O weights/yolov3-tiny.weights https://pjreddie.com/media/files/yolov3-tiny.weights
+# wget -O weights/yolov3-spp.weights https://pjreddie.com/media/files/yolov3-spp.weights
 
-# cd tools && python convert.py yolov3.cfg ../model_data/yolov3.weights ../model_data/yolov3.h5
-# python convert.py yolov3-tiny.cfg ../model_data/yolov3-tiny.weights ../model_data/tiny_yolo_weights.h5
-# python convert.py darknet53.cfg ../model_data/darknet53.conv.74.weights ../model_data/darknet53_weights.h5
-# cd ..
+# python tools/convert.py cfg/yolov3.cfg weights/yolov3.weights weights/yolov3.h5
+# python tools/convert.py cfg/yolov3-tiny.cfg weights/yolov3-tiny.weights weights/yolov3-tiny.h5
+# python tools/convert.py cfg/yolov3-spp.cfg weights/yolov3-spp.weights weights/yolov3-spp.h5
+# python tools/convert.py cfg/darknet53.cfg weights/darknet53.conv.74.weights weights/darknet53.h5
 
 # python yolo.py --image
 # python yolo.py --input=<your video file>
@@ -70,7 +72,7 @@ For Tiny YOLOv3, just do in a similar way, but specify different model path and 
 
    If you want to download PascalVOC or COCO dataset, refer to Dockerfile for cmd
 
-   For class names file format, refer to model_data/coco_classes.txt
+   For class names file format, refer to configs/coco_classes.txt
 
 2. If you're training Darknet YOLOv3/Tiny YOLOv3, make sure you have converted pretrain model weights as in "Quick Start" part
 
@@ -105,7 +107,7 @@ optional arguments:
                         validation data persentage in dataset, default=0.1
   --classes_path CLASSES_PATH
                         path to class definitions,
-                        default=model_data/voc_classes.txt
+                        default=configs/voc_classes.txt
   --learning_rate LEARNING_RATE
                         Initial learning rate, default=0.001
   --batch_size BATCH_SIZE
@@ -115,6 +117,8 @@ optional arguments:
   --total_epoch TOTAL_EPOCH
                         Total training epochs, default=300
   --multiscale          Whether to use multiscale training
+  --rescale_interval RESCALE_INTERVAL
+                        Number of epochs to rescale input image in, default=20
 ```
 Checkpoints during training could be found at logs/000/. Choose a best one as result
 
@@ -124,7 +128,7 @@ Loss type couldn't be changed from CLI options. You can try them by changing par
 We need to dump out inference model from training checkpoint for eval or demo. Following script cmd work for that.
 
 ```
-# python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --dump_model --output_model_file=test.h5
+# python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --dump_model --output_model_file=test.h5
 ```
 
 Change model_type, anchors file & class file for different training mode
@@ -137,7 +141,7 @@ Use "eval.py" to do evaluation on the inference model with your test data. It su
 2. MS COCO AP evaluation. Will draw AP chart and optionally save all the detection result
 
 ```
-# python eval.py --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.01 --annotation_file=2007_test.txt --save_result
+# python eval.py --model_path=test.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.01 --annotation_file=2007_test.txt --save_result
 ```
 
 ### Demo
@@ -145,11 +149,11 @@ Use "eval.py" to do evaluation on the inference model with your test data. It su
 > * Demo script for trained model
 image detection mode
 ```
-# python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --image
+# python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --image
 ```
 video detection mode
 ```
-# python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --input=test.mp4
+# python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --input=test.mp4
 ```
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 
@@ -163,7 +167,7 @@ For video detection mode, you can use "input=0" to capture live video from web c
 2. Run TFLite validate script
 ```
 # cd tools/
-# python validate_yolo_tflite.py --model_path=test.tflite --anchors_path=model_data/yolo_anchors.txt --classes_path=model_data/voc_classes.txt --image_file=test.jpg --loop_count=1
+# python validate_yolo_tflite.py --model_path=test.tflite --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --image_file=test.jpg --loop_count=1
 ```
 #### You can also use "eval.py" to do evaluate on the TFLite model
 

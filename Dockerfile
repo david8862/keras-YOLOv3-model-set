@@ -152,13 +152,15 @@ RUN git clone https://github.com/david8862/keras-YOLOv3-model-set.git && \
     pushd data/PascalVOC && cp -rf 2007_train.txt trainval.txt && cat 2007_val.txt >> trainval.txt && cat 2012_train.txt >> trainval.txt && cat 2012_val.txt >> trainval.txt && \
     cp -rf trainval.txt 2007_test.txt /root/keras-YOLOv3-model-set/ && \
     popd && \
-    wget -O keras-YOLOv3-model-set/model_data/yolov3.weights https://pjreddie.com/media/files/yolov3.weights && \
-    wget -O keras-YOLOv3-model-set/model_data/yolov3-tiny.weights https://pjreddie.com/media/files/yolov3-tiny.weights && \
-    wget -O keras-YOLOv3-model-set/model_data/darknet53.conv.74.weights https://pjreddie.com/media/files/darknet53.conv.74 && \
-    pushd keras-YOLOv3-model-set/tools/ && \
-    python convert.py yolov3.cfg ../model_data/yolov3.weights ../model_data/yolov3.h5 && \
-    python convert.py yolov3-tiny.cfg ../model_data/yolov3-tiny.weights ../model_data/tiny_yolo_weights.h5 && \
-    python convert.py darknet53.cfg ../model_data/darknet53.conv.74.weights ../model_data/darknet53_weights.h5 && \
+    wget -O keras-YOLOv3-model-set/weights/yolov3.weights https://pjreddie.com/media/files/yolov3.weights && \
+    wget -O keras-YOLOv3-model-set/weights/yolov3-tiny.weights https://pjreddie.com/media/files/yolov3-tiny.weights && \
+    wget -O keras-YOLOv3-model-set/weights/yolov3-spp.weights https://pjreddie.com/media/files/yolov3-spp.weights && \
+    wget -O keras-YOLOv3-model-set/weights/darknet53.conv.74.weights https://pjreddie.com/media/files/darknet53.conv.74 && \
+    pushd keras-YOLOv3-model-set/ && \
+    python tools/convert.py yolov3.cfg weights/yolov3.weights weights/yolov3.h5 && \
+    python tools/convert.py yolov3-tiny.cfg weights/yolov3-tiny.weights weights/yolov3-tiny.h5 && \
+    python tools/convert.py yolov3-spp.cfg weights/yolov3-spp.weights weights/yolov3-spp.h5 && \
+    python tools/convert.py darknet53.cfg weights/darknet53.conv.74.weights weights/darknet53.h5 && \
     popd
 
 # Optional: Prepare MS COCO 2017 dataset

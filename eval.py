@@ -745,7 +745,7 @@ def main():
 
     parser.add_argument(
         '--classes_path', type=str, required=True,
-        help='path to class definitions, default model_data/voc_classes.txt', default='model_data/voc_classes.txt')
+        help='path to class definitions, default configs/voc_classes.txt', default='configs/voc_classes.txt')
 
     parser.add_argument(
         '--annotation_file', type=str, required=True,

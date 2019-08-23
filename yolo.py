@@ -30,9 +30,9 @@ tf.enable_eager_execution()
 class YOLO(tf.keras.Model):
     _defaults = {
         "model_type": 'darknet',
-        "model_path": 'model_data/tiny_yolo_weights.h5',
-        "anchors_path": 'model_data/tiny_yolo_anchors.txt',
-        "classes_path": 'model_data/coco_classes.txt',
+        "model_path": 'weights/tiny_yolo_weights.h5',
+        "anchors_path": 'configs/tiny_yolo_anchors.txt',
+        "classes_path": 'configs/coco_classes.txt',
         "score" : 0.1,
         "iou" : 0.4,
         "model_image_size" : (416, 416),
