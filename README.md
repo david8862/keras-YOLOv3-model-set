@@ -155,6 +155,7 @@ Following is a sample result trained on Mobilenet YOLOv3 Lite model:
   <img src="assets/mAP.jpg">
   <img src="assets/COCO_AP.jpg">
 </p>
+
 ### Demo
 1. yolo.py
 > * Demo script for trained model
