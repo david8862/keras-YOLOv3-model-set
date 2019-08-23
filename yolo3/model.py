@@ -15,6 +15,82 @@ from yolo3.loss import yolo_loss
 from yolo3.postprocess import yolo3_postprocess
 
 
+# A map of model type to construction info list for YOLOv3
+#
+# info list format:
+#   [model_function, backbone_length, pretrain_weight_path]
+#
+yolo3_model_map = {
+    'mobilenet': [yolo_mobilenet_body, 87, None],
+    'mobilenet_lite': [yololite_mobilenet_body, 87, None],
+    'darknet': [yolo_body, 185, 'weights/darknet53.h5'],
+    'darknet_spp': [custom_yolo_spp_body, 185, 'weights/yolov3-spp.h5'],
+    #Doesn't have pretrained weights, so no need to return backbone length
+    'darknet_lite': [yololite_body, 0, None],
+    'vgg16': [yolo_vgg16_body, 19, None],
+    'xception': [yolo_xception_body, 132, None],
+    'xception_lite': [yololite_xception_body, 132, None],
+}
+
+
+# A map of model type to construction info list for Tiny YOLOv3
+#
+# info list format:
+#   [model_function, backbone_length, pretrain_weight_file]
+#
+yolo3_tiny_model_map = {
+    'mobilenet': [tiny_yolo_mobilenet_body, 87, None],
+    'mobilenet_lite': [tiny_yololite_mobilenet_body, 87, None],
+    'darknet': [custom_tiny_yolo_body, 20, 'weights/yolov3-tiny.h5'],
+    #Doesn't have pretrained weights, so no need to return backbone length
+    'darknet_lite': [tiny_yololite_body, 0, None],
+    'vgg16': [tiny_yolo_vgg16_body, 19, None],
+    'xception': [tiny_yolo_xception_body, 132, None],
+    'xception_lite': [tiny_yololite_xception_body, 132, None],
+}
+
+
+def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, input_tensor=None, input_shape=None):
+    #prepare input tensor
+    if input_shape:
+        input_tensor = Input(shape=input_shape, name='image_input')
+
+    if input_tensor == None:
+        input_tensor = Input(shape=(None, None, 3), name='image_input')
+
+    #Tiny YOLOv3 model has 6 anchors and 2 feature layers
+    if num_feature_layers == 2:
+        if model_type in yolo3_tiny_model_map:
+            model_function = yolo3_tiny_model_map[model_type][0]
+            backbone_len = yolo3_tiny_model_map[model_type][1]
+            weights_path = yolo3_tiny_model_map[model_type][2]
+
+            if weights_path:
+                model_body = model_function(input_tensor, num_anchors//2, num_classes, weights_path=weights_path)
+            else:
+                model_body = model_function(input_tensor, num_anchors//2, num_classes)
+        else:
+            raise ValueError('This model type is not supported now')
+
+    #YOLOv3 model has 9 anchors and 3 feature layers
+    elif num_feature_layers == 3:
+        if model_type in yolo3_model_map:
+            model_function = yolo3_model_map[model_type][0]
+            backbone_len = yolo3_model_map[model_type][1]
+            weights_path = yolo3_model_map[model_type][2]
+
+            if weights_path:
+                model_body = model_function(input_tensor, num_anchors//3, num_classes, weights_path=weights_path)
+            else:
+                model_body = model_function(input_tensor, num_anchors//3, num_classes)
+        else:
+            raise ValueError('This model type is not supported now')
+    else:
+        raise ValueError('Unsupported model type')
+    return model_body, backbone_len
+
+
+
 def add_metrics(model, loss_dict):
     '''
     add loss scalar into model, which could be tracked in training
@@ -28,77 +104,6 @@ def add_metrics(model, loss_dict):
         #model.metrics_names.append(name)
         #model.metrics_tensors.append(loss)
         model.add_metric(loss, name=name, aggregation='mean')
-
-
-def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, input_tensor=None, input_shape=None):
-    #prepare input tensor
-    if input_shape:
-        input_tensor = Input(shape=input_shape, name='image_input')
-
-    if input_tensor == None:
-        input_tensor = Input(shape=(None, None, 3), name='image_input')
-
-    #Tiny YOLOv3 model has 6 anchors and 2 feature layers
-    if num_feature_layers == 2:
-        if model_type == 'mobilenet_lite':
-            model_body = tiny_yololite_mobilenet_body(input_tensor, num_anchors//2, num_classes)
-            backbone_len = 87
-        elif model_type == 'mobilenet':
-            model_body = tiny_yolo_mobilenet_body(input_tensor, num_anchors//2, num_classes)
-            backbone_len = 87
-        elif model_type == 'darknet':
-            weights_path='weights/yolov3-tiny.h5'
-            model_body = custom_tiny_yolo_body(input_tensor, num_anchors//2, num_classes, weights_path)
-            backbone_len = 20
-        elif model_type == 'darknet_lite':
-            model_body = tiny_yololite_body(input_tensor, num_anchors//2, num_classes)
-            #Doesn't have pretrained weights, so no need to return backbone length
-            backbone_len = 0
-        elif model_type == 'vgg16':
-            model_body = tiny_yolo_vgg16_body(input_tensor, num_anchors//2, num_classes)
-            backbone_len = 19
-        elif model_type == 'xception':
-            model_body = tiny_yolo_xception_body(input_tensor, num_anchors//2, num_classes)
-            backbone_len = 132
-        elif model_type == 'xception_lite':
-            model_body = tiny_yololite_xception_body(input_tensor, num_anchors//2, num_classes)
-            backbone_len = 132
-        else:
-            raise ValueError('Unsupported model type')
-    #YOLOv3 model has 9 anchors and 3 feature layers
-    elif num_feature_layers == 3:
-        if model_type == 'mobilenet_lite':
-            model_body = yololite_mobilenet_body(input_tensor, num_anchors//3, num_classes)
-            backbone_len = 87
-        elif model_type == 'mobilenet':
-            model_body = yolo_mobilenet_body(input_tensor, num_anchors//3, num_classes)
-            backbone_len = 87
-        elif model_type == 'darknet':
-            weights_path='weights/darknet53.h5'
-            model_body = yolo_body(input_tensor, num_anchors//3, num_classes, weights_path=weights_path)
-            backbone_len = 185
-        elif model_type == 'darknet_spp':
-            weights_path='weights/yolov3-spp.h5'
-            model_body = custom_yolo_spp_body(input_tensor, num_anchors//3, num_classes, weights_path=weights_path)
-            backbone_len = 185
-        elif model_type == 'darknet_lite':
-            model_body = yololite_body(input_tensor, num_anchors//3, num_classes)
-            #Doesn't have pretrained weights, so no need to return backbone length
-            backbone_len = 0
-        elif model_type == 'vgg16':
-            model_body = yolo_vgg16_body(input_tensor, num_anchors//3, num_classes)
-            backbone_len = 19
-        elif model_type == 'xception':
-            model_body = yolo_xception_body(input_tensor, num_anchors//3, num_classes)
-            backbone_len = 132
-        elif model_type == 'xception_lite':
-            model_body = yololite_xception_body(input_tensor, num_anchors//3, num_classes)
-            backbone_len = 132
-        else:
-            raise ValueError('Unsupported model type')
-    else:
-        raise ValueError('Unsupported model type')
-    return model_body, backbone_len
 
 
 def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, learning_rate=1e-3):

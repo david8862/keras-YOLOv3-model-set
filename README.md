@@ -50,7 +50,7 @@ A tf.keras implementation of a common YOLOv3 object detection architecture with 
 # python yolo.py --image
 # python yolo.py --input=<your video file>
 ```
-For Tiny YOLOv3, just do in a similar way, but specify different model path and anchor path with `--model_path` and `--anchors_path`.
+For other model, just do in a similar way, but specify different model path and anchor path with `--model_path` and `--anchors_path`.
 
 
 ## Guide of train & evaluate & demo process

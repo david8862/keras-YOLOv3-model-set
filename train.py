@@ -223,7 +223,7 @@ if __name__ == '__main__':
     parser.add_argument('--weights_path', type=str,required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
     parser.add_argument('--freeze_level', type=int,required=False, default=None,
-        help = "Freeze level of the training model. 0:NA/1:backbone/2:only open feature_map")
+        help = "Freeze level of the model in initial train stage. 0:NA/1:backbone/2:only open prediction layer")
 
     # Data options
     parser.add_argument('--annotation_file', type=str, required=False, default='trainval.txt',
