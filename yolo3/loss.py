@@ -6,7 +6,11 @@ from tensorflow.keras import backend as K
 from yolo3.postprocess import yolo_head
 
 def softmax_focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
-    """Compute softmax focal loss.
+    """
+    Compute softmax focal loss.
+    Reference Paper:
+        "Focal Loss for Dense Object Detection"
+        https://arxiv.org/abs/1708.02002
 
     # Arguments
         y_true: Ground truth targets,
@@ -39,7 +43,11 @@ def softmax_focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
 
 
 def sigmoid_focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
-    """Compute sigmoid focal loss.
+    """
+    Compute sigmoid focal loss.
+    Reference Paper:
+        "Focal Loss for Dense Object Detection"
+        https://arxiv.org/abs/1708.02002
 
     # Arguments
         y_true: Ground truth targets,
@@ -107,7 +115,11 @@ def box_iou(b1, b2):
 
 
 def box_giou(b1, b2):
-    '''Return giou tensor
+    '''
+    Calculate GIoU loss on anchor boxes
+    Reference Paper:
+        "Generalized Intersection over Union: A Metric and A Loss for Bounding Box Regression"
+        https://arxiv.org/abs/1902.09630
 
     Parameters
     ----------
@@ -116,7 +128,7 @@ def box_giou(b1, b2):
 
     Returns
     -------
-    iou: tensor, shape=(batch, feat_w, feat_h, anchor_num, 1)
+    giou: tensor, shape=(batch, feat_w, feat_h, anchor_num, 1)
 
     '''
     b1_xy = b1[..., :2]
@@ -140,13 +152,12 @@ def box_giou(b1, b2):
     union_area = b1_area + b2_area - intersect_area
     iou = intersect_area / union_area
 
-    # 计算最小闭合凸面 C 左上角和右下角的坐标
+    # get enclosed area
     enclose_mins = K.minimum(b1_mins, b2_mins)
     enclose_maxes = K.maximum(b1_maxes, b2_maxes)
     enclose_wh = K.maximum(enclose_maxes - enclose_mins, 0.0)
-    # 计算最小闭合凸面 C 的面积
     enclose_area = enclose_wh[..., 0] * enclose_wh[..., 1]
-    # 根据 GIoU 公式计算 GIoU 值, 分母加上模糊因子常量以避免被0除
+    # calculate GIoU, add epsilon in denominator to avoid dividing by 0
     giou = iou - 1.0 * (enclose_area - union_area) / (enclose_area + K.epsilon())
     giou = K.expand_dims(giou, -1)
 

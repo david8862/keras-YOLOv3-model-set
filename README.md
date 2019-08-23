@@ -184,8 +184,9 @@ For video detection mode, you can use "input=0" to capture live video from web c
 ```
 #### You can also use "eval.py" to do evaluate on the TFLite model
 
-3. TODO item
-- [] TFLite C++ inplementation of yolo head
+### TODO
+- [ ] batch-wise postprocess model for TFLite end-to-end inference
+- [ ] TFLite C++ implementation of postprocess
 
 
 ## Some issues to know
