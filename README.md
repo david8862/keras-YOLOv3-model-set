@@ -15,6 +15,7 @@ A tf.keras implementation of a common YOLOv3 object detection architecture with 
 - [x] YOLOv3
 - [x] YOLOv3 Lite
 - [x] YOLOv3 spp
+- [x] YOLOv3 Lite spp
 - [x] Tiny YOLOv3
 - [x] Tiny YOLOv3 Lite
 

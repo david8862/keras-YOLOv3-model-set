@@ -101,7 +101,7 @@ def yolo_body(inputs, num_anchors, num_classes, weights_path=None):
 
 
 def yolo_spp_body(inputs, num_anchors, num_classes, weights_path=None):
-    """Create YOLO_V3 model CNN body in Keras."""
+    """Create YOLO_V3 SPP model CNN body in Keras."""
     darknet = Model(inputs, darknet_body(inputs))
     if weights_path is not None:
         darknet.load_weights(weights_path, by_name=True)
