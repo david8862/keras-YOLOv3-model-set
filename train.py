@@ -118,7 +118,7 @@ def _main(args):
     else:
         freeze_level = 1
 
-    if args.freeze_level:
+    if args.freeze_level is not None:
         freeze_level = args.freeze_level
 
 
