@@ -11,9 +11,9 @@ def yolo_head(feats, anchors, num_classes, input_shape, calc_loss=False):
     anchors_tensor = K.reshape(K.constant(anchors), [1, 1, 1, num_anchors, 2])
 
     grid_shape = K.shape(feats)[1:3] # height, width
-    grid_y = tf.tile(K.reshape(K.arange(0, stop=grid_shape[0]), [-1, 1, 1, 1]),
+    grid_y = K.tile(K.reshape(K.arange(0, stop=grid_shape[0]), [-1, 1, 1, 1]),
         [1, grid_shape[1], 1, 1])
-    grid_x = tf.tile(K.reshape(K.arange(0, stop=grid_shape[1]), [1, -1, 1, 1]),
+    grid_x = K.tile(K.reshape(K.arange(0, stop=grid_shape[1]), [1, -1, 1, 1]),
         [grid_shape[0], 1, 1, 1])
     grid = K.concatenate([grid_x, grid_y])
     grid = K.cast(grid, K.dtype(feats))

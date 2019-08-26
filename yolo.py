@@ -278,7 +278,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--model_image_size', type=str,
         help='model image input size as <num>x<num>, default ' +
-        str(YOLO.get_defaults("model_image_size")[0])+'x'+str(YOLO.get_defaults("model_image_size")[1])
+        str(YOLO.get_defaults("model_image_size")[0])+'x'+str(YOLO.get_defaults("model_image_size")[1]),
+        default=str(YOLO.get_defaults("model_image_size")[0])+'x'+str(YOLO.get_defaults("model_image_size")[1])
     )
 
     parser.add_argument(
@@ -316,11 +317,12 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     # param parse
-    height, width = args.model_image_size.split('x')
-    args.model_image_size = (int(height), int(width))
+    if args.model_image_size:
+        height, width = args.model_image_size.split('x')
+        args.model_image_size = (int(height), int(width))
 
     # get wrapped inference object
-    yolo = YOLO_np(**vars(args))
+    yolo = YOLO(**vars(args))
 
     if args.dump_model:
         """
