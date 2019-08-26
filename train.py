@@ -170,7 +170,7 @@ def _main(args):
             validation_steps=max(1, num_val//batch_size),
             epochs=epochs,
             initial_epoch=initial_epoch,
-            callbacks=[logging, checkpoint, terminate_on_nan])
+            callbacks=[logging, checkpoint, reduce_lr, terminate_on_nan])
 
     # Unfreeze the whole network for further training, but still on
     # the same input_shape, for "rescale_interval" epochs
