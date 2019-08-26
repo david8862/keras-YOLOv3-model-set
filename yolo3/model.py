@@ -157,8 +157,6 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
     return model
 
 
-# TODO(david8862): Unfinished work, need to implement
-# a batch-wise postprocess layer/model for inference
 def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=None, confidence=0.1):
     '''create the inference model, for YOLOv3'''
     K.clear_session() # get a new session
@@ -174,7 +172,7 @@ def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=Non
     print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))
 
     if weights_path:
-        model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
+        model_body.load_weights(weights_path, by_name=False)#, skip_mismatch=True)
         print('Load weights {}.'.format(weights_path))
 
     boxes, scores, classes = Lambda(batched_yolo3_postprocess, name='yolo3_postprocess',

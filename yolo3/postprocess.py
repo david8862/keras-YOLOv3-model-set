@@ -67,22 +67,6 @@ def yolo_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape)
     return boxes, box_scores
 
 
-def batched_yolo_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape):
-    '''Process Conv layer output'''
-    box_xy, box_wh, box_confidence, box_class_probs = yolo_head(feats,
-        anchors, num_classes, input_shape)
-
-    num_anchors = len(anchors)
-    grid_shape = K.shape(feats)[1:3] # height, width
-    total_anchor_num = grid_shape[0] * grid_shape[1] * num_anchors
-
-    boxes = yolo_correct_boxes(box_xy, box_wh, input_shape, image_shape)
-    boxes = K.reshape(boxes, [-1, total_anchor_num, 4])
-    box_scores = box_confidence * box_class_probs
-    box_scores = K.reshape(box_scores, [-1, total_anchor_num, num_classes])
-    return boxes, box_scores
-
-
 def get_anchorset(anchors, num_layers, l):
     if num_layers == 3: #YOLOv3 arch
         if l == 0:
@@ -151,6 +135,23 @@ def yolo3_postprocess(args,
 
     return boxes_, scores_, classes_
 
+
+def batched_yolo_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape):
+    '''Process Conv layer output'''
+    box_xy, box_wh, box_confidence, box_class_probs = yolo_head(feats,
+        anchors, num_classes, input_shape)
+
+    num_anchors = len(anchors)
+    grid_shape = K.shape(feats)[1:3] # height, width
+    total_anchor_num = grid_shape[0] * grid_shape[1] * num_anchors
+
+    boxes = yolo_correct_boxes(box_xy, box_wh, input_shape, image_shape)
+    boxes = K.reshape(boxes, [-1, total_anchor_num, 4])
+    box_scores = box_confidence * box_class_probs
+    box_scores = K.reshape(box_scores, [-1, total_anchor_num, num_classes])
+    return boxes, box_scores
+
+
 def batched_yolo3_postprocess(args,
               anchors,
               num_classes,
@@ -218,29 +219,4 @@ def batched_yolo3_postprocess(args,
     batch_classes = batch_classes.stack()
 
     return batch_boxes, batch_scores, batch_classes
-
-
-class PostProcess(tf.keras.Model):
-    def __init__(self, anchors, num_classes, max_boxes=100, confidence=0.1, iou_threshold=0.4):
-        super(PostProcess, self).__init__()
-        self.anchors = anchors
-        self.num_classes = num_classes
-        self.max_boxes = max_boxes
-        self.confidence = confidence
-        self.iou_threshold = iou_threshold
-        self.postprocess = yolo3_postprocess
-
-    def call(self, inputs):
-        boxes, scores, classes = self.postprocess(inputs,
-                                                  self.anchors,
-                                                  self.num_classes,
-                                                  self.max_boxes,
-                                                  self.confidence,
-                                                  self.iou_threshold)
-        return boxes, scores, classes
-
-
-    def predict(self, inputs):
-        boxes, scores, classes = self(inputs)
-        return K.eval(boxes), K.eval(scores), K.eval(classes)
 

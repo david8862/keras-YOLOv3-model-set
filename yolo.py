@@ -16,8 +16,7 @@ from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Lambda
 from PIL import Image
 
-from yolo3.model import get_yolo3_model
-from yolo3.postprocess import PostProcess
+from yolo3.model import get_yolo3_model, get_yolo3_inference_model
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo3.data import preprocess_image, letterbox_image
 from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes
@@ -27,8 +26,7 @@ from tensorflow.keras.utils import multi_gpu_model
 
 tf.enable_eager_execution()
 
-class YOLO(tf.keras.Model):
-    _defaults = {
+default_config = {
         "model_type": 'darknet',
         "model_path": 'weights/yolov3-tiny.h5',
         "anchors_path": 'configs/tiny_yolo_anchors.txt',
@@ -39,6 +37,10 @@ class YOLO(tf.keras.Model):
         "gpu_num" : 1,
     }
 
+
+class YOLO_np(object):
+    _defaults = default_config
+
     @classmethod
     def get_defaults(cls, n):
         if n in cls._defaults:
@@ -47,14 +49,14 @@ class YOLO(tf.keras.Model):
             return "Unrecognized attribute name '" + n + "'"
 
     def __init__(self, **kwargs):
-        super(YOLO, self).__init__()
+        super(YOLO_np, self).__init__()
         self.__dict__.update(self._defaults) # set up default values
         self.__dict__.update(kwargs) # and update with user overrides
         self.class_names = get_classes(self.classes_path)
         self.anchors = get_anchors(self.anchors_path)
         self.colors = get_colors(self.class_names)
         K.set_learning_phase(0)
-        self.yolo_model, self.postprocess_model = self._generate_model()
+        self.yolo_model = self._generate_model()
 
     def _generate_model(self):
         '''to generate the bounding boxes'''
@@ -83,23 +85,82 @@ class YOLO(tf.keras.Model):
         if self.gpu_num>=2:
             yolo_model = multi_gpu_model(yolo_model, gpus=self.gpu_num)
 
-        postprocess_model = PostProcess(self.anchors, len(self.class_names), confidence=self.score, iou_threshold=self.iou)
+        return yolo_model
 
-        return yolo_model, postprocess_model
 
-    @tf.function
-    def call(self, inputs):
-        image_data = inputs[0]
-        image_shape = inputs[1]
-        yolo_outputs = self.yolo_model(image_data)
-        out_boxes, out_scores, out_classes = self.postprocess_model([*yolo_outputs, image_shape])
-        return out_boxes, out_scores, out_classes
+    def detect_image(self, image):
+        if self.model_image_size != (None, None):
+            assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
+            assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
 
-    #@tf.function
+        image_data = preprocess_image(image, self.model_image_size)
+        image_shape = image.size
+
+        start = time.time()
+        out_boxes, out_classes, out_scores = self.predict(image_data, image_shape)
+        print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
+        end = time.time()
+        print("Inference time: {:.2f}s".format(end - start))
+
+        #draw result on input image
+        image_array = np.array(image, dtype='uint8')
+        image_array = draw_boxes(image_array, out_boxes, out_classes, out_scores, self.class_names, self.colors)
+        return Image.fromarray(image_array)
+
+
     def predict(self, image_data, image_shape):
-        boxes, scores, classes = self([image_data, image_shape])
+        out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100)
+        return out_boxes, out_classes, out_scores
 
-        out_boxes, out_scores, out_classes = K.eval(boxes), K.eval(scores), K.eval(classes)
+
+    def dump_model_file(self, output_model_file):
+        self.yolo_model.save(output_model_file)
+
+
+
+class YOLO(object):
+    _defaults = default_config
+
+    @classmethod
+    def get_defaults(cls, n):
+        if n in cls._defaults:
+            return cls._defaults[n]
+        else:
+            return "Unrecognized attribute name '" + n + "'"
+
+    def __init__(self, **kwargs):
+        super(YOLO, self).__init__()
+        self.__dict__.update(self._defaults) # set up default values
+        self.__dict__.update(kwargs) # and update with user overrides
+        self.class_names = get_classes(self.classes_path)
+        self.anchors = get_anchors(self.anchors_path)
+        self.colors = get_colors(self.class_names)
+        K.set_learning_phase(0)
+        self.inference_model = self._generate_model()
+
+    def _generate_model(self):
+        '''to generate the bounding boxes'''
+        model_path = os.path.expanduser(self.model_path)
+        assert model_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
+
+        # Load model, or construct model and load weights.
+        num_anchors = len(self.anchors)
+        num_classes = len(self.class_names)
+        #YOLOv3 model has 9 anchors and 3 feature layers but
+        #Tiny YOLOv3 model has 6 anchors and 2 feature layers,
+        #so we can calculate feature layers number to get model type
+        num_feature_layers = num_anchors//3
+
+        inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=model_path, confidence=0.1)
+
+        return inference_model
+
+    def predict(self, image_data, image_shape):
+        out_boxes, out_scores, out_classes = self.inference_model.predict([image_data, image_shape])
+
+        out_boxes = out_boxes[0]
+        out_scores = out_scores[0]
+        out_classes = out_classes[0]
 
         out_boxes = out_boxes.astype(np.int32)
         out_classes = out_classes.astype(np.int32)
@@ -112,6 +173,7 @@ class YOLO(tf.keras.Model):
 
         image_data = preprocess_image(image, self.model_image_size)
         image_shape = np.array([image.size[0], image.size[1]])
+        image_shape = np.expand_dims(image_shape, 0)
 
         start = time.time()
         out_boxes, out_classes, out_scores = self.predict(image_data, image_shape)
@@ -124,34 +186,8 @@ class YOLO(tf.keras.Model):
         image_array = draw_boxes(image_array, out_boxes, out_classes, out_scores, self.class_names, self.colors)
         return Image.fromarray(image_array)
 
-    def detect_image_np(self, image):
-        if self.model_image_size != (None, None):
-            assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
-            assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
-
-        image_data = preprocess_image(image, self.model_image_size)
-        image_shape = image.size
-
-        start = time.time()
-        out_boxes, out_classes, out_scores = self.predict_np(image_data, image_shape)
-        print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
-        end = time.time()
-        print("Inference time: {:.2f}s".format(end - start))
-
-        #draw result on input image
-        image_array = np.array(image, dtype='uint8')
-        image_array = draw_boxes(image_array, out_boxes, out_classes, out_scores, self.class_names, self.colors)
-        return Image.fromarray(image_array)
-
-
-    def predict_np(self, image_data, image_shape):
-        out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100)
-
-        return out_boxes, out_classes, out_scores
-
-
     def dump_model_file(self, output_model_file):
-        self.yolo_model.save(output_model_file)
+        self.inference_model.save(output_model_file)
 
 
 def detect_video(yolo, video_path, output_path=""):
@@ -274,6 +310,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    # get wrapped inference object
+    yolo = YOLO_np(**vars(args))
+
     if args.dump_model:
         """
         Dump out training model to inference model
@@ -282,7 +321,7 @@ if __name__ == '__main__':
             raise ValueError('output model file is not specified')
 
         print('Dumping out training model to inference model')
-        YOLO(**vars(args)).dump_model_file(args.output_model_file)
+        yolo.dump_model_file(args.output_model_file)
         sys.exit()
 
     if args.image:
@@ -292,8 +331,8 @@ if __name__ == '__main__':
         print("Image detection mode")
         if "input" in args:
             print(" Ignoring remaining command line arguments: " + args.input + "," + args.output)
-        detect_img(YOLO(**vars(args)))
+        detect_img(yolo)
     elif "input" in args:
-        detect_video(YOLO(**vars(args)), args.input, args.output)
+        detect_video(yolo, args.input, args.output)
     else:
         print("Must specify at least video_input_path.  See usage with --help.")
