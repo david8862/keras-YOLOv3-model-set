@@ -16,6 +16,9 @@ def validate_yolo_model(model, image_file, anchors, class_names, model_image_siz
     image_data = preprocess_image(image, model_image_size)
     image_shape = image.size
 
+    # predict once first to bypass the model building time
+    model.predict([image_data])
+
     start = time.time()
     for i in range(loop_count):
         boxes, classes, scores = yolo3_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size)

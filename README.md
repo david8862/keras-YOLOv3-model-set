@@ -157,6 +157,17 @@ Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalV
   <img src="assets/COCO_AP.jpg">
 </p>
 
+Some experiment on PascalVOC dataset (using a reasonable score threshold=0.1)
+
+| Model name | InputSize | TrainSet | TestSet | mAP | Speed | Ps |
+| ----- | ------ | ------ | ------ | ----- | ----- | ----- |
+| YOLOv3 Lite-Mobilenet | 320x320 | VOC07+12 | VOC07 | 68.65% | 22ms | Keras on Titan XP |
+| YOLOv3 Lite-Mobilenet | 416x416 | VOC07+12 | VOC07 | 71.51% | 26ms | Keras on Titan XP |
+| Tiny YOLOv3 Lite-Mobilenet | 320x320 | VOC07+12 | VOC07 | 64.26% | 12ms | Keras on Titan XP |
+| Tiny YOLOv3 Lite-Mobilenet | 416x416 | VOC07+12 | VOC07 | 68.26% | 15ms | Keras on Titan XP |
+| YOLOv3-Xception | 512x512 | VOC07+12 | VOC07 | 75.45% | 75ms | Keras on Titan XP |
+
+
 ### Demo
 1. yolo.py
 > * Demo script for trained model

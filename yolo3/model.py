@@ -122,7 +122,7 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
     #  (image_height/16, image_width/16, 3, num_classes+5),
     #  (image_height/8, image_width/8, 3, num_classes+5)
     # ]
-    y_true = [Input(shape=(None, None, 3, num_classes+5)) for l in range(num_feature_layers)]
+    y_true = [Input(shape=(None, None, 3, num_classes+5), name='y_true_{}'.format(l)) for l in range(num_feature_layers)]
 
     model_body, backbone_len = get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes)
     print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))

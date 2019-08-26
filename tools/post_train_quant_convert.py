@@ -9,7 +9,7 @@ import numpy as np
 import tensorflow as tf
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-from yolo3.utils import get_random_data
+from yolo3.data import get_random_data
 
 tf.enable_eager_execution()
 
@@ -21,7 +21,7 @@ def post_train_quant_convert(keras_model_file, annotation_file, sample_num, mode
     with open(annotation_file) as f:
         annotation_lines = f.readlines()
 
-    converter = tf.lite.TFLiteConverter.from_keras_model_file(keras_model_file, input_shapes={"input_1" : input_shapes})
+    converter = tf.lite.TFLiteConverter.from_keras_model_file(keras_model_file, input_shapes={"image_input" : input_shapes})
 
     def data_generator():
         n = len(annotation_lines)

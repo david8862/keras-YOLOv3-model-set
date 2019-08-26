@@ -100,7 +100,7 @@ class YOLO_np(object):
         out_boxes, out_classes, out_scores = self.predict(image_data, image_shape)
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
         end = time.time()
-        print("Inference time: {:.2f}s".format(end - start))
+        print("Inference time: {:.8f}s".format(end - start))
 
         #draw result on input image
         image_array = np.array(image, dtype='uint8')
@@ -179,7 +179,7 @@ class YOLO(object):
         out_boxes, out_classes, out_scores = self.predict(image_data, image_shape)
         end = time.time()
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
-        print("Inference time: {:.2f}s".format(end - start))
+        print("Inference time: {:.8f}s".format(end - start))
 
         #draw result on input image
         image_array = np.array(image, dtype='uint8')
@@ -276,6 +276,12 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
+        '--model_image_size', type=str,
+        help='model image input size as <num>x<num>, default ' +
+        str(YOLO.get_defaults("model_image_size")[0])+'x'+str(YOLO.get_defaults("model_image_size")[1])
+    )
+
+    parser.add_argument(
         '--gpu_num', type=int,
         help='Number of GPU to use, default ' + str(YOLO.get_defaults("gpu_num"))
     )
@@ -309,6 +315,9 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
+    # param parse
+    height, width = args.model_image_size.split('x')
+    args.model_image_size = (int(height), int(width))
 
     # get wrapped inference object
     yolo = YOLO_np(**vars(args))

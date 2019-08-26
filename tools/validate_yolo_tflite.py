@@ -33,6 +33,10 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, loo
     image_data = preprocess_image(img, (height, width))
     image_shape = img.size
 
+    # predict once first to bypass the model building time
+    interpreter.set_tensor(input_details[0]['index'], image_data)
+    interpreter.invoke()
+
     start = time.time()
     for i in range(loop_count):
         interpreter.set_tensor(input_details[0]['index'], image_data)
