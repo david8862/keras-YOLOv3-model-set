@@ -12,7 +12,7 @@ from yolo3.models.yolo3_mobilenet import yolo_mobilenet_body, tiny_yolo_mobilene
 from yolo3.models.yolo3_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
 from yolo3.models.yolo3_xception import yolo_xception_body, yololite_xception_body, tiny_yolo_xception_body, tiny_yololite_xception_body
 from yolo3.loss import yolo_loss
-from yolo3.postprocess import yolo3_postprocess
+from yolo3.postprocess import batched_yolo3_postprocess
 
 
 # A map of model type to construction info list for YOLOv3
@@ -168,7 +168,7 @@ def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=Non
     #so we can calculate feature layers number to get model type
     num_feature_layers = num_anchors//3
 
-    image_shape = Input(shape=(2,))
+    image_shape = Input(shape=(2,), dtype='int64', name='image_shape')
 
     model_body, _ = get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes)
     print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))
@@ -177,7 +177,7 @@ def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=Non
         model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)
         print('Load weights {}.'.format(weights_path))
 
-    boxes, scores, classes = Lambda(yolo3_postprocess, name='yolo3_postprocess',
+    boxes, scores, classes = Lambda(batched_yolo3_postprocess, name='yolo3_postprocess',
             arguments={'anchors': anchors, 'num_classes': num_classes, 'confidence': confidence})(
         [*model_body.output, image_shape])
     model = Model([model_body.input, image_shape], [boxes, scores, classes])

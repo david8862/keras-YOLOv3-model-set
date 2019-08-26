@@ -160,6 +160,7 @@ Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalV
 ### Demo
 1. yolo.py
 > * Demo script for trained model
+
 image detection mode
 ```
 # python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --image
