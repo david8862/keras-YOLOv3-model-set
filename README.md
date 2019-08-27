@@ -160,7 +160,7 @@ Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalV
 Some experiment on PascalVOC dataset
 
 | Model name | InputSize | TrainSet | TestSet | mAP | Size | Speed | Ps |
-| ----- | ------ | ------ | ------ | ----- | ----- | ----- |
+| ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- |
 | YOLOv3 Lite-Mobilenet | 320x320 | VOC07+12 | VOC07 | 73.31% | 31.8MB | 22ms | Keras on Titan XP |
 | YOLOv3 Lite-Mobilenet | 416x416 | VOC07+12 | VOC07 | 75.93% | 31.8MB| 26ms | Keras on Titan XP |
 | Tiny YOLOv3 Lite-Mobilenet | 320x320 | VOC07+12 | VOC07 | 69.12% | 20.1MB | 12ms | Keras on Titan XP |
