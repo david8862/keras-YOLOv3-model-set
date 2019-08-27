@@ -4,7 +4,8 @@
 
 ## Introduction
 
-A tf.keras implementation of a common YOLOv3 object detection architecture with different Backbone/Head/Loss/Postprocess.
+A tf.keras implementation of a common YOLOv3 object detection architecture with different technologies support:
+
 #### Backbone
 - [x] Darknet53/Tiny Darknet
 - [x] MobilenetV1
@@ -29,6 +30,10 @@ A tf.keras implementation of a common YOLOv3 object detection architecture with 
 #### Postprocess
 - [x] TF YOLOv3 postprocess model
 - [x] Numpy YOLOv3 postprocess implementation
+
+#### Train tech
+- [x] Singlescale image input training
+- [x] Multiscale image input training
 
 
 ## Quick Start
