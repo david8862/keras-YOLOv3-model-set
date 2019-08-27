@@ -151,21 +151,25 @@ Use "eval.py" to do evaluation on the inference model with your test data. It su
 # python eval.py --model_path=test.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.01 --annotation_file=2007_test.txt --save_result
 ```
 
-Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalVOC dataset:
+Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalVOC dataset (using a reasonable score threshold=0.1):
 <p align="center"> 
   <img src="assets/mAP.jpg">
   <img src="assets/COCO_AP.jpg">
 </p>
 
-Some experiment on PascalVOC dataset (using a reasonable score threshold=0.1)
+Some experiment on PascalVOC dataset
 
-| Model name | InputSize | TrainSet | TestSet | mAP | Speed | Ps |
+| Model name | InputSize | TrainSet | TestSet | mAP | Size | Speed | Ps |
 | ----- | ------ | ------ | ------ | ----- | ----- | ----- |
-| YOLOv3 Lite-Mobilenet | 320x320 | VOC07+12 | VOC07 | 68.65% | 22ms | Keras on Titan XP |
-| YOLOv3 Lite-Mobilenet | 416x416 | VOC07+12 | VOC07 | 71.51% | 26ms | Keras on Titan XP |
-| Tiny YOLOv3 Lite-Mobilenet | 320x320 | VOC07+12 | VOC07 | 64.26% | 12ms | Keras on Titan XP |
-| Tiny YOLOv3 Lite-Mobilenet | 416x416 | VOC07+12 | VOC07 | 68.26% | 15ms | Keras on Titan XP |
-| YOLOv3-Xception | 512x512 | VOC07+12 | VOC07 | 75.45% | 75ms | Keras on Titan XP |
+| YOLOv3 Lite-Mobilenet | 320x320 | VOC07+12 | VOC07 | 73.31% | 31.8MB | 22ms | Keras on Titan XP |
+| YOLOv3 Lite-Mobilenet | 416x416 | VOC07+12 | VOC07 | 75.93% | 31.8MB| 26ms | Keras on Titan XP |
+| Tiny YOLOv3 Lite-Mobilenet | 320x320 | VOC07+12 | VOC07 | 69.12% | 20.1MB | 12ms | Keras on Titan XP |
+| Tiny YOLOv3 Lite-Mobilenet | 416x416 | VOC07+12 | VOC07 | 72.60% | 20.1MB | 15ms | Keras on Titan XP |
+| YOLOv3-Xception | 512x512 | VOC07+12 | VOC07 | 78.89% | 419.8MB | 75ms | Keras on Titan XP |
+| [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12+coco | VOC07 | 72.7% || (unknown) ||
+| [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12 | VOC07 | 68% || (unknown) ||
+| [Faster RCNN, VGG-16](https://github.com/ShaoqingRen/faster_rcnn)| ~1000x600 | VOC07+12| VOC07 | 73.2% || 151ms | Caffe on Titan X |
+|[SSD,VGG-16](https://github.com/pierluigiferrari/ssd_keras) | 300x300 | VOC07+12 | VOC07	| 77.5% || 39fps | Keras on Titan X |
 
 
 ### Demo
