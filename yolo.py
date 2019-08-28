@@ -19,7 +19,7 @@ from PIL import Image
 from yolo3.model import get_yolo3_model, get_yolo3_inference_model
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo3.data import preprocess_image, letterbox_image
-from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes
+from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes, touchdir
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 from tensorflow.keras.utils import multi_gpu_model
@@ -188,6 +188,13 @@ class YOLO(object):
 
     def dump_model_file(self, output_model_file):
         self.inference_model.save(output_model_file)
+
+    def dump_saved_model(self, saved_model_path):
+        model = self.inference_model
+        touchdir(saved_model_path)
+
+        tf.keras.experimental.export_saved_model(model, saved_model_path)
+        print('export inference model to %s' % str(saved_model_path))
 
 
 def detect_video(yolo, video_path, output_path=""):

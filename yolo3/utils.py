@@ -4,8 +4,13 @@
 
 from PIL import Image
 import numpy as np
-import cv2, colorsys
+import os, cv2, colorsys
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
+
+
+def touchdir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 
 def resize_anchors(base_anchors, target_shape, base_shape=(416,416)):

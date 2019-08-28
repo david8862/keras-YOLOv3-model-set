@@ -8,7 +8,7 @@ import random
 import os, argparse
 from yolo3.postprocess_np import yolo3_postprocess_np, yolo_head, handle_predictions, adjust_boxes
 from yolo3.data import preprocess_image
-from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes
+from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes, touchdir
 from PIL import Image
 import operator
 import matplotlib.pyplot as plt
@@ -24,11 +24,6 @@ session = tf.Session(config=config)
 
 # set session
 KTF.set_session(session)
-
-
-def touchdir(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
 
 
 def annotation_parse(annotation_file, class_names):
