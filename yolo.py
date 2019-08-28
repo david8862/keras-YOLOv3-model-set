@@ -329,7 +329,7 @@ if __name__ == '__main__':
         args.model_image_size = (int(height), int(width))
 
     # get wrapped inference object
-    yolo = YOLO(**vars(args))
+    yolo = YOLO_np(**vars(args))
 
     if args.dump_model:
         """
