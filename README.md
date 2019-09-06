@@ -68,7 +68,7 @@ For other model, just do in a similar way, but specify different model path and 
 ## Guide of train & evaluate & demo process
 
 ### Train
-1. Generate your own train/val/test annotation file and class names file.
+1. Generate train/val/test annotation file and class names file.
     * One row for one image in annotation file;
     * Row format: `image_file_path box1 box2 ... boxN`;
     * Box format: `x_min,y_min,x_max,y_max,class_id` (no space).
@@ -78,7 +78,7 @@ For other model, just do in a similar way, but specify different model path and 
     path/to/img2.jpg 120,300,250,600,2
     ...
     ```
-    1. For VOC style dataset, you can use `python tools/voc_annotation.py` to convert original dataset to our annotation file:
+    1. For VOC style dataset, you can use [voc_annotation.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/voc_annotation.py) to convert original dataset to our annotation file:
        ```
        # cd tools && python voc_annotation.py -h
        usage: voc_annotation.py [-h] [--dataset_path DATASET_PATH]
@@ -104,7 +104,7 @@ For other model, just do in a similar way, but specify different model path and 
        # cat 2012_val.txt >> trainval.txt
        ```
 
-    2. For COCO style dataset, you can use `python tools/coco_annotation.py` to convert original dataset to our annotation file:
+    2. For COCO style dataset, you can use [coco_annotation.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/coco_annotation.py) to convert original dataset to our annotation file:
        ```
        # cd tools && python coco_annotation.py -h
        usage: coco_annotation.py [-h] [--dataset_path DATASET_PATH]
@@ -120,13 +120,13 @@ For other model, just do in a similar way, but specify different model path and 
        ```
        This script will try to convert COCO instances_train2017 and instances_val2017 under dataset_path. You can change the code for your dataset
 
-   If you want to download PascalVOC or COCO dataset, refer to Dockerfile for cmd
+   If you want to download PascalVOC or COCO dataset, refer to [Dockerfile](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/Dockerfile) for cmd
 
-   For class names file format, refer to configs/coco_classes.txt
+   For class names file format, refer to  [coco_classes.txt](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/configs/coco_classes.txt)
 
 2. If you're training Darknet YOLOv3/Tiny YOLOv3, make sure you have converted pretrain model weights as in "Quick Start" part
 
-3. train.py
+3. [train.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/train.py)
 ```
 # python train.py -h
 usage: train.py [-h] [--model_type MODEL_TYPE] [--tiny_version]
@@ -172,7 +172,7 @@ optional arguments:
 ```
 Checkpoints during training could be found at logs/000/. Choose a best one as result
 
-Loss type couldn't be changed from CLI options. You can try them by changing params in yolo3/model.py
+Loss type couldn't be changed from CLI options. You can try them by changing params in [model.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo3/model.py)
 
 ### Model dump
 We need to dump out inference model from training checkpoint for eval or demo. Following script cmd work for that.
@@ -184,7 +184,7 @@ We need to dump out inference model from training checkpoint for eval or demo. F
 Change model_type, anchors file & class file for different training mode
 
 ### Evaluation
-Use "eval.py" to do evaluation on the inference model with your test data. It support following metrics:
+Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/eval.py) to do evaluation on the inference model with your test data. It support following metrics:
 
 1. Pascal VOC mAP: draw rec/pre curve for each class and AP/mAP result chart in "result" dir with default 0.5 IOU or specified IOU, and optionally save all the detection result on evaluation dataset as images
 
@@ -219,7 +219,7 @@ Some experiment on PascalVOC dataset
 
 
 ### Demo
-1. yolo.py
+1. [yolo.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo.py)
 > * Demo script for trained model
 
 image detection mode
