@@ -69,18 +69,56 @@ For other model, just do in a similar way, but specify different model path and 
 
 ### Train
 1. Generate your own train/val/test annotation file and class names file.
-    One row for one image in annotation file;
-    Row format: `image_file_path box1 box2 ... boxN`;
-    Box format: `x_min,y_min,x_max,y_max,class_id` (no space).
-    For VOC style dataset, try `python tools/voc_annotation.py`
-    For COCO style dataset, try `python tools/coco_annotation.py`
-    Here is an example:
+    * One row for one image in annotation file;
+    * Row format: `image_file_path box1 box2 ... boxN`;
+    * Box format: `x_min,y_min,x_max,y_max,class_id` (no space).
+    * Here is an example:
     ```
     path/to/img1.jpg 50,100,150,200,0 30,50,200,120,3
     path/to/img2.jpg 120,300,250,600,2
     ...
     ```
-   Merge train & val annotation file as train script needed
+    1. For VOC style dataset, you can use `python tools/voc_annotation.py` to convert original dataset to our annotation file:
+       ```
+       # cd tools && python voc_annotation.py -h
+       usage: voc_annotation.py [-h] [--dataset_path DATASET_PATH]
+                                [--output_path OUTPUT_PATH]
+
+       optional arguments:
+         -h, --help            show this help message and exit
+         --dataset_path DATASET_PATH
+                               path to PascalVOC dataset, default is ../VOCdevkit
+         --output_path OUTPUT_PATH
+                               output path for generated annotation txt files,
+                               default is ./
+       ```
+       By default, the VOC convert script will try to go through both 2007&2012 dataset dir under the dataset_path and generate train/val/test annotation file separately, like:
+       ```
+       2007_test.txt  2007_train.txt  2007_val.txt  2012_train.txt  2012_val.txt
+       ```
+       You can merge these train & val annotation file as train script needed. For example, following cmd will creat 07/12 combined trainval dataset:
+       ```
+       # cp 2007_train.txt trainval.txt
+       # cat 2007_val.txt >> trainval.txt
+       # cat 2012_train.txt >> trainval.txt
+       # cat 2012_val.txt >> trainval.txt
+       ```
+
+    2. For COCO style dataset, you can use `python tools/coco_annotation.py` to convert original dataset to our annotation file:
+       ```
+       # cd tools && python coco_annotation.py -h
+       usage: coco_annotation.py [-h] [--dataset_path DATASET_PATH]
+                                 [--output_path OUTPUT_PATH]
+
+       optional arguments:
+         -h, --help            show this help message and exit
+         --dataset_path DATASET_PATH
+                               path to MSCOCO dataset, default is ../mscoco2017
+         --output_path OUTPUT_PATH
+                               output path for generated annotation txt files,
+                               default is ./
+       ```
+       This script will try to convert COCO instances_train2017 and instances_val2017 under dataset_path. You can change the code for your dataset
 
    If you want to download PascalVOC or COCO dataset, refer to Dockerfile for cmd
 
