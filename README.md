@@ -168,7 +168,9 @@ optional arguments:
                         Total training epochs, default=300
   --multiscale          Whether to use multiscale training
   --rescale_interval RESCALE_INTERVAL
-                        Number of epoch interval to rescale input image, default=20
+                        Number of epoch interval to rescale input image,
+                        default=20
+  --gpu_num GPU_NUM     Number of GPU to use, default=1
 ```
 Checkpoints during training could be found at logs/000/. Choose a best one as result
 

@@ -8,6 +8,7 @@ import os, random, argparse
 import numpy as np
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback
 from yolo3.model import get_yolo3_train_model
 from yolo3.data import data_generator_wrapper
@@ -155,6 +156,9 @@ def _main(args):
 
     # get train model
     model = get_yolo3_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate)
+    # support multi-gpu training
+    if args.gpu_num >= 2:
+        model = multi_gpu_model(model, gpus=args.gpu_num)
     model.summary()
 
     # Train some initial epochs with frozen layers first if needed, to get a stable loss.
@@ -244,8 +248,10 @@ if __name__ == '__main__':
         help = "Total training epochs, default=300")
     parser.add_argument('--multiscale', default=False, action="store_true",
         help='Whether to use multiscale training')
-    parser.add_argument('--rescale_interval', type=int,required=False, default=20,
+    parser.add_argument('--rescale_interval', type=int, required=False, default=20,
         help = "Number of epoch interval to rescale input image, default=20")
+    parser.add_argument('--gpu_num', type=int, required=False, default=1,
+        help='Number of GPU to use, default=1')
 
     args = parser.parse_args()
     height, width = args.model_image_size.split('x')
