@@ -202,17 +202,17 @@ Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalV
   <img src="assets/COCO_AP.jpg">
 </p>
 
-Experiment on PascalVOC dataset and comparison. Some model checkpoints can be downloaded:
+Some experiment on PascalVOC dataset(with download link) and comparison:
 
 | Model name | InputSize | TrainSet | TestSet | mAP | Size | Speed | Ps |
 | ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- |
-| YOLOv3 Lite-Mobilenet | 320x320 | VOC07+12 | VOC07 | 73.31% | 31.8MB | 22ms | Keras on Titan XP |
-| YOLOv3 Lite-Mobilenet | 416x416 | VOC07+12 | VOC07 | 75.93% | 31.8MB| 26ms | Keras on Titan XP |
-| [YOLOv3 Lite-SPP-Mobilenet](https://drive.google.com/file/d/1OOHl8pROrTefTWWDf7Py3aZBQ_cxoc6h/view?usp=sharing) | 416x416 | VOC07+12 | VOC07 | 75.93% | 34MB|| Keras on Titan XP |
-| [Tiny YOLOv3 Lite-Mobilenet](https://drive.google.com/file/d/1blmm10WAAYGqdKHnuMGPDL-ribbgTofw/view?usp=sharing) | 320x320 | VOC07+12 | VOC07 | 69.12% | 20.1MB | 12ms | Keras on Titan XP |
-| [Tiny YOLOv3 Lite-Mobilenet](https://drive.google.com/file/d/1blmm10WAAYGqdKHnuMGPDL-ribbgTofw/view?usp=sharing) | 416x416 | VOC07+12 | VOC07 | 72.60% | 20.1MB | 15ms | Keras on Titan XP |
-| [Tiny YOLOv3 Lite-Mobilenet with GIoU loss](https://drive.google.com/file/d/1t32E5b5X7-8ijo2ibZ-BOQ369VOkQJ9J/view?usp=sharing) | 416x416 | VOC07+12 | VOC07 | 72.73% | 20.1MB | 15ms | Keras on Titan XP |
-| YOLOv3-Xception | 512x512 | VOC07+12 | VOC07 | 78.89% | 419.8MB | 75ms | Keras on Titan XP |
+| [YOLOv3 Lite-Mobilenet](https://pan.baidu.com/s/1kVEkmtKcM95RvpLAXK1k9g) | 320x320 | VOC07+12 | VOC07 | 73.31% | 31.8MB | 22ms | Keras on Titan XP |
+| [YOLOv3 Lite-Mobilenet](https://pan.baidu.com/s/1kVEkmtKcM95RvpLAXK1k9g) | 416x416 | VOC07+12 | VOC07 | 75.93% | 31.8MB| 26ms | Keras on Titan XP |
+| [YOLOv3 Lite-SPP-Mobilenet](https://drive.google.com/file/d/1tvZDWCYDbBGc9SOJKVdGt5G3O87UucdQ/view?usp=sharing) | 416x416 | VOC07+12 | VOC07 | 75.93% | 34MB|| Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet](https://drive.google.com/file/d/1C4hviceMxQEWDIwQUOoRGoK-BMADHjfZ/view?usp=sharing) | 320x320 | VOC07+12 | VOC07 | 69.12% | 20.1MB | 12ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet](https://drive.google.com/file/d/1C4hviceMxQEWDIwQUOoRGoK-BMADHjfZ/view?usp=sharing) | 416x416 | VOC07+12 | VOC07 | 72.60% | 20.1MB | 15ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet with GIoU loss](https://drive.google.com/file/d/1m6f0EWc0P3LwJVzwd6yPCZsSjL7gKIFp/view?usp=sharing) | 416x416 | VOC07+12 | VOC07 | 72.73% | 20.1MB | 15ms | Keras on Titan XP |
+| [YOLOv3-Xception](https://pan.baidu.com/s/1bB1v755_Oj5546Ej3cll3Q) | 512x512 | VOC07+12 | VOC07 | 78.89% | 419.8MB | 75ms | Keras on Titan XP |
 | [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 320x320 | VOC07 | VOC07 | 64.22% || 29fps | Keras on 1080Ti |
 | [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 320x320 | VOC07+12 | VOC07 | 74.56% || 29fps | Keras on 1080Ti |
 | [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 416x416 | VOC07+12 | VOC07 | 76.82% || 25fps | Keras on 1080Ti |
