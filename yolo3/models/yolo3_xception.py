@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import UpSampling2D, Concatenate
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications.xception import Xception
-from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, make_last_layers, make_depthwise_separable_last_layers
+from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, make_last_layers, make_depthwise_separable_last_layers, make_spp_last_layers
 
 
 def yolo_xception_body(inputs, num_anchors, num_classes):
@@ -21,6 +21,43 @@ def yolo_xception_body(inputs, num_anchors, num_classes):
     f1 = xception.get_layer('block14_sepconv2_act').output
     # f1 :13 x 13 x 2048
     x, y1 = make_last_layers(f1, 1024, num_anchors * (num_classes + 5))
+
+    x = compose(
+            DarknetConv2D_BN_Leaky(512, (1,1)),
+            UpSampling2D(2))(x)
+
+    f2 = xception.get_layer('block13_sepconv2_bn').output
+    # f2: 26 x 26 x 1024
+    x = Concatenate()([x,f2])
+
+    x, y2 = make_last_layers(x, 512, num_anchors*(num_classes+5))
+
+    x = compose(
+            DarknetConv2D_BN_Leaky(256, (1,1)),
+            UpSampling2D(2))(x)
+
+    f3 = xception.get_layer('block4_sepconv2_bn').output
+    # f3 : 52 x 52 x 728
+    x = Concatenate()([x, f3])
+    x, y3 = make_last_layers(x, 256, num_anchors*(num_classes+5))
+
+    return Model(inputs = inputs, outputs=[y1,y2,y3])
+
+
+def yolo_spp_xception_body(inputs, num_anchors, num_classes):
+    """Create YOLO_V3 SPP Xception model CNN body in Keras."""
+    xception = Xception(input_tensor=inputs, weights='imagenet', include_top=False)
+
+    # input: 416 x 416 x 3
+    # block14_sepconv2_act: 13 x 13 x 2048
+    # block13_sepconv2_bn(middle in block13): 26 x 26 x 1024
+    # add_46(end of block12): 26 x 26 x 728
+    # block4_sepconv2_bn(middle in block4) : 52 x 52 x 728
+    # add_37(end of block3) : 52 x 52 x 256
+
+    f1 = xception.get_layer('block14_sepconv2_act').output
+    # f1 :13 x 13 x 2048
+    x, y1 = make_spp_last_layers(f1, 1024, num_anchors * (num_classes + 5))
 
     x = compose(
             DarknetConv2D_BN_Leaky(512, (1,1)),

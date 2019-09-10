@@ -10,7 +10,7 @@ from tensorflow.keras.optimizers import Adam
 from yolo3.models.yolo3_darknet import yolo_body, custom_tiny_yolo_body, yololite_body, tiny_yololite_body, custom_yolo_spp_body
 from yolo3.models.yolo3_mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, yololite_mobilenet_body, yololite_spp_mobilenet_body, tiny_yololite_mobilenet_body
 from yolo3.models.yolo3_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
-from yolo3.models.yolo3_xception import yolo_xception_body, yololite_xception_body, tiny_yolo_xception_body, tiny_yololite_xception_body
+from yolo3.models.yolo3_xception import yolo_xception_body, yololite_xception_body, tiny_yolo_xception_body, tiny_yololite_xception_body, yolo_spp_xception_body
 from yolo3.loss import yolo_loss
 from yolo3.postprocess import batched_yolo3_postprocess
 
@@ -31,6 +31,7 @@ yolo3_model_map = {
     'vgg16': [yolo_vgg16_body, 19, None],
     'xception': [yolo_xception_body, 132, None],
     'xception_lite': [yololite_xception_body, 132, None],
+    'xception_spp': [yolo_spp_xception_body, 132, None],
 }
 
 
