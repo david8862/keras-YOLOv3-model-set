@@ -174,6 +174,8 @@ optional arguments:
 ```
 Checkpoints during training could be found at logs/000/. Choose a best one as result
 
+MultiGPU usage: use `--gpu_num N` to use N GPUs. It is passed to the [Keras multi_gpu_model()](https://keras.io/utils/#multi_gpu_model).
+
 Loss type couldn't be changed from CLI options. You can try them by changing params in [model.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo3/model.py)
 
 ### Model dump
@@ -206,13 +208,13 @@ Some experiment on PascalVOC dataset(with download link) and comparison:
 
 | Model name | InputSize | TrainSet | TestSet | mAP | Size | Speed | Ps |
 | ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- |
-| [YOLOv3 Lite-Mobilenet](https://pan.baidu.com/s/1kVEkmtKcM95RvpLAXK1k9g) | 320x320 | VOC07+12 | VOC07 | 73.31% | 31.8MB | 22ms | Keras on Titan XP |
-| [YOLOv3 Lite-Mobilenet](https://pan.baidu.com/s/1kVEkmtKcM95RvpLAXK1k9g) | 416x416 | VOC07+12 | VOC07 | 75.93% | 31.8MB| 26ms | Keras on Titan XP |
-| [YOLOv3 Lite-SPP-Mobilenet](https://drive.google.com/file/d/1tvZDWCYDbBGc9SOJKVdGt5G3O87UucdQ/view?usp=sharing) | 416x416 | VOC07+12 | VOC07 | 75.93% | 34MB|| Keras on Titan XP |
-| [Tiny YOLOv3 Lite-Mobilenet](https://drive.google.com/file/d/1C4hviceMxQEWDIwQUOoRGoK-BMADHjfZ/view?usp=sharing) | 320x320 | VOC07+12 | VOC07 | 69.12% | 20.1MB | 12ms | Keras on Titan XP |
-| [Tiny YOLOv3 Lite-Mobilenet](https://drive.google.com/file/d/1C4hviceMxQEWDIwQUOoRGoK-BMADHjfZ/view?usp=sharing) | 416x416 | VOC07+12 | VOC07 | 72.60% | 20.1MB | 15ms | Keras on Titan XP |
-| [Tiny YOLOv3 Lite-Mobilenet with GIoU loss](https://drive.google.com/file/d/1m6f0EWc0P3LwJVzwd6yPCZsSjL7gKIFp/view?usp=sharing) | 416x416 | VOC07+12 | VOC07 | 72.73% | 20.1MB | 15ms | Keras on Titan XP |
-| [YOLOv3-Xception](https://pan.baidu.com/s/1bB1v755_Oj5546Ej3cll3Q) | 512x512 | VOC07+12 | VOC07 | 78.89% | 419.8MB | 75ms | Keras on Titan XP |
+| [YOLOv3 Lite-Mobilenet](https://pan.baidu.com/s/1kVEkmtKcM95RvpLAXK1k9g) | 320x320 | VOC07+12 | VOC07 | 73.31% | 31.8MB | 17ms | Keras on Titan XP |
+| [YOLOv3 Lite-Mobilenet](https://pan.baidu.com/s/1kVEkmtKcM95RvpLAXK1k9g) | 416x416 | VOC07+12 | VOC07 | 75.93% | 31.8MB| 20ms | Keras on Titan XP |
+| [YOLOv3 Lite-SPP-Mobilenet](https://drive.google.com/file/d/1tvZDWCYDbBGc9SOJKVdGt5G3O87UucdQ/view?usp=sharing) | 416x416 | VOC07+12 | VOC07 | 75.93% | 34MB | 22ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet](https://drive.google.com/file/d/1C4hviceMxQEWDIwQUOoRGoK-BMADHjfZ/view?usp=sharing) | 320x320 | VOC07+12 | VOC07 | 69.12% | 20.1MB | 9ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet](https://drive.google.com/file/d/1C4hviceMxQEWDIwQUOoRGoK-BMADHjfZ/view?usp=sharing) | 416x416 | VOC07+12 | VOC07 | 72.60% | 20.1MB | 11ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet with GIoU loss](https://drive.google.com/file/d/1m6f0EWc0P3LwJVzwd6yPCZsSjL7gKIFp/view?usp=sharing) | 416x416 | VOC07+12 | VOC07 | 72.73% | 20.1MB | 11ms | Keras on Titan XP |
+| [YOLOv3-Xception](https://pan.baidu.com/s/1bB1v755_Oj5546Ej3cll3Q) | 512x512 | VOC07+12 | VOC07 | 78.89% | 419.8MB | 48ms | Keras on Titan XP |
 | [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 320x320 | VOC07 | VOC07 | 64.22% || 29fps | Keras on 1080Ti |
 | [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 320x320 | VOC07+12 | VOC07 | 74.56% || 29fps | Keras on 1080Ti |
 | [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 416x416 | VOC07+12 | VOC07 | 76.82% || 25fps | Keras on 1080Ti |
@@ -221,6 +223,11 @@ Some experiment on PascalVOC dataset(with download link) and comparison:
 | [Faster RCNN, VGG-16](https://github.com/ShaoqingRen/faster_rcnn) | ~1000x600 | VOC07+12 | VOC07 | 73.2% || 151ms | Caffe on Titan X |
 |[SSD,VGG-16](https://github.com/pierluigiferrari/ssd_keras) | 300x300 | VOC07+12 | VOC07	| 77.5% | 201MB | 39fps | Keras on Titan X |
 
+And some unsuccessful experiment...
+
+| Model name | InputSize | TrainSet | TestSet | mAP | Size | Speed | Ps |
+| ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- |
+| YOLOv3-VGG16 | 416x416 | VOC07+12 | VOC07 | 68.03% | 172MB |||
 
 ### Demo
 1. [yolo.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo.py)
@@ -236,12 +243,10 @@ video detection mode
 ```
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 
-2. MultiGPU usage: use `--gpu_num N` to use N GPUs. It is passed to the [Keras multi_gpu_model()](https://keras.io/utils/#multi_gpu_model).
-
 ### TFLite convert & validate
 1. Use tflite_convert to generate TFLite inference model. We need to specify input node name and input shape since our inference model doesn't have input image shape. Only valid under tensorflow 1.13
 ```
-# tflite_convert [--post_training_quantize] --input_arrays=input_1 --input_shapes=1,416,416,3 --output_file=test[_quant].tflite --keras_model_file=test.h5
+# tflite_convert [--post_training_quantize] --input_arrays=image_input --input_shapes=1,416,416,3 --output_file=test[_quant].tflite --keras_model_file=test.h5
 ```
 2. Run TFLite validate script
 ```
