@@ -92,7 +92,7 @@ For other model, just do in a similar way, but specify different model path and 
                                output path for generated annotation txt files,
                                default is ./
        ```
-       By default, the VOC convert script will try to go through both 2007&2012 dataset dir under the dataset_path and generate train/val/test annotation file separately, like:
+       By default, the VOC convert script will try to go through both VOC2007/VOC2012 dataset dir under the dataset_path and generate train/val/test annotation file separately, like:
        ```
        2007_test.txt  2007_train.txt  2007_val.txt  2012_train.txt  2012_val.txt
        ```

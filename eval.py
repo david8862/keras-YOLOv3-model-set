@@ -626,6 +626,10 @@ def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_r
     count_true_positives = {}
     #get AP value for each of the ground truth classes
     for _, class_name in enumerate(class_names):
+        #if there's no gt obj for a class, record 0
+        if class_name not in gt_classes_records:
+            APs[class_name] = 0.
+            continue
         gt_records = gt_classes_records[class_name]
         #if we didn't detect any obj for a class, record 0
         if class_name not in pred_classes_records:
@@ -687,7 +691,7 @@ def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_r
 
 
 
-def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names):
+def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names, show_result=True):
     '''
     Compute MSCOCO AP list on AP 0.5:0.05:0.95
     '''
@@ -701,22 +705,157 @@ def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records
     #get overall AP percentage value
     AP = np.mean(list(APs.values()))
 
-    '''
-     Draw MS COCO AP plot
-    '''
-    touchdir('result')
-    window_title = "MSCOCO AP on different IOU"
-    plot_title = "COCO AP = {0:.2f}%".format(AP)
-    x_label = "Average Precision"
-    output_path = os.path.join('result','COCO_AP.jpg')
-    draw_plot_func(APs, len(APs), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
+    if show_result:
+        '''
+         Draw MS COCO AP plot
+        '''
+        touchdir('result')
+        window_title = "MSCOCO AP on different IOU"
+        plot_title = "COCO AP = {0:.2f}%".format(AP)
+        x_label = "Average Precision"
+        output_path = os.path.join('result','COCO_AP.jpg')
+        draw_plot_func(APs, len(APs), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 
-    print('MS COCO AP evaluation')
-    for (iou_threshold, AP_value) in APs.items():
-        print('IOU %.2f: AP %f' % (iou_threshold, AP_value))
-    print('total AP: %f' % (AP))
+        print('\nMS COCO AP evaluation')
+        for (iou_threshold, AP_value) in APs.items():
+            print('IOU %.2f: AP %f' % (iou_threshold, AP_value))
+        print('total AP: %f' % (AP))
+
     #return AP percentage value
     return AP
+
+
+def compute_AP_COCO_Scale(annotation_records, scale_gt_classes_records, pred_classes_records, class_names):
+    '''
+    Compute MSCOCO AP on different scale object: small, medium, large
+    '''
+    scale_APs = {}
+    for scale_key in ['small','medium','large']:
+        gt_classes_records = scale_gt_classes_records[scale_key]
+        scale_AP = compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names, show_result=False)
+        scale_APs[scale_key] = round(scale_AP, 4)
+
+    #get overall AP percentage value
+    scale_mAP = np.mean(list(scale_APs.values()))
+
+    '''
+     Draw Scale AP plot
+    '''
+    touchdir('result')
+    window_title = "MSCOCO AP on different scale"
+    plot_title = "scale mAP = {0:.2f}%".format(scale_mAP)
+    x_label = "Average Precision"
+    output_path = os.path.join('result','COCO_scale_AP.jpg')
+    draw_plot_func(scale_APs, len(scale_APs), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
+
+    '''
+     Draw Scale Object Sum plot
+    '''
+    for scale_key in ['small','medium','large']:
+        gt_classes_records = scale_gt_classes_records[scale_key]
+        gt_classes_sum = {}
+
+        for _, class_name in enumerate(class_names):
+            # summarize the gt object number for every class on different scale
+            gt_classes_sum[class_name] = np.sum(len(gt_classes_records[class_name])) if class_name in gt_classes_records else 0
+
+        total_sum = np.sum(list(gt_classes_sum.values()))
+
+        window_title = "{} object number".format(scale_key)
+        plot_title = "total {} object number = {}".format(scale_key, total_sum)
+        x_label = "Object Number"
+        output_path = os.path.join('result','{}_object_number.jpg'.format(scale_key))
+        draw_plot_func(gt_classes_sum, len(gt_classes_sum), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
+
+    print('\nMS COCO AP evaluation on different scale')
+    for (scale, AP_value) in scale_APs.items():
+        print('%s scale: AP %f' % (scale, AP_value))
+    print('total AP: %f' % (scale_mAP))
+
+
+def add_gt_record(gt_records, gt_record, class_name):
+    # append or add ground truth class item
+    if class_name in gt_records:
+        gt_records[class_name].append(gt_record)
+    else:
+        gt_records[class_name] = list([gt_record])
+
+    return gt_records
+
+
+def get_scale_gt_dict(gt_classes_records, class_names):
+    '''
+    Get ground truth class dict on different object scales, according to MS COCO metrics definition:
+        small objects: area < 32^2
+        medium objects: 32^2 < area < 96^2
+        large objects: area > 96^2
+
+    input gt_classes_records would be like:
+    gt_classes_records = {
+        'car': [
+                ['00001.jpg','100,120,200,235'],
+                ['00002.jpg','85,63,156,128'],
+                ...
+               ],
+        ...
+    }
+    return a record dict with following format, for AP/AR eval on different scale:
+        scale_gt_classes_records = {
+            'small': {
+                'car': [
+                        ['00001.jpg','100,120,200,235'],
+                        ['00002.jpg','85,63,156,128'],
+                        ...
+                       ],
+                ...
+            },
+
+            'medium': {
+                'car': [
+                        ['00003.jpg','100,120,200,235'],
+                        ['00004.jpg','85,63,156,128'],
+                        ...
+                       ],
+                ...
+            },
+
+            'large': {
+                'car': [
+                        ['00005.jpg','100,120,200,235'],
+                        ['00006.jpg','85,63,156,128'],
+                        ...
+                       ],
+                ...
+            }
+        }
+    '''
+    scale_gt_classes_records = {}
+    small_gt_records = {}
+    medium_gt_records = {}
+    large_gt_records = {}
+
+    for _, class_name in enumerate(class_names):
+        gt_records = gt_classes_records[class_name]
+
+        for (image_file, box) in gt_records:
+            # get box area based on coordinate
+            box_coord = [int(p) for p in box.split(',')]
+            box_area = (box_coord[2] - box_coord[0]) * (box_coord[3] - box_coord[1])
+
+            # add to corresponding gt records dict according to area size
+            if box_area <= 32*32:
+                small_gt_records = add_gt_record(small_gt_records, [image_file, box], class_name)
+            elif box_area > 32*32 and box_area <= 96*96:
+                medium_gt_records = add_gt_record(medium_gt_records, [image_file, box], class_name)
+            elif box_area > 96*96:
+                large_gt_records = add_gt_record(large_gt_records, [image_file, box], class_name)
+
+    # form up scale_gt_classes_records
+    scale_gt_classes_records['small'] = small_gt_records
+    scale_gt_classes_records['medium'] = medium_gt_records
+    scale_gt_classes_records['large'] = large_gt_records
+
+    return scale_gt_classes_records
 
 
 
@@ -731,6 +870,9 @@ def eval_AP(eval_type, model_path, annotation_file, anchors, class_names, iou_th
         compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold)
     elif eval_type == 'COCO':
         compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names)
+        # get AP for different scale: small, medium, large
+        scale_gt_classes_records = get_scale_gt_dict(gt_classes_records, class_names)
+        compute_AP_COCO_Scale(annotation_records, scale_gt_classes_records, pred_classes_records, class_names)
     else:
         raise ValueError('Unsupported evaluation type')
 
