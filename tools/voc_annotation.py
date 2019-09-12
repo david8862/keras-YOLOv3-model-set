@@ -14,7 +14,11 @@ def convert_annotation(dataset_path, year, image_id, list_file):
     root = tree.getroot()
 
     for obj in root.iter('object'):
-        difficult = obj.find('difficult').text
+        difficult = obj.find('difficult')
+        if not difficult:
+            difficult = '0'
+        else:
+            difficult = difficult.text
         cls = obj.find('name').text
         if cls not in classes or int(difficult)==1:
             continue
@@ -31,7 +35,11 @@ def has_object(dataset_path, year, image_id):
     count = 0
 
     for obj in root.iter('object'):
-        difficult = obj.find('difficult').text
+        difficult = obj.find('difficult')
+        if not difficult:
+            difficult = '0'
+        else:
+            difficult = difficult.text
         cls = obj.find('name').text
         if cls not in classes or int(difficult)==1:
             continue
@@ -42,6 +50,7 @@ def has_object(dataset_path, year, image_id):
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default is ../VOCdevkit', default=getcwd()+'/../VOCdevkit')
 parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
+parser.add_argument('--include_difficult', action="store_true", help='whether to include difficult object, default=False', default=False)
 args = parser.parse_args()
 
 
