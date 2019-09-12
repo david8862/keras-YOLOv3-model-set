@@ -8,7 +8,7 @@ sets=[('2007', 'train'), ('2007', 'val'), ('2007', 'test'), ('2012', 'train'), (
 classes = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
 
 
-def convert_annotation(dataset_path, year, image_id, list_file):
+def convert_annotation(dataset_path, year, image_id, list_file, include_difficult):
     in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id))
     tree=ET.parse(in_file)
     root = tree.getroot()
@@ -20,7 +20,9 @@ def convert_annotation(dataset_path, year, image_id, list_file):
         else:
             difficult = difficult.text
         cls = obj.find('name').text
-        if cls not in classes or int(difficult)==1:
+        if cls not in classes:
+            continue
+        if not include_difficult and int(difficult)==1:
             continue
         cls_id = classes.index(cls)
         xmlbox = obj.find('bndbox')
@@ -28,7 +30,7 @@ def convert_annotation(dataset_path, year, image_id, list_file):
         list_file.write(" " + ",".join([str(a) for a in b]) + ',' + str(cls_id))
 
 
-def has_object(dataset_path, year, image_id):
+def has_object(dataset_path, year, image_id, include_difficult):
     in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id))
     tree=ET.parse(in_file)
     root = tree.getroot()
@@ -41,7 +43,9 @@ def has_object(dataset_path, year, image_id):
         else:
             difficult = difficult.text
         cls = obj.find('name').text
-        if cls not in classes or int(difficult)==1:
+        if cls not in classes:
+            continue
+        if not include_difficult and int(difficult)==1:
             continue
         count = count +1
     return count != 0
@@ -50,7 +54,7 @@ def has_object(dataset_path, year, image_id):
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default is ../VOCdevkit', default=getcwd()+'/../VOCdevkit')
 parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
-parser.add_argument('--include_difficult', action="store_true", help='whether to include difficult object, default=False', default=False)
+parser.add_argument('--include_difficult', action="store_true", help='to include difficult object', default=False)
 args = parser.parse_args()
 
 
@@ -58,9 +62,9 @@ for year, image_set in sets:
     image_ids = open('%s/VOC%s/ImageSets/Main/%s.txt'%(args.dataset_path, year, image_set)).read().strip().split()
     list_file = open('%s/%s_%s.txt'%(args.output_path, year, image_set), 'w')
     for image_id in image_ids:
-        if has_object(args.dataset_path, year, image_id):
+        if has_object(args.dataset_path, year, image_id, args.include_difficult):
             list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(args.dataset_path, year, image_id))
-            convert_annotation(args.dataset_path, year, image_id, list_file)
+            convert_annotation(args.dataset_path, year, image_id, list_file, args.include_difficult)
             list_file.write('\n')
     list_file.close()
 
