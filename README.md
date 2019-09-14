@@ -170,6 +170,7 @@ optional arguments:
   --rescale_interval RESCALE_INTERVAL
                         Number of epoch interval to rescale input image,
                         default=20
+  --data_shuffle        Whether to shuffle train/val data for cross-validation
   --gpu_num GPU_NUM     Number of GPU to use, default=1
 ```
 Checkpoints during training could be found at logs/000/. Choose a best one as result
@@ -192,7 +193,7 @@ Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/ev
 
 1. Pascal VOC mAP: draw rec/pre curve for each class and AP/mAP result chart in "result" dir with default 0.5 IOU or specified IOU, and optionally save all the detection result on evaluation dataset as images
 
-2. MS COCO AP evaluation. Will draw AP chart and optionally save all the detection result
+2. MS COCO AP evaluation. Will draw overall AP chart and AP on different scale (small, medium, large) as COCO standard. It can also optionally save all the detection result
 
 ```
 # python eval.py --model_path=test.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.01 --annotation_file=2007_test.txt --save_result

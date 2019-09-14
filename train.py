@@ -184,6 +184,9 @@ def _main(args):
         model.layers[i].trainable = True
     initial_epoch = epochs
     epochs = epochs + args.rescale_interval
+    # shuffle train/val dataset for cross-validation
+    if args.data_shuffle:
+        np.random.shuffle(lines)
     model.compile(optimizer=Adam(lr=args.learning_rate), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
     model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
@@ -202,6 +205,9 @@ def _main(args):
         batch_size = batch_size_list[random.randint(0,len(batch_size_list)-1)]
         initial_epoch = epochs
         epochs = epoch_step
+        # shuffle train/val dataset for cross-validation
+        if args.data_shuffle:
+            np.random.shuffle(lines)
         print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
         model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
@@ -250,6 +256,8 @@ if __name__ == '__main__':
         help='Whether to use multiscale training')
     parser.add_argument('--rescale_interval', type=int, required=False, default=20,
         help = "Number of epoch interval to rescale input image, default=20")
+    parser.add_argument('--data_shuffle', default=False, action="store_true",
+        help='Whether to shuffle train/val data for cross-validation')
     parser.add_argument('--gpu_num', type=int, required=False, default=1,
         help='Number of GPU to use, default=1')
 
