@@ -9,6 +9,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from yolo3.models.yolo3_darknet import yolo_body, custom_tiny_yolo_body, yololite_body, tiny_yololite_body, custom_yolo_spp_body
 from yolo3.models.yolo3_mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, yololite_mobilenet_body, yololite_spp_mobilenet_body, tiny_yololite_mobilenet_body
+from yolo3.models.yolo3_mobilenetv2 import yolo_mobilenetv2_body, tiny_yolo_mobilenetv2_body, yololite_mobilenetv2_body, yololite_spp_mobilenetv2_body, tiny_yololite_mobilenetv2_body
 from yolo3.models.yolo3_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
 from yolo3.models.yolo3_xception import yolo_xception_body, yololite_xception_body, tiny_yolo_xception_body, tiny_yololite_xception_body, yolo_spp_xception_body
 from yolo3.loss import yolo_loss
@@ -24,6 +25,9 @@ yolo3_model_map = {
     'mobilenet': [yolo_mobilenet_body, 87, None],
     'mobilenet_lite': [yololite_mobilenet_body, 87, None],
     'mobilenet_lite_spp': [yololite_spp_mobilenet_body, 87, None],
+    'mobilenetv2': [yolo_mobilenetv2_body, 155, None],
+    'mobilenetv2_lite': [yololite_mobilenetv2_body, 155, None],
+    'mobilenetv2_lite_spp': [yololite_spp_mobilenetv2_body, 155, None],
     'darknet': [yolo_body, 185, 'weights/darknet53.h5'],
     'darknet_spp': [custom_yolo_spp_body, 185, 'weights/yolov3-spp.h5'],
     #Doesn't have pretrained weights, so no need to return backbone length
@@ -43,6 +47,8 @@ yolo3_model_map = {
 yolo3_tiny_model_map = {
     'mobilenet': [tiny_yolo_mobilenet_body, 87, None],
     'mobilenet_lite': [tiny_yololite_mobilenet_body, 87, None],
+    'mobilenetv2': [tiny_yolo_mobilenetv2_body, 155, None],
+    'mobilenetv2_lite': [tiny_yololite_mobilenetv2_body, 155, None],
     'darknet': [custom_tiny_yolo_body, 20, 'weights/yolov3-tiny.h5'],
     #Doesn't have pretrained weights, so no need to return backbone length
     'darknet_lite': [tiny_yololite_body, 0, None],

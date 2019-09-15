@@ -82,7 +82,7 @@ def yolo_spp_xception_body(inputs, num_anchors, num_classes):
 
 
 def yololite_xception_body(inputs, num_anchors, num_classes):
-    '''Create YOLO_v3 Lite MobileNet model CNN body in keras.'''
+    '''Create YOLO_v3 Lite Xception model CNN body in keras.'''
     xception = Xception(input_tensor=inputs, weights='imagenet', include_top=False)
 
     # input: 416 x 416 x 3

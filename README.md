@@ -9,6 +9,7 @@ A tf.keras implementation of a common YOLOv3 object detection architecture with 
 #### Backbone
 - [x] Darknet53/Tiny Darknet
 - [x] MobilenetV1
+- [x] MobilenetV2
 - [x] VGG16
 - [x] Xception
 

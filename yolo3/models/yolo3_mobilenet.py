@@ -114,7 +114,7 @@ def yolo_mobilenet_body(inputs, num_anchors, num_classes):
     Layer Name: reshape_2 Output: Tensor("reshape_2/Reshape:0", shape=(?, 1000), dtype=float32)
     '''
 
-    mobilenet = MobileNet(input_tensor=inputs,weights='imagenet')
+    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False)
 
     # input: 416 x 416 x 3
     # conv_pw_13_relu :13 x 13 x 1024
@@ -149,7 +149,7 @@ def yolo_mobilenet_body(inputs, num_anchors, num_classes):
 
 def yololite_mobilenet_body(inputs, num_anchors, num_classes):
     '''Create YOLO_v3 Lite MobileNet model CNN body in keras.'''
-    mobilenet = MobileNet(input_tensor=inputs,weights='imagenet')
+    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False)
 
     # input: 416 x 416 x 3
     # conv_pw_13_relu :13 x 13 x 1024
@@ -184,7 +184,7 @@ def yololite_mobilenet_body(inputs, num_anchors, num_classes):
 
 def yololite_spp_mobilenet_body(inputs, num_anchors, num_classes):
     '''Create YOLO_v3 Lite SPP MobileNet model CNN body in keras.'''
-    mobilenet = MobileNet(input_tensor=inputs,weights='imagenet')
+    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False)
 
     # input: 416 x 416 x 3
     # conv_pw_13_relu :13 x 13 x 1024
@@ -220,7 +220,7 @@ def yololite_spp_mobilenet_body(inputs, num_anchors, num_classes):
 
 def tiny_yolo_mobilenet_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 MobileNet model CNN body in keras.'''
-    mobilenet = MobileNet(input_tensor=inputs,weights='imagenet')
+    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False)
 
     # input: 416 x 416 x 3
     # conv_pw_13_relu :13 x 13 x 1024
@@ -251,7 +251,7 @@ def tiny_yolo_mobilenet_body(inputs, num_anchors, num_classes):
 
 def tiny_yololite_mobilenet_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 Lite MobileNet model CNN body in keras.'''
-    mobilenet = MobileNet(input_tensor=inputs,weights='imagenet')
+    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False)
 
     # input: 416 x 416 x 3
     # conv_pw_13_relu :13 x 13 x 1024
