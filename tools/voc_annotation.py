@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import xml.etree.ElementTree as ET
+import numpy as np
 import os, argparse
 from os import getcwd
 
 sets=[('2007', 'train'), ('2007', 'val'), ('2007', 'test'), ('2012', 'train'), ('2012', 'val')]
 classes = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
 
+class_count = {}
 
 def convert_annotation(dataset_path, year, image_id, list_file, include_difficult):
     in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id))
@@ -28,6 +30,7 @@ def convert_annotation(dataset_path, year, image_id, list_file, include_difficul
         xmlbox = obj.find('bndbox')
         b = (int(xmlbox.find('xmin').text), int(xmlbox.find('ymin').text), int(xmlbox.find('xmax').text), int(xmlbox.find('ymax').text))
         list_file.write(" " + ",".join([str(a) for a in b]) + ',' + str(cls_id))
+        class_count[cls] = class_count[cls] + 1
 
 
 def has_object(dataset_path, year, image_id, include_difficult):
@@ -66,10 +69,14 @@ parser.add_argument('--classes_path', type=str, required=False, help='path to cl
 parser.add_argument('--include_difficult', action="store_true", help='to include difficult object', default=False)
 args = parser.parse_args()
 
+# update class names
 if args.classes_path:
     classes = get_classes(args.classes_path)
 
 for year, image_set in sets:
+    # count class item number in each set
+    class_count = {itm: 0 for itm in classes}
+
     image_ids = open('%s/VOC%s/ImageSets/Main/%s.txt'%(args.dataset_path, year, image_set)).read().strip().split()
     list_file = open('%s/%s_%s.txt'%(args.output_path, year, image_set), 'w')
     for image_id in image_ids:
@@ -78,4 +85,9 @@ for year, image_set in sets:
             convert_annotation(args.dataset_path, year, image_id, list_file, args.include_difficult)
             list_file.write('\n')
     list_file.close()
+    # print out item number statistic
+    print('\nDone for %s_%s.txt. classes number statistic'%(year, image_set))
+    for (class_name, number) in class_count.items():
+        print('%s: %d' % (class_name, number))
+    print('total number:', np.sum(list(class_count.values())))
 
