@@ -30,9 +30,11 @@ A tf.keras implementation of a common YOLOv3 object detection architecture with 
 
 #### Postprocess
 - [x] TF YOLOv3 postprocess model
+- [x] tf.keras batch-wise YOLOv3 postprocess Lambda layer
 - [x] Numpy YOLOv3 postprocess implementation
 
 #### Train tech
+- [x] Transfer training from imagenet
 - [x] Singlescale image input training
 - [x] Multiscale image input training
 
@@ -92,6 +94,9 @@ For other model, just do in a similar way, but specify different model path and 
          --output_path OUTPUT_PATH
                                output path for generated annotation txt files,
                                default is ./
+         --classes_path CLASSES_PATH
+                               path to class definitions
+         --include_difficult   to include difficult object
        ```
        By default, the VOC convert script will try to go through both VOC2007/VOC2012 dataset dir under the dataset_path and generate train/val/test annotation file separately, like:
        ```
@@ -258,7 +263,7 @@ For video detection mode, you can use "input=0" to capture live video from web c
 #### You can also use "eval.py" to do evaluate on the TFLite model
 
 ### TODO
-- [ ] batch-wise postprocess model for TFLite end-to-end inference
+- [ ] pure keras backend postprocess layer for TFLite model convert
 - [ ] TFLite C++ implementation of postprocess
 
 
