@@ -51,12 +51,23 @@ def has_object(dataset_path, year, image_id, include_difficult):
     return count != 0
 
 
+def get_classes(classes_path):
+    '''loads the classes'''
+    with open(classes_path) as f:
+        classes = f.readlines()
+    classes = [c.strip() for c in classes]
+    return classes
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default is ../VOCdevkit', default=getcwd()+'/../VOCdevkit')
 parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
+parser.add_argument('--classes_path', type=str, required=False, help='path to class definitions')
 parser.add_argument('--include_difficult', action="store_true", help='to include difficult object', default=False)
 args = parser.parse_args()
 
+if args.classes_path:
+    classes = get_classes(args.classes_path)
 
 for year, image_set in sets:
     image_ids = open('%s/VOC%s/ImageSets/Main/%s.txt'%(args.dataset_path, year, image_set)).read().strip().split()

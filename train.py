@@ -28,7 +28,7 @@ K.set_session(session)
 
 def get_multiscale_param(model_type, tiny_version):
     # get input_shape & batch_size list for multiscale training
-    if (model_type == 'darknet' or model_type == 'xception') and not tiny_version:
+    if (model_type == 'darknet' or model_type == 'xception' or model_type == 'xception_spp') and not tiny_version:
         # due to GPU memory limit, we could only use small input_shape and batch_size
         # for full YOLOv3 and Xception models
         input_shape_list = [(320,320), (416,416), (480,480)]
