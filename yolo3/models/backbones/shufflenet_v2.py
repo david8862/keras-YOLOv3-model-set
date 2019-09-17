@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+#
+# A tf.keras implementation of shufflenet_v2,
+# which is ported from https://github.com/opconty/keras-shufflenetV2
+#
 import numpy as np
 from keras_applications.imagenet_utils import _obtain_input_shape
 
 #from tensorflow.keras.utils import plot_model
 from tensorflow.keras.utils import get_source_inputs, get_file
-from tensorflow.keras.layers import Input, Conv2D, MaxPool2D, GlobalMaxPooling2D, GlobalAveragePooling2D
-from tensorflow.keras.layers import Activation, Dense
-from tensorflow.keras.layers import Add, Concatenate
-from tensorflow.keras.layers import AveragePooling2D, BatchNormalization, Lambda, DepthwiseConv2D
+from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Dense, MaxPool2D, GlobalMaxPooling2D, GlobalAveragePooling2D
+from tensorflow.keras.layers import BatchNormalization, Lambda
+from tensorflow.keras.layers import Input, Activation, Concatenate
 from tensorflow.keras.models import Model
 
 from tensorflow.keras import backend as K
@@ -25,13 +28,6 @@ def channel_split(x, name=''):
     c = Lambda(lambda z: z[:, :, :, ip:], name='%s/sp%d_slice' % (name, 1))(x)
     return c_hat, c
 
-def channel_shuffle1(x):
-    height, width, channels = x.shape.as_list()[1:]
-    channels_per_split = channels // 2
-    x = K.reshape(x, [-1, height, width, 2, channels_per_split])
-    x = K.permute_dimensions(x, (0,1,2,4,3))
-    x = K.reshape(x, [-1, height, width, channels])
-    return x
 
 def channel_shuffle(x):
     height, width, channels = x.shape.as_list()[1:]
@@ -152,7 +148,9 @@ def ShuffleNetV2(input_shape=None,
     """
     if K.backend() != 'tensorflow':
         raise RuntimeError('Only tensorflow supported for now')
+
     name = 'ShuffleNetV2_{}_{}_{}'.format(scale_factor, bottleneck_ratio, "".join([str(x) for x in num_shuffle_units]))
+
     input_shape = _obtain_input_shape(input_shape, default_size=224, min_size=28, require_flatten=include_top,
                                       data_format=K.image_data_format())
     out_dim_stage_two = {0.5:48, 1:116, 1.5:176, 2:244}
@@ -246,7 +244,7 @@ def ShuffleNetV2(input_shape=None,
 
 if __name__ == '__main__':
     input_tensor = Input(shape=(None, None, 3), name='image_input')
-    #model = ShuffleNetV2(include_top=False, input_shape=(224, 224, 3), weights=None, bottleneck_ratio=1)
+    #model = ShuffleNetV2(include_top=False, input_shape=(416, 416, 3), weights=None, bottleneck_ratio=1)
     model = ShuffleNetV2(include_top=False, input_tensor=input_tensor, weights=None, bottleneck_ratio=1)
     model.summary()
     #plot_model(model, to_file='shufflenetv2.png', show_layer_names=True, show_shapes=True)
