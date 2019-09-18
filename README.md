@@ -4,7 +4,7 @@
 
 ## Introduction
 
-A tf.keras implementation of a common YOLOv3 object detection architecture with different technologies support:
+tf.keras implementation of a common YOLOv3 object detection architecture with different technologies support:
 
 #### Backbone
 - [x] Darknet53/Tiny Darknet
@@ -86,6 +86,7 @@ For other model, just do in a similar way, but specify different model path and 
        # cd tools && python voc_annotation.py -h
        usage: voc_annotation.py [-h] [--dataset_path DATASET_PATH]
                                 [--output_path OUTPUT_PATH]
+                                [--classes_path CLASSES_PATH] [--include_difficult]
 
        optional arguments:
          -h, --help            show this help message and exit
@@ -142,6 +143,8 @@ usage: train.py [-h] [--model_type MODEL_TYPE] [--tiny_version]
                 [--classes_path CLASSES_PATH] [--learning_rate LEARNING_RATE]
                 [--batch_size BATCH_SIZE] [--init_epoch INIT_EPOCH]
                 [--total_epoch TOTAL_EPOCH] [--multiscale]
+                [--rescale_interval RESCALE_INTERVAL] [--data_shuffle]
+                [--gpu_num GPU_NUM]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -169,13 +172,13 @@ optional arguments:
   --batch_size BATCH_SIZE
                         Initial batch size for train, default=16
   --init_epoch INIT_EPOCH
-                        Initial stage training epochs, default=40
+                        Initial stage training epochs, default=20
   --total_epoch TOTAL_EPOCH
                         Total training epochs, default=300
   --multiscale          Whether to use multiscale training
   --rescale_interval RESCALE_INTERVAL
                         Number of epoch interval to rescale input image,
-                        default=20
+                        default=10
   --data_shuffle        Whether to shuffle train/val data for cross-validation
   --gpu_num GPU_NUM     Number of GPU to use, default=1
 ```

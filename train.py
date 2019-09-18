@@ -31,10 +31,10 @@ def get_multiscale_param(model_type, tiny_version):
     if (model_type == 'darknet' or model_type == 'xception' or model_type == 'xception_spp') and not tiny_version:
         # due to GPU memory limit, we could only use small input_shape and batch_size
         # for full YOLOv3 and Xception models
-        input_shape_list = [(320,320), (416,416), (480,480)]
+        input_shape_list = [(320,320), (352,352), (384,384), (416,416), (448,448), (480,480)]
         batch_size_list = [4, 8]
     else:
-        input_shape_list = [(320,320), (416,416), (512,512), (608,608)]
+        input_shape_list = [(320,320), (352,352), (384,384), (416,416), (448,448), (480,480), (512,512), (544,544), (576,576), (608,608)]
         batch_size_list = [4, 8, 16]
 
     return input_shape_list, batch_size_list
@@ -248,14 +248,14 @@ if __name__ == '__main__':
         help = "Initial learning rate, default=0.001")
     parser.add_argument('--batch_size', type=int,required=False, default=16,
         help = "Initial batch size for train, default=16")
-    parser.add_argument('--init_epoch', type=int,required=False, default=40,
-        help = "Initial stage training epochs, default=40")
+    parser.add_argument('--init_epoch', type=int,required=False, default=20,
+        help = "Initial stage training epochs, default=20")
     parser.add_argument('--total_epoch', type=int,required=False, default=300,
         help = "Total training epochs, default=300")
     parser.add_argument('--multiscale', default=False, action="store_true",
         help='Whether to use multiscale training')
-    parser.add_argument('--rescale_interval', type=int, required=False, default=20,
-        help = "Number of epoch interval to rescale input image, default=20")
+    parser.add_argument('--rescale_interval', type=int, required=False, default=10,
+        help = "Number of epoch interval to rescale input image, default=10")
     parser.add_argument('--data_shuffle', default=False, action="store_true",
         help='Whether to shuffle train/val data for cross-validation')
     parser.add_argument('--gpu_num', type=int, required=False, default=1,
