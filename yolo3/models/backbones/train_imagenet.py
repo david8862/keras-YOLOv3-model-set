@@ -7,12 +7,24 @@
 import argparse
 import numpy as np
 
+import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam, SGD
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback, CSVLogger
 from shufflenet import ShuffleNet
 from shufflenet_v2 import ShuffleNetV2
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+import tensorflow as tf
+config = tf.ConfigProto()
+config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
+config.gpu_options.per_process_gpu_memory_fraction = 0.9  #GPU memory threshold 0.3
+session = tf.Session(config=config)
+
+# set session
+K.set_session(session)
 
 
 def preprocess(x):
