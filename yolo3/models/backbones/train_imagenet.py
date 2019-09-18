@@ -29,9 +29,10 @@ def main(args):
     groups = 3
 
     # prepare model
-    model = ShuffleNet(groups=groups, pooling='avg')
+    model = ShuffleNet(groups=groups, pooling='avg', weights=None)
     if args.weights_path:
         model.load_weights(args.weights_path, by_name=True)
+    model.summary()
 
     # callbacks for training process
     checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-val_loss{val_loss:.3f}-val_acc{val_acc:.3f}.h5',
@@ -102,8 +103,8 @@ if __name__ == '__main__':
         help = "batch size for train, default=128")
     parser.add_argument('--init_epoch', type=int,required=False, default=0,
         help = "Initial training epochs for fine tune training, default=0")
-    parser.add_argument('--total_epoch', type=int,required=False, default=300,
-        help = "Total training epochs, default=300")
+    parser.add_argument('--total_epoch', type=int,required=False, default=200,
+        help = "Total training epochs, default=200")
 
     args = parser.parse_args()
 

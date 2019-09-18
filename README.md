@@ -253,6 +253,14 @@ video detection mode
 ```
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 
+### Tensorflow model convert
+Using [keras_to_tensorflow](https://github.com/amir-abdi/keras_to_tensorflow) to convert the keras .h5 model to tensorflow model (frozen pb):
+```
+python keras_to_tensorflow.py
+    --input_model="path/to/keras/model.h5"
+    --output_model="path/to/save/model.pb"
+```
+
 ### TFLite convert & validate
 1. Use tflite_convert to generate TFLite inference model. We need to specify input node name and input shape since our inference model doesn't have input image shape. Only valid under tensorflow 1.13
 ```

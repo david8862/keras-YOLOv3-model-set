@@ -247,4 +247,5 @@ if __name__ == '__main__':
     #model = ShuffleNetV2(include_top=False, input_shape=(416, 416, 3), weights=None, bottleneck_ratio=1)
     model = ShuffleNetV2(include_top=False, input_tensor=input_tensor, weights=None, bottleneck_ratio=1)
     model.summary()
+    print(len(model.layers))
     #plot_model(model, to_file='shufflenetv2.png', show_layer_names=True, show_shapes=True)
