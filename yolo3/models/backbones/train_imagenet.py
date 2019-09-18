@@ -4,7 +4,7 @@
 # train backbone network with imagenet dataset
 #
 
-import argparse
+import os, argparse
 import numpy as np
 
 import tensorflow.keras.backend as K
