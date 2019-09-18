@@ -4,7 +4,7 @@
 # train backbone network with imagenet dataset
 #
 
-import os, argparse
+import os, sys, argparse
 import numpy as np
 
 import tensorflow.keras.backend as K
@@ -12,6 +12,8 @@ from tensorflow.keras.optimizers import Adam, SGD
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback, CSVLogger
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from shufflenet import ShuffleNet
 from shufflenet_v2 import ShuffleNetV2
 
@@ -29,19 +31,42 @@ K.set_session(session)
 
 def preprocess(x):
     x = np.expand_dims(x, axis=0)
-    x = preprocess_input(x)
-    x /= 255.0
-    x -= 0.5
-    x *= 2.0
+
+    """
+    "mode" option description in preprocess_input
+    mode: One of "caffe", "tf" or "torch".
+        - caffe: will convert the images from RGB to BGR,
+            then will zero-center each color channel with
+            respect to the ImageNet dataset,
+            without scaling.
+        - tf: will scale pixels between -1 and 1,
+            sample-wise.
+        - torch: will scale pixels between 0 and 1 and then
+            will normalize each channel with respect to the
+            ImageNet dataset.
+    """
+    x = preprocess_input(x, mode='tf')
+    #x /= 255.0
+    #x -= 0.5
+    #x *= 2.0
     return x
+
+
+def get_model(model_type):
+    if model_type == 'shufflenet':
+        model = ShuffleNet(groups=3, weights=None)
+    elif model_type == 'shufflenet_v2':
+        model = ShuffleNetV2(bottleneck_ratio=1, weights=None)
+    else:
+        raise ValueError('Unsupported model type')
+    return model
 
 
 def main(args):
     log_dir = 'logs/'
-    groups = 3
 
     # prepare model
-    model = ShuffleNet(groups=groups, pooling='avg', weights=None)
+    model = get_model(args.model_type)
     if args.weights_path:
         model.load_weights(args.weights_path, by_name=True)
     model.summary()
@@ -82,7 +107,7 @@ def main(args):
     # start training
     model.compile(
               optimizer=SGD(lr=.05, decay=5e-4, momentum=0.9),
-              metrics=['accuracy'],
+              metrics=['accuracy', 'top_k_categorical_accuracy'],
               loss='categorical_crossentropy')
 
     model.fit_generator(
