@@ -8,10 +8,11 @@ import os, sys, argparse
 import numpy as np
 
 import tensorflow.keras.backend as K
-from tensorflow.keras.optimizers import Adam, SGD
+from tensorflow.keras.optimizers import Adam, SGD, RMSprop
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
-from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback, CSVLogger
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, TerminateOnNaN
+from tensorflow.keras.utils import multi_gpu_model
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from shufflenet import ShuffleNet
@@ -62,6 +63,18 @@ def get_model(model_type):
     return model
 
 
+def get_optimizer(optim_type, learning_rate):
+    if optim_type == 'sgd':
+        optimizer = SGD(lr=learning_rate, decay=5e-4, momentum=0.9)
+    elif optim_type == 'rmsprop':
+        optimizer = RMSprop(lr=learning_rate)
+    elif optim_type == 'adam':
+        optimizer = Adam(lr=learning_rate, decay=5e-4)
+    else:
+        raise ValueError('Unsupported optimizer type')
+    return optimizer
+
+
 def main(args):
     log_dir = 'logs/'
 
@@ -69,10 +82,13 @@ def main(args):
     model = get_model(args.model_type)
     if args.weights_path:
         model.load_weights(args.weights_path, by_name=True)
+    # support multi-gpu training
+    if args.gpu_num >= 2:
+        model = multi_gpu_model(model, gpus=args.gpu_num)
     model.summary()
 
     # callbacks for training process
-    checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-val_loss{val_loss:.3f}-val_acc{val_acc:.3f}.h5',
+    checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-val_loss{val_loss:.3f}-val_acc{val_acc:.3f}-val_top_k_categorical_accuracy{val_top_k_categorical_accuracy:.3f}.h5',
         monitor='val_acc',
         mode='max',
         verbose=1,
@@ -103,10 +119,12 @@ def main(args):
             target_size=(224, 224),
             batch_size=args.batch_size)
 
+    # get optimizer
+    optimizer = get_optimizer(args.optim_type, args.learning_rate)
 
     # start training
     model.compile(
-              optimizer=SGD(lr=.05, decay=5e-4, momentum=0.9),
+              optimizer=optimizer,
               metrics=['accuracy', 'top_k_categorical_accuracy'],
               loss='categorical_crossentropy')
 
@@ -128,8 +146,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_type', type=str, required=False, default='shufflenet',
-        help='backbone model type: shufflenet/shufflenet_v2, default=shufflenet')
+    parser.add_argument('--model_type', type=str, required=False, default='shufflenet_v2',
+        help='backbone model type: shufflenet/shufflenet_v2, default=shufflenet_v2')
     parser.add_argument('--train_data_path', type=str, required=True,
         help='path to Imagenet train data')
     parser.add_argument('--val_data_path', type=str, required=True,
@@ -138,10 +156,16 @@ if __name__ == '__main__':
         help = "Pretrained model/weights file for fine tune")
     parser.add_argument('--batch_size', type=int,required=False, default=128,
         help = "batch size for train, default=128")
+    parser.add_argument('--optim_type', type=str, required=False, default='sgd',
+        help='optimizer type: sgd/rmsprop/adam, default=sgd')
+    parser.add_argument('--learning_rate', type=float,required=False, default=.05,
+        help = "Initial learning rate, default=0.05")
     parser.add_argument('--init_epoch', type=int,required=False, default=0,
         help = "Initial training epochs for fine tune training, default=0")
     parser.add_argument('--total_epoch', type=int,required=False, default=200,
         help = "Total training epochs, default=200")
+    parser.add_argument('--gpu_num', type=int, required=False, default=1,
+        help='Number of GPU to use, default=1')
 
     args = parser.parse_args()
 
