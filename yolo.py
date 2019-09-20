@@ -72,12 +72,10 @@ class YOLO_np(object):
         num_feature_layers = num_anchors//3
 
         try:
-            yolo_model = load_model(model_path, compile=False)
-        except:
-            yolo_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes)
+            yolo_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_image_size + (3,))
             yolo_model.load_weights(model_path) # make sure model, anchors and classes match
             yolo_model.summary()
-        else:
+        except:
             assert yolo_model.layers[-1].output_shape[-1] == \
                 num_anchors/len(yolo_model.output) * (num_classes + 5), \
                 'Mismatch between model and given anchor and class sizes'
@@ -151,7 +149,7 @@ class YOLO(object):
         #so we can calculate feature layers number to get model type
         num_feature_layers = num_anchors//3
 
-        inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=model_path, confidence=0.1)
+        inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=model_path, input_shape=self.model_image_size + (3,), confidence=0.1)
 
         return inference_model
 

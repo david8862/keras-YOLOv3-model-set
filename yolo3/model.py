@@ -174,7 +174,7 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
     return model
 
 
-def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=None, confidence=0.1):
+def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=None, input_shape=None, confidence=0.1):
     '''create the inference model, for YOLOv3'''
     K.clear_session() # get a new session
     num_anchors = len(anchors)
@@ -185,7 +185,7 @@ def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=Non
 
     image_shape = Input(shape=(2,), dtype='int64', name='image_shape')
 
-    model_body, _ = get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes)
+    model_body, _ = get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, input_shape=input_shape)
     print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))
 
     if weights_path:
