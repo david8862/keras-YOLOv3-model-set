@@ -103,6 +103,9 @@ def main(args):
     # data generator
     train_datagen = ImageDataGenerator(preprocessing_function=preprocess,
                                        zoom_range=0.25,
+                                       #shear_range=0.2,
+                                       #channel_shift_range=0.1,
+                                       #rotation_range=0.1,
                                        width_shift_range=0.05,
                                        height_shift_range=0.05,
                                        horizontal_flip=True)
