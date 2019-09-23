@@ -16,7 +16,7 @@ from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Lambda
 from PIL import Image
 
-from yolo3.model import get_yolo3_model, get_yolo3_inference_model
+from yolo3.model import get_yolo3_model, get_yolo3_inference_model, get_yolo3_prenms_model
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo3.data import preprocess_image, letterbox_image
 from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes, touchdir
@@ -189,6 +189,55 @@ class YOLO(object):
 
     def dump_saved_model(self, saved_model_path):
         model = self.inference_model
+        touchdir(saved_model_path)
+
+        tf.keras.experimental.export_saved_model(model, saved_model_path)
+        print('export inference model to %s' % str(saved_model_path))
+
+
+class YOLO_prenms(object):
+    _defaults = default_config
+
+    @classmethod
+    def get_defaults(cls, n):
+        if n in cls._defaults:
+            return cls._defaults[n]
+        else:
+            return "Unrecognized attribute name '" + n + "'"
+
+    def __init__(self, **kwargs):
+        super(YOLO_prenms, self).__init__()
+        self.__dict__.update(self._defaults) # set up default values
+        self.__dict__.update(kwargs) # and update with user overrides
+        self.class_names = get_classes(self.classes_path)
+        self.anchors = get_anchors(self.anchors_path)
+        self.colors = get_colors(self.class_names)
+        K.set_learning_phase(0)
+        self.prenms_model = self._generate_model()
+
+    def _generate_model(self):
+        '''to generate the bounding boxes'''
+        model_path = os.path.expanduser(self.model_path)
+        assert model_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
+
+        # Load model, or construct model and load weights.
+        num_anchors = len(self.anchors)
+        num_classes = len(self.class_names)
+        #YOLOv3 model has 9 anchors and 3 feature layers but
+        #Tiny YOLOv3 model has 6 anchors and 2 feature layers,
+        #so we can calculate feature layers number to get model type
+        num_feature_layers = num_anchors//3
+
+        prenms_model = get_yolo3_prenms_model(self.model_type, self.anchors, num_classes, weights_path=model_path, input_shape=self.model_image_size + (3,))
+
+        return prenms_model
+
+
+    def dump_model_file(self, output_model_file):
+        self.prenms_model.save(output_model_file)
+
+    def dump_saved_model(self, saved_model_path):
+        model = self.prenms_model
         touchdir(saved_model_path)
 
         tf.keras.experimental.export_saved_model(model, saved_model_path)

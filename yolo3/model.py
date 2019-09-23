@@ -14,7 +14,7 @@ from yolo3.models.yolo3_shufflenetv2 import yolo_shufflenetv2_body, tiny_yolo_sh
 from yolo3.models.yolo3_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
 from yolo3.models.yolo3_xception import yolo_xception_body, yololite_xception_body, tiny_yolo_xception_body, tiny_yololite_xception_body, yolo_spp_xception_body
 from yolo3.loss import yolo_loss
-from yolo3.postprocess import batched_yolo3_postprocess
+from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Yolo3PostProcessLayer
 
 
 # A map of model type to construction info list for YOLOv3
@@ -73,7 +73,7 @@ def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, in
     if input_shape:
         input_tensor = Input(shape=input_shape, name='image_input')
 
-    if input_tensor == None:
+    if input_tensor is None:
         input_tensor = Input(shape=(None, None, 3), name='image_input')
 
     #Tiny YOLOv3 model has 6 anchors and 2 feature layers
@@ -196,6 +196,33 @@ def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=Non
             arguments={'anchors': anchors, 'num_classes': num_classes, 'confidence': confidence})(
         [*model_body.output, image_shape])
     model = Model([model_body.input, image_shape], [boxes, scores, classes])
+
+    return model
+
+
+def get_yolo3_prenms_model(model_type, anchors, num_classes, weights_path=None, input_shape=None):
+    '''create the prenms model, for YOLOv3'''
+    K.clear_session() # get a new session
+    num_anchors = len(anchors)
+    #YOLOv3 model has 9 anchors and 3 feature layers but
+    #Tiny YOLOv3 model has 6 anchors and 2 feature layers,
+    #so we can calculate feature layers number to get model type
+    num_feature_layers = num_anchors//3
+
+    image_shape = Input(shape=(2,), dtype='int64', name='image_shape')
+
+    model_body, _ = get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, input_shape=input_shape)
+    print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))
+
+    if weights_path:
+        model_body.load_weights(weights_path, by_name=False)#, skip_mismatch=True)
+        print('Load weights {}.'.format(weights_path))
+
+    boxes, box_scores = Lambda(batched_yolo3_prenms, name='yolo3_prenms',
+            arguments={'anchors': anchors, 'num_classes': num_classes, 'input_shape': input_shape[:2]})(
+        [*model_body.output, image_shape])
+    #boxes, box_scores = Yolo3PostProcessLayer(anchors, num_classes, input_dim=input_shape[:2], name='yolo3_prenms')([model_body.output, image_shape])
+    model = Model([model_body.input, image_shape], [boxes, box_scores])
 
     return model
 
