@@ -140,10 +140,10 @@ def _main(args):
     # get train&val dataset
     dataset = get_dataset(annotation_file)
     if args.val_annotation_file:
-        val_dataset = get_dataset(args.annotation_file)
+        val_dataset = get_dataset(args.val_annotation_file)
         num_train = len(dataset)
-        num_val = len(val_data)
-        dataset.extend(val_data)
+        num_val = len(val_dataset)
+        dataset.extend(val_dataset)
     else:
         val_split = args.val_split
         num_val = int(len(dataset)*val_split)
