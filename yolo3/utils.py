@@ -49,6 +49,14 @@ def get_colors(class_names):
     np.random.seed(None)  # Reset seed to default.
     return colors
 
+def get_dataset(annotation_file):
+    with open(annotation_file) as f:
+        lines = f.readlines()
+    np.random.seed(10101)
+    np.random.shuffle(lines)
+    np.random.seed(None)
+
+    return lines
 
 def draw_label(image, text, color, coords):
     font = cv2.FONT_HERSHEY_PLAIN

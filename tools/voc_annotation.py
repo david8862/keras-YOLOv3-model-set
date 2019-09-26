@@ -34,7 +34,11 @@ def convert_annotation(dataset_path, year, image_id, list_file, include_difficul
 
 
 def has_object(dataset_path, year, image_id, include_difficult):
-    in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id))
+    try:
+        in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id))
+    except:
+        # bypass image if no annotation
+        return False
     tree=ET.parse(in_file)
     root = tree.getroot()
     count = 0

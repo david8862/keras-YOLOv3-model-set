@@ -12,7 +12,7 @@ from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback
 from yolo3.model import get_yolo3_train_model
 from yolo3.data import data_generator_wrapper
-from yolo3.utils import get_classes, get_anchors
+from yolo3.utils import get_classes, get_anchors, get_dataset
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -138,14 +138,16 @@ def _main(args):
     sess_saver_callback = LambdaCallback(on_epoch_end=lambda epoch, logs: tf.train.Saver().save(sess, log_dir+'model-epoch%03d-loss%.3f-val_loss%.3f' % (epoch, logs['loss'], logs['val_loss'])))
 
     # get train&val dataset
-    val_split = args.val_split
-    with open(annotation_file) as f:
-        lines = f.readlines()
-    np.random.seed(10101)
-    np.random.shuffle(lines)
-    np.random.seed(None)
-    num_val = int(len(lines)*val_split)
-    num_train = len(lines) - num_val
+    dataset = get_dataset(annotation_file)
+    if args.val_annotation_file:
+        val_dataset = get_dataset(args.annotation_file)
+        num_train = len(dataset)
+        num_val = len(val_data)
+        dataset.extend(val_data)
+    else:
+        val_split = args.val_split
+        num_val = int(len(dataset)*val_split)
+        num_train = len(dataset) - num_val
 
     # prepare multiscale config
     if args.multiscale:
@@ -168,9 +170,9 @@ def _main(args):
     initial_epoch = 0
     epochs = args.init_epoch
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-    model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
+    model.fit_generator(data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
-            validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
+            validation_data=data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
             epochs=epochs,
             initial_epoch=initial_epoch,
@@ -186,12 +188,12 @@ def _main(args):
     epochs = epochs + args.rescale_interval
     # shuffle train/val dataset for cross-validation
     if args.data_shuffle:
-        np.random.shuffle(lines)
+        np.random.shuffle(dataset)
     model.compile(optimizer=Adam(lr=args.learning_rate), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-    model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
+    model.fit_generator(data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
-            validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
+            validation_data=data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
             epochs=epochs,
             initial_epoch=initial_epoch,
@@ -207,11 +209,11 @@ def _main(args):
         epochs = epoch_step
         # shuffle train/val dataset for cross-validation
         if args.data_shuffle:
-            np.random.shuffle(lines)
+            np.random.shuffle(dataset)
         print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-        model.fit_generator(data_generator_wrapper(lines[:num_train], batch_size, input_shape, anchors, num_classes),
+        model.fit_generator(data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
-            validation_data=data_generator_wrapper(lines[num_train:], batch_size, input_shape, anchors, num_classes),
+            validation_data=data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
             epochs=epochs,
             initial_epoch=initial_epoch,
@@ -237,9 +239,11 @@ if __name__ == '__main__':
 
     # Data options
     parser.add_argument('--annotation_file', type=str, required=False, default='trainval.txt',
-        help='train&val annotation txt file, default=trainval.txt')
+        help='train annotation txt file, default=trainval.txt')
+    parser.add_argument('--val_annotation_file', type=str, required=False, default=None,
+        help='val annotation txt file, default=None')
     parser.add_argument('--val_split', type=float,required=False, default=0.1,
-        help = "validation data persentage in dataset, default=0.1")
+        help = "validation data persentage in dataset if no val dataset provide, default=0.1")
     parser.add_argument('--classes_path', type=str, required=False, default='configs/voc_classes.txt',
         help='path to class definitions, default=configs/voc_classes.txt')
 

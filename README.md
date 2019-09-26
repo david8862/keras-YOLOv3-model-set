@@ -103,7 +103,7 @@ For other model, just do in a similar way, but specify different model path and 
        ```
        2007_test.txt  2007_train.txt  2007_val.txt  2012_train.txt  2012_val.txt
        ```
-       You can merge these train & val annotation file as train script needed. For example, following cmd will creat 07/12 combined trainval dataset:
+       You can merge these train & val annotation file as your need. For example, following cmd will creat 07/12 combined trainval dataset:
        ```
        # cp 2007_train.txt trainval.txt
        # cat 2007_val.txt >> trainval.txt
@@ -139,12 +139,13 @@ For other model, just do in a similar way, but specify different model path and 
 usage: train.py [-h] [--model_type MODEL_TYPE] [--tiny_version]
                 [--model_image_size MODEL_IMAGE_SIZE]
                 [--weights_path WEIGHTS_PATH] [--freeze_level FREEZE_LEVEL]
-                [--annotation_file ANNOTATION_FILE] [--val_split VAL_SPLIT]
-                [--classes_path CLASSES_PATH] [--learning_rate LEARNING_RATE]
-                [--batch_size BATCH_SIZE] [--init_epoch INIT_EPOCH]
-                [--total_epoch TOTAL_EPOCH] [--multiscale]
-                [--rescale_interval RESCALE_INTERVAL] [--data_shuffle]
-                [--gpu_num GPU_NUM]
+                [--annotation_file ANNOTATION_FILE]
+                [--val_annotation_file VAL_ANNOTATION_FILE]
+                [--val_split VAL_SPLIT] [--classes_path CLASSES_PATH]
+                [--learning_rate LEARNING_RATE] [--batch_size BATCH_SIZE]
+                [--init_epoch INIT_EPOCH] [--total_epoch TOTAL_EPOCH]
+                [--multiscale] [--rescale_interval RESCALE_INTERVAL]
+                [--data_shuffle] [--gpu_num GPU_NUM]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -158,12 +159,15 @@ optional arguments:
   --weights_path WEIGHTS_PATH
                         Pretrained model/weights file for fine tune
   --freeze_level FREEZE_LEVEL
-                        Freeze level of the training model.
-                        0:NA/1:backbone/2:only open feature_map
+                        Freeze level of the model in initial train stage.
+                        0:NA/1:backbone/2:only open prediction layer
   --annotation_file ANNOTATION_FILE
-                        train&val annotation txt file, default=trainval.txt
+                        train annotation txt file, default=trainval.txt
+  --val_annotation_file VAL_ANNOTATION_FILE
+                        val annotation txt file, default=None
   --val_split VAL_SPLIT
-                        validation data persentage in dataset, default=0.1
+                        validation data persentage in dataset if no val
+                        dataset provide, default=0.1
   --classes_path CLASSES_PATH
                         path to class definitions,
                         default=configs/voc_classes.txt
