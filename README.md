@@ -260,7 +260,7 @@ For video detection mode, you can use "input=0" to capture live video from web c
 ### Tensorflow model convert
 Using [keras_to_tensorflow](https://github.com/amir-abdi/keras_to_tensorflow) to convert the keras .h5 model to tensorflow model (frozen pb):
 ```
-python keras_to_tensorflow.py
+# python keras_to_tensorflow.py
     --input_model="path/to/keras/model.h5"
     --output_model="path/to/save/model.pb"
 ```
