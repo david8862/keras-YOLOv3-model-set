@@ -1,10 +1,11 @@
-# C++ on-device (X86/ARM) inference application for YOLOv3 detection modelset
+## C++ on-device (X86/ARM) inference app for YOLOv3 detection modelset
 
-C++ implementation of the on-device inference for trained YOLOv3 inference model, including yolo postprocess, NMS and prediction rescale. Support YOLOv3/Tiny YOLOv3 arch and all kinds of backbone and head. Currently it use MNN inference engine
+C++ implementation of the on-device inference for trained YOLOv3 inference model, including yolo postprocess, NMS and prediction rescale. Support YOLOv3/Tiny YOLOv3 arch and all kinds of backbones & head. Currently it use MNN inference engine
 
 ### MNN
 
 1. Build libMNN and model convert tool
+
 Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux). Since MNN support both X86 & ARM platform, we can do either native compile or ARM cross-compile
 ```
 # apt install ocl-icd-opencl-dev
@@ -29,6 +30,7 @@ Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux). Since MNN 
 ```
 
 3. Convert trained YOLOv3 model to MNN model
+
 Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-dump), [Tensorflow model convert](https://github.com/david8862/keras-YOLOv3-model-set#tensorflow-model-convert) and [MNN model convert](https://www.yuque.com/mnn/cn/model_convert), we need to
     1. dump out inference model from training checkpoint
     ```
