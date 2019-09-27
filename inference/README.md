@@ -33,13 +33,13 @@ Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux). Since MNN 
 
 Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-dump), [Tensorflow model convert](https://github.com/david8862/keras-YOLOv3-model-set#tensorflow-model-convert) and [MNN model convert](https://www.yuque.com/mnn/cn/model_convert), we need to
 
-    1. dump out inference model from training checkpoint
+    1. dump out inference model from training checkpoint:
 
     ```
     # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --dump_model --output_model_file=model.h5
     ```
 
-    2. convert keras .h5 model to tensorflow model (frozen pb)
+    2. convert keras .h5 model to tensorflow model (frozen pb):
 
     ```
     # python keras_to_tensorflow.py
@@ -47,7 +47,7 @@ Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-
         --output_model="path/to/save/model.pb"
     ```
 
-    3. convert TF pb model to MNN model
+    3. convert TF pb model to MNN model:
 
     ```
     # cd <Path_to_MNN>/tools/converter/build
