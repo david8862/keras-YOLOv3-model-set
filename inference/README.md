@@ -1,6 +1,6 @@
 ## C++ on-device (X86/ARM) inference app for YOLOv3 detection modelset
 
-Here are some C++ implementation of the on-device inference for trained YOLOv3 inference model, including yolo postprocess, NMS and prediction rescale. Support YOLOv3/Tiny YOLOv3 arch and all kinds of backbones & head. Currently it use MNN inference engine
+Here are some C++ implementation of the on-device inference for trained YOLOv3 inference model, including forward propagation of the model, YOLO postprocess and bounding box NMS. It support YOLOv3/Tiny YOLOv3 arch and all kinds of backbones & head. Currently the forward propagation part is implement with [MNN](https://github.com/alibaba/MNN) inference engine
 
 ### MNN
 
@@ -34,11 +34,13 @@ Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux). Since MNN 
 Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-dump), [Tensorflow model convert](https://github.com/david8862/keras-YOLOv3-model-set#tensorflow-model-convert) and [MNN model convert](https://www.yuque.com/mnn/cn/model_convert), we need to
 
     1. dump out inference model from training checkpoint
+
     ```
     # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --dump_model --output_model_file=model.h5
     ```
 
     2. convert keras .h5 model to tensorflow model (frozen pb)
+
     ```
     # python keras_to_tensorflow.py
         --input_model="path/to/keras/model.h5"
@@ -46,6 +48,7 @@ Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-
     ```
 
     3. convert TF pb model to MNN model
+
     ```
     # cd <Path_to_MNN>/tools/converter/build
     # ./MNNConvert -f TF --modelFile model.pb --MNNModel model.pb.mnn --bizCode biz
