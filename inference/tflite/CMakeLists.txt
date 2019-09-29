@@ -8,8 +8,7 @@ SET(CMAKE_CXX_FLAGS  "-std=c++11")
 SET(TARGET_PLAT "linux_x86_64" CACHE STRING INTERNAL)
 
 set(YOLOV3_DETECTION_SRC
-        yolov3Detection.cpp
-        bitmap_helpers.cpp)
+        yolov3Detection.cpp)
 
 #set(TF_ROOT_PATH /mnt/d/Downloads/tensorflow)
 

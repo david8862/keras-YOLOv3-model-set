@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef YOLOV3_DETECTION_BITMAP_HELPERS_IMPL_H_
-#define YOLOV3_DETECTION_BITMAP_HELPERS_IMPL_H_
+#ifndef YOLOV3_DETECTION_RESIZE_HELPERS_IMPL_H_
+#define YOLOV3_DETECTION_RESIZE_HELPERS_IMPL_H_
 
 #include "yolov3Detection.h"
 
@@ -90,4 +90,4 @@ void resize(T* out, uint8_t* in, int image_height, int image_width,
 
 }  // namespace yolov3Detection
 
-#endif  // YOLOV3_DETECTION_BITMAP_HELPERS_IMPL_H_
+#endif  // YOLOV3_DETECTION_RESIZE_HELPERS_IMPL_H_

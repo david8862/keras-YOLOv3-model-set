@@ -13,16 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef YOLOV3_DETECTION_BITMAP_HELPERS_H_
-#define YOLOV3_DETECTION_BITMAP_HELPERS_H_
+#ifndef YOLOV3_DETECTION_RESIZE_HELPERS_H_
+#define YOLOV3_DETECTION_RESIZE_HELPERS_H_
 
-#include "bitmap_helpers_impl.h"
+#include "resize_helpers_impl.h"
 #include "yolov3Detection.h"
 
 namespace yolov3Detection {
-
-std::vector<uint8_t> read_bmp(const std::string& input_bmp_name, int* width,
-                              int* height, int* channels, Settings* s);
 
 template <class T>
 void resize(T* out, uint8_t* in, int image_height, int image_width,
@@ -37,4 +34,4 @@ template void resize<float>(float*, unsigned char*, int, int, int, int, int,
 
 }  // namespace yolov3Detection
 
-#endif  // YOLOV3_DETECTION_BITMAP_HELPERS_H_
+#endif  // YOLOV3_DETECTION_RESIZE_HELPERS_H_

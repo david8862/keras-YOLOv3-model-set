@@ -31,7 +31,7 @@ struct Settings {
   float input_std = 255.0f;
   std::string model_name = "./model.tflite";
   tflite::FlatBufferModel* model;
-  std::string input_bmp_name = "./grace_hopper.bmp";
+  std::string input_img_name = "./dog.jpg";
   std::string classes_file_name = "./classes.txt";
   std::string anchors_file_name = "./yolo_anchors.txt";
   std::string input_layer_type = "uint8_t";

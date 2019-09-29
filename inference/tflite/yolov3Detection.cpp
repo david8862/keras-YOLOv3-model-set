@@ -40,7 +40,9 @@ limitations under the License.
 //#include "tensorflow/lite/tools/evaluation/utils.h"
 
 #include "yolov3Detection.h"
-#include "bitmap_helpers.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#include "resize_helpers.h"
 
 #define LOG(x) std::cerr
 
@@ -435,8 +437,15 @@ void RunInference(Settings* s) {
   int image_width = 224;
   int image_height = 224;
   int image_channel = 3;
-  std::vector<uint8_t> in = read_bmp(s->input_bmp_name, &image_width,
-                                     &image_height, &image_channel, s);
+
+  auto input_image = (uint8_t*)stbi_load(s->input_img_name.c_str(), &image_width, &image_height, &image_channel, 3);
+  if (input_image == nullptr) {
+      LOG(FATAL) << "Can't open" << s->input_img_name << "\n";
+      exit(-1);
+  }
+  std::vector<uint8_t> in(inputImage, inputImage + image_width * image_height * image_channel * sizeof(uint8_t));
+  // free input image
+  stbi_image_free(inputImage);
 
   // assuming one input only
   int input = interpreter->inputs()[0];
@@ -556,7 +565,7 @@ void display_usage() {
   LOG(INFO)
       << "Usage: yolov3Detection\n"
       << "--tflite_model, -m: model_name.tflite\n"
-      << "--image, -i: image_name.bmp\n"
+      << "--image, -i: image_name.jpg\n"
       << "--classes, -l: classes labels for the model\n"
       << "--anchors, -a: anchor values for the model\n"
       << "--input_mean, -b: input mean\n"
@@ -615,7 +624,7 @@ int Main(int argc, char** argv) {
             strtol(optarg, nullptr, 10);  // NOLINT(runtime/deprecated_fn)
         break;
       case 'i':
-        s.input_bmp_name = optarg;
+        s.input_img_name = optarg;
         break;
       case 'l':
         s.classes_file_name = optarg;
