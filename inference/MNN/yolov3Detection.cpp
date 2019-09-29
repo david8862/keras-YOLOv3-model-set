@@ -186,8 +186,8 @@ void yolo_postprocess(const Tensor* feature_map, const int input_width, const in
                         bbox_y = bbox_y - (bbox_h / 2);
 
                         //get anchor output confidence (class_score * objectness) and filter with threshold
-                        float max_conf = 0.1;
-                        int max_index = 1;
+                        float max_conf = 0.0;
+                        int max_index = -1;
                         for (int i = 0; i < num_classes; i++) {
                             float tmp_conf = sigmoid(bytes[bbox_scores_offset + i * bbox_scores_step]) * bbox_obj;
 
@@ -377,20 +377,17 @@ void nms_boxes(const std::vector<t_prediction> prediction_list, std::vector<t_pr
 
 
 // select anchorset for corresponding featuremap layer
-std::vector<std::pair<float, float>> get_anchorset(std::vector<std::pair<float, float>> anchors, const Tensor* feature_map, int input_width)
+std::vector<std::pair<float, float>> get_anchorset(std::vector<std::pair<float, float>> anchors, const int feature_width, const int input_width)
 {
     std::vector<std::pair<float, float>> anchorset;
     int anchor_num = anchors.size();
-
-    auto height  = feature_map->height();
-    auto width   = feature_map->width();
 
     // stride could confirm the feature map level:
     // image_input: 1 x 416 x 416 x 3
     // stride 32: 1 x 13 x 13 x 3 x (num_classes + 5)
     // stride 16: 1 x 26 x 26 x 3 x (num_classes + 5)
     // stride 8: 1 x 52 x 52 x 3 x (num_classes + 5)
-    int stride = input_width / width;
+    int stride = input_width / feature_width;
 
     // YOLOv3 model has 9 anchors and 3 feature layers
     if (anchor_num == 9) {
@@ -498,14 +495,14 @@ void RunInference(Settings* s) {
     auto shape = image_input->shape();
     int input_width = image_input->width();
     int input_height = image_input->height();
-    int bpp = image_input->channel();
-    if (bpp == 0)
-        bpp = 1;
+    int input_channel = image_input->channel();
+    if (input_channel == 0)
+        input_channel = 1;
     if (input_height == 0)
         input_height = 1;
     if (input_width == 0)
         input_width = 1;
-    MNN_PRINT("image_input: w:%d , h:%d, bpp: %d\n", input_width, input_height, bpp);
+    MNN_PRINT("image_input: width:%d , height:%d, channel: %d\n", input_width, input_height, input_channel);
 
     shape[0] = 1;
     net->resizeTensor(image_input, shape);
@@ -548,7 +545,7 @@ void RunInference(Settings* s) {
         MNN_ERROR("Can't open %s\n", inputPatch);
         return;
     }
-    MNN_PRINT("origin image size: %d, %d\n", image_width, image_height);
+    MNN_PRINT("origin image size: width:%d, height:%d, channel:%d\n", image_width, image_height, image_channel);
     Matrix trans;
     // Set transform, from dst scale to src, the ways below are both ok
 #ifdef USE_MAP_POINT
@@ -632,7 +629,7 @@ void RunInference(Settings* s) {
 
     for (int i = 0; i < num_layers; ++i) {
         Tensor* feature_map = featureTensors[i].get();
-        std::vector<std::pair<float, float>> anchorset = get_anchorset(anchors, feature_map, input_width);
+        std::vector<std::pair<float, float>> anchorset = get_anchorset(anchors, feature_map->width(), input_width);
 
         MNN_ASSERT(featureTensors[i]->getType().code == halide_type_float);
         yolo_postprocess(featureTensors[i].get(), input_width, input_height, num_classes, anchorset, prediction_list, conf_threshold);
@@ -667,16 +664,16 @@ int main(int argc, char** argv) {
   int c;
   while (1) {
     static struct option long_options[] = {
-        {"anchors", required_argument, nullptr, 'a'},
-        {"count", required_argument, nullptr, 'c'},
-        //{"verbose", required_argument, nullptr, 'v'},
+        {"mnn_model", required_argument, nullptr, 'm'},
         {"image", required_argument, nullptr, 'i'},
         {"classes", required_argument, nullptr, 'l'},
-        {"mnn_model", required_argument, nullptr, 'm'},
-        {"threads", required_argument, nullptr, 't'},
+        {"anchors", required_argument, nullptr, 'a'},
         {"input_mean", required_argument, nullptr, 'b'},
         {"input_std", required_argument, nullptr, 's'},
+        {"threads", required_argument, nullptr, 't'},
+        {"count", required_argument, nullptr, 'c'},
         {"warmup_runs", required_argument, nullptr, 'w'},
+        //{"verbose", required_argument, nullptr, 'v'},
         {"help", no_argument, nullptr, 'h'},
         {nullptr, 0, nullptr, 0}};
 

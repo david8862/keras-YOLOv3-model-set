@@ -42,7 +42,9 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, loo
         interpreter.set_tensor(input_details[0]['index'], image_data)
         interpreter.invoke()
     end = time.time()
+    print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
 
+    start = time.time()
     out_list = []
     for output_detail in output_details:
         output_data = interpreter.get_tensor(output_detail['index'])
@@ -52,6 +54,9 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, loo
 
     boxes, classes, scores = handle_predictions(predictions, confidence=0.1, iou_threshold=0.4)
     boxes = adjust_boxes(boxes, image_shape, (height, width))
+    end = time.time()
+    print("PostProcess time: {:.8f}ms".format((end - start) * 1000))
+
     print('Found {} boxes for {}'.format(len(boxes), image_file))
 
     for box, cls, score in zip(boxes, classes, scores):
@@ -59,7 +64,6 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, loo
 
     colors = get_colors(class_names)
     image = draw_boxes(image, boxes, classes, scores, class_names, colors)
-    print("Average Inference time: {:.8f}s".format((end - start)/loop_count))
 
     Image.fromarray(image).show()
 
