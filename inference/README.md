@@ -33,13 +33,13 @@ Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux). Since MNN 
 
 Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-dump), [Tensorflow model convert](https://github.com/david8862/keras-YOLOv3-model-set#tensorflow-model-convert) and [MNN model convert](https://www.yuque.com/mnn/cn/model_convert), we need to
 
-    1. dump out inference model from training checkpoint:
+1. dump out inference model from training checkpoint:
 
     ```
     # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --dump_model --output_model_file=model.h5
     ```
 
-    2. convert keras .h5 model to tensorflow model (frozen pb):
+2. convert keras .h5 model to tensorflow model (frozen pb):
 
     ```
     # python keras_to_tensorflow.py
@@ -47,7 +47,7 @@ Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-
         --output_model="path/to/save/model.pb"
     ```
 
-    3. convert TF pb model to MNN model:
+3. convert TF pb model to MNN model:
 
     ```
     # cd <Path_to_MNN>/tools/converter/build
@@ -57,15 +57,25 @@ Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-
 4. Run application to do inference with model, or put all the assets to your ARM board and run if you use cross-compile
 ```
 # cd keras-YOLOv3-model-set/inference/MNN/build
-# ./yolov3Detection
-Usage: ./yolov3Detection model.mnn input.jpg classes.txt anchors.txt
+# ./yolov3Detection -h
+Usage: yolov3Detection
+--mnn_model, -m: model_name.mnn
+--image, -i: image_name.jpg
+--classes, -l: classes labels for the model
+--anchors, -a: anchor values for the model
+--input_mean, -b: input mean
+--input_std, -s: input standard deviation
+--threads, -t: number of threads
+--count, -c: loop model run for certain times
+--warmup_runs, -w: number of warmup runs
 
-# ./yolov3Detection model.pb.mnn ../../../example/dog.jpg ../../../configs/voc_classes.txt ../../../configs/tiny_yolo_anchors.txt
+
+# ./yolov3Detection -m model.pb.mnn -i ../../../example/dog.jpg -l ../../../configs/voc_classes.txt -a ../../../configs/tiny_yolo_anchors.txt -t 8 -c 10 -w 3
 Can't Find type=4 backend, use 0 instead
 image_input: w:320 , h:320, bpp: 3
 num_classes: 20
 origin image size: 768, 576
-model invoke time: 71.015000 ms
+model invoke time: 43.015000 ms
 output tensor name: conv2d_1/Conv2D
 output tensor name: conv2d_3/Conv2D
 Caffe format: NCHW

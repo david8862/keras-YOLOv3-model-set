@@ -18,9 +18,11 @@
 #include <vector>
 #include <math.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <string.h>
 #include <sys/time.h>
 #include "AutoTime.hpp"
+#include "ErrorCode.hpp"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include "stb_image_write.h"
@@ -40,6 +42,23 @@ typedef struct prediction {
 }t_prediction;
 
 
+// model inference settings
+struct Settings {
+  int loop_count = 1;
+  int number_of_threads = 4;
+  int number_of_warmup_runs = 2;
+  float input_mean = 0.0f;
+  float input_std = 255.0f;
+  std::string model_name = "./model.mnn";
+  std::string input_img_name = "./dog.jpg";
+  std::string classes_file_name = "./classes.txt";
+  std::string anchors_file_name = "./yolo_anchors.txt";
+  //bool verbose = false;
+  //bool input_floating = false;
+  //string input_layer_type = "uint8_t";
+};
+
+
 float sigmoid(float x)
 {
     return (1 / (1 + exp(-x)));
@@ -49,6 +68,23 @@ float sigmoid(float x)
 double get_us(struct timeval t)
 {
     return (t.tv_sec * 1000000 + t.tv_usec);
+}
+
+
+void display_usage() {
+  std::cout
+      << "Usage: yolov3Detection\n"
+      << "--mnn_model, -m: model_name.mnn\n"
+      << "--image, -i: image_name.jpg\n"
+      << "--classes, -l: classes labels for the model\n"
+      << "--anchors, -a: anchor values for the model\n"
+      << "--input_mean, -b: input mean\n"
+      << "--input_std, -s: input standard deviation\n"
+      << "--threads, -t: number of threads\n"
+      << "--count, -c: loop model run for certain times\n"
+      << "--warmup_runs, -w: number of warmup runs\n"
+      //<< "--verbose, -v: [0|1] print more information\n"
+      << "\n";
 }
 
 
@@ -446,19 +482,15 @@ void adjust_boxes(std::vector<t_prediction> &prediction_nms_list, int image_widt
 }
 
 
-int main(int argc, const char* argv[]) {
-    if (argc < 5) {
-        MNN_PRINT("Usage: %s model.mnn input.jpg classes.txt anchors.txt\n", argv[0]);
-        return 0;
-    }
-
+void RunInference(Settings* s) {
     // record run time for every stage
     struct timeval start_time, stop_time;
 
     // create model & session
-    std::shared_ptr<Interpreter> net(Interpreter::createFromFile(argv[1]));
+    std::shared_ptr<Interpreter> net(Interpreter::createFromFile(s->model_name.c_str()));
     ScheduleConfig config;
     config.type  = MNN_FORWARD_AUTO;
+    config.numThread = s->number_of_threads;
     auto session = net->createSession(config);
 
     // get input tensor info
@@ -489,24 +521,19 @@ int main(int argc, const char* argv[]) {
 
     // get classes labels
     std::vector<std::string> classes;
-    if (argc >= 4) {
-        std::ifstream inputOs(argv[3]);
-        std::string line;
-        while (std::getline(inputOs, line)) {
-            classes.emplace_back(line);
-        }
+    std::ifstream classesOs(s->classes_file_name.c_str());
+    std::string line;
+    while (std::getline(classesOs, line)) {
+        classes.emplace_back(line);
     }
     int num_classes = classes.size();
     MNN_PRINT("num_classes: %d\n", num_classes);
 
     // get anchor value
     std::vector<std::pair<float, float>> anchors;
-    if (argc >= 5) {
-        std::ifstream inputOs(argv[4]);
-        std::string line;
-        while (std::getline(inputOs, line)) {
-            parse_anchors(line, anchors);
-        }
+    std::ifstream anchorsOs(s->anchors_file_name.c_str());
+    while (std::getline(anchorsOs, line)) {
+        parse_anchors(line, anchors);
     }
 
     // For YOLOv3 model, we should have 9 anchors and 3 feature layers
@@ -514,12 +541,12 @@ int main(int argc, const char* argv[]) {
     MNN_ASSERT(anchors.size() / num_layers == 3);
 
     // load input image
-    auto inputPatch = argv[2];
+    auto inputPatch = s->input_img_name.c_str();
     int image_width, image_height, image_channel;
     auto inputImage = stbi_load(inputPatch, &image_width, &image_height, &image_channel, 4);
     if (nullptr == inputImage) {
         MNN_ERROR("Can't open %s\n", inputPatch);
-        return 0;
+        return;
     }
     MNN_PRINT("origin image size: %d, %d\n", image_width, image_height);
     Matrix trans;
@@ -544,10 +571,12 @@ int main(int argc, const char* argv[]) {
     ImageProcess::Config pretreat_config;
     pretreat_config.filterType = BILINEAR;
 
-    // normalize image input, In our training we just do image/255.0
-    // TODO: change it if you use a different normalization
-    float mean[3]     = {0.0f, 0.0f, 0.0f};
-    float normals[3] = {0.00392156862745098f, 0.00392156862745098f, 0.00392156862745098f};
+    // normalize image input, In current training code we just do image/255.0
+    // so default mean=0, std=255. Change it if you use a different normalization
+    float input_normal = 1.0f / s->input_std;
+    float mean[3]     = {s->input_mean, s->input_mean, s->input_mean};
+    float normals[3] = {input_normal, input_normal, input_normal};
+
     ::memcpy(pretreat_config.mean, mean, sizeof(mean));
     ::memcpy(pretreat_config.normal, normals, sizeof(normals));
     pretreat_config.sourceFormat = RGBA;
@@ -556,13 +585,29 @@ int main(int argc, const char* argv[]) {
     std::shared_ptr<ImageProcess> pretreat(ImageProcess::create(pretreat_config));
     pretreat->setMatrix(trans);
     pretreat->convert((uint8_t*)inputImage, image_width, image_height, 0, image_input);
-    stbi_image_free(inputImage);
 
-    // run session to get output
+    // run warm up session
+    if (s->loop_count > 1)
+        for (int i = 0; i < s->number_of_warmup_runs; i++) {
+            pretreat->convert((uint8_t*)inputImage, image_width, image_height, 0, image_input);
+            if (net->runSession(session) != NO_ERROR) {
+                MNN_PRINT("Failed to invoke tflite!\n");
+            }
+        }
+
+    // run model sessions to get output
     gettimeofday(&start_time, nullptr);
-    net->runSession(session);
+    for (int i = 0; i < s->loop_count; i++) {
+        pretreat->convert((uint8_t*)inputImage, image_width, image_height, 0, image_input);
+        if (net->runSession(session) != NO_ERROR) {
+            MNN_PRINT("Failed to invoke tflite!\n");
+        }
+    }
     gettimeofday(&stop_time, nullptr);
-    MNN_PRINT("model invoke time: %lf ms\n", (get_us(stop_time) - get_us(start_time)) / 1000);
+    MNN_PRINT("model invoke average time: %lf ms\n", (get_us(stop_time) - get_us(start_time)) / (1000 * s->loop_count));
+
+    // free input image
+    stbi_image_free(inputImage);
 
     // Copy output tensors to host, for further postprocess
     std::vector<std::shared_ptr<Tensor>> featureTensors;
@@ -612,6 +657,83 @@ int main(int argc, const char* argv[]) {
         MNN_PRINT("%s %f (%d, %d) (%d, %d)\n", classes[prediction_nms.class_index].c_str(), prediction_nms.confidence, int(prediction_nms.x), int(prediction_nms.y), int(prediction_nms.x + prediction_nms.width), int(prediction_nms.y + prediction_nms.height));
     }
 
-    return 0;
+    return;
+}
+
+
+int main(int argc, char** argv) {
+  Settings s;
+
+  int c;
+  while (1) {
+    static struct option long_options[] = {
+        {"anchors", required_argument, nullptr, 'a'},
+        {"count", required_argument, nullptr, 'c'},
+        //{"verbose", required_argument, nullptr, 'v'},
+        {"image", required_argument, nullptr, 'i'},
+        {"classes", required_argument, nullptr, 'l'},
+        {"mnn_model", required_argument, nullptr, 'm'},
+        {"threads", required_argument, nullptr, 't'},
+        {"input_mean", required_argument, nullptr, 'b'},
+        {"input_std", required_argument, nullptr, 's'},
+        {"warmup_runs", required_argument, nullptr, 'w'},
+        {"help", no_argument, nullptr, 'h'},
+        {nullptr, 0, nullptr, 0}};
+
+    /* getopt_long stores the option index here. */
+    int option_index = 0;
+
+    c = getopt_long(argc, argv,
+                    "a:b:c:hi:l:m:s:t:w:", long_options,
+                    &option_index);
+
+    /* Detect the end of the options. */
+    if (c == -1) break;
+
+    switch (c) {
+      case 'a':
+        s.anchors_file_name = optarg;
+        break;
+      case 'b':
+        s.input_mean = strtod(optarg, nullptr);
+        break;
+      case 'c':
+        s.loop_count =
+            strtol(optarg, nullptr, 10);  // NOLINT(runtime/deprecated_fn)
+        break;
+      case 'i':
+        s.input_img_name = optarg;
+        break;
+      case 'l':
+        s.classes_file_name = optarg;
+        break;
+      case 'm':
+        s.model_name = optarg;
+        break;
+      case 's':
+        s.input_std = strtod(optarg, nullptr);
+        break;
+      case 't':
+        s.number_of_threads = strtol(  // NOLINT(runtime/deprecated_fn)
+            optarg, nullptr, 10);
+        break;
+      //case 'v':
+        //s.verbose =
+            //strtol(optarg, nullptr, 10);  // NOLINT(runtime/deprecated_fn)
+        //break;
+      case 'w':
+        s.number_of_warmup_runs =
+            strtol(optarg, nullptr, 10);  // NOLINT(runtime/deprecated_fn)
+        break;
+      case 'h':
+      case '?':
+      default:
+        /* getopt_long already printed an error message. */
+        display_usage();
+        exit(-1);
+    }
+  }
+  RunInference(&s);
+  return 0;
 }
 
