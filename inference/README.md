@@ -37,13 +37,13 @@ Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux). Since MNN 
 
 Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-dump), [Tensorflow model convert](https://github.com/david8862/keras-YOLOv3-model-set#tensorflow-model-convert) and [MNN model convert](https://www.yuque.com/mnn/cn/model_convert), we need to:
 
-    * dump out inference model from training checkpoint:
+* dump out inference model from training checkpoint:
 
     ```
     # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/tiny_yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=320x320 --dump_model --output_model_file=model.h5
     ```
 
-    * convert keras .h5 model to tensorflow model (frozen pb):
+* convert keras .h5 model to tensorflow model (frozen pb):
 
     ```
     # python keras_to_tensorflow.py
@@ -51,7 +51,7 @@ Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-
         --output_model="path/to/save/model.pb"
     ```
 
-    * convert TF pb model to MNN model:
+* convert TF pb model to MNN model:
 
     ```
     # cd <Path_to_MNN>/tools/converter/build
@@ -123,19 +123,19 @@ If you want to do cross compile for ARM platform, "CMAKE_TOOLCHAIN_FILE" and "TA
 
 Tensorflow-lite support both Float32 and UInt8 type model, so we can dump out the keras .h5 model to Float32 .tflite model or use [post_train_quant_convert.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/post_train_quant_convert.py) script to convert to UInt8 model with TF 2.0 Post-training integer quantization tech, which could be smaller and faster on ARM:
 
-    * dump out inference model from training checkpoint:
+* dump out inference model from training checkpoint:
 
     ```
     # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/tiny_yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=320x320 --dump_model --output_model_file=model.h5
     ```
 
-    * convert keras .h5 model to Float32 tflite model:
+* convert keras .h5 model to Float32 tflite model:
 
     ```
     # tflite_convert --keras_model_file=model.h5 --output_file=model.tflite
     ```
 
-    * convert keras .h5 model to UInt8 tflite model with TF 2.0 Post-training integer quantization:
+* convert keras .h5 model to UInt8 tflite model with TF 2.0 Post-training integer quantization:
 
     ```
     # cd keras-YOLOv3-model-set/tools
@@ -148,7 +148,7 @@ Tensorflow-lite support both Float32 and UInt8 type model, so we can dump out th
 # cd keras-YOLOv3-model-set/tools/
 # python validate_yolo_tflite.py --model_path=model.tflite --anchors_path=../configs/tiny_yolo_anchors.txt --classes_path=../configs/voc_classes.txt --image_file=../example/dog.jpg --loop_count=5
 ```
-#### You can also use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/eval.py) to do evaluation on the TFLite model
+#### You can also use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set#evaluation) to do evaluation on the TFLite model
 
 
 
