@@ -164,7 +164,7 @@ def box_giou(b1, b2):
     return giou
 
 
-def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False, use_softmax_loss=False, use_giou_loss=False):
+def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False, use_focal_obj_loss=False, use_softmax_loss=False, use_giou_loss=False):
     '''Return yolo_loss tensor
 
     Parameters
@@ -229,7 +229,7 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False
         xy_loss = object_mask * box_loss_scale * K.binary_crossentropy(raw_true_xy, raw_pred[...,0:2], from_logits=True)
         wh_loss = object_mask * box_loss_scale * 0.5 * K.square(raw_true_wh-raw_pred[...,2:4])
 
-        if use_focal_loss:
+        if use_focal_obj_loss:
             # Focal loss for objectness confidence
             confidence_loss = sigmoid_focal_loss(object_mask, raw_pred[...,4:5])
         else:
@@ -264,6 +264,9 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False
         total_location_loss += location_loss
         total_confidence_loss += confidence_loss
         total_class_loss += class_loss
+
+    # Fit for tf 2.0.0-rc2 loss shape
+    loss = K.expand_dims(loss, axis=-1)
 
     return loss, total_location_loss, total_confidence_loss, total_class_loss
 

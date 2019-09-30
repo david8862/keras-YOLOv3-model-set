@@ -282,8 +282,8 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 ## Some issues to know
 
 1. The test environment is
-    - Python 3.6.7
-    - tensorflow 1.14.0
+    - Python 3.6.8
+    - tensorflow 2.0.0-rc2
     - tf.keras 2.2.4-tf
 
 2. Default YOLOv3 anchors are used. If you want to use your own anchors, probably some changes are needed. tools/kmeans.py could be used to do K-Means anchor clustering on your dataset

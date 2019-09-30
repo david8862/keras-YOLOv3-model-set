@@ -39,7 +39,6 @@ If you want to do cross compile for ARM platform, "CMAKE_TOOLCHAIN_FILE" should 
 
 3. Convert trained YOLOv3 model to MNN model
 
-both Float32 and UInt8 type model. We can dump out the keras .h5 model to Float32 .tflite model or use [post_train_quant_convert.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/post_train_quant_convert.py) script to convert to UInt8 model with TF 2.0 Post-training integer quantization tech, which could be smaller and faster on ARM:
 Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-dump), [Tensorflow model convert](https://github.com/david8862/keras-YOLOv3-model-set#tensorflow-model-convert) and [MNN model convert](https://www.yuque.com/mnn/cn/model_convert), we need to:
 
 * dump out inference model from training checkpoint:
@@ -62,7 +61,7 @@ Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-
     # mnnconvert -f TF --modelFile model.pb --MNNModel model.pb.mnn --bizCode biz
     ```
 
-MNN support Post Training Integer quantization, so we can use its python CLI interface to do quantization on the generated .mnn model to get quantized .mnn model. A json config file [quantizeConfig.json](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/inference/MNN/configs/quantizeConfig.json) is needed to describe the feeding data:
+MNN support Post Training Integer quantization, so we can use its python CLI interface to do quantization on the generated .mnn model to get quantized .mnn model for ARM acceleration . A json config file [quantizeConfig.json](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/inference/MNN/configs/quantizeConfig.json) is needed to describe the feeding data:
 
 * Quantized MNN model:
 
@@ -113,6 +112,7 @@ Here the [classes](https://github.com/david8862/keras-YOLOv3-model-set/blob/mast
 ### Tensorflow-Lite
 
 1. Build TF-Lite lib
+
 We can do either native compile for X86 or cross-compile for ARM
 
 ```

@@ -12,18 +12,12 @@ from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback
 from yolo3.model import get_yolo3_train_model
 from yolo3.data import data_generator_wrapper
-from yolo3.utils import get_classes, get_anchors, get_dataset
+from yolo3.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import tensorflow as tf
-#config = tf.ConfigProto()
-#config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
-#config.gpu_options.per_process_gpu_memory_fraction = 0.9  #GPU memory threshold 0.3
-#session = tf.Session(config=config)
-
-## set session
-#K.set_session(session)
+optimize_tf_gpu(tf, K)
 
 
 def get_multiscale_param(model_type, tiny_version):
@@ -135,7 +129,6 @@ def _main(args):
     lr_scheduler = LearningRateScheduler(learning_rate_scheduler)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=30, verbose=1)
     terminate_on_nan = TerminateOnNaN()
-    #sess_saver_callback = LambdaCallback(on_epoch_end=lambda epoch, logs: tf.train.Saver().save(sess, log_dir+'model-epoch%03d-loss%.3f-val_loss%.3f' % (epoch, logs['loss'], logs['val_loss'])))
 
     # get train&val dataset
     dataset = get_dataset(annotation_file)

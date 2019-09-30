@@ -8,7 +8,7 @@ import random
 import os, argparse
 from yolo3.postprocess_np import yolo3_postprocess_np, yolo_head, handle_predictions, adjust_boxes
 from yolo3.data import preprocess_image
-from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes, touchdir
+from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes, touchdir, optimize_tf_gpu
 from PIL import Image
 import operator
 import matplotlib.pyplot as plt
@@ -16,14 +16,9 @@ import matplotlib.pyplot as plt
 from tensorflow.keras.models import load_model
 import tensorflow.keras.backend as KTF
 
-#import tensorflow as tf
-#config = tf.ConfigProto()
-#config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
-#config.gpu_options.per_process_gpu_memory_fraction = 0.3  #GPU memory threshold 0.3
-#session = tf.Session(config=config)
+import tensorflow as tf
 
-## set session
-#KTF.set_session(session)
+optimize_tf_gpu(tf, KTF)
 
 
 def annotation_parse(annotation_file, class_names):
