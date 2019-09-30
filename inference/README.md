@@ -203,5 +203,6 @@ dog 0.597517 (109, 215) (326, 519)
 ```
 
 ### TODO
+- [ ] Support MNN model eval with MNN python runtime
 - [ ] further latency optimize on yolo postprocess C++ implementation
 - [ ] refactor demo app to get common interface

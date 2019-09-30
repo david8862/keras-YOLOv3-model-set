@@ -29,9 +29,10 @@ tf.keras implementation of a common YOLOv3 object detection architecture with di
 - [x] Binary focal loss for objectness (experimental)
 
 #### Postprocess
+- [x] Numpy YOLOv3 postprocess implementation
+- [x] TFLite/MNN C++ YOLOv3 postprocess implementation
 - [x] TF YOLOv3 postprocess model
 - [x] tf.keras batch-wise YOLOv3 postprocess Lambda layer
-- [x] Numpy YOLOv3 postprocess implementation
 
 #### Train tech
 - [x] Transfer training from imagenet
@@ -40,7 +41,7 @@ tf.keras implementation of a common YOLOv3 object detection architecture with di
 
 #### On-device deployment
 - [x] Tensorflow-Lite Float32/UInt8 model inference
-- [x] MNN Float32 model inference
+- [x] MNN Float32/UInt8 model inference
 
 
 ## Quick Start
@@ -72,7 +73,7 @@ tf.keras implementation of a common YOLOv3 object detection architecture with di
 For other model, just do in a similar way, but specify different model path and anchor path with `--model_path` and `--anchors_path`.
 
 
-## Guide of train & evaluate & demo process
+## Guide of train/evaluate/demo
 
 ### Train
 1. Generate train/val/test annotation file and class names file.
