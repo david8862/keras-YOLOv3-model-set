@@ -38,6 +38,10 @@ tf.keras implementation of a common YOLOv3 object detection architecture with di
 - [x] Singlescale image input training
 - [x] Multiscale image input training
 
+#### On-device deployment
+- [x] Tensorflow-Lite Float32/UInt8 model inference
+- [x] MNN Float32 model inference
+
 
 ## Quick Start
 
@@ -196,7 +200,7 @@ Loss type couldn't be changed from CLI options. You can try them by changing par
 We need to dump out inference model from training checkpoint for eval or demo. Following script cmd work for that.
 
 ```
-# python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --dump_model --output_model_file=test.h5
+# python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --dump_model --output_model_file=model.h5
 ```
 
 Change model_type, anchors file & class file for different training mode
@@ -209,11 +213,11 @@ Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/ev
 2. MS COCO AP evaluation. Will draw overall AP chart and AP on different scale (small, medium, large) as COCO standard. It can also optionally save all the detection result
 
 ```
-# python eval.py --model_path=test.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.01 --annotation_file=2007_test.txt --save_result
+# python eval.py --model_path=model.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.001 --annotation_file=2007_test.txt --save_result
 ```
 
 Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalVOC dataset (using a reasonable score threshold=0.1):
-<p align="center"> 
+<p align="center">
   <img src="assets/mAP.jpg">
   <img src="assets/COCO_AP.jpg">
 </p>
@@ -249,11 +253,11 @@ And some unsuccessful experiment...
 
 image detection mode
 ```
-# python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --image
+# python yolo.py --model_type=mobilenet_lite --model_path=model.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --image
 ```
 video detection mode
 ```
-# python yolo.py --model_type=mobilenet_lite --model_path=test.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --input=test.mp4
+# python yolo.py --model_type=mobilenet_lite --model_path=model.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --input=test.mp4
 ```
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 
@@ -265,21 +269,13 @@ Using [keras_to_tensorflow](https://github.com/amir-abdi/keras_to_tensorflow) to
     --output_model="path/to/save/model.pb"
 ```
 
-### TFLite convert & validate
-1. Use tflite_convert to generate TFLite inference model. We need to specify input node name and input shape since our inference model doesn't have input image shape. Only valid under tensorflow 1.13
-```
-# tflite_convert [--post_training_quantize] --input_arrays=image_input --input_shapes=1,416,416,3 --output_file=test[_quant].tflite --keras_model_file=test.h5
-```
-2. Run TFLite validate script
-```
-# cd tools/
-# python validate_yolo_tflite.py --model_path=test.tflite --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --image_file=test.jpg --loop_count=1
-```
-#### You can also use "eval.py" to do evaluate on the TFLite model
+### Inference model deployment
+See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/inference) for TFLite & MNN model deployment
+
 
 ### TODO
-- [ ] pure keras backend postprocess layer for TFLite model convert
-- [ ] TFLite C++ implementation of postprocess
+- [ ] support pruned model training with [tensorflow_model_optimization](https://github.com/tensorflow/model-optimization/blob/master/tensorflow_model_optimization/g3doc/guide/pruning/train_sparse_models.md)
+- [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/yolo3/models/backbones/imagenet_training)
 
 
 ## Some issues to know

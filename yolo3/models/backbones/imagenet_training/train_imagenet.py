@@ -20,14 +20,14 @@ from shufflenet_v2 import ShuffleNetV2
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
-import tensorflow as tf
-config = tf.ConfigProto()
-config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
-config.gpu_options.per_process_gpu_memory_fraction = 0.9  #GPU memory threshold 0.3
-session = tf.Session(config=config)
+#import tensorflow as tf
+#config = tf.ConfigProto()
+#config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
+#config.gpu_options.per_process_gpu_memory_fraction = 0.9  #GPU memory threshold 0.3
+#session = tf.Session(config=config)
 
-# set session
-K.set_session(session)
+## set session
+#K.set_session(session)
 
 
 def preprocess(x):

@@ -126,7 +126,7 @@ def add_metrics(model, loss_dict):
 
 def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, learning_rate=1e-3):
     '''create the training model, for YOLOv3'''
-    K.clear_session() # get a new session
+    #K.clear_session() # get a new session
     num_anchors = len(anchors)
     #YOLOv3 model has 9 anchors and 3 feature layers but
     #Tiny YOLOv3 model has 6 anchors and 2 feature layers,
@@ -176,7 +176,7 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
 
 def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=None, input_shape=None, confidence=0.1):
     '''create the inference model, for YOLOv3'''
-    K.clear_session() # get a new session
+    #K.clear_session() # get a new session
     num_anchors = len(anchors)
     #YOLOv3 model has 9 anchors and 3 feature layers but
     #Tiny YOLOv3 model has 6 anchors and 2 feature layers,
@@ -202,7 +202,7 @@ def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=Non
 
 def get_yolo3_prenms_model(model_type, anchors, num_classes, weights_path=None, input_shape=None):
     '''create the prenms model, for YOLOv3'''
-    K.clear_session() # get a new session
+    #K.clear_session() # get a new session
     num_anchors = len(anchors)
     #YOLOv3 model has 9 anchors and 3 feature layers but
     #Tiny YOLOv3 model has 6 anchors and 2 feature layers,

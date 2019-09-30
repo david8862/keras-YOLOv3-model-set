@@ -24,7 +24,7 @@ from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes, touchd
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 from tensorflow.keras.utils import multi_gpu_model
 
-tf.enable_eager_execution()
+#tf.enable_eager_execution()
 
 default_config = {
         "model_type": 'darknet',

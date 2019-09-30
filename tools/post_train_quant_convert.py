@@ -1,17 +1,18 @@
 """
 Script to convert YOLO keras model to an integer quantized tflite model
 using latest Post-Training Integer Quantization Toolkit released in
-tensorflow 1.14.1 nightly build
+tensorflow 2.0.0-rc2 build
 """
 
 import os, sys, argparse
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras.models import load_model
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from yolo3.data import get_random_data
 
-tf.enable_eager_execution()
+#tf.enable_eager_execution()
 
 
 def post_train_quant_convert(keras_model_file, annotation_file, sample_num, model_input_shape, output_file):
@@ -21,7 +22,8 @@ def post_train_quant_convert(keras_model_file, annotation_file, sample_num, mode
     with open(annotation_file) as f:
         annotation_lines = f.readlines()
 
-    converter = tf.lite.TFLiteConverter.from_keras_model_file(keras_model_file, input_shapes={"image_input" : input_shapes})
+    model = load_model(keras_model_file)
+    converter = tf.lite.TFLiteConverter.from_keras_model(model)
 
     def data_generator():
         n = len(annotation_lines)

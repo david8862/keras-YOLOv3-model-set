@@ -17,13 +17,13 @@ from yolo3.utils import get_classes, get_anchors, get_dataset
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import tensorflow as tf
-config = tf.ConfigProto()
-config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
-config.gpu_options.per_process_gpu_memory_fraction = 0.9  #GPU memory threshold 0.3
-session = tf.Session(config=config)
+#config = tf.ConfigProto()
+#config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
+#config.gpu_options.per_process_gpu_memory_fraction = 0.9  #GPU memory threshold 0.3
+#session = tf.Session(config=config)
 
-# set session
-K.set_session(session)
+## set session
+#K.set_session(session)
 
 
 def get_multiscale_param(model_type, tiny_version):
@@ -135,7 +135,7 @@ def _main(args):
     lr_scheduler = LearningRateScheduler(learning_rate_scheduler)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=30, verbose=1)
     terminate_on_nan = TerminateOnNaN()
-    sess_saver_callback = LambdaCallback(on_epoch_end=lambda epoch, logs: tf.train.Saver().save(sess, log_dir+'model-epoch%03d-loss%.3f-val_loss%.3f' % (epoch, logs['loss'], logs['val_loss'])))
+    #sess_saver_callback = LambdaCallback(on_epoch_end=lambda epoch, logs: tf.train.Saver().save(sess, log_dir+'model-epoch%03d-loss%.3f-val_loss%.3f' % (epoch, logs['loss'], logs['val_loss'])))
 
     # get train&val dataset
     dataset = get_dataset(annotation_file)

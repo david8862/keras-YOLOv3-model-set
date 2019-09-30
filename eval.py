@@ -16,14 +16,14 @@ import matplotlib.pyplot as plt
 from tensorflow.keras.models import load_model
 import tensorflow.keras.backend as KTF
 
-import tensorflow as tf
-config = tf.ConfigProto()
-config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
-config.gpu_options.per_process_gpu_memory_fraction = 0.3  #GPU memory threshold 0.3
-session = tf.Session(config=config)
+#import tensorflow as tf
+#config = tf.ConfigProto()
+#config.gpu_options.allow_growth=True   #dynamic alloc GPU resource
+#config.gpu_options.per_process_gpu_memory_fraction = 0.3  #GPU memory threshold 0.3
+#session = tf.Session(config=config)
 
-# set session
-KTF.set_session(session)
+## set session
+#KTF.set_session(session)
 
 
 def annotation_parse(annotation_file, class_names):

@@ -443,9 +443,9 @@ void RunInference(Settings* s) {
       LOG(FATAL) << "Can't open" << s->input_img_name << "\n";
       exit(-1);
   }
-  std::vector<uint8_t> in(inputImage, inputImage + image_width * image_height * image_channel * sizeof(uint8_t));
+  std::vector<uint8_t> in(input_image, input_image + image_width * image_height * image_channel * sizeof(uint8_t));
   // free input image
-  stbi_image_free(inputImage);
+  stbi_image_free(input_image);
 
   // assuming one input only
   int input = interpreter->inputs()[0];
