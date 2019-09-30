@@ -79,6 +79,10 @@ Checkpoints during training could be found at logs/. Choose a best one as result
 MultiGPU usage: use `--gpu_num N` to use N GPUs. It is passed to the [Keras multi_gpu_model()](https://keras.io/utils/#multi_gpu_model).
 
 
+### TODO
+- [ ] use [tensorflow_datasets](https://github.com/tensorflow/datasets) for image data feeding, to improve training efficiency on large dataset like Imagenet 2012
+
+
 ### Environment
 - Python 3.6.7
 - tensorflow 1.14.0

@@ -8,11 +8,13 @@ Here are some C++ implementation of the on-device inference for trained YOLOv3 i
 
 ### MNN
 
-1. Build libMNN and model convert tool
+1. Install Python runtime and Build libMNN
 
 Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux). Since MNN support both X86 & ARM platform, we can do either native compile or ARM cross-compile
 ```
 # apt install ocl-icd-opencl-dev
+# pip install --upgrade pip && pip install --upgrade mnn
+
 # git clone https://github.com/alibaba/MNN.git <Path_to_MNN>
 # cd <Path_to_MNN>
 # ./schema/generate.sh
@@ -24,6 +26,8 @@ Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux). Since MNN 
 # ./generate_schema.sh
 # mkdir build && cd build && cmake .. && make -j4
 ```
+If you want to do cross compile for ARM platform, "CMAKE_TOOLCHAIN_FILE" should be specified
+
 
 2. Build demo inference application
 ```
@@ -35,6 +39,7 @@ Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux). Since MNN 
 
 3. Convert trained YOLOv3 model to MNN model
 
+both Float32 and UInt8 type model. We can dump out the keras .h5 model to Float32 .tflite model or use [post_train_quant_convert.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/post_train_quant_convert.py) script to convert to UInt8 model with TF 2.0 Post-training integer quantization tech, which could be smaller and faster on ARM:
 Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-dump), [Tensorflow model convert](https://github.com/david8862/keras-YOLOv3-model-set#tensorflow-model-convert) and [MNN model convert](https://www.yuque.com/mnn/cn/model_convert), we need to:
 
 * dump out inference model from training checkpoint:
@@ -54,9 +59,17 @@ Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-
 * convert TF pb model to MNN model:
 
     ```
-    # cd <Path_to_MNN>/tools/converter/build
-    # ./MNNConvert -f TF --modelFile model.pb --MNNModel model.pb.mnn --bizCode biz
+    # mnnconvert -f TF --modelFile model.pb --MNNModel model.pb.mnn --bizCode biz
     ```
+
+MNN support Post Training Integer quantization, so we can use its python CLI interface to do quantization on the generated .mnn model to get quantized .mnn model. A json config file [quantizeConfig.json](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/inference/MNN/configs/quantizeConfig.json) is needed to describe the feeding data:
+
+* Quantized MNN model:
+
+    ```
+    # mnnquant model.pb.mnn model_quant.pb.mnn quantizeConfig.json
+    ```
+
 
 4. Run application to do inference with model, or put all the assets to your ARM board and run if you use cross-compile
 ```
@@ -121,7 +134,7 @@ If you want to do cross compile for ARM platform, "CMAKE_TOOLCHAIN_FILE" and "TA
 
 3. Convert trained YOLOv3 model to tflite model
 
-Tensorflow-lite support both Float32 and UInt8 type model, so we can dump out the keras .h5 model to Float32 .tflite model or use [post_train_quant_convert.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/post_train_quant_convert.py) script to convert to UInt8 model with TF 2.0 Post-training integer quantization tech, which could be smaller and faster on ARM:
+Tensorflow-lite support both Float32 and UInt8 type model. We can dump out the keras .h5 model to Float32 .tflite model or use [post_train_quant_convert.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/post_train_quant_convert.py) script to convert to UInt8 model with TF 2.0 Post-training integer quantization tech, which could be smaller and faster on ARM:
 
 * dump out inference model from training checkpoint:
 
@@ -190,6 +203,5 @@ dog 0.597517 (109, 215) (326, 519)
 ```
 
 ### TODO
-- [ ] Support MNN Quantized model
 - [ ] further latency optimize on yolo postprocess C++ implementation
 - [ ] refactor demo app to get common interface

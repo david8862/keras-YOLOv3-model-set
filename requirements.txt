@@ -4,3 +4,4 @@ opencv-python
 tensorflow-gpu
 matplotlib
 pillow
+mnn

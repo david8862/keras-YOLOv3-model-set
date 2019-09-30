@@ -1,0 +1,19 @@
+{
+    "format":"RGB",
+    "mean":[
+        0.0,
+        0.0,
+        0.0
+    ],
+    "normal":[
+        0.00392157,
+        0.00392157,
+        0.00392157
+    ],
+    "width":320,
+    "height":320,
+    "path":"/mnt/d/Projects/keras-YOLOv3-model-set/VOCdevkit/VOC2007/JPEGImages/",
+    "used_image_num":500,
+    "feature_quantize_method":"KL",
+    "weight_quantize_method":"MAX_ABS"
+}
