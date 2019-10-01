@@ -10,9 +10,14 @@ Here are some C++ implementation of the on-device inference for trained YOLOv3 i
 
 1. Install Python runtime and Build libMNN
 
-Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux). Since MNN support both X86 & ARM platform, we can do either native compile or ARM cross-compile
+Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux), we need to prepare cmake & protobuf first for MNN build. And since MNN support both X86 & ARM platform, we can do either native compile or ARM cross-compile
 ```
-# apt install ocl-icd-opencl-dev
+# apt install cmake autoconf automake libtool ocl-icd-opencl-dev
+# wget https://github.com/google/protobuf/releases/download/v3.4.1/protobuf-cpp-3.4.1.tar.gz
+# tar xzvf protobuf-cpp-3.4.1.tar.gz
+# cd protobuf-3.4.1
+# ./autogen.sh
+# ./configure && make && make check && make install && ldconfig
 # pip install --upgrade pip && pip install --upgrade mnn
 
 # git clone https://github.com/alibaba/MNN.git <Path_to_MNN>

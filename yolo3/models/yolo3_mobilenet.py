@@ -7,7 +7,7 @@ from tensorflow.keras.applications.mobilenet import MobileNet
 from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, make_last_layers, make_depthwise_separable_last_layers, make_spp_depthwise_separable_last_layers
 
 
-def yolo_mobilenet_body(inputs, num_anchors, num_classes):
+def yolo_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     """Create YOLO_V3 MobileNet model CNN body in Keras."""
     '''
     Layer Name: input_1 Output: Tensor("input_1:0", shape=(?, 416, 416, 3), dtype=float32)
@@ -114,167 +114,167 @@ def yolo_mobilenet_body(inputs, num_anchors, num_classes):
     Layer Name: reshape_2 Output: Tensor("reshape_2/Reshape:0", shape=(?, 1000), dtype=float32)
     '''
 
-    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False)
+    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
     # input: 416 x 416 x 3
-    # conv_pw_13_relu :13 x 13 x 1024
-    # conv_pw_11_relu :26 x 26 x 512
-    # conv_pw_5_relu : 52 x 52 x 256
+    # conv_pw_13_relu :13 x 13 x (1024*alpha)
+    # conv_pw_11_relu :26 x 26 x (512*alpha)
+    # conv_pw_5_relu : 52 x 52 x (256*alpha)
 
     f1 = mobilenet.get_layer('conv_pw_13_relu').output
-    # f1 :13 x 13 x 1024
-    x, y1 = make_last_layers(f1, 512, num_anchors * (num_classes + 5))
+    # f1 :13 x 13 x (1024*alpha)
+    x, y1 = make_last_layers(f1, int(512*alpha), num_anchors * (num_classes + 5))
 
     x = compose(
-            DarknetConv2D_BN_Leaky(256, (1,1)),
+            DarknetConv2D_BN_Leaky(int(256*alpha), (1,1)),
             UpSampling2D(2))(x)
 
     f2 = mobilenet.get_layer('conv_pw_11_relu').output
-    # f2: 26 x 26 x 512
+    # f2: 26 x 26 x (512*alpha)
     x = Concatenate()([x,f2])
 
-    x, y2 = make_last_layers(x, 256, num_anchors*(num_classes+5))
+    x, y2 = make_last_layers(x, int(256*alpha), num_anchors*(num_classes+5))
 
     x = compose(
-            DarknetConv2D_BN_Leaky(128, (1,1)),
+            DarknetConv2D_BN_Leaky(int(128*alpha), (1,1)),
             UpSampling2D(2))(x)
 
     f3 = mobilenet.get_layer('conv_pw_5_relu').output
-    # f3 : 52 x 52 x 256
+    # f3 : 52 x 52 x  (256*alpha)
     x = Concatenate()([x, f3])
-    x, y3 = make_last_layers(x, 128, num_anchors*(num_classes+5))
+    x, y3 = make_last_layers(x, int(128*alpha), num_anchors*(num_classes+5))
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def yololite_mobilenet_body(inputs, num_anchors, num_classes):
+def yololite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     '''Create YOLO_v3 Lite MobileNet model CNN body in keras.'''
-    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False)
+    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
     # input: 416 x 416 x 3
-    # conv_pw_13_relu :13 x 13 x 1024
-    # conv_pw_11_relu :26 x 26 x 512
-    # conv_pw_5_relu : 52 x 52 x 256
+    # conv_pw_13_relu :13 x 13 x (1024*alpha)
+    # conv_pw_11_relu :26 x 26 x (512*alpha)
+    # conv_pw_5_relu : 52 x 52 x (256*alpha)
 
     f1 = mobilenet.get_layer('conv_pw_13_relu').output
-    # f1 :13 x 13 x 1024
-    x, y1 = make_depthwise_separable_last_layers(f1, 512, num_anchors * (num_classes + 5), block_id_str='14')
+    # f1 :13 x 13 x (1024*alpha)
+    x, y1 = make_depthwise_separable_last_layers(f1, int(512*alpha), num_anchors * (num_classes + 5), block_id_str='14')
 
     x = compose(
-            DarknetConv2D_BN_Leaky(256, (1,1)),
+            DarknetConv2D_BN_Leaky(int(256*alpha), (1,1)),
             UpSampling2D(2))(x)
 
     f2 = mobilenet.get_layer('conv_pw_11_relu').output
-    # f2: 26 x 26 x 512
+    # f2: 26 x 26 x (512*alpha)
     x = Concatenate()([x,f2])
 
-    x, y2 = make_depthwise_separable_last_layers(x, 256, num_anchors * (num_classes + 5), block_id_str='15')
+    x, y2 = make_depthwise_separable_last_layers(x, int(256*alpha), num_anchors * (num_classes + 5), block_id_str='15')
 
     x = compose(
-            DarknetConv2D_BN_Leaky(128, (1,1)),
+            DarknetConv2D_BN_Leaky(int(128*alpha), (1,1)),
             UpSampling2D(2))(x)
 
     f3 = mobilenet.get_layer('conv_pw_5_relu').output
-    # f3 : 52 x 52 x 256
+    # f3 : 52 x 52 x (256*alpha)
     x = Concatenate()([x, f3])
-    x, y3 = make_depthwise_separable_last_layers(x, 128, num_anchors * (num_classes + 5), block_id_str='16')
+    x, y3 = make_depthwise_separable_last_layers(x, int(128*alpha), num_anchors * (num_classes + 5), block_id_str='16')
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def yololite_spp_mobilenet_body(inputs, num_anchors, num_classes):
+def yololite_spp_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     '''Create YOLO_v3 Lite SPP MobileNet model CNN body in keras.'''
-    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False)
+    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
     # input: 416 x 416 x 3
-    # conv_pw_13_relu :13 x 13 x 1024
-    # conv_pw_11_relu :26 x 26 x 512
-    # conv_pw_5_relu : 52 x 52 x 256
+    # conv_pw_13_relu :13 x 13 x (1024*alpha)
+    # conv_pw_11_relu :26 x 26 x (512*alpha)
+    # conv_pw_5_relu : 52 x 52 x (256*alpha)
 
     f1 = mobilenet.get_layer('conv_pw_13_relu').output
-    # f1 :13 x 13 x 1024
-    #x, y1 = make_depthwise_separable_last_layers(f1, 512, num_anchors * (num_classes + 5), block_id_str='14')
-    x, y1 = make_spp_depthwise_separable_last_layers(f1, 512, num_anchors * (num_classes + 5), block_id_str='14')
+    # f1 :13 x 13 x (1024*alpha)
+    #x, y1 = make_depthwise_separable_last_layers(f1, int(512*alpha), num_anchors * (num_classes + 5), block_id_str='14')
+    x, y1 = make_spp_depthwise_separable_last_layers(f1, int(512*alpha), num_anchors * (num_classes + 5), block_id_str='14')
 
     x = compose(
-            DarknetConv2D_BN_Leaky(256, (1,1)),
+            DarknetConv2D_BN_Leaky(int(256*alpha), (1,1)),
             UpSampling2D(2))(x)
 
     f2 = mobilenet.get_layer('conv_pw_11_relu').output
-    # f2: 26 x 26 x 512
+    # f2: 26 x 26 x (512*alpha)
     x = Concatenate()([x,f2])
 
-    x, y2 = make_depthwise_separable_last_layers(x, 256, num_anchors * (num_classes + 5), block_id_str='15')
+    x, y2 = make_depthwise_separable_last_layers(x, int(256*alpha), num_anchors * (num_classes + 5), block_id_str='15')
 
     x = compose(
-            DarknetConv2D_BN_Leaky(128, (1,1)),
+            DarknetConv2D_BN_Leaky(int(128*alpha), (1,1)),
             UpSampling2D(2))(x)
 
     f3 = mobilenet.get_layer('conv_pw_5_relu').output
-    # f3 : 52 x 52 x 256
+    # f3 : 52 x 52 x (256*alpha)
     x = Concatenate()([x, f3])
-    x, y3 = make_depthwise_separable_last_layers(x, 128, num_anchors * (num_classes + 5), block_id_str='16')
+    x, y3 = make_depthwise_separable_last_layers(x, int(128*alpha), num_anchors * (num_classes + 5), block_id_str='16')
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def tiny_yolo_mobilenet_body(inputs, num_anchors, num_classes):
+def tiny_yolo_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     '''Create Tiny YOLO_v3 MobileNet model CNN body in keras.'''
-    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False)
+    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
     # input: 416 x 416 x 3
-    # conv_pw_13_relu :13 x 13 x 1024
-    # conv_pw_11_relu :26 x 26 x 512
-    # conv_pw_5_relu : 52 x 52 x 256
+    # conv_pw_13_relu :13 x 13 x (1024*alpha)
+    # conv_pw_11_relu :26 x 26 x (512*alpha)
+    # conv_pw_5_relu : 52 x 52 x (256*alpha)
 
     x1 = mobilenet.get_layer('conv_pw_11_relu').output
 
     x2 = mobilenet.get_layer('conv_pw_13_relu').output
-    x2 = DarknetConv2D_BN_Leaky(512, (1,1))(x2)
+    x2 = DarknetConv2D_BN_Leaky(int(512*alpha), (1,1))(x2)
 
     y1 = compose(
-            DarknetConv2D_BN_Leaky(1024, (3,3)),
-            #Depthwise_Separable_Conv2D_BN_Leaky(filters=1024, kernel_size=(3, 3), block_id_str='14'),
+            DarknetConv2D_BN_Leaky(int(1024*alpha), (3,3)),
+            #Depthwise_Separable_Conv2D_BN_Leaky(filters=int(1024*alpha), kernel_size=(3, 3), block_id_str='14'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
     x2 = compose(
-            DarknetConv2D_BN_Leaky(256, (1,1)),
+            DarknetConv2D_BN_Leaky(int(256*alpha), (1,1)),
             UpSampling2D(2))(x2)
     y2 = compose(
             Concatenate(),
-            DarknetConv2D_BN_Leaky(512, (3,3)),
-            #Depthwise_Separable_Conv2D_BN_Leaky(filters=512, kernel_size=(3, 3), block_id_str='15'),
+            DarknetConv2D_BN_Leaky(int(512*alpha), (3,3)),
+            #Depthwise_Separable_Conv2D_BN_Leaky(filters=int(512*alpha), kernel_size=(3, 3), block_id_str='15'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
 
     return Model(inputs, [y1,y2])
 
 
-def tiny_yololite_mobilenet_body(inputs, num_anchors, num_classes):
+def tiny_yololite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     '''Create Tiny YOLO_v3 Lite MobileNet model CNN body in keras.'''
-    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False)
+    mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
     # input: 416 x 416 x 3
-    # conv_pw_13_relu :13 x 13 x 1024
-    # conv_pw_11_relu :26 x 26 x 512
-    # conv_pw_5_relu : 52 x 52 x 256
+    # conv_pw_13_relu :13 x 13 x (1024*alpha)
+    # conv_pw_11_relu :26 x 26 x (512*alpha)
+    # conv_pw_5_relu : 52 x 52 x (256*alpha)
 
     x1 = mobilenet.get_layer('conv_pw_11_relu').output
 
     x2 = mobilenet.get_layer('conv_pw_13_relu').output
-    x2 = DarknetConv2D_BN_Leaky(512, (1,1))(x2)
+    x2 = DarknetConv2D_BN_Leaky(int(512*alpha), (1,1))(x2)
 
     y1 = compose(
-            #DarknetConv2D_BN_Leaky(1024, (3,3)),
-            Depthwise_Separable_Conv2D_BN_Leaky(filters=1024, kernel_size=(3, 3), block_id_str='14'),
+            #DarknetConv2D_BN_Leaky(int(1024*alpha), (3,3)),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=int(1024*alpha), kernel_size=(3, 3), block_id_str='14'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
     x2 = compose(
-            DarknetConv2D_BN_Leaky(256, (1,1)),
+            DarknetConv2D_BN_Leaky(int(256*alpha), (1,1)),
             UpSampling2D(2))(x2)
     y2 = compose(
             Concatenate(),
-            #DarknetConv2D_BN_Leaky(512, (3,3)),
-            Depthwise_Separable_Conv2D_BN_Leaky(filters=512, kernel_size=(3, 3), block_id_str='15'),
+            #DarknetConv2D_BN_Leaky(int(512*alpha), (3,3)),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=int(512*alpha), kernel_size=(3, 3), block_id_str='15'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
 
     return Model(inputs, [y1,y2])
