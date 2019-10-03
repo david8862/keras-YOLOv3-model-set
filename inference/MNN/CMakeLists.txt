@@ -4,7 +4,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 SET(CMAKE_BUILD_TYPE "Release")
 
 #### specify the compiler flag
-SET(CMAKE_CXX_FLAGS  "-std=c++11")
+SET(CMAKE_CXX_FLAGS  "-std=c++11 -O2")
 
 set(YOLOV3_DETECTION_SRC
         yolov3Detection.cpp)

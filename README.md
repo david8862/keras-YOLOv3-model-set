@@ -276,6 +276,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 ### TODO
 - [ ] support pruned model training with [tensorflow_model_optimization](https://github.com/tensorflow/model-optimization/blob/master/tensorflow_model_optimization/g3doc/guide/pruning/train_sparse_models.md)
+- [ ] support more tricks (label smooth/mix up/etc.)
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/yolo3/models/backbones/imagenet_training)
 
 
