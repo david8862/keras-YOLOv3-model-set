@@ -491,7 +491,11 @@ void RunInference(Settings* s) {
     auto session = net->createSession(config);
 
     // get input tensor info
-    auto image_input = net->getSessionInput(session, NULL);
+    // assume only 1 input tensor (image_input)
+    auto inputs = net->getSessionInputAll(session);
+    MNN_ASSERT(inputs.size() == 1);
+    auto image_input = inputs.begin()->second;
+
     auto shape = image_input->shape();
     int input_width = image_input->width();
     int input_height = image_input->height();
@@ -540,31 +544,15 @@ void RunInference(Settings* s) {
     // load input image
     auto inputPatch = s->input_img_name.c_str();
     int image_width, image_height, image_channel;
-    auto inputImage = stbi_load(inputPatch, &image_width, &image_height, &image_channel, 4);
+    auto inputImage = stbi_load(inputPatch, &image_width, &image_height, &image_channel, 3);
     if (nullptr == inputImage) {
         MNN_ERROR("Can't open %s\n", inputPatch);
         return;
     }
     MNN_PRINT("origin image size: width:%d, height:%d, channel:%d\n", image_width, image_height, image_channel);
     Matrix trans;
-    // Set transform, from dst scale to src, the ways below are both ok
-#ifdef USE_MAP_POINT
-    float srcPoints[] = {
-        0.0f, 0.0f,
-        0.0f, (float)(image_height-1),
-        (float)(image_width-1), 0.0f,
-        (float)(image_width-1), (float)(image_height-1),
-    };
-    float dstPoints[] = {
-        0.0f, 0.0f,
-        0.0f, (float)(input_height-1),
-        (float)(input_width-1), 0.0f,
-        (float)(input_width-1), (float)(input_height-1),
-    };
-    trans.setPolyToPoly((Point*)dstPoints, (Point*)srcPoints, 4);
-#else
     trans.setScale((float)(image_width-1) / (input_width-1), (float)(image_height-1) / (input_height-1));
-#endif
+
     ImageProcess::Config pretreat_config;
     pretreat_config.filterType = BILINEAR;
 
@@ -576,7 +564,7 @@ void RunInference(Settings* s) {
 
     ::memcpy(pretreat_config.mean, mean, sizeof(mean));
     ::memcpy(pretreat_config.normal, normals, sizeof(normals));
-    pretreat_config.sourceFormat = RGBA;
+    pretreat_config.sourceFormat = RGB;
     pretreat_config.destFormat   = RGB;
 
     std::shared_ptr<ImageProcess> pretreat(ImageProcess::create(pretreat_config));
@@ -588,7 +576,7 @@ void RunInference(Settings* s) {
         for (int i = 0; i < s->number_of_warmup_runs; i++) {
             pretreat->convert((uint8_t*)inputImage, image_width, image_height, 0, image_input);
             if (net->runSession(session) != NO_ERROR) {
-                MNN_PRINT("Failed to invoke tflite!\n");
+                MNN_PRINT("Failed to invoke MNN!\n");
             }
         }
 
@@ -597,7 +585,7 @@ void RunInference(Settings* s) {
     for (int i = 0; i < s->loop_count; i++) {
         pretreat->convert((uint8_t*)inputImage, image_width, image_height, 0, image_input);
         if (net->runSession(session) != NO_ERROR) {
-            MNN_PRINT("Failed to invoke tflite!\n");
+            MNN_PRINT("Failed to invoke MNN!\n");
         }
     }
     gettimeofday(&stop_time, nullptr);
