@@ -27,6 +27,7 @@ tf.keras implementation of a common YOLOv3 object detection architecture with di
 - [x] Softmax focal classification loss
 - [x] GIoU localization loss
 - [x] Binary focal loss for objectness (experimental)
+- [x] Label smoothing for classification loss
 
 #### Postprocess
 - [x] Numpy YOLOv3 postprocess implementation
@@ -150,7 +151,8 @@ usage: train.py [-h] [--model_type MODEL_TYPE] [--tiny_version]
                 [--learning_rate LEARNING_RATE] [--batch_size BATCH_SIZE]
                 [--init_epoch INIT_EPOCH] [--total_epoch TOTAL_EPOCH]
                 [--multiscale] [--rescale_interval RESCALE_INTERVAL]
-                [--data_shuffle] [--gpu_num GPU_NUM]
+                [--label_smoothing LABEL_SMOOTHING] [--data_shuffle]
+                [--gpu_num GPU_NUM]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -188,6 +190,9 @@ optional arguments:
   --rescale_interval RESCALE_INTERVAL
                         Number of epoch interval to rescale input image,
                         default=10
+  --label_smoothing LABEL_SMOOTHING
+                        Label smoothing factor (between 0 and 1) for
+                        classification loss, default=0
   --data_shuffle        Whether to shuffle train/val data for cross-validation
   --gpu_num GPU_NUM     Number of GPU to use, default=1
 ```

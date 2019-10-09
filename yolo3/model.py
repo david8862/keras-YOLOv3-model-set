@@ -124,7 +124,7 @@ def add_metrics(model, loss_dict):
         model.add_metric(loss, name=name, aggregation='mean')
 
 
-def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, learning_rate=1e-3):
+def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, learning_rate=1e-3, label_smoothing=0):
     '''create the training model, for YOLOv3'''
     #K.clear_session() # get a new session
     num_anchors = len(anchors)
@@ -160,7 +160,7 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
         print('Unfreeze all of the layers.')
 
     model_loss, location_loss, confidence_loss, class_loss = Lambda(yolo_loss, name='yolo_loss',
-            arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5, 'use_focal_loss': False, 'use_focal_obj_loss': False, 'use_softmax_loss': False, 'use_giou_loss': False})(
+            arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5, 'use_focal_loss': False, 'use_focal_obj_loss': False, 'use_softmax_loss': False, 'use_giou_loss': False, 'label_smoothing': label_smoothing})(
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)
 

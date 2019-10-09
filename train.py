@@ -150,7 +150,7 @@ def _main(args):
         batch_size_list = [args.batch_size]
 
     # get train model
-    model = get_yolo3_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate)
+    model = get_yolo3_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate, label_smoothing=args.label_smoothing)
     # support multi-gpu training
     if args.gpu_num >= 2:
         model = multi_gpu_model(model, gpus=args.gpu_num)
@@ -253,6 +253,8 @@ if __name__ == '__main__':
         help='Whether to use multiscale training')
     parser.add_argument('--rescale_interval', type=int, required=False, default=10,
         help = "Number of epoch interval to rescale input image, default=10")
+    parser.add_argument('--label_smoothing', type=float, required=False, default=0,
+        help = "Label smoothing factor (between 0 and 1) for classification loss, default=0")
     parser.add_argument('--data_shuffle', default=False, action="store_true",
         help='Whether to shuffle train/val data for cross-validation')
     parser.add_argument('--gpu_num', type=int, required=False, default=1,
