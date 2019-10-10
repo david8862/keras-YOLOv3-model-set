@@ -157,8 +157,8 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
     image_shape = image.size
 
     # use a temp tensor to copy data
-    tmp_input = MNN.Tensor(input_shape, MNN.Halide_Type_Float,\
-                    image_data, MNN.Tensor_DimensionType_Tensorflow)
+    tmp_input = MNN.Tensor(input_shape, input_tensor.getDataType(),\
+                    image_data, input_tensor.getDimensionType())
 
     input_tensor.copyFrom(tmp_input)
     interpreter.runSession(session)
