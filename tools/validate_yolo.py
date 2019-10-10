@@ -37,18 +37,14 @@ def validate_yolo_model(model, image_file, anchors, class_names, model_image_siz
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', help='model file to predict', type=str)
-    parser.add_argument('--image_file', help='image file to predict', type=str)
-    parser.add_argument('--anchors_path',help='path to anchor definitions', type=str)
-    parser.add_argument('--classes_path', help='path to class definitions, default model_data/voc_classes.txt', type=str, default='model_data/voc_classes.txt')
+    parser.add_argument('--model_path', help='model file to predict', type=str, required=True)
+    parser.add_argument('--image_file', help='image file to predict', type=str, required=True)
+    parser.add_argument('--anchors_path',help='path to anchor definitions', type=str, required=True)
+    parser.add_argument('--classes_path', help='path to class definitions, default ../configs/voc_classes.txt', type=str, default='../configs/voc_classes.txt')
     parser.add_argument('--model_image_size', help='model image input size as <num>x<num>, default 416x416', type=str, default='416x416')
     parser.add_argument('--loop_count', help='loop inference for certain times', type=int, default=1)
 
     args = parser.parse_args()
-    if not args.model_path:
-        raise ValueError('model file is not specified')
-    if not args.image_file:
-        raise ValueError('image file is not specified')
 
     # param parse
     model = load_model(args.model_path, compile=False)

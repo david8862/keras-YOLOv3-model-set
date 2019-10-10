@@ -44,12 +44,12 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, loo
     end = time.time()
     print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
 
-    start = time.time()
     out_list = []
     for output_detail in output_details:
         output_data = interpreter.get_tensor(output_detail['index'])
         out_list.append(output_data)
 
+    start = time.time()
     predictions = yolo_head(out_list, anchors, num_classes=len(class_names), input_dims=(height, width))
 
     boxes, classes, scores = handle_predictions(predictions, confidence=0.1, iou_threshold=0.4)
@@ -70,17 +70,13 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, loo
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', help='model file to predict', type=str)
-    parser.add_argument('--image_file', help='image file to predict', type=str)
-    parser.add_argument('--anchors_path',help='path to anchor definitions', type=str)
-    parser.add_argument('--classes_path', help='path to class definitions, default model_data/voc_classes.txt', type=str, default='model_data/voc_classes.txt')
+    parser.add_argument('--model_path', help='model file to predict', type=str, required=True)
+    parser.add_argument('--image_file', help='image file to predict', type=str, required=True)
+    parser.add_argument('--anchors_path',help='path to anchor definitions', type=str, required=True)
+    parser.add_argument('--classes_path', help='path to class definitions, default ../configs/voc_classes.txt', type=str, default='../configs/voc_classes.txt')
     parser.add_argument('--loop_count', help='loop inference for certain times', type=int, default=1)
 
     args = parser.parse_args()
-    if not args.model_path:
-        raise ValueError('model file is not specified')
-    if not args.image_file:
-        raise ValueError('image file is not specified')
 
     # param parse
     anchors = get_anchors(args.anchors_path)

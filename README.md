@@ -281,7 +281,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 ### TODO
 - [ ] support pruned model training with [tensorflow_model_optimization](https://github.com/tensorflow/model-optimization/blob/master/tensorflow_model_optimization/g3doc/guide/pruning/train_sparse_models.md)
-- [ ] support more tricks (label smooth/mix up/etc.)
+- [ ] support YOLO nano model [YOLO nano](https://arxiv.org/abs/1910.01271)
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/yolo3/models/backbones/imagenet_training)
 
 
@@ -289,7 +289,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 1. The test environment is
     - Python 3.6.8
-    - tensorflow 2.0.0-rc2
+    - tensorflow 2.0.0
     - tf.keras 2.2.4-tf
 
 2. Default YOLOv3 anchors are used. If you want to use your own anchors, probably some changes are needed. tools/kmeans.py could be used to do K-Means anchor clustering on your dataset

@@ -17,6 +17,7 @@ from tensorflow.keras.models import load_model
 import tensorflow.keras.backend as KTF
 
 import tensorflow as tf
+import MNN
 
 optimize_tf_gpu(tf, KTF)
 
@@ -129,6 +130,71 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
     return boxes, classes, scores
 
 
+def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_threshold):
+    # TODO: currently MNN python API only support getting input/output tensor by default or
+    # by name. so we need to hardcode the output tensor names here to get them from model
+    if len(anchors) == 6:
+        output_tensor_names = ['conv2d_1/Conv2D', 'conv2d_3/Conv2D']
+    elif len(anchors) == 9:
+        output_tensor_names = ['conv2d_3/Conv2D', 'conv2d_8/Conv2D', 'conv2d_13/Conv2D']
+    else:
+        raise ValueError('invalid anchor number')
+
+    # assume only 1 input tensor for image
+    input_tensor = interpreter.getSessionInput(session)
+    # get input shape
+    input_shape = input_tensor.getShape()
+    if input_tensor.getDimensionType() == MNN.Tensor_DimensionType_Tensorflow:
+        batch, height, width, channel = input_shape
+    elif input_tensor.getDimensionType() == MNN.Tensor_DimensionType_Caffe:
+        batch, channel, height, width = input_shape
+    else:
+        # should be MNN.Tensor_DimensionType_Caffe_C4, unsupported now
+        raise ValueError('unsupported input tensor dimension type')
+
+    # prepare input image
+    image_data = preprocess_image(image, (height, width))
+    image_shape = image.size
+
+    # use a temp tensor to copy data
+    tmp_input = MNN.Tensor(input_shape, MNN.Halide_Type_Float,\
+                    image_data, MNN.Tensor_DimensionType_Tensorflow)
+
+    input_tensor.copyFrom(tmp_input)
+    interpreter.runSession(session)
+
+    out_list = []
+    for output_tensor_name in output_tensor_names:
+        output_tensor = interpreter.getSessionOutput(session, output_tensor_name)
+        output_shape = output_tensor.getShape()
+
+        assert output_tensor.getDataType() == MNN.Halide_Type_Float
+
+        # copy output tensor to host, for further postprocess
+        tmp_output = MNN.Tensor(output_shape, output_tensor.getDataType(),\
+                    np.zeros(output_shape, dtype=float), output_tensor.getDimensionType())
+
+        output_tensor.copyToHostTensor(tmp_output)
+        #tmp_output.printTensorData()
+
+        output_data = np.array(tmp_output.getData(), dtype=float).reshape(output_shape)
+        # our postprocess code based on TF channel last format, so if the output format
+        # doesn't match, we need to transpose
+        if output_tensor.getDimensionType() == MNN.Tensor_DimensionType_Caffe:
+            output_data = output_data.transpose((0,2,3,1))
+        elif output_tensor.getDimensionType() == MNN.Tensor_DimensionType_Caffe_C4:
+            raise ValueError('unsupported output tensor dimension type')
+
+        out_list.append(output_data)
+
+    predictions = yolo_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
+
+    boxes, classes, scores = handle_predictions(predictions, max_boxes=100, confidence=conf_threshold, iou_threshold=0.4)
+    boxes = adjust_boxes(boxes, image_shape, (height, width))
+
+    return boxes, classes, scores
+
+
 def get_prediction_class_records(model_path, annotation_records, anchors, class_names, model_image_size, conf_threshold, save_result):
     '''
     Do the predict with YOLO model on annotation images to get predict class dict
@@ -150,6 +216,10 @@ def get_prediction_class_records(model_path, annotation_records, anchors, class_
         from tensorflow.lite.python import interpreter as interpreter_wrapper
         interpreter = interpreter_wrapper.Interpreter(model_path=model_path)
         interpreter.allocate_tensors()
+    # support of MNN model
+    elif model_path.endswith('.mnn'):
+        interpreter = MNN.Interpreter(model_path)
+        session = interpreter.createSession()
     # normal keras h5 model
     else:
         model = load_model(model_path, compile=False)
@@ -163,6 +233,8 @@ def get_prediction_class_records(model_path, annotation_records, anchors, class_
 
         if model_path.endswith('.tflite'):
             pred_boxes, pred_classes, pred_scores = yolo_predict_tflite(interpreter, image, anchors, len(class_names), conf_threshold)
+        elif model_path.endswith('.mnn'):
+            pred_boxes, pred_classes, pred_scores = yolo_predict_mnn(interpreter, session, image, anchors, len(class_names), conf_threshold)
         else:
             pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size, max_boxes=100, confidence=conf_threshold)
 
