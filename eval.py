@@ -49,7 +49,7 @@ def annotation_parse(annotation_file, class_names):
     np.random.seed(None)
 
     annotation_records = {}
-    classes_records = {}
+    classes_records = {class_name: [] for class_name in class_names}
 
     for line in annotation_lines:
         box_records = {}
@@ -352,7 +352,7 @@ def get_rec_prec(true_positive, false_positive, gt_records):
 
     rec = true_positive[:]
     for idx, val in enumerate(true_positive):
-        rec[idx] = float(true_positive[idx]) / len(gt_records)
+        rec[idx] = (float(true_positive[idx]) / len(gt_records)) if len(gt_records) != 0 else 0
 
     prec = true_positive[:]
     for idx, val in enumerate(true_positive):
@@ -618,7 +618,7 @@ def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_r
     Compute PascalVOC style mAP
     '''
     APs = {}
-    count_true_positives = {}
+    count_true_positives = {class_name: 0 for class_name in list(gt_classes_records.keys())}
     #get AP value for each of the ground truth classes
     for _, class_name in enumerate(class_names):
         #if there's no gt obj for a class, record 0
@@ -644,7 +644,7 @@ def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_r
         gt_counter_per_class[class_name] = len(info_list)
 
     #get Precision count per class
-    pred_counter_per_class = {}
+    pred_counter_per_class = {class_name: 0 for class_name in list(gt_classes_records.keys())}
     for (class_name, info_list) in pred_classes_records.items():
         pred_counter_per_class[class_name] = len(info_list)
 
@@ -653,12 +653,12 @@ def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_r
     precision_dict = {}
     recall_dict = {}
     for (class_name, gt_count) in gt_counter_per_class.items():
-        if (class_name not in pred_counter_per_class) or (class_name not in count_true_positives):
+        if (class_name not in pred_counter_per_class) or (class_name not in count_true_positives) or pred_counter_per_class[class_name] == 0:
             precision_dict[class_name] = 0.
         else:
             precision_dict[class_name] = float(count_true_positives[class_name]) / pred_counter_per_class[class_name]
 
-        if class_name not in count_true_positives:
+        if class_name not in count_true_positives or gt_count == 0:
             recall_dict[class_name] = 0.
         else:
             recall_dict[class_name] = float(count_true_positives[class_name]) / gt_count
