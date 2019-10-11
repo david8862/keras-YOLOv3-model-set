@@ -2,6 +2,7 @@ numpy
 scipy
 opencv-python
 tensorflow-gpu
+tensorflow-model-optimization
 matplotlib
 pillow
 mnn

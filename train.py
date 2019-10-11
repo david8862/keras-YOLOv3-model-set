@@ -10,6 +10,7 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback
+from tensorflow_model_optimization.sparsity import keras as sparsity
 from yolo3.model import get_yolo3_train_model
 from yolo3.data import data_generator_wrapper
 from yolo3.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
@@ -130,6 +131,8 @@ def _main(args):
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=30, verbose=1)
     terminate_on_nan = TerminateOnNaN()
 
+    callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan]
+
     # get train&val dataset
     dataset = get_dataset(annotation_file)
     if args.val_annotation_file:
@@ -149,8 +152,14 @@ def _main(args):
         input_shape_list = [args.model_image_size]
         batch_size_list = [args.batch_size]
 
+    # prepare model pruning config
+    pruning_end_step = np.ceil(1.0 * num_train / args.batch_size).astype(np.int32) * args.total_epoch
+    if args.model_pruning:
+        pruning_callbacks = [sparsity.UpdatePruningStep(), sparsity.PruningSummaries(log_dir=log_dir, profile_batch=0)]
+        callbacks = callbacks + pruning_callbacks
+
     # get train model
-    model = get_yolo3_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate, label_smoothing=args.label_smoothing)
+    model = get_yolo3_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate, label_smoothing=args.label_smoothing, model_pruning=args.model_pruning, pruning_end_step=pruning_end_step)
     # support multi-gpu training
     if args.gpu_num >= 2:
         model = multi_gpu_model(model, gpus=args.gpu_num)
@@ -169,7 +178,7 @@ def _main(args):
             validation_steps=max(1, num_val//batch_size),
             epochs=epochs,
             initial_epoch=initial_epoch,
-            callbacks=[logging, checkpoint, reduce_lr, terminate_on_nan])
+            callbacks=callbacks)
 
     # Unfreeze the whole network for further training, but still on
     # the same input_shape, for "rescale_interval" epochs
@@ -190,7 +199,7 @@ def _main(args):
             validation_steps=max(1, num_val//batch_size),
             epochs=epochs,
             initial_epoch=initial_epoch,
-            callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan])
+            callbacks=callbacks)
 
     # Do multi-scale training on different input shape
     # change every "rescale_interval" epochs
@@ -210,9 +219,11 @@ def _main(args):
             validation_steps=max(1, num_val//batch_size),
             epochs=epochs,
             initial_epoch=initial_epoch,
-            callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan])
+            callbacks=callbacks)
 
     # Finally store model
+    if args.model_pruning:
+        model = sparsity.strip_pruning(model)
     model.save(log_dir + 'trained_final.h5')
 
 
@@ -253,6 +264,8 @@ if __name__ == '__main__':
         help='Whether to use multiscale training')
     parser.add_argument('--rescale_interval', type=int, required=False, default=10,
         help = "Number of epoch interval to rescale input image, default=10")
+    parser.add_argument('--model_pruning', default=False, action="store_true",
+        help='Whether to use model pruning for optimization')
     parser.add_argument('--label_smoothing', type=float, required=False, default=0,
         help = "Label smoothing factor (between 0 and 1) for classification loss, default=0")
     parser.add_argument('--data_shuffle', default=False, action="store_true",

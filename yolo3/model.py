@@ -7,6 +7,8 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
+from tensorflow_model_optimization.sparsity import keras as sparsity
+
 from yolo3.models.yolo3_darknet import yolo_body, custom_tiny_yolo_body, yololite_body, tiny_yololite_body, custom_yolo_spp_body
 from yolo3.models.yolo3_mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, yololite_mobilenet_body, yololite_spp_mobilenet_body, tiny_yololite_mobilenet_body
 from yolo3.models.yolo3_mobilenetv2 import yolo_mobilenetv2_body, tiny_yolo_mobilenetv2_body, yololite_mobilenetv2_body, yololite_spp_mobilenetv2_body, tiny_yololite_mobilenetv2_body
@@ -68,7 +70,7 @@ yolo3_tiny_model_map = {
 }
 
 
-def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, input_tensor=None, input_shape=None):
+def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, input_tensor=None, input_shape=None, model_pruning=False, pruning_end_step=10000):
     #prepare input tensor
     if input_shape:
         input_tensor = Input(shape=input_shape, name='image_input')
@@ -105,6 +107,10 @@ def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, in
             raise ValueError('This model type is not supported now')
     else:
         raise ValueError('Unsupported model type')
+
+    if model_pruning:
+        model_body = get_pruning_model(model_body, begin_step=0, end_step=pruning_end_step)
+
     return model_body, backbone_len
 
 
@@ -124,7 +130,25 @@ def add_metrics(model, loss_dict):
         model.add_metric(loss, name=name, aggregation='mean')
 
 
-def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, learning_rate=1e-3, label_smoothing=0):
+def get_pruning_model(model, begin_step, end_step):
+    import tensorflow as tf
+    if tf.__version__.startswith('2'):
+        # model pruning API is not supported in TF 2.0 yet
+        raise Exception('model pruning is not fully supported in TF 2.x, Please switch env to TF 1.x for this feature')
+
+    pruning_params = {
+      'pruning_schedule': sparsity.PolynomialDecay(initial_sparsity=0.0,
+                                                   final_sparsity=0.7,
+                                                   begin_step=begin_step,
+                                                   end_step=end_step,
+                                                   frequency=100)
+    }
+
+    pruning_model = sparsity.prune_low_magnitude(model, **pruning_params)
+    return pruning_model
+
+
+def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, learning_rate=1e-3, label_smoothing=0, model_pruning=False, pruning_end_step=10000):
     '''create the training model, for YOLOv3'''
     #K.clear_session() # get a new session
     num_anchors = len(anchors)
@@ -141,8 +165,9 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
     # ]
     y_true = [Input(shape=(None, None, 3, num_classes+5), name='y_true_{}'.format(l)) for l in range(num_feature_layers)]
 
-    model_body, backbone_len = get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes)
+    model_body, backbone_len = get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, model_pruning=model_pruning, pruning_end_step=pruning_end_step)
     print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))
+    print('model layer size:', len(model_body.layers))
 
     if weights_path:
         model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)

@@ -108,7 +108,9 @@ RUN ${PIP} --no-cache-dir install \
     portpicker \
     && test "${USE_PYTHON_3_NOT_2}" -eq 1 && true || ${PIP} --no-cache-dir install \
     tensorflow-gpu \
+    tensorflow-model-optimization \
     keras \
+    mnn \
     enum34
 
 # Change workdir

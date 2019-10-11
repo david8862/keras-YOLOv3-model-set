@@ -14,6 +14,7 @@ import numpy as np
 from tensorflow.keras import backend as K
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input, Lambda
+from tensorflow_model_optimization.sparsity import keras as sparsity
 from PIL import Image
 
 from yolo3.model import get_yolo3_model, get_yolo3_inference_model, get_yolo3_prenms_model
@@ -29,6 +30,7 @@ from tensorflow.keras.utils import multi_gpu_model
 default_config = {
         "model_type": 'darknet',
         "model_path": 'weights/yolov3-tiny.h5',
+        "pruning_model": False,
         "anchors_path": 'configs/tiny_yolo_anchors.txt',
         "classes_path": 'configs/coco_classes.txt',
         "score" : 0.1,
@@ -72,10 +74,13 @@ class YOLO_np(object):
         num_feature_layers = num_anchors//3
 
         try:
-            yolo_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_image_size + (3,))
+            yolo_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.pruning_model)
             yolo_model.load_weights(model_path) # make sure model, anchors and classes match
+            if self.pruning_model:
+                yolo_model = sparsity.strip_pruning(yolo_model)
             yolo_model.summary()
-        except:
+        except Exception as e:
+            print(repr(e))
             assert yolo_model.layers[-1].output_shape[-1] == \
                 num_anchors/len(yolo_model.output) * (num_classes + 5), \
                 'Mismatch between model and given anchor and class sizes'
@@ -318,6 +323,10 @@ if __name__ == '__main__':
         '--model_path', type=str,
         help='path to model weight file, default ' + YOLO.get_defaults("model_path")
     )
+
+    parser.add_argument(
+        '--pruning_model', default=False, action="store_true",
+        help='Whether to be a pruning model/weights file')
 
     parser.add_argument(
         '--anchors_path', type=str,

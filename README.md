@@ -39,6 +39,7 @@ tf.keras implementation of a common YOLOv3 object detection architecture with di
 - [x] Transfer training from imagenet
 - [x] Singlescale image input training
 - [x] Multiscale image input training
+- [x] Pruned model training (only valid for TF 1.x)
 
 #### On-device deployment
 - [x] Tensorflow-Lite Float32/UInt8 model inference
@@ -151,8 +152,8 @@ usage: train.py [-h] [--model_type MODEL_TYPE] [--tiny_version]
                 [--learning_rate LEARNING_RATE] [--batch_size BATCH_SIZE]
                 [--init_epoch INIT_EPOCH] [--total_epoch TOTAL_EPOCH]
                 [--multiscale] [--rescale_interval RESCALE_INTERVAL]
-                [--label_smoothing LABEL_SMOOTHING] [--data_shuffle]
-                [--gpu_num GPU_NUM]
+                [--model_pruning] [--label_smoothing LABEL_SMOOTHING]
+                [--data_shuffle] [--gpu_num GPU_NUM]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -190,6 +191,7 @@ optional arguments:
   --rescale_interval RESCALE_INTERVAL
                         Number of epoch interval to rescale input image,
                         default=10
+  --model_pruning       Whether to use model pruning for optimization
   --label_smoothing LABEL_SMOOTHING
                         Label smoothing factor (between 0 and 1) for
                         classification loss, default=0
@@ -209,7 +211,7 @@ We need to dump out inference model from training checkpoint for eval or demo. F
 # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --dump_model --output_model_file=model.h5
 ```
 
-Change model_type, anchors file & class file for different training mode
+Change model_type, anchors file & class file for different training mode. If "--model_pruning" was added in training, you also need to use "--pruning_model" here for dumping out the pruned model.
 
 ### Evaluation
 Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/eval.py) to do evaluation on the inference model with your test data. It support following metrics:
@@ -280,8 +282,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 
 ### TODO
-- [ ] support pruned model training with [tensorflow_model_optimization](https://github.com/tensorflow/model-optimization/blob/master/tensorflow_model_optimization/g3doc/guide/pruning/train_sparse_models.md)
-- [ ] support YOLO nano model [YOLO nano](https://arxiv.org/abs/1910.01271)
+- [ ] support YOLO nano model ([YOLO nano](https://arxiv.org/abs/1910.01271))
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/yolo3/models/backbones/imagenet_training)
 
 
@@ -289,7 +290,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 1. The test environment is
     - Python 3.6.8
-    - tensorflow 2.0.0
+    - tensorflow 2.0.0/tensorflow 1.14.0
     - tf.keras 2.2.4-tf
 
 2. Default YOLOv3 anchors are used. If you want to use your own anchors, probably some changes are needed. tools/kmeans.py could be used to do K-Means anchor clustering on your dataset
