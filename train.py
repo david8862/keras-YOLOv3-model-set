@@ -15,7 +15,10 @@ from yolo3.model import get_yolo3_train_model
 from yolo3.data import data_generator_wrapper
 from yolo3.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# enable Auto Mixed Precision on TF 2.0
+os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '1'
+os.environ['TF_AUTO_MIXED_PRECISION_GRAPH_REWRITE_IGNORE_PERFORMANCE'] = '1'
+
 
 import tensorflow as tf
 optimize_tf_gpu(tf, K)
