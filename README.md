@@ -138,7 +138,7 @@ For other model, just do in a similar way, but specify different model path and 
 
    For class names file format, refer to  [coco_classes.txt](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/configs/coco_classes.txt)
 
-2. If you're training Darknet YOLOv3/Tiny YOLOv3, make sure you have converted pretrain model weights as in "Quick Start" part
+2. If you're training Darknet YOLOv3/Tiny YOLOv3, make sure you have converted pretrain model weights as in [Quick Start](https://github.com/david8862/keras-YOLOv3-model-set#quick-start)
 
 3. [train.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/train.py)
 ```
@@ -283,6 +283,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 ### TODO
 - [ ] support YOLO nano model ([YOLO nano](https://arxiv.org/abs/1910.01271))
+- [ ] add Attention mechanism/blocks to other backbone
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/yolo3/models/backbones/imagenet_training)
 
 

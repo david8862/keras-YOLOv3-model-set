@@ -162,6 +162,7 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
 
     input_tensor.copyFrom(tmp_input)
     interpreter.runSession(session)
+    del tmp_input
 
     out_list = []
     for output_tensor_name in output_tensor_names:
@@ -186,6 +187,7 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
             raise ValueError('unsupported output tensor dimension type')
 
         out_list.append(output_data)
+        del tmp_output
 
     predictions = yolo_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
 
