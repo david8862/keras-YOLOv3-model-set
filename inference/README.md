@@ -74,8 +74,15 @@ MNN support Post Training Integer quantization, so we can use its python CLI int
     # mnnquant model.pb.mnn model_quant.pb.mnn quantizeConfig.json
     ```
 
+4. Run MNN model validate script
+```
+# cd keras-YOLOv3-model-set/tools/
+# python validate_yolo_mnn.py --model_path=model_quant.pb.mnn --anchors_path=../configs/tiny_yolo_anchors.txt --classes_path=../configs/voc_classes.txt --image_file=../example/dog.jpg --loop_count=5
+```
+#### You can also use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set#evaluation) to do evaluation on the MNN model
 
-4. Run application to do inference with model, or put all the assets to your ARM board and run if you use cross-compile
+
+5. Run application to do inference with model, or put all the assets to your ARM board and run if you use cross-compile
 ```
 # cd keras-YOLOv3-model-set/inference/MNN/build
 # ./yolov3Detection -h
@@ -208,6 +215,5 @@ dog 0.597517 (109, 215) (326, 519)
 ```
 
 ### TODO
-- [ ] Support MNN model eval with MNN python runtime
 - [ ] further latency optimize on yolo postprocess C++ implementation
 - [ ] refactor demo app to get common interface
