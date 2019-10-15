@@ -20,7 +20,7 @@ def resblock_body(x, num_filters, num_blocks):
     return x
 
 def darknet_body(x):
-    '''Darknent body having 52 Convolution2D layers'''
+    '''Darknet body having 52 Convolution2D layers'''
     x = DarknetConv2D_BN_Leaky(32, (3,3))(x)
     x = resblock_body(x, 64, 1)
     x = resblock_body(x, 128, 2)
@@ -43,7 +43,7 @@ def depthwise_separable_resblock_body(x, num_filters, num_blocks):
     return x
 
 def darknetlite_body(x):
-    '''Darknent body having 52 Convolution2D layers'''
+    '''Darknet body having 52 Convolution2D layers'''
     x = Darknet_Depthwise_Separable_Conv2D_BN_Leaky(32, (3,3))(x)
     x = depthwise_separable_resblock_body(x, 64, 1)
     x = depthwise_separable_resblock_body(x, 128, 2)
