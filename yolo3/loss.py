@@ -3,7 +3,6 @@
 
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.losses import binary_crossentropy, categorical_crossentropy
 from yolo3.postprocess import yolo_head
 
 def softmax_focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
@@ -165,6 +164,11 @@ def box_giou(b1, b2):
     return giou
 
 
+def _smooth_labels(y_true, label_smoothing):
+    label_smoothing = K.constant(label_smoothing, dtype=K.floatx())
+    return y_true * (1.0 - label_smoothing) + 0.5 * label_smoothing
+
+
 def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False, use_focal_obj_loss=False, use_softmax_loss=False, use_giou_loss=False, label_smoothing=0):
     '''Return yolo_loss tensor
 
@@ -197,6 +201,8 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False
     for l in range(num_layers):
         object_mask = y_true[l][..., 4:5]
         true_class_probs = y_true[l][..., 5:]
+        if label_smoothing:
+            true_class_probs = _smooth_labels(true_class_probs, label_smoothing)
 
         grid, raw_pred, pred_xy, pred_wh = yolo_head(yolo_outputs[l],
              anchors[anchor_mask[l]], num_classes, input_shape, calc_loss=True)
@@ -228,7 +234,6 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False
 
         # K.binary_crossentropy is helpful to avoid exp overflow.
         xy_loss = object_mask * box_loss_scale * K.binary_crossentropy(raw_true_xy, raw_pred[...,0:2], from_logits=True)
-        #xy_loss = object_mask * box_loss_scale * K.expand_dims(binary_crossentropy(raw_true_xy, raw_pred[...,0:2], from_logits=True), axis=-1)
         wh_loss = object_mask * box_loss_scale * 0.5 * K.square(raw_true_wh-raw_pred[...,2:4])
 
         if use_focal_obj_loss:
@@ -237,8 +242,6 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False
         else:
             confidence_loss = object_mask * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True)+ \
                 (1-object_mask) * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True) * ignore_mask
-            #confidence_loss = object_mask * K.expand_dims(binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True), axis=-1) + \
-                #(1-object_mask) * K.expand_dims(binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True), axis=-1) * ignore_mask
 
 
         if use_focal_loss:
@@ -250,11 +253,9 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False
             if use_softmax_loss:
                 # use softmax style classification output
                 class_loss = object_mask * K.expand_dims(K.categorical_crossentropy(true_class_probs, raw_pred[...,5:], from_logits=True), axis=-1)
-                #class_loss = object_mask * K.expand_dims(categorical_crossentropy(true_class_probs, raw_pred[...,5:], from_logits=True, label_smoothing=label_smoothing), axis=-1)
             else:
                 # use sigmoid style classification output
                 class_loss = object_mask * K.binary_crossentropy(true_class_probs, raw_pred[...,5:], from_logits=True)
-                #class_loss = object_mask * K.expand_dims(binary_crossentropy(true_class_probs, raw_pred[...,5:], from_logits=True, label_smoothing=label_smoothing), axis=-1)
 
         xy_loss = K.sum(xy_loss) / mf
         wh_loss = K.sum(wh_loss) / mf
@@ -272,7 +273,7 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False
         total_confidence_loss += confidence_loss
         total_class_loss += class_loss
 
-    # Fit for tf 2.0.0-rc2 loss shape
+    # Fit for tf 2.0.0 loss shape
     loss = K.expand_dims(loss, axis=-1)
 
     return loss, total_location_loss, total_confidence_loss, total_class_loss
