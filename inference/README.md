@@ -52,7 +52,7 @@ Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-
     # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/tiny_yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=320x320 --dump_model --output_model_file=model.h5
     ```
 
-* convert keras .h5 model to tensorflow model (frozen pb):
+* convert keras .h5 model to tensorflow frozen pb model:
 
     ```
     # python keras_to_tensorflow.py

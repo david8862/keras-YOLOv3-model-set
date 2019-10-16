@@ -1,9 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Script to convert YOLO keras model to an integer quantized tflite model
 using latest Post-Training Integer Quantization Toolkit released in
-tensorflow 2.0.0-rc2 build
+tensorflow 2.0.0 build
 """
-
 import os, sys, argparse
 import numpy as np
 import tensorflow as tf
