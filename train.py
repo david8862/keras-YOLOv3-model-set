@@ -180,40 +180,31 @@ def _main(args):
         callbacks.remove(reduce_lr)
         callbacks.append(lr_scheduler)
 
-    # Unfreeze the whole network for further training, but still on
-    # the same input_shape, for "rescale_interval" epochs
+    # Unfreeze the whole network for further training
     # NOTE: more GPU memory is required after unfreezing the body
     print("Unfreeze and continue training, to fine-tune.")
     for i in range(len(model.layers)):
         model.layers[i].trainable = True
-    initial_epoch = epochs
-    epochs = epochs + args.rescale_interval
-    # shuffle train/val dataset for cross-validation
-    if args.data_shuffle:
-        np.random.shuffle(dataset)
     model.compile(optimizer=Adam(lr=args.learning_rate), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
-    print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-    model.fit_generator(data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
-            steps_per_epoch=max(1, num_train//batch_size),
-            validation_data=data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
-            validation_steps=max(1, num_val//batch_size),
-            epochs=epochs,
-            initial_epoch=initial_epoch,
-            callbacks=callbacks)
+
 
     if args.multiscale:
         # prepare multiscale config
         input_shape_list = get_multiscale_list(args.model_type, args.tiny_version)
+        interval = args.rescale_interval
+
         # Do multi-scale training on different input shape
         # change every "rescale_interval" epochs
-        interval = args.rescale_interval
         for epoch_step in range(epochs+interval, args.total_epoch, interval):
-            input_shape = input_shape_list[random.randint(0,len(input_shape_list)-1)]
-            initial_epoch = epochs
-            epochs = epoch_step
             # shuffle train/val dataset for cross-validation
             if args.data_shuffle:
                 np.random.shuffle(dataset)
+
+            initial_epoch = epochs
+            epochs = epoch_step
+            # rescale input only from 2nd round, to make sure unfreeze stable
+            if initial_epoch != args.init_epoch:
+                input_shape = input_shape_list[random.randint(0,len(input_shape_list)-1)]
             print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
             model.fit_generator(data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
                 steps_per_epoch=max(1, num_train//batch_size),
@@ -272,9 +263,9 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int,required=False, default=16,
         help = "Batch size for train, default=16")
     parser.add_argument('--init_epoch', type=int,required=False, default=20,
-        help = "Initial stage training epochs, default=20")
-    parser.add_argument('--total_epoch', type=int,required=False, default=300,
-        help = "Total training epochs, default=300")
+        help = "Initial stage epochs, especially for transfer training, default=20")
+    parser.add_argument('--total_epoch', type=int,required=False, default=250,
+        help = "Total training epochs, default=250")
     parser.add_argument('--multiscale', default=False, action="store_true",
         help='Whether to use multiscale training')
     parser.add_argument('--rescale_interval', type=int, required=False, default=10,
