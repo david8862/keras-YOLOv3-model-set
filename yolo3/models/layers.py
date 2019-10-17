@@ -89,7 +89,7 @@ def Spp_Conv2D_BN_Leaky(x, num_filters):
     return y
 
 
-def make_last_layers(x, num_filters, out_filters):
+def make_last_layers(x, num_filters, out_filters, predict_filters=None):
     '''6 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer'''
     x = compose(
             DarknetConv2D_BN_Leaky(num_filters, (1,1)),
@@ -97,12 +97,15 @@ def make_last_layers(x, num_filters, out_filters):
             DarknetConv2D_BN_Leaky(num_filters, (1,1)),
             DarknetConv2D_BN_Leaky(num_filters*2, (3,3)),
             DarknetConv2D_BN_Leaky(num_filters, (1,1)))(x)
+
+    if predict_filters is None:
+        predict_filters = num_filters*2
     y = compose(
-            DarknetConv2D_BN_Leaky(num_filters*2, (3,3)),
+            DarknetConv2D_BN_Leaky(predict_filters, (3,3)),
             DarknetConv2D(out_filters, (1,1)))(x)
     return x, y
 
-def make_spp_last_layers(x, num_filters, out_filters):
+def make_spp_last_layers(x, num_filters, out_filters, predict_filters=None):
     '''6 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer'''
     x = compose(
             DarknetConv2D_BN_Leaky(num_filters, (1,1)),
@@ -114,12 +117,15 @@ def make_spp_last_layers(x, num_filters, out_filters):
     x = compose(
             DarknetConv2D_BN_Leaky(num_filters*2, (3,3)),
             DarknetConv2D_BN_Leaky(num_filters, (1,1)))(x)
+
+    if predict_filters is None:
+        predict_filters = num_filters*2
     y = compose(
-            DarknetConv2D_BN_Leaky(num_filters*2, (3,3)),
+            DarknetConv2D_BN_Leaky(predict_filters, (3,3)),
             DarknetConv2D(out_filters, (1,1)))(x)
     return x, y
 
-def make_depthwise_separable_last_layers(x, num_filters, out_filters, block_id_str=None):
+def make_depthwise_separable_last_layers(x, num_filters, out_filters, block_id_str=None, predict_filters=None):
     '''6 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer'''
     if not block_id_str:
         block_id_str = str(K.get_uid())
@@ -129,12 +135,15 @@ def make_depthwise_separable_last_layers(x, num_filters, out_filters, block_id_s
             DarknetConv2D_BN_Leaky(num_filters, (1,1)),
             Depthwise_Separable_Conv2D_BN_Leaky(filters=num_filters*2, kernel_size=(3, 3), block_id_str=block_id_str+'_2'),
             DarknetConv2D_BN_Leaky(num_filters, (1,1)))(x)
+
+    if predict_filters is None:
+        predict_filters = num_filters*2
     y = compose(
-            Depthwise_Separable_Conv2D_BN_Leaky(filters=num_filters*2, kernel_size=(3, 3), block_id_str=block_id_str+'_3'),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=predict_filters, kernel_size=(3, 3), block_id_str=block_id_str+'_3'),
             DarknetConv2D(out_filters, (1,1)))(x)
     return x, y
 
-def make_spp_depthwise_separable_last_layers(x, num_filters, out_filters, block_id_str=None):
+def make_spp_depthwise_separable_last_layers(x, num_filters, out_filters, block_id_str=None, predict_filters=None):
     '''6 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer'''
     if not block_id_str:
         block_id_str = str(K.get_uid())
@@ -148,7 +157,10 @@ def make_spp_depthwise_separable_last_layers(x, num_filters, out_filters, block_
     x = compose(
             Depthwise_Separable_Conv2D_BN_Leaky(filters=num_filters*2, kernel_size=(3, 3), block_id_str=block_id_str+'_2'),
             DarknetConv2D_BN_Leaky(num_filters, (1,1)))(x)
+
+    if predict_filters is None:
+        predict_filters = num_filters*2
     y = compose(
-            Depthwise_Separable_Conv2D_BN_Leaky(filters=num_filters*2, kernel_size=(3, 3), block_id_str=block_id_str+'_3'),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=predict_filters, kernel_size=(3, 3), block_id_str=block_id_str+'_3'),
             DarknetConv2D(out_filters, (1,1)))(x)
     return x, y
