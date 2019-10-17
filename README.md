@@ -39,6 +39,7 @@ tf.keras implementation of a common YOLOv3 object detection architecture with di
 - [x] Transfer training from imagenet
 - [x] Singlescale image input training
 - [x] Multiscale image input training
+- [x] Cosine learning rate decay
 - [x] Pruned model training (only valid for TF 1.x)
 
 #### On-device deployment

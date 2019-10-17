@@ -15,7 +15,7 @@ from yolo3.model import get_yolo3_train_model
 from yolo3.data import data_generator_wrapper
 from yolo3.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
 
-# enable Auto Mixed Precision on TF 2.0
+# Try to enable Auto Mixed Precision on TF 2.0
 os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '1'
 os.environ['TF_AUTO_MIXED_PRECISION_GRAPH_REWRITE_IGNORE_PERFORMANCE'] = '1'
 
@@ -24,18 +24,16 @@ import tensorflow as tf
 optimize_tf_gpu(tf, K)
 
 
-def get_multiscale_param(model_type, tiny_version):
-    # get input_shape & batch_size list for multiscale training
+def get_multiscale_list(model_type, tiny_version):
+    # get input_shape list for multiscale training
     if (model_type == 'darknet' or model_type == 'xception' or model_type == 'xception_spp') and not tiny_version:
-        # due to GPU memory limit, we could only use small input_shape and batch_size
+        # due to GPU memory limit, we could only use small input_shape
         # for full YOLOv3 and Xception models
         input_shape_list = [(320,320), (352,352), (384,384), (416,416), (448,448), (480,480)]
-        batch_size_list = [4, 8]
     else:
         input_shape_list = [(320,320), (352,352), (384,384), (416,416), (448,448), (480,480), (512,512), (544,544), (576,576), (608,608)]
-        batch_size_list = [4, 8, 16]
 
-    return input_shape_list, batch_size_list
+    return input_shape_list
 
 
 # some global value for lr scheduler
@@ -64,7 +62,7 @@ def learning_rate_scheduler(epoch, curr_lr, mode='cosine_decay'):
         #warmup & hold hyperparams, adjust for your training
         warmup_epochs = 0
         hold_base_rate_epochs = 0
-        warmup_lr = 1e-8
+        warmup_lr = lr_base * 0.01
         lr = 0.5 * lr_base * (1 + np.cos(
              np.pi * float(epoch - warmup_epochs - hold_base_rate_epochs) /
              float(total_epochs - warmup_epochs - hold_base_rate_epochs)))
@@ -148,13 +146,6 @@ def _main(args):
         num_val = int(len(dataset)*val_split)
         num_train = len(dataset) - num_val
 
-    # prepare multiscale config
-    if args.multiscale:
-        input_shape_list, batch_size_list = get_multiscale_param(args.model_type, args.tiny_version)
-    else:
-        input_shape_list = [args.model_image_size]
-        batch_size_list = [args.batch_size]
-
     # prepare model pruning config
     pruning_end_step = np.ceil(1.0 * num_train / args.batch_size).astype(np.int32) * args.total_epoch
     if args.model_pruning:
@@ -183,6 +174,12 @@ def _main(args):
             initial_epoch=initial_epoch,
             callbacks=callbacks)
 
+    # Apply Cosine learning rate decay only after
+    # unfreeze all layers
+    if args.cosine_decay_learning_rate:
+        callbacks.remove(reduce_lr)
+        callbacks.append(lr_scheduler)
+
     # Unfreeze the whole network for further training, but still on
     # the same input_shape, for "rescale_interval" epochs
     # NOTE: more GPU memory is required after unfreezing the body
@@ -204,25 +201,38 @@ def _main(args):
             initial_epoch=initial_epoch,
             callbacks=callbacks)
 
-    # Do multi-scale training on different input shape
-    # change every "rescale_interval" epochs
-    interval = args.rescale_interval
-    for epoch_step in range(epochs+interval, args.total_epoch, interval):
-        input_shape = input_shape_list[random.randint(0,len(input_shape_list)-1)]
-        batch_size = batch_size_list[random.randint(0,len(batch_size_list)-1)]
-        initial_epoch = epochs
-        epochs = epoch_step
-        # shuffle train/val dataset for cross-validation
-        if args.data_shuffle:
-            np.random.shuffle(dataset)
+    if args.multiscale:
+        # prepare multiscale config
+        input_shape_list = get_multiscale_list(args.model_type, args.tiny_version)
+        # Do multi-scale training on different input shape
+        # change every "rescale_interval" epochs
+        interval = args.rescale_interval
+        for epoch_step in range(epochs+interval, args.total_epoch, interval):
+            input_shape = input_shape_list[random.randint(0,len(input_shape_list)-1)]
+            initial_epoch = epochs
+            epochs = epoch_step
+            # shuffle train/val dataset for cross-validation
+            if args.data_shuffle:
+                np.random.shuffle(dataset)
+            print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
+            model.fit_generator(data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
+                steps_per_epoch=max(1, num_train//batch_size),
+                validation_data=data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
+                validation_steps=max(1, num_val//batch_size),
+                epochs=epochs,
+                initial_epoch=initial_epoch,
+                callbacks=callbacks)
+    else:
+        # Do single-scale training
         print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
         model.fit_generator(data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
             validation_data=data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
-            epochs=epochs,
-            initial_epoch=initial_epoch,
+            epochs=args.total_epoch,
+            initial_epoch=epochs,
             callbacks=callbacks)
+
 
     # Finally store model
     if args.model_pruning:
@@ -257,8 +267,10 @@ if __name__ == '__main__':
     # Training options
     parser.add_argument('--learning_rate', type=float,required=False, default=1e-3,
         help = "Initial learning rate, default=0.001")
+    parser.add_argument('--cosine_decay_learning_rate', default=False, action="store_true",
+        help='Whether to use cosine decay for learning rate control')
     parser.add_argument('--batch_size', type=int,required=False, default=16,
-        help = "Initial batch size for train, default=16")
+        help = "Batch size for train, default=16")
     parser.add_argument('--init_epoch', type=int,required=False, default=20,
         help = "Initial stage training epochs, default=20")
     parser.add_argument('--total_epoch', type=int,required=False, default=300,

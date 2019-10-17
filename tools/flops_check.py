@@ -21,7 +21,7 @@ def get_flops(model):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', help='model file to predict', type=str, required=True)
+    parser.add_argument('--model_path', help='model file to evaluate', type=str, required=True)
     args = parser.parse_args()
 
     model = load_model(args.model_path, compile=False)

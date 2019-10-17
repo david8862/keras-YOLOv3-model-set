@@ -60,7 +60,7 @@ def sigmoid_focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
     # Returns
         sigmoid_focal_loss: Sigmoid focal loss, tensor of shape (?, num_boxes).
     """
-    sigmoid_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=y_true, logits=y_pred)
+    sigmoid_loss = K.binary_crossentropy(y_true, y_pred, from_logits=True)
 
     pred_prob = tf.sigmoid(y_pred)
     p_t = ((y_true * pred_prob) + ((1 - y_true) * (1 - pred_prob)))
