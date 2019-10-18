@@ -34,7 +34,7 @@ def softmax_focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
     y_pred = tf.maximum(tf.minimum(y_pred, 1 - 1e-15), 1e-15)
 
     # Calculate Cross Entropy
-    cross_entropy = -y_true * tf.log(y_pred)
+    cross_entropy = -y_true * tf.math.log(y_pred)
 
     # Calculate Focal Loss
     softmax_focal_loss = alpha * tf.pow(1 - y_pred, gamma) * cross_entropy
