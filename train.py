@@ -165,6 +165,7 @@ def _main(args):
     batch_size = args.batch_size
     initial_epoch = 0
     epochs = args.init_epoch
+    print("Initial training stage")
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
     model.fit_generator(data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
@@ -185,7 +186,7 @@ def _main(args):
     print("Unfreeze and continue training, to fine-tune.")
     for i in range(len(model.layers)):
         model.layers[i].trainable = True
-    model.compile(optimizer=Adam(lr=args.learning_rate), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
+    model.compile(optimizer=Adam(lr=args.learning_rate, decay=args.learning_rate*1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
 
 
     if args.multiscale:
