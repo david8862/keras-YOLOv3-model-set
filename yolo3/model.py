@@ -6,7 +6,7 @@ create YOLOv3 models with different backbone & head
 import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam, RMSprop, SGD
 from tensorflow_model_optimization.sparsity import keras as sparsity
 
 from yolo3.models.yolo3_darknet import yolo_body, custom_tiny_yolo_body, yololite_body, tiny_yololite_body, custom_yolo_spp_body
@@ -148,7 +148,22 @@ def get_pruning_model(model, begin_step, end_step):
     return pruning_model
 
 
-def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, learning_rate=1e-3, label_smoothing=0, model_pruning=False, pruning_end_step=10000):
+def get_optimizer(optim_type, learning_rate):
+    optim_type = optim_type.lower()
+
+    if optim_type == 'adam':
+        optimizer = Adam(lr=learning_rate, decay=1e-6)
+    elif optim_type == 'rmsprop':
+        optimizer = RMSprop(lr=learning_rate, decay=1e-6)
+    elif optim_type == 'sgd':
+        optimizer = SGD(lr=learning_rate, decay=1e-6)
+    else:
+        raise ValueError('Unsupported optimizer type')
+
+    return optimizer
+
+
+def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, optimizer=Adam(lr=1e-3, decay=1e-6), label_smoothing=0, model_pruning=False, pruning_end_step=10000):
     '''create the training model, for YOLOv3'''
     #K.clear_session() # get a new session
     num_anchors = len(anchors)
@@ -189,7 +204,7 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)
 
-    model.compile(optimizer=Adam(lr=learning_rate), loss={
+    model.compile(optimizer=optimizer, loss={
         # use custom yolo_loss Lambda layer.
         'yolo_loss': lambda y_true, y_pred: y_pred})
 

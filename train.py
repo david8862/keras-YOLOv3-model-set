@@ -7,11 +7,10 @@ Retrain the YOLO model for your own dataset.
 import os, random, argparse
 import numpy as np
 import tensorflow.keras.backend as K
-from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback
 from tensorflow_model_optimization.sparsity import keras as sparsity
-from yolo3.model import get_yolo3_train_model
+from yolo3.model import get_yolo3_train_model, get_optimizer
 from yolo3.data import data_generator_wrapper
 from yolo3.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
 
@@ -152,8 +151,11 @@ def _main(args):
         pruning_callbacks = [sparsity.UpdatePruningStep(), sparsity.PruningSummaries(log_dir=log_dir, profile_batch=0)]
         callbacks = callbacks + pruning_callbacks
 
+    # prepare optimizer
+    optimizer = get_optimizer(args.optimizer, args.learning_rate)
+
     # get train model
-    model = get_yolo3_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, learning_rate=args.learning_rate, label_smoothing=args.label_smoothing, model_pruning=args.model_pruning, pruning_end_step=pruning_end_step)
+    model = get_yolo3_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, optimizer=optimizer, label_smoothing=args.label_smoothing, model_pruning=args.model_pruning, pruning_end_step=pruning_end_step)
     # support multi-gpu training
     if args.gpu_num >= 2:
         model = multi_gpu_model(model, gpus=args.gpu_num)
@@ -186,7 +188,7 @@ def _main(args):
     print("Unfreeze and continue training, to fine-tune.")
     for i in range(len(model.layers)):
         model.layers[i].trainable = True
-    model.compile(optimizer=Adam(lr=args.learning_rate, decay=args.learning_rate*1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
+    model.compile(optimizer=optimizer, loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
 
 
     if args.multiscale:
@@ -257,12 +259,14 @@ if __name__ == '__main__':
         help='path to class definitions, default=configs/voc_classes.txt')
 
     # Training options
+    parser.add_argument('--batch_size', type=int,required=False, default=16,
+        help = "Batch size for train, default=16")
+    parser.add_argument('--optimizer', type=str,required=False, default='adam',
+        help = "optimizer for training (adam/rmsprop/sgd), default=adam")
     parser.add_argument('--learning_rate', type=float,required=False, default=1e-3,
         help = "Initial learning rate, default=0.001")
     parser.add_argument('--cosine_decay_learning_rate', default=False, action="store_true",
         help='Whether to use cosine decay for learning rate control')
-    parser.add_argument('--batch_size', type=int,required=False, default=16,
-        help = "Batch size for train, default=16")
     parser.add_argument('--init_epoch', type=int,required=False, default=20,
         help = "Initial stage epochs, especially for transfer training, default=20")
     parser.add_argument('--total_epoch', type=int,required=False, default=250,

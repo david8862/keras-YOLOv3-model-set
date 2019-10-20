@@ -150,12 +150,12 @@ usage: train.py [-h] [--model_type MODEL_TYPE] [--tiny_version]
                 [--annotation_file ANNOTATION_FILE]
                 [--val_annotation_file VAL_ANNOTATION_FILE]
                 [--val_split VAL_SPLIT] [--classes_path CLASSES_PATH]
+                [--batch_size BATCH_SIZE] [--optimizer OPTIMIZER]
                 [--learning_rate LEARNING_RATE] [--cosine_decay_learning_rate]
-                [--batch_size BATCH_SIZE] [--init_epoch INIT_EPOCH]
-                [--total_epoch TOTAL_EPOCH] [--multiscale]
-                [--rescale_interval RESCALE_INTERVAL] [--model_pruning]
-                [--label_smoothing LABEL_SMOOTHING] [--data_shuffle]
-                [--gpu_num GPU_NUM]
+                [--init_epoch INIT_EPOCH] [--total_epoch TOTAL_EPOCH]
+                [--multiscale] [--rescale_interval RESCALE_INTERVAL]
+                [--model_pruning] [--label_smoothing LABEL_SMOOTHING]
+                [--data_shuffle] [--gpu_num GPU_NUM]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -181,12 +181,15 @@ optional arguments:
   --classes_path CLASSES_PATH
                         path to class definitions,
                         default=configs/voc_classes.txt
+  --batch_size BATCH_SIZE
+                        Batch size for train, default=16
+  --optimizer OPTIMIZER
+                        optimizer for training (adam/rmsprop/sgd),
+                        default=adam
   --learning_rate LEARNING_RATE
                         Initial learning rate, default=0.001
   --cosine_decay_learning_rate
                         Whether to use cosine decay for learning rate control
-  --batch_size BATCH_SIZE
-                        Batch size for train, default=16
   --init_epoch INIT_EPOCH
                         Initial stage epochs, especially for transfer
                         training, default=20
