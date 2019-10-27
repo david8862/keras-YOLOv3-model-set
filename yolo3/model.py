@@ -3,6 +3,7 @@
 """
 create YOLOv3 models with different backbone & head
 """
+import warnings
 import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
@@ -15,6 +16,7 @@ from yolo3.models.yolo3_mobilenetv2 import yolo_mobilenetv2_body, tiny_yolo_mobi
 from yolo3.models.yolo3_shufflenetv2 import yolo_shufflenetv2_body, tiny_yolo_shufflenetv2_body, yololite_shufflenetv2_body, yololite_spp_shufflenetv2_body, tiny_yololite_shufflenetv2_body
 from yolo3.models.yolo3_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
 from yolo3.models.yolo3_xception import yolo_xception_body, yololite_xception_body, tiny_yolo_xception_body, tiny_yololite_xception_body, yolo_spp_xception_body
+from yolo3.models.yolo3_nano import yolo_nano_body
 from yolo3.loss import yolo_loss
 from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Yolo3PostProcessLayer
 
@@ -44,6 +46,8 @@ yolo3_model_map = {
     'xception': [yolo_xception_body, 132, None],
     'xception_lite': [yololite_xception_body, 132, None],
     'xception_spp': [yolo_spp_xception_body, 132, None],
+
+    'nano': [yolo_nano_body, 0, None],
 }
 
 
@@ -77,6 +81,11 @@ def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, in
 
     if input_tensor is None:
         input_tensor = Input(shape=(None, None, 3), name='image_input')
+
+    #YOLO nano model doesn't support dynamic input shape
+    if model_type == 'nano':
+        warnings.warn("YOLO nano model doesn't support dynamic input shape, so just use fixed (416, 416,3) input tensor")
+        input_tensor = Input(shape=(416, 416, 3), name='image_input')
 
     #Tiny YOLOv3 model has 6 anchors and 2 feature layers
     if num_feature_layers == 2:

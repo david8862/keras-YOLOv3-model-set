@@ -4,7 +4,7 @@
 
 ## Introduction
 
-tf.keras implementation of a common YOLOv3 object detection architecture with different technologies support:
+A common YOLOv3 object detection pipeline implement with tf.keras. Including data collection/annotation, model training/tuning, model evaluation and on device deployment. Support different architecture and different technologies, including:
 
 #### Backbone
 - [x] Darknet53/Tiny Darknet
@@ -118,6 +118,7 @@ For other model, just do in a similar way, but specify different model path and 
        # cat 2012_train.txt >> trainval.txt
        # cat 2012_val.txt >> trainval.txt
        ```
+       P.S. You can use [LabelImg](https://github.com/tzutalin/labelImg) to annotate your object detection dataset with Pascal VOC XML format
 
     2. For COCO style dataset, you can use [coco_annotation.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/coco_annotation.py) to convert original dataset to our annotation file:
        ```

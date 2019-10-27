@@ -192,6 +192,8 @@ def _main(args):
 
 
     if args.multiscale:
+        if args.model_type == 'nano':
+            raise ValueError("YOLO nano model doesn't support multiscale trainin.")
         # prepare multiscale config
         input_shape_list = get_multiscale_list(args.model_type, args.tiny_version)
         interval = args.rescale_interval
