@@ -144,35 +144,38 @@ def _fca_block(inputs, reduct_ratio, block_id):
     return x
 
 
+EP_EXPANSION = 2
+PEP_EXPANSION = 2
+
 def nano_net_body(x):
     '''YOLO Nano backbone network body'''
     x = NanoConv2D_BN_Relu6(12, (3,3), name='Conv_1')(x)
     x = NanoConv2D_BN_Relu6(24, (3,3), strides=2, name='Conv_2')(x)
-    x = _pep_block(x, proj_filters=7, filters=24, stride=1, expansion=2, block_id=1)
-    x = _ep_block(x, filters=70, stride=2, expansion=2, block_id=1)
-    x = _pep_block(x, proj_filters=25, filters=70, stride=1, expansion=2, block_id=2)
-    x = _pep_block(x, proj_filters=24, filters=70, stride=1, expansion=2, block_id=3)
-    x = _ep_block(x, filters=150, stride=2, expansion=2, block_id=2)
-    x = _pep_block(x, proj_filters=56, filters=150, stride=1, expansion=2, block_id=4)
+    x = _pep_block(x, proj_filters=7, filters=24, stride=1, expansion=PEP_EXPANSION, block_id=1)
+    x = _ep_block(x, filters=70, stride=2, expansion=EP_EXPANSION, block_id=1)
+    x = _pep_block(x, proj_filters=25, filters=70, stride=1, expansion=PEP_EXPANSION, block_id=2)
+    x = _pep_block(x, proj_filters=24, filters=70, stride=1, expansion=PEP_EXPANSION, block_id=3)
+    x = _ep_block(x, filters=150, stride=2, expansion=EP_EXPANSION, block_id=2)
+    x = _pep_block(x, proj_filters=56, filters=150, stride=1, expansion=PEP_EXPANSION, block_id=4)
     x = NanoConv2D_BN_Relu6(150, (1,1), name='Conv_pw_1')(x)
     x = _fca_block(x, reduct_ratio=8, block_id=1)
-    x = _pep_block(x, proj_filters=73, filters=150, stride=1, expansion=2, block_id=5)
-    x = _pep_block(x, proj_filters=71, filters=150, stride=1, expansion=2, block_id=6)
-    x = _pep_block(x, proj_filters=75, filters=150, stride=1, expansion=2, block_id=7)
-    x = _ep_block(x, filters=325, stride=2, expansion=2, block_id=3)
-    x = _pep_block(x, proj_filters=132, filters=325, stride=1, expansion=2, block_id=8)
-    x = _pep_block(x, proj_filters=124, filters=325, stride=1, expansion=2, block_id=9)
-    x = _pep_block(x, proj_filters=141, filters=325, stride=1, expansion=2, block_id=10)
-    x = _pep_block(x, proj_filters=140, filters=325, stride=1, expansion=2, block_id=11)
-    x = _pep_block(x, proj_filters=137, filters=325, stride=1, expansion=2, block_id=12)
-    x = _pep_block(x, proj_filters=135, filters=325, stride=1, expansion=2, block_id=13)
-    x = _pep_block(x, proj_filters=133, filters=325, stride=1, expansion=2, block_id=14)
-    x = _pep_block(x, proj_filters=140, filters=325, stride=1, expansion=2, block_id=15)
-    x = _ep_block(x, filters=545, stride=2, expansion=2, block_id=4)
-    x = _pep_block(x, proj_filters=276, filters=545, stride=1, expansion=2, block_id=16)
+    x = _pep_block(x, proj_filters=73, filters=150, stride=1, expansion=PEP_EXPANSION, block_id=5)
+    x = _pep_block(x, proj_filters=71, filters=150, stride=1, expansion=PEP_EXPANSION, block_id=6)
+    x = _pep_block(x, proj_filters=75, filters=150, stride=1, expansion=PEP_EXPANSION, block_id=7)
+    x = _ep_block(x, filters=325, stride=2, expansion=EP_EXPANSION, block_id=3)
+    x = _pep_block(x, proj_filters=132, filters=325, stride=1, expansion=PEP_EXPANSION, block_id=8)
+    x = _pep_block(x, proj_filters=124, filters=325, stride=1, expansion=PEP_EXPANSION, block_id=9)
+    x = _pep_block(x, proj_filters=141, filters=325, stride=1, expansion=PEP_EXPANSION, block_id=10)
+    x = _pep_block(x, proj_filters=140, filters=325, stride=1, expansion=PEP_EXPANSION, block_id=11)
+    x = _pep_block(x, proj_filters=137, filters=325, stride=1, expansion=PEP_EXPANSION, block_id=12)
+    x = _pep_block(x, proj_filters=135, filters=325, stride=1, expansion=PEP_EXPANSION, block_id=13)
+    x = _pep_block(x, proj_filters=133, filters=325, stride=1, expansion=PEP_EXPANSION, block_id=14)
+    x = _pep_block(x, proj_filters=140, filters=325, stride=1, expansion=PEP_EXPANSION, block_id=15)
+    x = _ep_block(x, filters=545, stride=2, expansion=EP_EXPANSION, block_id=4)
+    x = _pep_block(x, proj_filters=276, filters=545, stride=1, expansion=PEP_EXPANSION, block_id=16)
     x = NanoConv2D_BN_Relu6(230, (1,1), name='Conv_pw_2')(x)
-    x = _ep_block(x, filters=489, stride=1, expansion=2, block_id=5)
-    x = _pep_block(x, proj_filters=213, filters=469, stride=1, expansion=2, block_id=17)
+    x = _ep_block(x, filters=489, stride=1, expansion=EP_EXPANSION, block_id=5)
+    x = _pep_block(x, proj_filters=213, filters=469, stride=1, expansion=PEP_EXPANSION, block_id=17)
     x = NanoConv2D_BN_Relu6(189, (1,1), name='Conv_pw_3')(x)
 
     return x
@@ -198,7 +201,7 @@ def yolo_nano_body(inputs, num_anchors, num_classes, weights_path=None):
 
     f1 = nano_net.get_layer('Conv_pw_3').output
     # f1 :13 x 13 x 189
-    y1 = _ep_block(f1, filters=462, stride=1, expansion=2, block_id=6)
+    y1 = _ep_block(f1, filters=462, stride=1, expansion=EP_EXPANSION, block_id=6)
     y1 = DarknetConv2D(num_anchors * (num_classes + 5), (1,1))(y1)
     x = compose(
             NanoConv2D_BN_Relu6(105, (1,1)),
@@ -209,11 +212,11 @@ def yolo_nano_body(inputs, num_anchors, num_classes, weights_path=None):
     # f2: 26 x 26 x 325
     x = Concatenate()([x,f2])
 
-    x = _pep_block(x, proj_filters=113, filters=325, stride=1, expansion=2, block_id=18)
-    x = _pep_block(x, proj_filters=99, filters=207, stride=1, expansion=2, block_id=19)
+    x = _pep_block(x, proj_filters=113, filters=325, stride=1, expansion=PEP_EXPANSION, block_id=18)
+    x = _pep_block(x, proj_filters=99, filters=207, stride=1, expansion=PEP_EXPANSION, block_id=19)
     x = DarknetConv2D(98, (1,1))(x)
 
-    y2 = _ep_block(x, filters=183, stride=1, expansion=2, block_id=7)
+    y2 = _ep_block(x, filters=183, stride=1, expansion=EP_EXPANSION, block_id=7)
     y2 = DarknetConv2D(num_anchors * (num_classes + 5), (1,1))(y2)
 
     x = compose(
@@ -225,9 +228,9 @@ def yolo_nano_body(inputs, num_anchors, num_classes, weights_path=None):
     # f3 : 52 x 52 x 150
     x = Concatenate()([x, f3])
 
-    x = _pep_block(x, proj_filters=58, filters=122, stride=1, expansion=2, block_id=20)
-    x = _pep_block(x, proj_filters=52, filters=87, stride=1, expansion=2, block_id=21)
-    x = _pep_block(x, proj_filters=47, filters=93, stride=1, expansion=2, block_id=22)
+    x = _pep_block(x, proj_filters=58, filters=122, stride=1, expansion=PEP_EXPANSION, block_id=20)
+    x = _pep_block(x, proj_filters=52, filters=87, stride=1, expansion=PEP_EXPANSION, block_id=21)
+    x = _pep_block(x, proj_filters=47, filters=93, stride=1, expansion=PEP_EXPANSION, block_id=22)
     y3 = DarknetConv2D(num_anchors * (num_classes + 5), (1,1))(x)
 
 
