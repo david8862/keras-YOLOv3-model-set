@@ -1,6 +1,6 @@
 """YOLO_v3 Model Defined in Keras."""
 
-from tensorflow.keras.layers import UpSampling2D, Concatenate, Dense, Multiply, Add
+from tensorflow.keras.layers import UpSampling2D, Concatenate, Dense, Multiply, Add, Lambda
 from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Concatenate, BatchNormalization, ReLU, ZeroPadding2D, GlobalAveragePooling2D
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
@@ -124,6 +124,11 @@ def _pep_block(inputs, proj_filters, filters, stride, expansion, block_id):
     return x
 
 
+def expand_dims2d(x):
+    x = K.expand_dims(x, axis=1)
+    x = K.expand_dims(x, axis=2)
+    return x
+
 def _fca_block(inputs, reduct_ratio, block_id):
     in_channels = inputs.shape.as_list()[-1]
     in_shapes = inputs.shape.as_list()[1:3]
@@ -133,8 +138,7 @@ def _fca_block(inputs, reduct_ratio, block_id):
     x = GlobalAveragePooling2D(name=prefix + 'average_pooling')(inputs)
     x = Dense(reduct_channels, activation='relu', name=prefix + 'fc1')(x)
     x = Dense(in_channels, activation='sigmoid', name=prefix + 'fc2')(x)
-    x = K.expand_dims(x, axis=1)
-    x = K.expand_dims(x, axis=2)
+    x = Lambda(expand_dims2d, name=prefix + 'expand_dims2d')(x)
     x = UpSampling2D(in_shapes, name=prefix + 'upsample')(x)
     x = Multiply(name=prefix + 'multiply')([x, inputs])
     return x
