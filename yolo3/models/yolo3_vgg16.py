@@ -7,7 +7,7 @@ from tensorflow.keras.applications.vgg16 import VGG16
 from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, make_last_layers
 
 
-def yolo_vgg16_body(inputs, num_anchors, num_classes):
+def yolo3_vgg16_body(inputs, num_anchors, num_classes):
     """Create YOLO_V3 model CNN body in Keras."""
     '''
     Layer Name input_1 Output: Tensor("input_1:0", shape=(?, 416, 416, 3), dtype=float32)
@@ -69,7 +69,7 @@ def yolo_vgg16_body(inputs, num_anchors, num_classes):
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
-def tiny_yolo_vgg16_body(inputs, num_anchors, num_classes):
+def tiny_yolo3_vgg16_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 VGG16 model CNN body in keras.'''
     vgg16 = VGG16(input_tensor=inputs,weights='imagenet',include_top=False)
     x = vgg16.get_layer('block5_pool').output

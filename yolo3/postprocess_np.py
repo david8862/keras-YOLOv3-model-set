@@ -5,7 +5,7 @@ import copy
 from scipy.special import expit, softmax
 
 
-def yolo_head(predictions, anchors, num_classes, input_dims):
+def yolo3_head(predictions, anchors, num_classes, input_dims):
     """
     YOLO Head to process predictions from YOLO models
 
@@ -26,12 +26,12 @@ def yolo_head(predictions, anchors, num_classes, input_dims):
 
     results = []
     for i, prediction in enumerate(predictions):
-        results.append(_yolo_head(prediction, num_classes, anchors[anchor_mask[i]], input_dims))
+        results.append(_yolo3_head(prediction, num_classes, anchors[anchor_mask[i]], input_dims))
 
     return np.concatenate(results, axis=1)
 
 
-def _yolo_head(prediction, num_classes, anchors, input_dims):
+def _yolo3_head(prediction, num_classes, anchors, input_dims):
     batch_size = np.shape(prediction)[0]
     stride = input_dims[0] // np.shape(prediction)[1]
     grid_size = input_dims[0] // stride
@@ -79,18 +79,18 @@ def _yolo_head(prediction, num_classes, anchors, input_dims):
 
 
 def yolo3_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=0.1, iou_threshold=0.4):
-    predictions = yolo_head(yolo_outputs, anchors, num_classes, input_dims=model_image_size)
+    predictions = yolo3_head(yolo_outputs, anchors, num_classes, input_dims=model_image_size)
 
-    boxes, classes, scores = handle_predictions(predictions,
+    boxes, classes, scores = yolo3_handle_predictions(predictions,
                                                 max_boxes=max_boxes,
                                                 confidence=confidence,
                                                 iou_threshold=iou_threshold)
-    boxes = adjust_boxes(boxes, image_shape, model_image_size)
+    boxes = yolo3_adjust_boxes(boxes, image_shape, model_image_size)
 
     return boxes, classes, scores
 
 
-def handle_predictions(predictions, max_boxes=100, confidence=0.1, iou_threshold=0.4):
+def yolo3_handle_predictions(predictions, max_boxes=100, confidence=0.1, iou_threshold=0.4):
     boxes = predictions[:, :, :4]
     box_confidences = np.expand_dims(predictions[:, :, 4], -1)
     box_class_probs = predictions[:, :, 5:]
@@ -263,7 +263,7 @@ def nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.1):
     return nboxes, nclasses, nscores
 
 
-def adjust_boxes(boxes, img_shape, model_image_size):
+def yolo3_adjust_boxes(boxes, img_shape, model_image_size):
     if boxes is None or len(boxes) == 0:
         return []
 

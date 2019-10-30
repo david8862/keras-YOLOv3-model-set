@@ -49,7 +49,7 @@ Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-
 * dump out inference model from training checkpoint:
 
     ```
-    # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/tiny_yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=320x320 --dump_model --output_model_file=model.h5
+    # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/tiny_yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=320x320 --dump_model --output_model_file=model.h5
     ```
 
 * convert keras .h5 model to tensorflow frozen pb model:
@@ -77,7 +77,7 @@ MNN support Post Training Integer quantization, so we can use its python CLI int
 4. Run MNN model validate script
 ```
 # cd keras-YOLOv3-model-set/tools/
-# python validate_yolo_mnn.py --model_path=model_quant.pb.mnn --anchors_path=../configs/tiny_yolo_anchors.txt --classes_path=../configs/voc_classes.txt --image_file=../example/dog.jpg --loop_count=5
+# python validate_yolo_mnn.py --model_path=model_quant.pb.mnn --anchors_path=../configs/tiny_yolo3_anchors.txt --classes_path=../configs/voc_classes.txt --image_file=../example/dog.jpg --loop_count=5
 ```
 #### You can also use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set#evaluation) to do evaluation on the MNN model
 
@@ -98,7 +98,7 @@ Usage: yolov3Detection
 --warmup_runs, -w: number of warmup runs
 
 
-# ./yolov3Detection -m model.pb.mnn -i ../../../example/dog.jpg -l ../../../configs/voc_classes.txt -a ../../../configs/tiny_yolo_anchors.txt -t 8 -c 10 -w 3
+# ./yolov3Detection -m model.pb.mnn -i ../../../example/dog.jpg -l ../../../configs/voc_classes.txt -a ../../../configs/tiny_yolo3_anchors.txt -t 8 -c 10 -w 3
 Can't Find type=4 backend, use 0 instead
 image_input: w:320 , h:320, bpp: 3
 num_classes: 20
@@ -118,7 +118,7 @@ bicycle 0.779654 (145, 147) (541, 497)
 car 0.929868 (471, 80) (676, 173)
 dog 0.519254 (111, 213) (324, 520)
 ```
-Here the [classes](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/configs/voc_classes.txt) & [anchors](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/configs/tiny_yolo_anchors.txt) file format are the same as used in training part
+Here the [classes](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/configs/voc_classes.txt) & [anchors](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/configs/tiny_yolo3_anchors.txt) file format are the same as used in training part
 
 
 ### Tensorflow-Lite
@@ -151,7 +151,7 @@ Tensorflow-lite support both Float32 and UInt8 type model. We can dump out the k
 * dump out inference model from training checkpoint:
 
     ```
-    # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/tiny_yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=320x320 --dump_model --output_model_file=model.h5
+    # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/tiny_yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=320x320 --dump_model --output_model_file=model.h5
     ```
 
 * convert keras .h5 model to Float32 tflite model:
@@ -171,7 +171,7 @@ Tensorflow-lite support both Float32 and UInt8 type model. We can dump out the k
 4. Run TFLite validate script
 ```
 # cd keras-YOLOv3-model-set/tools/
-# python validate_yolo_tflite.py --model_path=model.tflite --anchors_path=../configs/tiny_yolo_anchors.txt --classes_path=../configs/voc_classes.txt --image_file=../example/dog.jpg --loop_count=5
+# python validate_yolo_tflite.py --model_path=model.tflite --anchors_path=../configs/tiny_yolo3_anchors.txt --classes_path=../configs/voc_classes.txt --image_file=../example/dog.jpg --loop_count=5
 ```
 #### You can also use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set#evaluation) to do evaluation on the TFLite model
 
@@ -194,7 +194,7 @@ Usage: yolov3Detection
 --warmup_runs, -w: number of warmup runs
 --verbose, -v: [0|1] print more information
 
-# ./yolov3Detection -m model.tflite -i ../../../example/dog.jpg -l ../../../configs/voc_classes.txt -a ../../../configs/tiny_yolo_anchors.txt -t 8 -c 10 -w 3 -v 1
+# ./yolov3Detection -m model.tflite -i ../../../example/dog.jpg -l ../../../configs/voc_classes.txt -a ../../../configs/tiny_yolo3_anchors.txt -t 8 -c 10 -w 3 -v 1
 Loaded model model.tflite
 resolved reporter
 num_classes: 20
@@ -215,5 +215,5 @@ dog 0.597517 (109, 215) (326, 519)
 ```
 
 ### TODO
-- [ ] further latency optimize on yolo postprocess C++ implementation
+- [ ] further latency optimize on yolo3 postprocess C++ implementation
 - [ ] refactor demo app to get common interface

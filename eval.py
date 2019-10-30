@@ -6,7 +6,7 @@ Calculate mAP for YOLO model on some annotation dataset
 import numpy as np
 import random
 import os, argparse
-from yolo3.postprocess_np import yolo3_postprocess_np, yolo_head, handle_predictions, adjust_boxes
+from yolo3.postprocess_np import yolo3_postprocess_np, yolo3_head, yolo3_handle_predictions, yolo3_adjust_boxes
 from yolo3.data import preprocess_image
 from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes, touchdir, optimize_tf_gpu
 from PIL import Image
@@ -122,9 +122,9 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
         output_data = interpreter.get_tensor(output_detail['index'])
         out_list.append(output_data)
 
-    predictions = yolo_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
+    predictions = yolo3_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
 
-    boxes, classes, scores = handle_predictions(predictions, max_boxes=100, confidence=conf_threshold, iou_threshold=0.4)
+    boxes, classes, scores = yolo3_handle_predictions(predictions, max_boxes=100, confidence=conf_threshold, iou_threshold=0.4)
     boxes = adjust_boxes(boxes, image_shape, (height, width))
 
     return boxes, classes, scores
@@ -193,9 +193,9 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
 
         out_list.append(output_data)
 
-    predictions = yolo_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
+    predictions = yolo3_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
 
-    boxes, classes, scores = handle_predictions(predictions, max_boxes=100, confidence=conf_threshold, iou_threshold=0.4)
+    boxes, classes, scores = yolo3_handle_predictions(predictions, max_boxes=100, confidence=conf_threshold, iou_threshold=0.4)
     boxes = adjust_boxes(boxes, image_shape, (height, width))
 
     return boxes, classes, scores

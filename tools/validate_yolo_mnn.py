@@ -7,7 +7,7 @@ import numpy as np
 import MNN
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-from yolo3.postprocess_np import yolo_head, handle_predictions, adjust_boxes
+from yolo3.postprocess_np import yolo3_head, yolo3_handle_predictions, yolo3_adjust_boxes
 from yolo3.data import preprocess_image
 from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes
 
@@ -83,10 +83,10 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, loop_c
         out_list.append(output_data)
 
     start = time.time()
-    predictions = yolo_head(out_list, anchors, num_classes=len(class_names), input_dims=(height, width))
+    predictions = yolo3_head(out_list, anchors, num_classes=len(class_names), input_dims=(height, width))
 
-    boxes, classes, scores = handle_predictions(predictions, confidence=0.1, iou_threshold=0.4)
-    boxes = adjust_boxes(boxes, image_shape, (height, width))
+    boxes, classes, scores = yolo3_handle_predictions(predictions, confidence=0.1, iou_threshold=0.4)
+    boxes = yolo3_adjust_boxes(boxes, image_shape, (height, width))
     end = time.time()
     print("PostProcess time: {:.8f}ms".format((end - start) * 1000))
 

@@ -5,7 +5,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Layer
 from tensorflow.keras import backend as K
 
-def yolo_head(feats, anchors, num_classes, input_shape, calc_loss=False):
+def yolo3_head(feats, anchors, num_classes, input_shape, calc_loss=False):
     """Convert final layer features to bounding box parameters."""
     num_anchors = len(anchors)
     # Reshape to batch, height, width, num_anchors, box_params.
@@ -33,7 +33,7 @@ def yolo_head(feats, anchors, num_classes, input_shape, calc_loss=False):
     return box_xy, box_wh, box_confidence, box_class_probs
 
 
-def yolo_correct_boxes(box_xy, box_wh, input_shape, image_shape):
+def yolo3_correct_boxes(box_xy, box_wh, input_shape, image_shape):
     '''Get corrected boxes'''
     input_shape = K.cast(input_shape, K.dtype(box_xy))
     image_shape = K.cast(image_shape, K.dtype(box_xy))
@@ -57,11 +57,11 @@ def yolo_correct_boxes(box_xy, box_wh, input_shape, image_shape):
     return boxes
 
 
-def yolo_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape):
+def yolo3_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape):
     '''Process Conv layer output'''
     box_xy, box_wh, box_confidence, box_class_probs = yolo_head(feats,
         anchors, num_classes, input_shape)
-    boxes = yolo_correct_boxes(box_xy, box_wh, input_shape, image_shape)
+    boxes = yolo3_correct_boxes(box_xy, box_wh, input_shape, image_shape)
     boxes = K.reshape(boxes, [-1, 4])
     box_scores = box_confidence * box_class_probs
     box_scores = K.reshape(box_scores, [-1, num_classes])
@@ -106,7 +106,7 @@ def yolo3_postprocess(args,
     boxes = []
     box_scores = []
     for l in range(num_layers):
-        _boxes, _box_scores = yolo_boxes_and_scores(yolo_outputs[l],
+        _boxes, _box_scores = yolo3_boxes_and_scores(yolo_outputs[l],
             anchors[anchor_mask[l]], num_classes, input_shape, image_shape)
         boxes.append(_boxes)
         box_scores.append(_box_scores)
@@ -146,7 +146,7 @@ def batched_yolo_boxes_and_scores(feats, anchors, num_classes, input_shape, imag
     grid_shape = K.shape(feats)[1:3] # height, width
     total_anchor_num = grid_shape[0] * grid_shape[1] * num_anchors
 
-    boxes = yolo_correct_boxes(box_xy, box_wh, input_shape, image_shape)
+    boxes = yolo3_correct_boxes(box_xy, box_wh, input_shape, image_shape)
     boxes = K.reshape(boxes, [-1, total_anchor_num, 4])
     box_scores = box_confidence * box_class_probs
     box_scores = K.reshape(box_scores, [-1, total_anchor_num, num_classes])

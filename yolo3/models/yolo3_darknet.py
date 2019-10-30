@@ -19,8 +19,8 @@ def resblock_body(x, num_filters, num_blocks):
         x = Add()([x,y])
     return x
 
-def darknet_body(x):
-    '''Darknet body having 52 Convolution2D layers'''
+def darknet53_body(x):
+    '''Darknet53 body having 52 Convolution2D layers'''
     x = DarknetConv2D_BN_Leaky(32, (3,3))(x)
     x = resblock_body(x, 64, 1)
     x = resblock_body(x, 128, 2)
@@ -42,7 +42,7 @@ def depthwise_separable_resblock_body(x, num_filters, num_blocks):
         x = Add()([x,y])
     return x
 
-def darknetlite_body(x):
+def darknet53lite_body(x):
     '''Darknet body having 52 Convolution2D layers'''
     x = Darknet_Depthwise_Separable_Conv2D_BN_Leaky(32, (3,3))(x)
     x = depthwise_separable_resblock_body(x, 64, 1)
@@ -53,9 +53,9 @@ def darknetlite_body(x):
     return x
 
 
-def yolo_body(inputs, num_anchors, num_classes, weights_path=None):
+def yolo3_body(inputs, num_anchors, num_classes, weights_path=None):
     """Create YOLO_V3 model CNN body in Keras."""
-    darknet = Model(inputs, darknet_body(inputs))
+    darknet = Model(inputs, darknet53_body(inputs))
     if weights_path is not None:
         darknet.load_weights(weights_path, by_name=True)
         print('Load weights {}.'.format(weights_path))
@@ -76,7 +76,7 @@ def yolo_body(inputs, num_anchors, num_classes, weights_path=None):
     return Model(inputs, [y1,y2,y3])
 
 
-#def custom_yolo_body(inputs, num_anchors, num_classes, weights_path):
+#def custom_yolo3_body(inputs, num_anchors, num_classes, weights_path):
     #'''Create a custom YOLO_v3 model, use
        #pre-trained weights from darknet and fit
        #for our target classes.'''
@@ -100,9 +100,9 @@ def yolo_body(inputs, num_anchors, num_classes, weights_path=None):
     #return Model(inputs, [y1,y2,y3])
 
 
-def yolo_spp_body(inputs, num_anchors, num_classes, weights_path=None):
+def yolo3_spp_body(inputs, num_anchors, num_classes, weights_path=None):
     """Create YOLO_V3 SPP model CNN body in Keras."""
-    darknet = Model(inputs, darknet_body(inputs))
+    darknet = Model(inputs, darknet53_body(inputs))
     if weights_path is not None:
         darknet.load_weights(weights_path, by_name=True)
         print('Load weights {}.'.format(weights_path))
@@ -124,7 +124,7 @@ def yolo_spp_body(inputs, num_anchors, num_classes, weights_path=None):
     return Model(inputs, [y1,y2,y3])
 
 
-def custom_yolo_spp_body(inputs, num_anchors, num_classes, weights_path):
+def custom_yolo3_spp_body(inputs, num_anchors, num_classes, weights_path):
     '''Create a custom YOLO_v3 SPP model, use
        pre-trained weights from darknet and fit
        for our target classes.'''
@@ -144,9 +144,9 @@ def custom_yolo_spp_body(inputs, num_anchors, num_classes, weights_path):
     return Model(inputs, [y1,y2,y3])
 
 
-def yololite_body(inputs, num_anchors, num_classes):
+def yolo3lite_body(inputs, num_anchors, num_classes):
     """Create YOLO_V3 Lite model CNN body in Keras."""
-    darknetlite = Model(inputs, darknetlite_body(inputs))
+    darknetlite = Model(inputs, darknet53lite_body(inputs))
     x, y1 = make_depthwise_separable_last_layers(darknetlite.output, 512, num_anchors*(num_classes+5))
 
     x = compose(
@@ -164,7 +164,7 @@ def yololite_body(inputs, num_anchors, num_classes):
     return Model(inputs, [y1,y2,y3])
 
 
-def tiny_yolo_body(inputs, num_anchors, num_classes):
+def tiny_yolo3_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 model CNN body in keras.'''
     x1 = compose(
             DarknetConv2D_BN_Leaky(16, (3,3)),
@@ -196,7 +196,7 @@ def tiny_yolo_body(inputs, num_anchors, num_classes):
 
     return Model(inputs, [y1,y2])
 
-def custom_tiny_yolo_body(inputs, num_anchors, num_classes, weights_path):
+def custom_tiny_yolo3_body(inputs, num_anchors, num_classes, weights_path):
     '''Create a custom Tiny YOLO_v3 model, use
        pre-trained weights from darknet and fit
        for our target classes.'''
@@ -214,7 +214,7 @@ def custom_tiny_yolo_body(inputs, num_anchors, num_classes, weights_path):
     return Model(inputs, [y1,y2])
 
 
-def tiny_yololite_body(inputs, num_anchors, num_classes):
+def tiny_yolo3lite_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 Lite model CNN body in keras.'''
     x1 = compose(
             Depthwise_Separable_Conv2D_BN_Leaky(16, (3,3)),

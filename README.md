@@ -217,7 +217,7 @@ Loss type couldn't be changed from CLI options. You can try them by changing par
 We need to dump out inference model from training checkpoint for eval or demo. Following script cmd work for that.
 
 ```
-# python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --dump_model --output_model_file=model.h5
+# python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --dump_model --output_model_file=model.h5
 ```
 
 Change model_type, anchors file & class file for different training mode. If "--model_pruning" was added in training, you also need to use "--pruning_model" here for dumping out the pruned model.
@@ -230,7 +230,7 @@ Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/ev
 2. MS COCO AP evaluation. Will draw overall AP chart and AP on different scale (small, medium, large) as COCO standard. It can also optionally save all the detection result
 
 ```
-# python eval.py --model_path=model.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.001 --annotation_file=2007_test.txt --save_result
+# python eval.py --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.001 --annotation_file=2007_test.txt --save_result
 ```
 
 Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalVOC dataset (using a reasonable score threshold=0.1):
@@ -270,11 +270,11 @@ And some unsuccessful experiment...
 
 image detection mode
 ```
-# python yolo.py --model_type=mobilenet_lite --model_path=model.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --image
+# python yolo.py --model_type=mobilenet_lite --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --image
 ```
 video detection mode
 ```
-# python yolo.py --model_type=mobilenet_lite --model_path=model.h5 --anchors_path=configs/yolo_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --input=test.mp4
+# python yolo.py --model_type=mobilenet_lite --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --input=test.mp4
 ```
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 

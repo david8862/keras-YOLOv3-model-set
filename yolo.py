@@ -31,7 +31,7 @@ default_config = {
         "model_type": 'darknet',
         "model_path": 'weights/yolov3-tiny.h5',
         "pruning_model": False,
-        "anchors_path": 'configs/tiny_yolo_anchors.txt',
+        "anchors_path": 'configs/tiny_yolo3_anchors.txt',
         "classes_path": 'configs/coco_classes.txt',
         "score" : 0.1,
         "iou" : 0.4,

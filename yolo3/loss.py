@@ -3,7 +3,7 @@
 
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from yolo3.postprocess import yolo_head
+from yolo3.postprocess import yolo3_head
 
 def softmax_focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
     """
@@ -169,7 +169,7 @@ def _smooth_labels(y_true, label_smoothing):
     return y_true * (1.0 - label_smoothing) + 0.5 * label_smoothing
 
 
-def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False, use_focal_obj_loss=False, use_softmax_loss=False, use_giou_loss=False, label_smoothing=0):
+def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False, use_focal_obj_loss=False, use_softmax_loss=False, use_giou_loss=False, label_smoothing=0):
     '''Return yolo_loss tensor
 
     Parameters
@@ -204,7 +204,7 @@ def yolo_loss(args, anchors, num_classes, ignore_thresh=.5, use_focal_loss=False
         if label_smoothing:
             true_class_probs = _smooth_labels(true_class_probs, label_smoothing)
 
-        grid, raw_pred, pred_xy, pred_wh = yolo_head(yolo_outputs[l],
+        grid, raw_pred, pred_xy, pred_wh = yolo3_head(yolo_outputs[l],
              anchors[anchor_mask[l]], num_classes, input_shape, calc_loss=True)
         pred_box = K.concatenate([pred_xy, pred_wh])
 

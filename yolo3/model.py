@@ -10,14 +10,14 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam, RMSprop, SGD
 from tensorflow_model_optimization.sparsity import keras as sparsity
 
-from yolo3.models.yolo3_darknet import yolo_body, custom_tiny_yolo_body, yololite_body, tiny_yololite_body, custom_yolo_spp_body
-from yolo3.models.yolo3_mobilenet import yolo_mobilenet_body, tiny_yolo_mobilenet_body, yololite_mobilenet_body, yololite_spp_mobilenet_body, tiny_yololite_mobilenet_body
-from yolo3.models.yolo3_mobilenetv2 import yolo_mobilenetv2_body, tiny_yolo_mobilenetv2_body, yololite_mobilenetv2_body, yololite_spp_mobilenetv2_body, tiny_yololite_mobilenetv2_body
-from yolo3.models.yolo3_shufflenetv2 import yolo_shufflenetv2_body, tiny_yolo_shufflenetv2_body, yololite_shufflenetv2_body, yololite_spp_shufflenetv2_body, tiny_yololite_shufflenetv2_body
-from yolo3.models.yolo3_vgg16 import yolo_vgg16_body, tiny_yolo_vgg16_body
-from yolo3.models.yolo3_xception import yolo_xception_body, yololite_xception_body, tiny_yolo_xception_body, tiny_yololite_xception_body, yolo_spp_xception_body
-from yolo3.models.yolo3_nano import yolo_nano_body
-from yolo3.loss import yolo_loss
+from yolo3.models.yolo3_darknet import yolo3_body, custom_tiny_yolo3_body, yolo3lite_body, tiny_yolo3lite_body, custom_yolo3_spp_body
+from yolo3.models.yolo3_mobilenet import yolo3_mobilenet_body, tiny_yolo3_mobilenet_body, yolo3lite_mobilenet_body, yolo3lite_spp_mobilenet_body, tiny_yolo3lite_mobilenet_body
+from yolo3.models.yolo3_mobilenetv2 import yolo3_mobilenetv2_body, tiny_yolo3_mobilenetv2_body, yolo3lite_mobilenetv2_body, yolo3lite_spp_mobilenetv2_body, tiny_yolo3lite_mobilenetv2_body
+from yolo3.models.yolo3_shufflenetv2 import yolo3_shufflenetv2_body, tiny_yolo3_shufflenetv2_body, yolo3lite_shufflenetv2_body, yolo3lite_spp_shufflenetv2_body, tiny_yolo3lite_shufflenetv2_body
+from yolo3.models.yolo3_vgg16 import yolo3_vgg16_body, tiny_yolo3_vgg16_body
+from yolo3.models.yolo3_xception import yolo3_xception_body, yolo3lite_xception_body, tiny_yolo3_xception_body, tiny_yolo3lite_xception_body, yolo3_spp_xception_body
+from yolo3.models.yolo3_nano import yolo3_nano_body
+from yolo3.loss import yolo3_loss
 from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Yolo3PostProcessLayer
 
 
@@ -27,27 +27,27 @@ from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Y
 #   [model_function, backbone_length, pretrain_weight_path]
 #
 yolo3_model_map = {
-    'mobilenet': [yolo_mobilenet_body, 87, None],
-    'mobilenet_lite': [yololite_mobilenet_body, 87, None],
-    'mobilenet_lite_spp': [yololite_spp_mobilenet_body, 87, None],
-    'mobilenetv2': [yolo_mobilenetv2_body, 155, None],
-    'mobilenetv2_lite': [yololite_mobilenetv2_body, 155, None],
-    'mobilenetv2_lite_spp': [yololite_spp_mobilenetv2_body, 155, None],
+    'mobilenet': [yolo3_mobilenet_body, 87, None],
+    'mobilenet_lite': [yolo3lite_mobilenet_body, 87, None],
+    'mobilenet_lite_spp': [yolo3lite_spp_mobilenet_body, 87, None],
+    'mobilenetv2': [yolo3_mobilenetv2_body, 155, None],
+    'mobilenetv2_lite': [yolo3lite_mobilenetv2_body, 155, None],
+    'mobilenetv2_lite_spp': [yolo3lite_spp_mobilenetv2_body, 155, None],
 
-    'shufflenetv2': [yolo_shufflenetv2_body, 205, None],
-    'shufflenetv2_lite': [yololite_shufflenetv2_body, 205, None],
-    'shufflenetv2_lite_spp': [yololite_spp_shufflenetv2_body, 205, None],
+    'shufflenetv2': [yolo3_shufflenetv2_body, 205, None],
+    'shufflenetv2_lite': [yolo3lite_shufflenetv2_body, 205, None],
+    'shufflenetv2_lite_spp': [yolo3lite_spp_shufflenetv2_body, 205, None],
 
-    'darknet': [yolo_body, 185, 'weights/darknet53.h5'],
-    'darknet_spp': [custom_yolo_spp_body, 185, 'weights/yolov3-spp.h5'],
+    'darknet': [yolo3_body, 185, 'weights/darknet53.h5'],
+    'darknet_spp': [custom_yolo3_spp_body, 185, 'weights/yolov3-spp.h5'],
     #Doesn't have pretrained weights, so no need to return backbone length
-    'darknet_lite': [yololite_body, 0, None],
-    'vgg16': [yolo_vgg16_body, 19, None],
-    'xception': [yolo_xception_body, 132, None],
-    'xception_lite': [yololite_xception_body, 132, None],
-    'xception_spp': [yolo_spp_xception_body, 132, None],
+    'darknet_lite': [yolo3lite_body, 0, None],
+    'vgg16': [yolo3_vgg16_body, 19, None],
+    'xception': [yolo3_xception_body, 132, None],
+    'xception_lite': [yolo3lite_xception_body, 132, None],
+    'xception_spp': [yolo3_spp_xception_body, 132, None],
 
-    'nano': [yolo_nano_body, 0, None],
+    'nano': [yolo3_nano_body, 0, None],
 }
 
 
@@ -57,20 +57,20 @@ yolo3_model_map = {
 #   [model_function, backbone_length, pretrain_weight_file]
 #
 yolo3_tiny_model_map = {
-    'mobilenet': [tiny_yolo_mobilenet_body, 87, None],
-    'mobilenet_lite': [tiny_yololite_mobilenet_body, 87, None],
-    'mobilenetv2': [tiny_yolo_mobilenetv2_body, 155, None],
-    'mobilenetv2_lite': [tiny_yololite_mobilenetv2_body, 155, None],
+    'mobilenet': [tiny_yolo3_mobilenet_body, 87, None],
+    'mobilenet_lite': [tiny_yolo3lite_mobilenet_body, 87, None],
+    'mobilenetv2': [tiny_yolo3_mobilenetv2_body, 155, None],
+    'mobilenetv2_lite': [tiny_yolo3lite_mobilenetv2_body, 155, None],
 
-    'shufflenetv2': [tiny_yolo_shufflenetv2_body, 205, None],
-    'shufflenetv2_lite': [tiny_yololite_shufflenetv2_body, 205, None],
+    'shufflenetv2': [tiny_yolo3_shufflenetv2_body, 205, None],
+    'shufflenetv2_lite': [tiny_yolo3lite_shufflenetv2_body, 205, None],
 
-    'darknet': [custom_tiny_yolo_body, 20, 'weights/yolov3-tiny.h5'],
+    'darknet': [custom_tiny_yolo3_body, 20, 'weights/yolov3-tiny.h5'],
     #Doesn't have pretrained weights, so no need to return backbone length
-    'darknet_lite': [tiny_yololite_body, 0, None],
-    'vgg16': [tiny_yolo_vgg16_body, 19, None],
-    'xception': [tiny_yolo_xception_body, 132, None],
-    'xception_lite': [tiny_yololite_xception_body, 132, None],
+    'darknet_lite': [tiny_yolo3lite_body, 0, None],
+    'vgg16': [tiny_yolo3_vgg16_body, 19, None],
+    'xception': [tiny_yolo3_xception_body, 132, None],
+    'xception_lite': [tiny_yolo3lite_xception_body, 132, None],
 }
 
 
@@ -208,7 +208,7 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
             model_body.layers[i].trainable= True
         print('Unfreeze all of the layers.')
 
-    model_loss, location_loss, confidence_loss, class_loss = Lambda(yolo_loss, name='yolo_loss',
+    model_loss, location_loss, confidence_loss, class_loss = Lambda(yolo3_loss, name='yolo_loss',
             arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5, 'use_focal_loss': False, 'use_focal_obj_loss': False, 'use_softmax_loss': False, 'use_giou_loss': False, 'label_smoothing': label_smoothing})(
         [*model_body.output, *y_true])
     model = Model([model_body.input, *y_true], model_loss)

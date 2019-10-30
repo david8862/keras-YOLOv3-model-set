@@ -7,7 +7,7 @@ from tensorflow.keras.applications.xception import Xception
 from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, make_last_layers, make_depthwise_separable_last_layers, make_spp_last_layers
 
 
-def yolo_xception_body(inputs, num_anchors, num_classes):
+def yolo3_xception_body(inputs, num_anchors, num_classes):
     """Create YOLO_V3 Xception model CNN body in Keras."""
     xception = Xception(input_tensor=inputs, weights='imagenet', include_top=False)
 
@@ -44,7 +44,7 @@ def yolo_xception_body(inputs, num_anchors, num_classes):
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def yolo_spp_xception_body(inputs, num_anchors, num_classes):
+def yolo3_spp_xception_body(inputs, num_anchors, num_classes):
     """Create YOLO_V3 SPP Xception model CNN body in Keras."""
     xception = Xception(input_tensor=inputs, weights='imagenet', include_top=False)
 
@@ -81,7 +81,7 @@ def yolo_spp_xception_body(inputs, num_anchors, num_classes):
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def yololite_xception_body(inputs, num_anchors, num_classes):
+def yolo3lite_xception_body(inputs, num_anchors, num_classes):
     '''Create YOLO_v3 Lite Xception model CNN body in keras.'''
     xception = Xception(input_tensor=inputs, weights='imagenet', include_top=False)
 
@@ -118,7 +118,7 @@ def yololite_xception_body(inputs, num_anchors, num_classes):
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def tiny_yolo_xception_body(inputs, num_anchors, num_classes):
+def tiny_yolo3_xception_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 Xception model CNN body in keras.'''
     xception = Xception(input_tensor=inputs, weights='imagenet', include_top=False)
 
@@ -152,7 +152,7 @@ def tiny_yolo_xception_body(inputs, num_anchors, num_classes):
     return Model(inputs, [y1,y2])
 
 
-def tiny_yololite_xception_body(inputs, num_anchors, num_classes):
+def tiny_yolo3lite_xception_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 Lite Xception model CNN body in keras.'''
     xception = Xception(input_tensor=inputs, weights='imagenet', include_top=False)
 

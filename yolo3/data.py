@@ -195,7 +195,7 @@ def preprocess_true_boxes(true_boxes, input_shape, anchors, num_classes):
     return y_true
 
 
-def data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes):
+def yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes):
     '''data generator for fit_generator'''
     n = len(annotation_lines)
     i = 0
@@ -214,9 +214,9 @@ def data_generator(annotation_lines, batch_size, input_shape, anchors, num_class
         y_true = preprocess_true_boxes(box_data, input_shape, anchors, num_classes)
         yield [image_data, *y_true], np.zeros(batch_size)
 
-def data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes):
+def yolo3_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes):
     n = len(annotation_lines)
     if n==0 or batch_size<=0: return None
-    return data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes)
+    return yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes)
 
 

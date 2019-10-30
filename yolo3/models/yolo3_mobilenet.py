@@ -7,7 +7,7 @@ from tensorflow.keras.applications.mobilenet import MobileNet
 from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, make_last_layers, make_depthwise_separable_last_layers, make_spp_depthwise_separable_last_layers
 
 
-def yolo_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
+def yolo3_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     """Create YOLO_V3 MobileNet model CNN body in Keras."""
     '''
     Layer Name: input_1 Output: Tensor("input_1:0", shape=(?, 416, 416, 3), dtype=float32)
@@ -147,7 +147,7 @@ def yolo_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def yololite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
+def yolo3lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     '''Create YOLO_v3 Lite MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
@@ -182,7 +182,7 @@ def yololite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def yololite_spp_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
+def yolo3lite_spp_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     '''Create YOLO_v3 Lite SPP MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
@@ -218,7 +218,7 @@ def yololite_spp_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def tiny_yolo_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
+def tiny_yolo3_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     '''Create Tiny YOLO_v3 MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
@@ -249,7 +249,7 @@ def tiny_yolo_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     return Model(inputs, [y1,y2])
 
 
-def tiny_yololite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
+def tiny_yolo3lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     '''Create Tiny YOLO_v3 Lite MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 

@@ -11,7 +11,7 @@ from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback
 from tensorflow_model_optimization.sparsity import keras as sparsity
 from yolo3.model import get_yolo3_train_model, get_optimizer
-from yolo3.data import data_generator_wrapper
+from yolo3.data import yolo3_data_generator_wrapper
 from yolo3.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
 
 # Try to enable Auto Mixed Precision on TF 2.0
@@ -103,9 +103,9 @@ def _main(args):
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
     if args.tiny_version:
-        anchors_path = 'configs/tiny_yolo_anchors.txt'
+        anchors_path = 'configs/tiny_yolo3_anchors.txt'
     else:
-        anchors_path = 'configs/yolo_anchors.txt'
+        anchors_path = 'configs/yolo3_anchors.txt'
     anchors = get_anchors(anchors_path)
 
     # get freeze level according to CLI option
@@ -169,9 +169,9 @@ def _main(args):
     epochs = args.init_epoch
     print("Initial training stage")
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-    model.fit_generator(data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
+    model.fit_generator(yolo3_data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
-            validation_data=data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
+            validation_data=yolo3_data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
             epochs=epochs,
             initial_epoch=initial_epoch,
@@ -211,9 +211,9 @@ def _main(args):
             if initial_epoch != args.init_epoch:
                 input_shape = input_shape_list[random.randint(0,len(input_shape_list)-1)]
             print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-            model.fit_generator(data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
+            model.fit_generator(yolo3_data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
                 steps_per_epoch=max(1, num_train//batch_size),
-                validation_data=data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
+                validation_data=yolo3_data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
                 validation_steps=max(1, num_val//batch_size),
                 epochs=epochs,
                 initial_epoch=initial_epoch,
@@ -221,9 +221,9 @@ def _main(args):
     else:
         # Do single-scale training
         print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-        model.fit_generator(data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
+        model.fit_generator(yolo3_data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
-            validation_data=data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
+            validation_data=yolo3_data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
             epochs=args.total_epoch,
             initial_epoch=epochs,

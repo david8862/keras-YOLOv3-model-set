@@ -181,7 +181,7 @@ def nano_net_body(x):
     return x
 
 
-def yolo_nano_body(inputs, num_anchors, num_classes, weights_path=None):
+def yolo3_nano_body(inputs, num_anchors, num_classes, weights_path=None):
     """
     Create YOLO_V3 Nano model CNN body in Keras.
 
