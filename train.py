@@ -12,6 +12,8 @@ from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnP
 from tensorflow_model_optimization.sparsity import keras as sparsity
 from yolo3.model import get_yolo3_train_model, get_optimizer
 from yolo3.data import yolo3_data_generator_wrapper
+from yolo2.model import get_yolo2_train_model
+from yolo2.data import yolo2_data_generator_wrapper
 from yolo3.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
 
 # Try to enable Auto Mixed Precision on TF 2.0
@@ -102,11 +104,27 @@ def _main(args):
     classes_path = args.classes_path
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
-    if args.tiny_version:
-        anchors_path = 'configs/tiny_yolo3_anchors.txt'
+
+    anchors = get_anchors(args.anchors_path)
+    num_anchors = len(anchors)
+
+    if num_anchors == 9:
+        # YOLOv3 use 9 anchors
+        get_train_model = get_yolo3_train_model
+        data_generator = yolo3_data_generator_wrapper
+        tiny_version = False
+    elif num_anchors == 6:
+        # Tiny YOLOv3 use 6 anchors
+        get_train_model = get_yolo3_train_model
+        data_generator = yolo3_data_generator_wrapper
+        tiny_version = True
+    elif num_anchors == 5:
+        # YOLOv2 use 5 anchors
+        get_train_model = get_yolo2_train_model
+        data_generator = yolo2_data_generator_wrapper
+        tiny_version = False
     else:
-        anchors_path = 'configs/yolo3_anchors.txt'
-    anchors = get_anchors(anchors_path)
+        raise ValueError('Unsupported anchors number')
 
     # get freeze level according to CLI option
     if args.weights_path:
@@ -155,7 +173,7 @@ def _main(args):
     optimizer = get_optimizer(args.optimizer, args.learning_rate)
 
     # get train model
-    model = get_yolo3_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, optimizer=optimizer, label_smoothing=args.label_smoothing, model_pruning=args.model_pruning, pruning_end_step=pruning_end_step)
+    model = get_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, optimizer=optimizer, label_smoothing=args.label_smoothing, model_pruning=args.model_pruning, pruning_end_step=pruning_end_step)
     # support multi-gpu training
     if args.gpu_num >= 2:
         model = multi_gpu_model(model, gpus=args.gpu_num)
@@ -169,9 +187,9 @@ def _main(args):
     epochs = args.init_epoch
     print("Initial training stage")
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-    model.fit_generator(yolo3_data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
+    model.fit_generator(data_generator(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
-            validation_data=yolo3_data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
+            validation_data=data_generator(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
             epochs=epochs,
             initial_epoch=initial_epoch,
@@ -195,7 +213,7 @@ def _main(args):
         if args.model_type == 'nano':
             raise ValueError("YOLO nano model doesn't support multiscale trainin.")
         # prepare multiscale config
-        input_shape_list = get_multiscale_list(args.model_type, args.tiny_version)
+        input_shape_list = get_multiscale_list(args.model_type, tiny_version)
         interval = args.rescale_interval
 
         # Do multi-scale training on different input shape
@@ -211,9 +229,9 @@ def _main(args):
             if initial_epoch != args.init_epoch:
                 input_shape = input_shape_list[random.randint(0,len(input_shape_list)-1)]
             print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-            model.fit_generator(yolo3_data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
+            model.fit_generator(data_generator(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
                 steps_per_epoch=max(1, num_train//batch_size),
-                validation_data=yolo3_data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
+                validation_data=data_generator(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
                 validation_steps=max(1, num_val//batch_size),
                 epochs=epochs,
                 initial_epoch=initial_epoch,
@@ -221,9 +239,9 @@ def _main(args):
     else:
         # Do single-scale training
         print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-        model.fit_generator(yolo3_data_generator_wrapper(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
+        model.fit_generator(data_generator(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
             steps_per_epoch=max(1, num_train//batch_size),
-            validation_data=yolo3_data_generator_wrapper(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
+            validation_data=data_generator(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
             epochs=args.total_epoch,
             initial_epoch=epochs,
@@ -241,8 +259,8 @@ if __name__ == '__main__':
     # Model definition options
     parser.add_argument('--model_type', type=str, required=False, default='mobilenet_lite',
         help='YOLO model type: mobilenet_lite/mobilenet/darknet/vgg16/xception/xception_lite, default=mobilenet_lite')
-    parser.add_argument('--tiny_version', default=False, action="store_true",
-        help='Whether to use a tiny YOLO version')
+    parser.add_argument('--anchors_path', type=str, required=False, default='configs/yolo3_anchors.txt',
+        help='path to anchor definitions, default=configs/yolo3_anchors.txt')
     parser.add_argument('--model_image_size', type=str,required=False, default='416x416',
         help = "Initial model image input size as <num>x<num>, default 416x416")
     parser.add_argument('--weights_path', type=str,required=False, default=None,

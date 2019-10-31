@@ -191,7 +191,7 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
 
     model_body, backbone_len = get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, model_pruning=model_pruning, pruning_end_step=pruning_end_step)
     print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))
-    print('model layer size:', len(model_body.layers))
+    print('model layer number:', len(model_body.layers))
 
     if weights_path:
         model_body.load_weights(weights_path, by_name=True)#, skip_mismatch=True)

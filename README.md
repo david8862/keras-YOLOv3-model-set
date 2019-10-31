@@ -145,7 +145,7 @@ For other model, just do in a similar way, but specify different model path and 
 3. [train.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/train.py)
 ```
 # python train.py -h
-usage: train.py [-h] [--model_type MODEL_TYPE] [--tiny_version]
+usage: train.py [-h] [--model_type MODEL_TYPE] [--anchors_path ANCHORS_PATH]
                 [--model_image_size MODEL_IMAGE_SIZE]
                 [--weights_path WEIGHTS_PATH] [--freeze_level FREEZE_LEVEL]
                 [--annotation_file ANNOTATION_FILE]
@@ -163,7 +163,9 @@ optional arguments:
   --model_type MODEL_TYPE
                         YOLO model type: mobilenet_lite/mobilenet/darknet/vgg1
                         6/xception/xception_lite, default=mobilenet_lite
-  --tiny_version        Whether to use a tiny YOLO version
+  --anchors_path ANCHORS_PATH
+                        path to anchor definitions,
+                        default=configs/yolo3_anchors.txt
   --model_image_size MODEL_IMAGE_SIZE
                         Initial model image input size as <num>x<num>, default
                         416x416
