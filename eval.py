@@ -125,7 +125,7 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
     predictions = yolo3_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
 
     boxes, classes, scores = yolo3_handle_predictions(predictions, max_boxes=100, confidence=conf_threshold, iou_threshold=0.4)
-    boxes = adjust_boxes(boxes, image_shape, (height, width))
+    boxes = yolo3_adjust_boxes(boxes, image_shape, (height, width))
 
     return boxes, classes, scores
 
@@ -196,7 +196,7 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
     predictions = yolo3_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
 
     boxes, classes, scores = yolo3_handle_predictions(predictions, max_boxes=100, confidence=conf_threshold, iou_threshold=0.4)
-    boxes = adjust_boxes(boxes, image_shape, (height, width))
+    boxes = yolo3_adjust_boxes(boxes, image_shape, (height, width))
 
     return boxes, classes, scores
 

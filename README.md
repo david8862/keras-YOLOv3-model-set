@@ -49,7 +49,7 @@ A common YOLOv3 object detection pipeline implement with tf.keras. Including dat
 
 ## Quick Start
 
-1. Install the requirements:
+1. Install requirements on Ubuntu 16.04/18.04:
 
 ```
 # pip install -r requirements.txt
@@ -299,6 +299,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 ## Some issues to know
 
 1. The test environment is
+    - Ubuntu 16.04/18.04
     - Python 3.6.8
     - tensorflow 2.0.0/tensorflow 1.14.0
     - tf.keras 2.2.4-tf

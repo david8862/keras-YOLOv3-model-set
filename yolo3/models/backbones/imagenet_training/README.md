@@ -84,6 +84,7 @@ MultiGPU usage: use `--gpu_num N` to use N GPUs. It is passed to the [Keras mult
 
 
 ### Environment
+- Ubuntu 16.04/18.04
 - Python 3.6.7
 - tensorflow 1.14.0
 - tf.keras 2.2.4-tf

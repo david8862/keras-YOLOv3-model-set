@@ -15,3 +15,4 @@ include_directories("${MNN_ROOT_PATH}/include/" "${MNN_ROOT_PATH}/3rd_party/imag
 link_directories("${MNN_ROOT_PATH}/build/")
 add_executable(yolov3Detection ${YOLOV3_DETECTION_SRC})
 target_link_libraries(yolov3Detection -lMNN -lstdc++ -lpthread)
+#target_link_libraries(yolov3Detection libMNN.a -Wl,--whole-archive -Wl,--no-whole-archive -lstdc++ -lpthread)
