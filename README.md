@@ -61,6 +61,7 @@ A common YOLOv3 object detection pipeline implement with tf.keras. Including dat
 
 ```
 # wget -O weights/darknet53.conv.74.weights https://pjreddie.com/media/files/darknet53.conv.74
+# wget -O weights/darknet19_448.conv.23.weights https://pjreddie.com/media/files/darknet19_448.conv.23
 # wget -O weights/yolov3.weights https://pjreddie.com/media/files/yolov3.weights
 # wget -O weights/yolov3-tiny.weights https://pjreddie.com/media/files/yolov3-tiny.weights
 # wget -O weights/yolov3-spp.weights https://pjreddie.com/media/files/yolov3-spp.weights
@@ -69,6 +70,7 @@ A common YOLOv3 object detection pipeline implement with tf.keras. Including dat
 # python tools/convert.py cfg/yolov3-tiny.cfg weights/yolov3-tiny.weights weights/yolov3-tiny.h5
 # python tools/convert.py cfg/yolov3-spp.cfg weights/yolov3-spp.weights weights/yolov3-spp.h5
 # python tools/convert.py cfg/darknet53.cfg weights/darknet53.conv.74.weights weights/darknet53.h5
+# python tools/convert.py cfg/darknet19_448_body.cfg weights/darknet19_448.conv.23.weights weights/darknet19.h5
 
 # python yolo.py --image
 # python yolo.py --input=<your video file>

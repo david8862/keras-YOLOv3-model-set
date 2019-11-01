@@ -21,7 +21,7 @@ from yolo2.loss import yolo2_loss
 #   [model_function, backbone_length, pretrain_weight_path]
 #
 yolo2_model_map = {
-    'darknet': [yolo2_body, 0, None],
+    'darknet': [yolo2_body, 60, 'weights/darknet19.h5'],
     'mobilenet': [yolo2_mobilenet_body, 87, None],
     'mobilenet_lite': [yolo2lite_mobilenet_body, 87, None],
 
