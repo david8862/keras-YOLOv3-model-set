@@ -2,28 +2,11 @@
 # -*- coding: utf-8 -*-
 """YOLO_v2 Model Defined in Keras."""
 
-from tensorflow.keras.layers import MaxPooling2D, Lambda, Concatenate
+from tensorflow.keras.layers import MaxPooling2D, Lambda, Concatenate, GlobalAveragePooling2D, Softmax
 from tensorflow.keras.models import Model
 
-from yolo2.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, bottleneck_block, bottleneck_x2_block
+from yolo2.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, bottleneck_block, bottleneck_x2_block, space_to_depth_x2, space_to_depth_x2_output_shape
 
-
-def space_to_depth_x2(x):
-    """Thin wrapper for Tensorflow space_to_depth with block_size=2."""
-    # Import currently required to make Lambda work.
-    # See: https://github.com/fchollet/keras/issues/5088#issuecomment-273851273
-    import tensorflow as tf
-    return tf.nn.space_to_depth(x, block_size=2)
-
-
-def space_to_depth_x2_output_shape(input_shape):
-    """Determine space_to_depth output shape for block_size=2.
-
-    Note: For Lambda with TensorFlow backend, output shape may not be needed.
-    """
-    return (input_shape[0], input_shape[1] // 2, input_shape[2] // 2, 4 *
-            input_shape[3]) if input_shape[1] else (input_shape[0], None, None,
-                                                    4 * input_shape[3])
 
 def darknet19_body():
     """Generate first 18 conv layers of Darknet-19."""
@@ -48,10 +31,15 @@ def yolo2_body(inputs, num_anchors, num_classes, weights_path=None):
         darknet19.load_weights(weights_path, by_name=True)
         print('Load weights {}.'.format(weights_path))
 
+    # input: 416 x 416 x 3
+    # darknet19.output : 13 x 13 x 1024
+    # conv13(layers[43]) : 26 x 26 x 512
+
     conv20 = compose(
         DarknetConv2D_BN_Leaky(1024, (3, 3)),
         DarknetConv2D_BN_Leaky(1024, (3, 3)))(darknet19.output)
 
+    # conv13 output shape: 26 x 26 x 512
     conv13 = darknet19.layers[43].output
     conv21 = DarknetConv2D_BN_Leaky(64, (1, 1))(conv13)
     # TODO: Allow Keras Lambda to use func arguments for output_shape?
@@ -69,6 +57,8 @@ def yolo2_body(inputs, num_anchors, num_classes, weights_path=None):
 def darknet19(inputs):
     """Generate Darknet-19 model for Imagenet classification."""
     body = darknet19_body()(inputs)
-    logits = DarknetConv2D(1000, (1, 1), activation='softmax')(body)
+    x = DarknetConv2D(1000, (1, 1))(body)
+    x = GlobalAveragePooling2D()(x)
+    logits = Softmax()(x)
     return Model(inputs, logits)
 

@@ -11,6 +11,7 @@ from tensorflow.keras.optimizers import Adam, RMSprop, SGD
 from tensorflow_model_optimization.sparsity import keras as sparsity
 
 from yolo2.models.yolo2_darknet import yolo2_body
+from yolo2.models.yolo2_mobilenet import yolo2_mobilenet_body, yolo2lite_mobilenet_body
 from yolo2.loss import yolo2_loss
 
 
@@ -21,6 +22,8 @@ from yolo2.loss import yolo2_loss
 #
 yolo2_model_map = {
     'darknet': [yolo2_body, 0, None],
+    'mobilenet': [yolo2_mobilenet_body, 87, None],
+    'mobilenet_lite': [yolo2lite_mobilenet_body, 87, None],
 
 }
 

@@ -3,7 +3,10 @@
 """training data generation functions."""
 from PIL import Image
 import numpy as np
+from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 
+def rand(a=0, b=1):
+    return np.random.rand()*(b-a) + a
 
 def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jitter=.3, hue=.1, sat=1.5, val=1.5, proc_img=True):
     '''random preprocessing for real-time data augmentation'''
@@ -11,7 +14,8 @@ def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jit
     image = Image.open(line[0])
     iw, ih = image.size
     h, w = input_shape
-    box = np.array([np.array(list(map(int,box.split(',')))) for box in line[1:]])
+    img_size = np.array([w, h])
+    boxes = np.array([np.array(list(map(int,box.split(',')))) for box in line[1:]])
 
     if not random:
         # resize image
@@ -29,12 +33,20 @@ def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jit
 
         # correct boxes
         box_data = np.zeros((max_boxes,5))
-        if len(box)>0:
-            np.random.shuffle(box)
-            if len(box)>max_boxes: box = box[:max_boxes]
-            box[:, [0,2]] = box[:, [0,2]]*scale + dx
-            box[:, [1,3]] = box[:, [1,3]]*scale + dy
-            box_data[:len(box)] = box
+        if len(boxes)>0:
+            np.random.shuffle(boxes)
+            if len(boxes)>max_boxes: boxes = boxes[:max_boxes]
+            boxes[:, [0,2]] = boxes[:, [0,2]]*scale + dx
+            boxes[:, [1,3]] = boxes[:, [1,3]]*scale + dy
+
+            # Get box parameters as x_center, y_center, box_width, box_height, class.
+            boxes_xy = 0.5 * (boxes[:, 0:2] + boxes[:, 2:4])
+            boxes_wh = boxes[:, 2:4] - boxes[:, 0:2]
+            boxes_xy = boxes_xy / img_size
+            boxes_wh = boxes_wh / img_size
+            boxes = np.concatenate((boxes_xy[i], boxes_wh[i], boxes[:, 4:5]), axis=1)
+
+            box_data[:len(boxes)] = boxes
 
         return image_data, box_data
 
@@ -76,19 +88,27 @@ def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jit
 
     # correct boxes
     box_data = np.zeros((max_boxes,5))
-    if len(box)>0:
-        np.random.shuffle(box)
-        box[:, [0,2]] = box[:, [0,2]]*nw/iw + dx
-        box[:, [1,3]] = box[:, [1,3]]*nh/ih + dy
-        if flip: box[:, [0,2]] = w - box[:, [2,0]]
-        box[:, 0:2][box[:, 0:2]<0] = 0
-        box[:, 2][box[:, 2]>w] = w
-        box[:, 3][box[:, 3]>h] = h
-        box_w = box[:, 2] - box[:, 0]
-        box_h = box[:, 3] - box[:, 1]
-        box = box[np.logical_and(box_w>1, box_h>1)] # discard invalid box
-        if len(box)>max_boxes: box = box[:max_boxes]
-        box_data[:len(box)] = box
+    if len(boxes)>0:
+        np.random.shuffle(boxes)
+        boxes[:, [0,2]] = boxes[:, [0,2]]*nw/iw + dx
+        boxes[:, [1,3]] = boxes[:, [1,3]]*nh/ih + dy
+        if flip: boxes[:, [0,2]] = w - boxes[:, [2,0]]
+        boxes[:, 0:2][boxes[:, 0:2]<0] = 0
+        boxes[:, 2][boxes[:, 2]>w] = w
+        boxes[:, 3][boxes[:, 3]>h] = h
+        box_w = boxes[:, 2] - boxes[:, 0]
+        box_h = boxes[:, 3] - boxes[:, 1]
+        boxes = boxes[np.logical_and(box_w>1, box_h>1)] # discard invalid box
+        if len(boxes)>max_boxes: boxes = boxes[:max_boxes]
+
+        # Get box parameters as x_center, y_center, box_width, box_height, class.
+        boxes_xy = 0.5 * (boxes[:, 0:2] + boxes[:, 2:4])
+        boxes_wh = boxes[:, 2:4] - boxes[:, 0:2]
+        boxes_xy = boxes_xy / img_size
+        boxes_wh = boxes_wh / img_size
+        boxes = np.concatenate((boxes_xy, boxes_wh, boxes[:, 4:5]), axis=1)
+
+        box_data[:len(boxes)] = boxes
 
     return image_data, box_data
 
@@ -132,7 +152,7 @@ def process_data(images, input_shape, boxes=None):
         return np.array(processed_images)
 
 
-def preprocess_true_boxes(true_boxes, anchors, input_shape):
+def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
     """Find detector in YOLO where ground truth box should appear.
 
     Parameters
@@ -157,6 +177,7 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape):
         Same shape as detectors_mask with the corresponding ground truth box
         adjusted for comparison with predicted parameters at training time.
     """
+    assert (true_boxes[..., 4]<num_classes).all(), 'class id must be less than num_classes'
     height, width = input_shape
     num_anchors = len(anchors)
     # Downsampling factor of 5x 2-stride max_pools == 32.
@@ -212,7 +233,7 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape):
     return detectors_mask, matching_true_boxes
 
 
-def get_detector_mask(boxes, anchors, input_shape):
+def get_detector_mask(boxes, anchors, input_shape, num_classes):
     '''
     Precompute detectors_mask and matching_true_boxes for training.
     Detectors mask is 1 for each spatial position in the final conv layer and
@@ -223,7 +244,7 @@ def get_detector_mask(boxes, anchors, input_shape):
     detectors_mask = [0 for i in range(len(boxes))]
     matching_true_boxes = [0 for i in range(len(boxes))]
     for i, box in enumerate(boxes):
-        detectors_mask[i], matching_true_boxes[i] = preprocess_true_boxes(box, anchors, input_shape)
+        detectors_mask[i], matching_true_boxes[i] = preprocess_true_boxes(box, anchors, input_shape, num_classes)
 
     return np.array(detectors_mask), np.array(matching_true_boxes)
 
@@ -239,20 +260,20 @@ def yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num
             if i==0:
                 np.random.shuffle(annotation_lines)
 
-            #image, box = get_random_data(annotation_lines[i], input_shape, random=True)
-            line = annotation_lines[i].split()
-            image = np.array(Image.open(line[0]))
-            box = np.array([np.array(list(map(int,box.split(',')))) for box in line[1:]])
+            image, box = get_random_data(annotation_lines[i], input_shape, random=True)
+            #line = annotation_lines[i].split()
+            #image = np.array(Image.open(line[0]))
+            #box = np.array([np.array(list(map(int,box.split(',')))) for box in line[1:]])
 
             image_data.append(image)
             box_data.append(box)
             i = (i+1) % n
-        #image_data = np.array(image_data)
-        #box_data = np.array(box_data)
-        image_data, boxes = process_data(image_data, input_shape, box_data)
-        detectors_mask, matching_true_boxes = get_detector_mask(boxes, anchors, input_shape)
+        image_data = np.array(image_data)
+        box_data = np.array(box_data)
+        #image_data, box_data = process_data(image_data, input_shape, box_data)
+        detectors_mask, matching_true_boxes = get_detector_mask(box_data, anchors, input_shape, num_classes)
 
-        yield [image_data, boxes, detectors_mask, matching_true_boxes], np.zeros(batch_size)
+        yield [image_data, box_data, detectors_mask, matching_true_boxes], np.zeros(batch_size)
 
 
 def yolo2_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes):
