@@ -4,7 +4,7 @@
 
 from PIL import Image
 import numpy as np
-import cv2
+import cv2, random
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 
 
@@ -33,6 +33,12 @@ def preprocess_image(image, model_image_size):
 
 def rand(a=0, b=1):
     return np.random.rand()*(b-a) + a
+
+
+def get_multiscale_list():
+    input_shape_list = [(320,320), (352,352), (384,384), (416,416), (448,448), (480,480), (512,512), (544,544), (576,576), (608,608)]
+
+    return input_shape_list
 
 
 def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jitter=.3, hue=.1, sat=1.5, val=1.5, proc_img=True):
@@ -195,11 +201,20 @@ def preprocess_true_boxes(true_boxes, input_shape, anchors, num_classes):
     return y_true
 
 
-def yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes):
+def yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval):
     '''data generator for fit_generator'''
     n = len(annotation_lines)
     i = 0
+    # prepare multiscale config
+    rescale_step = 0
+    input_shape_list = get_multiscale_list()
     while True:
+        if rescale_interval > 0:
+            # Do multi-scale training on different input shape
+            rescale_step = (rescale_step + 1) % rescale_interval
+            if rescale_step == 0:
+                input_shape = input_shape_list[random.randint(0,len(input_shape_list)-1)]
+
         image_data = []
         box_data = []
         for b in range(batch_size):
@@ -214,9 +229,9 @@ def yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num
         y_true = preprocess_true_boxes(box_data, input_shape, anchors, num_classes)
         yield [image_data, *y_true], np.zeros(batch_size)
 
-def yolo3_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes):
+def yolo3_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval=-1):
     n = len(annotation_lines)
     if n==0 or batch_size<=0: return None
-    return yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes)
+    return yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval)
 
 

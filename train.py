@@ -20,21 +20,8 @@ from yolo3.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
 os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '1'
 os.environ['TF_AUTO_MIXED_PRECISION_GRAPH_REWRITE_IGNORE_PERFORMANCE'] = '1'
 
-
 import tensorflow as tf
 optimize_tf_gpu(tf, K)
-
-
-def get_multiscale_list(model_type, tiny_version):
-    # get input_shape list for multiscale training
-    if (model_type == 'darknet' or model_type == 'xception' or model_type == 'xception_spp') and not tiny_version:
-        # due to GPU memory limit, we could only use small input_shape
-        # for full YOLOv3 and Xception models
-        input_shape_list = [(320,320), (352,352), (384,384), (416,416), (448,448), (480,480)]
-    else:
-        input_shape_list = [(320,320), (352,352), (384,384), (416,416), (448,448), (480,480), (512,512), (544,544), (576,576), (608,608)]
-
-    return input_shape_list
 
 
 # some global value for lr scheduler
@@ -211,42 +198,19 @@ def _main(args):
 
     if args.multiscale:
         if args.model_type == 'nano':
-            raise ValueError("YOLO nano model doesn't support multiscale trainin.")
-        # prepare multiscale config
-        input_shape_list = get_multiscale_list(args.model_type, tiny_version)
-        interval = args.rescale_interval
-
-        # Do multi-scale training on different input shape
-        # change every "rescale_interval" epochs
-        for epoch_step in range(epochs+interval, args.total_epoch, interval):
-            # shuffle train/val dataset for cross-validation
-            if args.data_shuffle:
-                np.random.shuffle(dataset)
-
-            initial_epoch = epochs
-            epochs = epoch_step
-            # rescale input only from 2nd round, to make sure unfreeze stable
-            if initial_epoch != args.init_epoch:
-                input_shape = input_shape_list[random.randint(0,len(input_shape_list)-1)]
-            print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-            model.fit_generator(data_generator(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
-                steps_per_epoch=max(1, num_train//batch_size),
-                validation_data=data_generator(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
-                validation_steps=max(1, num_val//batch_size),
-                epochs=epochs,
-                initial_epoch=initial_epoch,
-                callbacks=callbacks)
+            raise ValueError("YOLO nano model doesn't support multiscale training.")
+        rescale_interval = args.rescale_interval
     else:
-        # Do single-scale training
-        print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-        model.fit_generator(data_generator(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
-            steps_per_epoch=max(1, num_train//batch_size),
-            validation_data=data_generator(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
-            validation_steps=max(1, num_val//batch_size),
-            epochs=args.total_epoch,
-            initial_epoch=epochs,
-            callbacks=callbacks)
+        rescale_interval = -1  #Doesn't rescale
 
+    print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
+    model.fit_generator(data_generator(dataset[:num_train], batch_size, input_shape, anchors, num_classes, rescale_interval),
+        steps_per_epoch=max(1, num_train//batch_size),
+        validation_data=data_generator(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
+        validation_steps=max(1, num_val//batch_size),
+        epochs=args.total_epoch,
+        initial_epoch=epochs,
+        callbacks=callbacks)
 
     # Finally store model
     if args.model_pruning:
@@ -294,7 +258,7 @@ if __name__ == '__main__':
     parser.add_argument('--multiscale', default=False, action="store_true",
         help='Whether to use multiscale training')
     parser.add_argument('--rescale_interval', type=int, required=False, default=10,
-        help = "Number of epoch interval to rescale input image, default=10")
+        help = "Number of iteration(batches) interval to rescale input image, default=10")
     parser.add_argument('--model_pruning', default=False, action="store_true",
         help='Whether to use model pruning for optimization')
     parser.add_argument('--label_smoothing', type=float, required=False, default=0,

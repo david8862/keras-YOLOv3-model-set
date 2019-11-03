@@ -3,10 +3,19 @@
 """training data generation functions."""
 from PIL import Image
 import numpy as np
+import random
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
+
 
 def rand(a=0, b=1):
     return np.random.rand()*(b-a) + a
+
+
+def get_multiscale_list():
+    input_shape_list = [(320,320), (352,352), (384,384), (416,416), (448,448), (480,480), (512,512), (544,544), (576,576), (608,608)]
+
+    return input_shape_list
+
 
 def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jitter=.3, hue=.1, sat=1.5, val=1.5, proc_img=True):
     '''random preprocessing for real-time data augmentation'''
@@ -249,11 +258,20 @@ def get_detector_mask(boxes, anchors, input_shape, num_classes):
     return np.array(detectors_mask), np.array(matching_true_boxes)
 
 
-def yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes):
+def yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval):
     '''data generator for fit_generator'''
     n = len(annotation_lines)
     i = 0
+    # prepare multiscale config
+    rescale_step = 0
+    input_shape_list = get_multiscale_list()
     while True:
+        if rescale_interval > 0:
+            # Do multi-scale training on different input shape
+            rescale_step = (rescale_step + 1) % rescale_interval
+            if rescale_step == 0:
+                input_shape = input_shape_list[random.randint(0,len(input_shape_list)-1)]
+
         image_data = []
         box_data = []
         for b in range(batch_size):
@@ -276,8 +294,8 @@ def yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num
         yield [image_data, box_data, detectors_mask, matching_true_boxes], np.zeros(batch_size)
 
 
-def yolo2_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes):
+def yolo2_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval=-1):
     n = len(annotation_lines)
     if n==0 or batch_size<=0: return None
-    return yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes)
+    return yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval)
 

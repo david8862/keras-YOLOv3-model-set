@@ -202,8 +202,8 @@ optional arguments:
                         Total training epochs, default=250
   --multiscale          Whether to use multiscale training
   --rescale_interval RESCALE_INTERVAL
-                        Number of epoch interval to rescale input image,
-                        default=10
+                        Number of iteration(batches) interval to rescale input
+                        image, default=10
   --model_pruning       Whether to use model pruning for optimization
   --label_smoothing LABEL_SMOOTHING
                         Label smoothing factor (between 0 and 1) for
