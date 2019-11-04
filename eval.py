@@ -7,6 +7,7 @@ import numpy as np
 import random
 import os, argparse
 from yolo3.postprocess_np import yolo3_postprocess_np, yolo3_head, yolo3_handle_predictions, yolo3_adjust_boxes
+from yolo2.postprocess_np import yolo2_postprocess_np, yolo2_head
 from yolo3.data import preprocess_image
 from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes, touchdir, optimize_tf_gpu
 from PIL import Image

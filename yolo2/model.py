@@ -13,6 +13,7 @@ from tensorflow_model_optimization.sparsity import keras as sparsity
 from yolo2.models.yolo2_darknet import yolo2_body
 from yolo2.models.yolo2_mobilenet import yolo2_mobilenet_body, yolo2lite_mobilenet_body
 from yolo2.loss import yolo2_loss
+from yolo2.postprocess import batched_yolo2_postprocess
 
 
 # A map of model type to construction info list for YOLOv2
@@ -146,6 +147,29 @@ def get_yolo2_train_model(model_type, anchors, num_classes, weights_path=None, f
 
     loss_dict = {'location_loss':location_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
     add_metrics(model, loss_dict)
+
+    return model
+
+
+def get_yolo2_inference_model(model_type, anchors, num_classes, weights_path=None, input_shape=None, confidence=0.1):
+    '''create the inference model, for YOLOv2'''
+    #K.clear_session() # get a new session
+    num_anchors = len(anchors)
+
+    image_shape = Input(shape=(2,), dtype='int64', name='image_shape')
+
+    model_body, _ = get_yolo2_model(model_type, num_anchors, num_classes, input_shape=input_shape)
+    print('Create YOLOv2 {} model with {} anchors and {} classes.'.format(model_type, num_anchors, num_classes))
+
+    if weights_path:
+        model_body.load_weights(weights_path, by_name=False)#, skip_mismatch=True)
+        print('Load weights {}.'.format(weights_path))
+
+    boxes, scores, classes = Lambda(batched_yolo2_postprocess, name='yolo2_postprocess',
+            arguments={'anchors': anchors, 'num_classes': num_classes, 'confidence': confidence})(
+        [model_body.output, image_shape])
+
+    model = Model([model_body.input, image_shape], [boxes, scores, classes])
 
     return model
 

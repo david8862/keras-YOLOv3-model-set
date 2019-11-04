@@ -59,7 +59,7 @@ def yolo3_correct_boxes(box_xy, box_wh, input_shape, image_shape):
 
 def yolo3_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape):
     '''Process Conv layer output'''
-    box_xy, box_wh, box_confidence, box_class_probs = yolo_head(feats,
+    box_xy, box_wh, box_confidence, box_class_probs = yolo3_head(feats,
         anchors, num_classes, input_shape)
     boxes = yolo3_correct_boxes(box_xy, box_wh, input_shape, image_shape)
     boxes = K.reshape(boxes, [-1, 4])
@@ -93,7 +93,7 @@ def yolo3_postprocess(args,
               max_boxes=100,
               confidence=0.1,
               iou_threshold=0.4):
-    """Postprocess for YOLO model on given input and return filtered boxes."""
+    """Postprocess for YOLOv3 model on given input and return filtered boxes."""
 
     num_layers = len(anchors)//3 # default setting
     yolo_outputs = args[:num_layers]
@@ -137,9 +137,9 @@ def yolo3_postprocess(args,
     return boxes_, scores_, classes_
 
 
-def batched_yolo_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape):
+def batched_yolo3_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape):
     '''Process Conv layer output'''
-    box_xy, box_wh, box_confidence, box_class_probs = yolo_head(feats,
+    box_xy, box_wh, box_confidence, box_class_probs = yolo3_head(feats,
         anchors, num_classes, input_shape)
 
     num_anchors = len(anchors)
@@ -159,7 +159,7 @@ def batched_yolo3_postprocess(args,
               max_boxes=100,
               confidence=0.1,
               iou_threshold=0.4):
-    """Postprocess for YOLO model on given input and return filtered boxes."""
+    """Postprocess for YOLOv3 model on given input and return filtered boxes."""
 
     num_layers = len(anchors)//3 # default setting
     yolo_outputs = args[:num_layers]
@@ -173,7 +173,7 @@ def batched_yolo3_postprocess(args,
     boxes = []
     box_scores = []
     for l in range(num_layers):
-        _boxes, _box_scores = batched_yolo_boxes_and_scores(yolo_outputs[l],
+        _boxes, _box_scores = batched_yolo3_boxes_and_scores(yolo_outputs[l],
             anchors[anchor_mask[l]], num_classes, input_shape, image_shape)
         boxes.append(_boxes)
         box_scores.append(_box_scores)
@@ -230,7 +230,7 @@ def batched_yolo3_prenms(args,
               max_boxes=100,
               confidence=0.1,
               iou_threshold=0.4):
-    """Postprocess part for YOLO model except NMS."""
+    """Postprocess part for YOLOv3 model except NMS."""
 
     num_layers = len(anchors)//3 # default setting
     yolo_outputs = args[:num_layers]
@@ -362,7 +362,7 @@ class Yolo3PostProcessLayer(Layer):
 
 
     def call(self, x):
-        """Postprocess part for YOLO model except NMS."""
+        """Postprocess part for YOLOv3 model except NMS."""
         assert isinstance(x, list)
 
         #num_layers = len(anchors)//3 # default setting

@@ -82,7 +82,7 @@ def yolo3_body(inputs, num_anchors, num_classes, weights_path=None):
        #for our target classes.'''
     ##TODO: get darknet class number from class file
     #num_classes_coco = 80
-    #base_model = yolo_body(inputs, num_anchors, num_classes_coco)
+    #base_model = yolo3_body(inputs, num_anchors, num_classes_coco)
     #base_model.load_weights(weights_path, by_name=True)
     #print('Load weights {}.'.format(weights_path))
 
@@ -130,7 +130,7 @@ def custom_yolo3_spp_body(inputs, num_anchors, num_classes, weights_path):
        for our target classes.'''
     #TODO: get darknet class number from class file
     num_classes_coco = 80
-    base_model = yolo_spp_body(inputs, num_anchors, num_classes_coco)
+    base_model = yolo3_spp_body(inputs, num_anchors, num_classes_coco)
     base_model.load_weights(weights_path, by_name=True)
     print('Load weights {}.'.format(weights_path))
 
@@ -202,7 +202,7 @@ def custom_tiny_yolo3_body(inputs, num_anchors, num_classes, weights_path):
        for our target classes.'''
     #TODO: get darknet class number from class file
     num_classes_coco = 80
-    base_model = tiny_yolo_body(inputs, num_anchors, num_classes_coco)
+    base_model = tiny_yolo3_body(inputs, num_anchors, num_classes_coco)
     base_model.load_weights(weights_path, by_name=True)
     print('Load weights {}.'.format(weights_path))
 
