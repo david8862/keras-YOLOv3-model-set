@@ -27,27 +27,27 @@ from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Y
 #   [model_function, backbone_length, pretrain_weight_path]
 #
 yolo3_model_map = {
-    'mobilenet': [yolo3_mobilenet_body, 87, None],
-    'mobilenet_lite': [yolo3lite_mobilenet_body, 87, None],
-    'mobilenet_lite_spp': [yolo3lite_spp_mobilenet_body, 87, None],
-    'mobilenetv2': [yolo3_mobilenetv2_body, 155, None],
-    'mobilenetv2_lite': [yolo3lite_mobilenetv2_body, 155, None],
-    'mobilenetv2_lite_spp': [yolo3lite_spp_mobilenetv2_body, 155, None],
+    'yolo3_mobilenet': [yolo3_mobilenet_body, 87, None],
+    'yolo3_mobilenet_lite': [yolo3lite_mobilenet_body, 87, None],
+    'yolo3_mobilenet_lite_spp': [yolo3lite_spp_mobilenet_body, 87, None],
+    'yolo3_mobilenetv2': [yolo3_mobilenetv2_body, 155, None],
+    'yolo3_mobilenetv2_lite': [yolo3lite_mobilenetv2_body, 155, None],
+    'yolo3_mobilenetv2_lite_spp': [yolo3lite_spp_mobilenetv2_body, 155, None],
 
-    'shufflenetv2': [yolo3_shufflenetv2_body, 205, None],
-    'shufflenetv2_lite': [yolo3lite_shufflenetv2_body, 205, None],
-    'shufflenetv2_lite_spp': [yolo3lite_spp_shufflenetv2_body, 205, None],
+    'yolo3_shufflenetv2': [yolo3_shufflenetv2_body, 205, None],
+    'yolo3_shufflenetv2_lite': [yolo3lite_shufflenetv2_body, 205, None],
+    'yolo3_shufflenetv2_lite_spp': [yolo3lite_spp_shufflenetv2_body, 205, None],
 
-    'darknet': [yolo3_body, 185, 'weights/darknet53.h5'],
-    'darknet_spp': [custom_yolo3_spp_body, 185, 'weights/yolov3-spp.h5'],
+    'yolo3_darknet': [yolo3_body, 185, 'weights/darknet53.h5'],
+    'yolo3_darknet_spp': [custom_yolo3_spp_body, 185, 'weights/yolov3-spp.h5'],
     #Doesn't have pretrained weights, so no need to return backbone length
-    'darknet_lite': [yolo3lite_body, 0, None],
-    'vgg16': [yolo3_vgg16_body, 19, None],
-    'xception': [yolo3_xception_body, 132, None],
-    'xception_lite': [yolo3lite_xception_body, 132, None],
-    'xception_spp': [yolo3_spp_xception_body, 132, None],
+    'yolo3_darknet_lite': [yolo3lite_body, 0, None],
+    'yolo3_vgg16': [yolo3_vgg16_body, 19, None],
+    'yolo3_xception': [yolo3_xception_body, 132, None],
+    'yolo3_xception_lite': [yolo3lite_xception_body, 132, None],
+    'yolo3_xception_spp': [yolo3_spp_xception_body, 132, None],
 
-    'nano': [yolo3_nano_body, 0, None],
+    'yolo3_nano': [yolo3_nano_body, 0, None],
 }
 
 
@@ -57,20 +57,20 @@ yolo3_model_map = {
 #   [model_function, backbone_length, pretrain_weight_file]
 #
 yolo3_tiny_model_map = {
-    'mobilenet': [tiny_yolo3_mobilenet_body, 87, None],
-    'mobilenet_lite': [tiny_yolo3lite_mobilenet_body, 87, None],
-    'mobilenetv2': [tiny_yolo3_mobilenetv2_body, 155, None],
-    'mobilenetv2_lite': [tiny_yolo3lite_mobilenetv2_body, 155, None],
+    'tiny_yolo3_mobilenet': [tiny_yolo3_mobilenet_body, 87, None],
+    'tiny_yolo3_mobilenet_lite': [tiny_yolo3lite_mobilenet_body, 87, None],
+    'tiny_yolo3_mobilenetv2': [tiny_yolo3_mobilenetv2_body, 155, None],
+    'tiny_yolo3_mobilenetv2_lite': [tiny_yolo3lite_mobilenetv2_body, 155, None],
 
-    'shufflenetv2': [tiny_yolo3_shufflenetv2_body, 205, None],
-    'shufflenetv2_lite': [tiny_yolo3lite_shufflenetv2_body, 205, None],
+    'tiny_yolo3_shufflenetv2': [tiny_yolo3_shufflenetv2_body, 205, None],
+    'tiny_yolo3_shufflenetv2_lite': [tiny_yolo3lite_shufflenetv2_body, 205, None],
 
-    'darknet': [custom_tiny_yolo3_body, 20, 'weights/yolov3-tiny.h5'],
+    'tiny_yolo3_darknet': [custom_tiny_yolo3_body, 20, 'weights/yolov3-tiny.h5'],
     #Doesn't have pretrained weights, so no need to return backbone length
-    'darknet_lite': [tiny_yolo3lite_body, 0, None],
-    'vgg16': [tiny_yolo3_vgg16_body, 19, None],
-    'xception': [tiny_yolo3_xception_body, 132, None],
-    'xception_lite': [tiny_yolo3lite_xception_body, 132, None],
+    'tiny_yolo3_darknet_lite': [tiny_yolo3lite_body, 0, None],
+    'tiny_yolo3_vgg16': [tiny_yolo3_vgg16_body, 19, None],
+    'tiny_yolo3_xception': [tiny_yolo3_xception_body, 132, None],
+    'tiny_yolo3_xception_lite': [tiny_yolo3lite_xception_body, 132, None],
 }
 
 
@@ -83,8 +83,8 @@ def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, in
         input_tensor = Input(shape=(None, None, 3), name='image_input')
 
     #YOLO nano model doesn't support dynamic input shape
-    if model_type == 'nano':
-        warnings.warn("YOLO nano model doesn't support dynamic input shape, so just use fixed (416, 416,3) input tensor")
+    if model_type == 'yolo3_nano':
+        warnings.warn("YOLOv3 nano model doesn't support dynamic input shape, so just use fixed (416, 416,3) input tensor")
         input_tensor = Input(shape=(416, 416, 3), name='image_input')
 
     #Tiny YOLOv3 model has 6 anchors and 2 feature layers

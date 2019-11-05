@@ -131,9 +131,9 @@ def _main(args):
         save_weights_only=False,
         save_best_only=True,
         period=1)
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, verbose=1, cooldown=0, min_lr=1e-10)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=20, verbose=1, cooldown=0, min_lr=1e-10)
     lr_scheduler = LearningRateScheduler(learning_rate_scheduler)
-    early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=30, verbose=1)
+    early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=50, verbose=1)
     terminate_on_nan = TerminateOnNaN()
 
     callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan]
@@ -197,8 +197,8 @@ def _main(args):
 
 
     if args.multiscale:
-        if args.model_type == 'nano':
-            raise ValueError("YOLO nano model doesn't support multiscale training.")
+        if args.model_type == 'yolo3_nano':
+            raise ValueError("YOLOv3 nano model doesn't support multiscale training.")
         rescale_interval = args.rescale_interval
     else:
         rescale_interval = -1  #Doesn't rescale
@@ -221,8 +221,8 @@ def _main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # Model definition options
-    parser.add_argument('--model_type', type=str, required=False, default='mobilenet_lite',
-        help='YOLO model type: mobilenet_lite/mobilenet/darknet/vgg16/xception/xception_lite, default=mobilenet_lite')
+    parser.add_argument('--model_type', type=str, required=False, default='yolo3_mobilenet_lite',
+        help='YOLO model type: yolo3_mobilenet_lite/tiny_yolo3_mobilenet/yolo3_darknet/..., default=yolo3_mobilenet_lite')
     parser.add_argument('--anchors_path', type=str, required=False, default='configs/yolo3_anchors.txt',
         help='path to anchor definitions, default=configs/yolo3_anchors.txt')
     parser.add_argument('--model_image_size', type=str,required=False, default='416x416',

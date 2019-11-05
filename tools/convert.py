@@ -11,8 +11,9 @@ import os
 from collections import defaultdict
 
 import numpy as np
+import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.layers import (Conv2D, Input, ZeroPadding2D, Add,
+from tensorflow.keras.layers import (Conv2D, Input, ZeroPadding2D, Add, Lambda,
                           UpSampling2D, MaxPooling2D, Concatenate)
 from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.layers import BatchNormalization
@@ -222,12 +223,28 @@ def _main(args):
             all_layers.append(UpSampling2D(stride)(prev_layer))
             prev_layer = all_layers[-1]
 
+        elif section.startswith('reorg'):
+            block_size = int(cfg_parser[section]['stride'])
+            assert block_size == 2, 'Only reorg with stride 2 supported.'
+            all_layers.append(
+                Lambda(
+                    #space_to_depth_x2,
+                    #output_shape=space_to_depth_x2_output_shape,
+                    lambda x: tf.nn.space_to_depth(x, block_size=2),
+                    name='space_to_depth_x2')(prev_layer))
+            prev_layer = all_layers[-1]
+
+        elif section.startswith('region'):
+            with open('{}_anchors.txt'.format(output_root), 'w') as f:
+                print(cfg_parser[section]['anchors'], file=f)
+
         elif section.startswith('yolo'):
             out_index.append(len(all_layers)-1)
             all_layers.append(None)
             prev_layer = all_layers[-1]
 
-        elif section.startswith('net'):
+        elif (section.startswith('net') or section.startswith('cost') or
+              section.startswith('softmax')):
             pass
 
         else:

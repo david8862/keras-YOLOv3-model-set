@@ -19,6 +19,8 @@ from PIL import Image
 
 from yolo3.model import get_yolo3_model, get_yolo3_inference_model, get_yolo3_prenms_model
 from yolo3.postprocess_np import yolo3_postprocess_np
+from yolo2.model import get_yolo2_model, get_yolo2_inference_model
+from yolo2.postprocess_np import yolo2_postprocess_np
 from yolo3.data import preprocess_image, letterbox_image
 from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes, touchdir
 
@@ -74,7 +76,11 @@ class YOLO_np(object):
         num_feature_layers = num_anchors//3
 
         try:
-            yolo_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.pruning_model)
+            if num_anchors == 5:
+                # YOLOv2 use 5 anchors
+                yolo_model, _ = get_yolo2_model(self.model_type, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.pruning_model)
+            else:
+                yolo_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.pruning_model)
             yolo_model.load_weights(model_path) # make sure model, anchors and classes match
             if self.pruning_model:
                 yolo_model = sparsity.strip_pruning(yolo_model)
@@ -112,7 +118,12 @@ class YOLO_np(object):
 
 
     def predict(self, image_data, image_shape):
-        out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100)
+        num_anchors = len(self.anchors)
+        if num_anchors == 5:
+            # YOLOv2 use 5 anchors
+            out_boxes, out_classes, out_scores = yolo2_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100)
+        else:
+            out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100)
         return out_boxes, out_classes, out_scores
 
 
@@ -154,7 +165,11 @@ class YOLO(object):
         #so we can calculate feature layers number to get model type
         num_feature_layers = num_anchors//3
 
-        inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=model_path, input_shape=self.model_image_size + (3,), confidence=0.1)
+        if num_anchors == 5:
+            # YOLOv2 use 5 anchors
+            inference_model = get_yolo2_inference_model(self.model_type, self.anchors, num_classes, weights_path=model_path, input_shape=self.model_image_size + (3,), confidence=0.1)
+        else:
+            inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=model_path, input_shape=self.model_image_size + (3,), confidence=0.1)
 
         return inference_model
 

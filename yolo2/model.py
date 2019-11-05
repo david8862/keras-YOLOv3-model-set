@@ -22,9 +22,9 @@ from yolo2.postprocess import batched_yolo2_postprocess
 #   [model_function, backbone_length, pretrain_weight_path]
 #
 yolo2_model_map = {
-    'darknet': [yolo2_body, 60, 'weights/darknet19.h5'],
-    'mobilenet': [yolo2_mobilenet_body, 87, None],
-    'mobilenet_lite': [yolo2lite_mobilenet_body, 87, None],
+    'yolo2_darknet': [yolo2_body, 60, 'weights/darknet19.h5'],
+    'yolo2_mobilenet': [yolo2_mobilenet_body, 87, None],
+    'yolo2_mobilenet_lite': [yolo2lite_mobilenet_body, 87, None],
 
 }
 

@@ -243,7 +243,11 @@ def get_prediction_class_records(model_path, annotation_records, anchors, class_
         elif model_path.endswith('.mnn'):
             pred_boxes, pred_classes, pred_scores = yolo_predict_mnn(interpreter, session, image, anchors, len(class_names), conf_threshold)
         else:
-            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size, max_boxes=100, confidence=conf_threshold)
+            if len(anchors) == 5:
+                # YOLOv2 use 5 anchors
+                pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size, max_boxes=100, confidence=conf_threshold)
+            else:
+                pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size, max_boxes=100, confidence=conf_threshold)
 
         print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
 

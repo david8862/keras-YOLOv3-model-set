@@ -55,7 +55,7 @@ A common YOLOv3 object detection pipeline implement with tf.keras. Including dat
 # pip install -r requirements.txt
 ```
 
-2. Download Darknet/YOLOv3/YOLOv3-spp/Tiny YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
+2. Download Darknet/YOLOv2/YOLOv3/YOLOv3-spp/Tiny YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
 3. Convert the Darknet YOLO model to a Keras model.
 4. Run YOLO detection on your image or video, default using Tiny YOLOv3 model.
 
@@ -65,10 +65,12 @@ A common YOLOv3 object detection pipeline implement with tf.keras. Including dat
 # wget -O weights/yolov3.weights https://pjreddie.com/media/files/yolov3.weights
 # wget -O weights/yolov3-tiny.weights https://pjreddie.com/media/files/yolov3-tiny.weights
 # wget -O weights/yolov3-spp.weights https://pjreddie.com/media/files/yolov3-spp.weights
+# wget -O weights/yolov2.weights http://pjreddie.com/media/files/yolo.weights
 
 # python tools/convert.py cfg/yolov3.cfg weights/yolov3.weights weights/yolov3.h5
 # python tools/convert.py cfg/yolov3-tiny.cfg weights/yolov3-tiny.weights weights/yolov3-tiny.h5
 # python tools/convert.py cfg/yolov3-spp.cfg weights/yolov3-spp.weights weights/yolov3-spp.h5
+# python tools/convert.py cfg/yolov2.cfg weights/yolov2.weights weights/yolov2.h5
 # python tools/convert.py cfg/darknet53.cfg weights/darknet53.conv.74.weights weights/darknet53.h5
 # python tools/convert.py cfg/darknet19_448_body.cfg weights/darknet19_448.conv.23.weights weights/darknet19.h5
 
@@ -163,8 +165,8 @@ usage: train.py [-h] [--model_type MODEL_TYPE] [--anchors_path ANCHORS_PATH]
 optional arguments:
   -h, --help            show this help message and exit
   --model_type MODEL_TYPE
-                        YOLO model type: mobilenet_lite/mobilenet/darknet/vgg1
-                        6/xception/xception_lite, default=mobilenet_lite
+                        YOLO model type: yolo3_mobilenet_lite/tiny_yolo3_mobil
+                        enet/yolo3_darknet/..., default=yolo3_mobilenet_lite
   --anchors_path ANCHORS_PATH
                         path to anchor definitions,
                         default=configs/yolo3_anchors.txt
@@ -221,7 +223,7 @@ Loss type couldn't be changed from CLI options. You can try them by changing par
 We need to dump out inference model from training checkpoint for eval or demo. Following script cmd work for that.
 
 ```
-# python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --dump_model --output_model_file=model.h5
+# python yolo.py --model_type=yolo3_mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --dump_model --output_model_file=model.h5
 ```
 
 Change model_type, anchors file & class file for different training mode. If "--model_pruning" was added in training, you also need to use "--pruning_model" here for dumping out the pruned model.
@@ -274,11 +276,11 @@ And some unsuccessful experiment...
 
 image detection mode
 ```
-# python yolo.py --model_type=mobilenet_lite --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --image
+# python yolo.py --model_type=yolo3_mobilenet_lite --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --image
 ```
 video detection mode
 ```
-# python yolo.py --model_type=mobilenet_lite --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --input=test.mp4
+# python yolo.py --model_type=yolo3_mobilenet_lite --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --input=test.mp4
 ```
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 
