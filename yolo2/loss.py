@@ -9,7 +9,7 @@ def yolo2_loss(args,
               anchors,
               num_classes,
               rescore_confidence=False):
-    """YOLO localization loss function.
+    """YOLOv2 loss function.
 
     Parameters
     ----------
@@ -113,7 +113,7 @@ def yolo2_loss(args,
     # training steps to encourage predictions to match anchor priors.
 
     # Determine confidence weights from object and no_object weights.
-    # NOTE: YOLO does not use binary cross-entropy here.
+    # NOTE: YOLOv2 does not use binary cross-entropy here.
     no_object_weights = (no_object_scale * (1 - object_detections) *
                          (1 - detectors_mask))
     no_objects_loss = no_object_weights * K.square(-pred_confidence)
@@ -127,7 +127,7 @@ def yolo2_loss(args,
     confidence_loss = objects_loss + no_objects_loss
 
     # Classification loss for matching detections.
-    # NOTE: YOLO does not use categorical cross-entropy loss here.
+    # NOTE: YOLOv2 does not use categorical cross-entropy loss here.
     matching_classes = K.cast(matching_true_boxes[..., 4], 'int32')
     matching_classes = K.one_hot(matching_classes, num_classes)
     classification_loss = (class_scale * detectors_mask *

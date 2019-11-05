@@ -171,6 +171,7 @@ class YOLO(object):
         else:
             inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=model_path, input_shape=self.model_image_size + (3,), confidence=0.1)
 
+        inference_model.summary()
         return inference_model
 
     def predict(self, image_data, image_shape):
