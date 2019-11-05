@@ -66,11 +66,13 @@ A common YOLOv3 object detection pipeline implement with tf.keras. Including dat
 # wget -O weights/yolov3-tiny.weights https://pjreddie.com/media/files/yolov3-tiny.weights
 # wget -O weights/yolov3-spp.weights https://pjreddie.com/media/files/yolov3-spp.weights
 # wget -O weights/yolov2.weights http://pjreddie.com/media/files/yolo.weights
+# wget -O weights/yolov2-voc.weights http://pjreddie.com/media/files/yolo-voc.weights
 
 # python tools/convert.py cfg/yolov3.cfg weights/yolov3.weights weights/yolov3.h5
 # python tools/convert.py cfg/yolov3-tiny.cfg weights/yolov3-tiny.weights weights/yolov3-tiny.h5
 # python tools/convert.py cfg/yolov3-spp.cfg weights/yolov3-spp.weights weights/yolov3-spp.h5
 # python tools/convert.py cfg/yolov2.cfg weights/yolov2.weights weights/yolov2.h5
+# python tools/convert.py cfg/yolov2-voc.cfg weights/yolov2-voc.weights weights/yolov2-voc.h5
 # python tools/convert.py cfg/darknet53.cfg weights/darknet53.conv.74.weights weights/darknet53.h5
 # python tools/convert.py cfg/darknet19_448_body.cfg weights/darknet19_448.conv.23.weights weights/darknet19.h5
 
