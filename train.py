@@ -164,6 +164,8 @@ def _main(args):
     # support multi-gpu training
     if args.gpu_num >= 2:
         model = multi_gpu_model(model, gpus=args.gpu_num)
+        # recompile multi gpu model
+        model.compile(optimizer=optimizer, loss={'yolo_loss': lambda y_true, y_pred: y_pred})
     model.summary()
 
     # Train some initial epochs with frozen layers first if needed, to get a stable loss.
