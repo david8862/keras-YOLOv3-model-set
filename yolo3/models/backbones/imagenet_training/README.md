@@ -43,7 +43,7 @@ usage: train_imagenet.py [-h] [--model_type MODEL_TYPE] --train_data_path
 optional arguments:
   -h, --help            show this help message and exit
   --model_type MODEL_TYPE
-                        backbone model type: shufflenet/shufflenet_v2,
+                        backbone model type: shufflenet/shufflenet_v2/nanonet,
                         default=shufflenet_v2
   --train_data_path TRAIN_DATA_PATH
                         path to Imagenet train data

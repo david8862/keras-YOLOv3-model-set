@@ -18,6 +18,9 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from shufflenet import ShuffleNet
 from shufflenet_v2 import ShuffleNetV2
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../..'))
+from yolo3.models.yolo3_nano import NanoNet
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 #import tensorflow as tf
@@ -58,6 +61,8 @@ def get_model(model_type):
         model = ShuffleNet(groups=3, weights=None)
     elif model_type == 'shufflenet_v2':
         model = ShuffleNetV2(bottleneck_ratio=1, weights=None)
+    elif model_type == 'nanonet':
+        model = NanoNet(input_shape=(224, 224, 3), weights=None)
     else:
         raise ValueError('Unsupported model type')
     return model
@@ -150,7 +155,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_type', type=str, required=False, default='shufflenet_v2',
-        help='backbone model type: shufflenet/shufflenet_v2, default=shufflenet_v2')
+        help='backbone model type: shufflenet/shufflenet_v2/nanonet, default=shufflenet_v2')
     parser.add_argument('--train_data_path', type=str, required=True,
         help='path to Imagenet train data')
     parser.add_argument('--val_data_path', type=str, required=True,

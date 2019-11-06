@@ -1,7 +1,8 @@
 """YOLO_v3 Model Defined in Keras."""
 
-from tensorflow.keras.layers import UpSampling2D, Concatenate, Dense, Multiply, Add, Lambda
-from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Concatenate, BatchNormalization, ReLU, ZeroPadding2D, GlobalAveragePooling2D
+from keras_applications.imagenet_utils import _obtain_input_shape
+from tensorflow.keras.layers import UpSampling2D, Concatenate, Dense, Multiply, Add, Lambda, Input
+from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Concatenate, BatchNormalization, ReLU, ZeroPadding2D, GlobalAveragePooling2D, Softmax
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 
@@ -236,4 +237,25 @@ def yolo3_nano_body(inputs, num_anchors, num_classes, weights_path=None):
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
+
+def NanoNet(input_shape=None, input_tensor=None, include_top=True, weights=None, classes=1000):
+    """Generate nano net model for Imagenet classification."""
+    input_shape = _obtain_input_shape(input_shape, default_size=224, min_size=28, require_flatten=include_top, data_format=K.image_data_format())
+
+    if input_tensor is None:
+        img_input = Input(shape=input_shape)
+    else:
+        img_input = input_tensor
+
+    body_out = nano_net_body(img_input)
+    x = DarknetConv2D(classes, (1, 1))(body_out)
+    x = GlobalAveragePooling2D()(x)
+    logits = Softmax()(x)
+
+    model = Model(img_input, logits, name='nano_net')
+
+    if weights is not None:
+        model.load_weights(weights)
+
+    return model
 
