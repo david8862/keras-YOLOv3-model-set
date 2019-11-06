@@ -157,22 +157,22 @@ def get_pruning_model(model, begin_step, end_step):
     return pruning_model
 
 
-def get_optimizer(optim_type, learning_rate):
+def get_optimizer(optim_type, learning_rate, decay=0):
     optim_type = optim_type.lower()
 
     if optim_type == 'adam':
-        optimizer = Adam(lr=learning_rate, decay=1e-6)
+        optimizer = Adam(lr=learning_rate, decay=decay)
     elif optim_type == 'rmsprop':
-        optimizer = RMSprop(lr=learning_rate, decay=1e-6)
+        optimizer = RMSprop(lr=learning_rate, decay=decay)
     elif optim_type == 'sgd':
-        optimizer = SGD(lr=learning_rate, decay=1e-6)
+        optimizer = SGD(lr=learning_rate, decay=decay)
     else:
         raise ValueError('Unsupported optimizer type')
 
     return optimizer
 
 
-def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, optimizer=Adam(lr=1e-3, decay=1e-6), label_smoothing=0, model_pruning=False, pruning_end_step=10000):
+def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, optimizer=Adam(lr=1e-3, decay=0), label_smoothing=0, model_pruning=False, pruning_end_step=10000):
     '''create the training model, for YOLOv3'''
     #K.clear_session() # get a new session
     num_anchors = len(anchors)
