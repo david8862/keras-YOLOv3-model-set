@@ -101,6 +101,7 @@ For other model, just do in a similar way, but specify different model path and 
        usage: voc_annotation.py [-h] [--dataset_path DATASET_PATH]
                                 [--output_path OUTPUT_PATH]
                                 [--classes_path CLASSES_PATH] [--include_difficult]
+                                [--include_no_obj]
 
        optional arguments:
          -h, --help            show this help message and exit
@@ -112,6 +113,7 @@ For other model, just do in a similar way, but specify different model path and 
          --classes_path CLASSES_PATH
                                path to class definitions
          --include_difficult   to include difficult object
+         --include_no_obj      to include no object image
        ```
        By default, the VOC convert script will try to go through both VOC2007/VOC2012 dataset dir under the dataset_path and generate train/val/test annotation file separately, like:
        ```

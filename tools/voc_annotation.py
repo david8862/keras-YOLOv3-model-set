@@ -71,6 +71,7 @@ parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset,
 parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
 parser.add_argument('--classes_path', type=str, required=False, help='path to class definitions')
 parser.add_argument('--include_difficult', action="store_true", help='to include difficult object', default=False)
+parser.add_argument('--include_no_obj', action="store_true", help='to include no object image', default=False)
 args = parser.parse_args()
 
 # update class names
@@ -87,6 +88,10 @@ for year, image_set in sets:
         if has_object(args.dataset_path, year, image_id, args.include_difficult):
             list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(args.dataset_path, year, image_id))
             convert_annotation(args.dataset_path, year, image_id, list_file, args.include_difficult)
+            list_file.write('\n')
+        elif args.include_no_obj:
+            # include no object image. just write file path
+            list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(args.dataset_path, year, image_id))
             list_file.write('\n')
     list_file.close()
     # print out item number statistic

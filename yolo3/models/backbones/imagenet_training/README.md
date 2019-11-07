@@ -72,7 +72,7 @@ For example, following cmd will start training shufflenet_v2 with the Imagenet t
 ```
 
 
-Currently it support shufflenet/shufflenet_v2 which is implement under [backbones](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/yolo3/models/backbones) with fixed hyperparam.
+Currently it support shufflenet/shufflenet_v2/nanonet which is implement under [backbones](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/yolo3/models/backbones) with fixed hyperparam.
 
 Checkpoints during training could be found at logs/. Choose a best one as result
 

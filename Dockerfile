@@ -138,11 +138,17 @@ RUN git clone https://github.com/david8862/keras-YOLOv3-model-set.git && \
     wget -O keras-YOLOv3-model-set/weights/yolov3-tiny.weights https://pjreddie.com/media/files/yolov3-tiny.weights && \
     wget -O keras-YOLOv3-model-set/weights/yolov3-spp.weights https://pjreddie.com/media/files/yolov3-spp.weights && \
     wget -O keras-YOLOv3-model-set/weights/darknet53.conv.74.weights https://pjreddie.com/media/files/darknet53.conv.74 && \
+    wget -O keras-YOLOv3-model-set/weights/darknet19_448.conv.23.weights https://pjreddie.com/media/files/darknet19_448.conv.23 && \
+    wget -O keras-YOLOv3-model-set/weights/yolov2.weights http://pjreddie.com/media/files/yolo.weights && \
+    wget -O keras-YOLOv3-model-set/weights/yolov2-voc.weights http://pjreddie.com/media/files/yolo-voc.weights && \
     pushd keras-YOLOv3-model-set/ && \
-    python tools/convert.py yolov3.cfg weights/yolov3.weights weights/yolov3.h5 && \
-    python tools/convert.py yolov3-tiny.cfg weights/yolov3-tiny.weights weights/yolov3-tiny.h5 && \
-    python tools/convert.py yolov3-spp.cfg weights/yolov3-spp.weights weights/yolov3-spp.h5 && \
-    python tools/convert.py darknet53.cfg weights/darknet53.conv.74.weights weights/darknet53.h5 && \
+    python tools/convert.py cfg/yolov3.cfg weights/yolov3.weights weights/yolov3.h5 && \
+    python tools/convert.py cfg/yolov3-tiny.cfg weights/yolov3-tiny.weights weights/yolov3-tiny.h5 && \
+    python tools/convert.py cfg/yolov3-spp.cfg weights/yolov3-spp.weights weights/yolov3-spp.h5 && \
+    python tools/convert.py cfg/yolov2.cfg weights/yolov2.weights weights/yolov2.h5 && \
+    python tools/convert.py cfg/yolov2-voc.cfg weights/yolov2-voc.weights weights/yolov2-voc.h5 && \
+    python tools/convert.py cfg/darknet53.cfg weights/darknet53.conv.74.weights weights/darknet53.h5 && \
+    python tools/convert.py cfg/darknet19_448_body.cfg weights/darknet19_448.conv.23.weights weights/darknet19.h5 && \
     popd
 
 # Optional: Prepare MS COCO 2017 dataset
