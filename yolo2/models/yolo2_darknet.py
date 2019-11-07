@@ -50,7 +50,7 @@ def yolo2_body(inputs, num_anchors, num_classes, weights_path=None):
 
     x = Concatenate()([conv21_reshaped, conv20])
     x = DarknetConv2D_BN_Leaky(1024, (3, 3))(x)
-    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1))(x)
+    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1), name='predict_conv')(x)
     return Model(inputs, x)
 
 

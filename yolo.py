@@ -30,7 +30,7 @@ from tensorflow.keras.utils import multi_gpu_model
 #tf.enable_eager_execution()
 
 default_config = {
-        "model_type": 'darknet',
+        "model_type": 'tiny_yolo3_darknet',
         "model_path": 'weights/yolov3-tiny.h5',
         "pruning_model": False,
         "anchors_path": 'configs/tiny_yolo3_anchors.txt',
@@ -332,7 +332,7 @@ if __name__ == '__main__':
     '''
     parser.add_argument(
         '--model_type', type=str,
-        help='YOLO model type: mobilenet_lite/mobilenet/darknet/vgg16, default ' + YOLO.get_defaults("model_type")
+        help='YOLO model type: yolo3_mobilenet_lite/tiny_yolo3_mobilenet/yolo3_darknet/..., default ' + YOLO.get_defaults("model_type")
     )
 
     parser.add_argument(

@@ -92,6 +92,12 @@ MultiGPU usage: use `--gpu_num N` to use N GPUs. It is passed to the [Keras mult
 
 # Citation
 ```
+@article{YOLO Nano,
+     title={YOLO Nano: a Highly Compact You Only Look Once Convolutional Neural Network for Object Detection},
+     author={Alexander Wong, Mahmoud Famuori, Mohammad Javad Shafiee, Francis Li, Brendan Chwyl, and Jonathan Chung},
+     journal = {arXiv},
+     year={2019}
+}
 @article{ShuffleNet,
      title={ShuffleNet: An Extremely Efficient Convolutional Neural Network for Mobile Devices},
      author={Xiangyu Zhang, Xinyu Zhou, Mengxiao Lin, Jian Sun},

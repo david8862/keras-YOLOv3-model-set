@@ -9,6 +9,7 @@ from tensorflow.keras.models import load_model
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from yolo3.data import preprocess_image
 from yolo3.postprocess_np import yolo3_postprocess_np
+from yolo2.postprocess_np import yolo2_postprocess_np
 from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes
 
 
@@ -23,7 +24,11 @@ def validate_yolo_model(model, image_file, anchors, class_names, model_image_siz
 
     start = time.time()
     for i in range(loop_count):
-        boxes, classes, scores = yolo3_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size)
+        if len(anchors) == 5:
+            # YOLOv2 use 5 anchors
+            boxes, classes, scores = yolo2_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size)
+        else:
+            boxes, classes, scores = yolo3_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size)
     end = time.time()
 
     print('Found {} boxes for {}'.format(len(boxes), image_file))

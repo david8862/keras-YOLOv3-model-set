@@ -62,7 +62,7 @@ def yolo2lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
 
     x = Concatenate()([conv_head2_reshaped, conv_head1])
     x = Depthwise_Separable_Conv2D_BN_Leaky(int(1024*alpha), (3, 3), block_id_str='16')(x)
-    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1))(x)
+    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1), name='predict_conv')(x)
     return Model(inputs, x)
 
 

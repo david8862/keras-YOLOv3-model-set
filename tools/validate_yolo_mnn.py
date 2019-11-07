@@ -8,6 +8,7 @@ import MNN
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from yolo3.postprocess_np import yolo3_head, yolo3_handle_predictions, yolo3_adjust_boxes
+from yolo2.postprocess_np import yolo2_head
 from yolo3.data import preprocess_image
 from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes
 
@@ -22,6 +23,9 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, loop_c
         output_tensor_names = ['conv2d_1/Conv2D', 'conv2d_3/Conv2D']
     elif len(anchors) == 9:
         output_tensor_names = ['conv2d_3/Conv2D', 'conv2d_8/Conv2D', 'conv2d_13/Conv2D']
+    elif len(anchors) == 5:
+        # YOLOv2 use 5 anchors and have only 1 prediction
+        output_tensor_names = ['predict_conv/Conv2D']
     else:
         raise ValueError('invalid anchor number')
 
@@ -83,7 +87,10 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, loop_c
         out_list.append(output_data)
 
     start = time.time()
-    predictions = yolo3_head(out_list, anchors, num_classes=len(class_names), input_dims=(height, width))
+    if len(out_list) == 1:
+        predictions = yolo2_head(out_list[0], anchors, num_classes=len(class_names), input_dims=(height, width))
+    else:
+        predictions = yolo3_head(out_list, anchors, num_classes=len(class_names), input_dims=(height, width))
 
     boxes, classes, scores = yolo3_handle_predictions(predictions, confidence=0.1, iou_threshold=0.4)
     boxes = yolo3_adjust_boxes(boxes, image_shape, (height, width))
