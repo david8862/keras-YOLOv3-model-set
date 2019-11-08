@@ -95,24 +95,6 @@ def _main(args):
     anchors = get_anchors(args.anchors_path)
     num_anchors = len(anchors)
 
-    if num_anchors == 9:
-        # YOLOv3 use 9 anchors
-        get_train_model = get_yolo3_train_model
-        data_generator = yolo3_data_generator_wrapper
-        tiny_version = False
-    elif num_anchors == 6:
-        # Tiny YOLOv3 use 6 anchors
-        get_train_model = get_yolo3_train_model
-        data_generator = yolo3_data_generator_wrapper
-        tiny_version = True
-    elif num_anchors == 5:
-        # YOLOv2 use 5 anchors
-        get_train_model = get_yolo2_train_model
-        data_generator = yolo2_data_generator_wrapper
-        tiny_version = False
-    else:
-        raise ValueError('Unsupported anchors number')
-
     # get freeze level according to CLI option
     if args.weights_path:
         freeze_level = 0
@@ -150,6 +132,26 @@ def _main(args):
         num_val = int(len(dataset)*val_split)
         num_train = len(dataset) - num_val
 
+    # get different model type & train&val data generator
+    if num_anchors == 9:
+        # YOLOv3 use 9 anchors
+        get_train_model = get_yolo3_train_model
+        data_generator = yolo3_data_generator_wrapper
+        tiny_version = False
+    elif num_anchors == 6:
+        # Tiny YOLOv3 use 6 anchors
+        get_train_model = get_yolo3_train_model
+        data_generator = yolo3_data_generator_wrapper
+        tiny_version = True
+    elif num_anchors == 5:
+        # YOLOv2 use 5 anchors
+        get_train_model = get_yolo2_train_model
+        data_generator = yolo2_data_generator_wrapper
+        tiny_version = False
+    else:
+        raise ValueError('Unsupported anchors number')
+
+
     # prepare model pruning config
     pruning_end_step = np.ceil(1.0 * num_train / args.batch_size).astype(np.int32) * args.total_epoch
     if args.model_pruning:
@@ -168,20 +170,21 @@ def _main(args):
         model.compile(optimizer=optimizer, loss={'yolo_loss': lambda y_true, y_pred: y_pred})
     model.summary()
 
-    # Train some initial epochs with frozen layers first if needed, to get a stable loss.
+    # Transfer training some epochs with frozen layers first if needed, to get a stable loss.
     input_shape = args.model_image_size
     assert (input_shape[0]%32 == 0 and input_shape[1]%32 == 0), 'Multiples of 32 required'
-    batch_size = args.batch_size
     initial_epoch = 0
-    epochs = args.init_epoch
-    print("Initial training stage")
-    print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-    model.fit_generator(data_generator(dataset[:num_train], batch_size, input_shape, anchors, num_classes),
-            steps_per_epoch=max(1, num_train//batch_size),
-            validation_data=data_generator(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
-            validation_steps=max(1, num_val//batch_size),
+    epochs = args.transfer_epoch
+    print("Transfer training stage")
+    print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, args.batch_size, input_shape))
+    model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes),
+            steps_per_epoch=max(1, num_train//args.batch_size),
+            validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes),
+            validation_steps=max(1, num_val//args.batch_size),
             epochs=epochs,
             initial_epoch=initial_epoch,
+            workers=1,
+            use_multiprocessing=False,
             callbacks=callbacks)
 
     # Apply Cosine learning rate decay only after
@@ -205,13 +208,15 @@ def _main(args):
     else:
         rescale_interval = -1  #Doesn't rescale
 
-    print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, batch_size, input_shape))
-    model.fit_generator(data_generator(dataset[:num_train], batch_size, input_shape, anchors, num_classes, rescale_interval),
-        steps_per_epoch=max(1, num_train//batch_size),
-        validation_data=data_generator(dataset[num_train:], batch_size, input_shape, anchors, num_classes),
-        validation_steps=max(1, num_val//batch_size),
+    print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, args.batch_size, input_shape))
+    model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, rescale_interval),
+        steps_per_epoch=max(1, num_train//args.batch_size),
+        validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes),
+        validation_steps=max(1, num_val//args.batch_size),
         epochs=args.total_epoch,
         initial_epoch=epochs,
+        workers=1,
+        use_multiprocessing=False,
         callbacks=callbacks)
 
     # Finally store model
@@ -231,8 +236,6 @@ if __name__ == '__main__':
         help = "Initial model image input size as <num>x<num>, default 416x416")
     parser.add_argument('--weights_path', type=str,required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
-    parser.add_argument('--freeze_level', type=int,required=False, default=None,
-        help = "Freeze level of the model in initial train stage. 0:NA/1:backbone/2:only open prediction layer")
 
     # Data options
     parser.add_argument('--annotation_file', type=str, required=False, default='trainval.txt',
@@ -253,8 +256,10 @@ if __name__ == '__main__':
         help = "Initial learning rate, default=0.001")
     parser.add_argument('--cosine_decay_learning_rate', default=False, action="store_true",
         help='Whether to use cosine decay for learning rate control')
-    parser.add_argument('--init_epoch', type=int,required=False, default=20,
-        help = "Initial stage epochs, especially for transfer training, default=20")
+    parser.add_argument('--transfer_epoch', type=int,required=False, default=20,
+        help = "Transfer training stage epochs, default=20")
+    parser.add_argument('--freeze_level', type=int,required=False, default=None,
+        help = "Freeze level of the model in transfer training stage. 0:NA/1:backbone/2:only open prediction layer")
     parser.add_argument('--total_epoch', type=int,required=False, default=250,
         help = "Total training epochs, default=250")
     parser.add_argument('--multiscale', default=False, action="store_true",

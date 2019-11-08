@@ -3,8 +3,9 @@
 """training data generation functions."""
 from PIL import Image
 import numpy as np
-import random
+import random, math
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
+from tensorflow.keras.utils import Sequence
 
 
 def rand(a=0, b=1):
@@ -256,6 +257,57 @@ def get_detector_mask(boxes, anchors, input_shape, num_classes):
         detectors_mask[i], matching_true_boxes[i] = preprocess_true_boxes(box, anchors, input_shape, num_classes)
 
     return np.array(detectors_mask), np.array(matching_true_boxes)
+
+
+class Yolo2DataGenerator(Sequence):
+    def __init__(self, annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval=-1, shuffle=True):
+        self.annotation_lines = annotation_lines
+        self.batch_size = batch_size
+        self.input_shape = input_shape
+        self.anchors = anchors
+        self.num_classes = num_classes
+        self.indexes = np.arange(len(self.annotation_lines))
+        self.shuffle = shuffle
+        # prepare multiscale config
+        # TODO: error happens when using Sequence data generator with
+        #       multiscale input shape, disable multiscale first
+        #self.rescale_interval = rescale_interval
+        self.rescale_interval = -1
+        self.rescale_step = 0
+        self.input_shape_list = get_multiscale_list()
+
+    def __len__(self):
+        # get iteration loops on each epoch
+        return max(1, math.ceil(len(self.annotation_lines) / float(self.batch_size)))
+
+    def __getitem__(self, index):
+        # generate annotation indexes for every batch
+        batch_indexs = self.indexes[index*self.batch_size : (index+1)*self.batch_size]
+        # fetch annotation lines based on index
+        batch_annotation_lines = [self.annotation_lines[i] for i in batch_indexs]
+
+        if self.rescale_interval > 0:
+            # Do multi-scale training on different input shape
+            self.rescale_step = (self.rescale_step + 1) % self.rescale_interval
+            if self.rescale_step == 0:
+                self.input_shape = self.input_shape_list[random.randint(0, len(self.input_shape_list)-1)]
+
+        image_data = []
+        box_data = []
+        for b in range(self.batch_size):
+            image, box = get_random_data(batch_annotation_lines[b], self.input_shape, random=True)
+            image_data.append(image)
+            box_data.append(box)
+        image_data = np.array(image_data)
+        box_data = np.array(box_data)
+        detectors_mask, matching_true_boxes = get_detector_mask(box_data, self.anchors, self.input_shape, self.num_classes)
+
+        return [image_data, box_data, detectors_mask, matching_true_boxes], np.zeros(self.batch_size)
+
+    def on_epoch_end(self):
+        # shuffle annotation data on epoch end
+        if self.shuffle == True:
+            np.random.shuffle(self.annotation_lines)
 
 
 def yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval):

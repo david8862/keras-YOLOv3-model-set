@@ -155,13 +155,14 @@ For other model, just do in a similar way, but specify different model path and 
 # python train.py -h
 usage: train.py [-h] [--model_type MODEL_TYPE] [--anchors_path ANCHORS_PATH]
                 [--model_image_size MODEL_IMAGE_SIZE]
-                [--weights_path WEIGHTS_PATH] [--freeze_level FREEZE_LEVEL]
+                [--weights_path WEIGHTS_PATH]
                 [--annotation_file ANNOTATION_FILE]
                 [--val_annotation_file VAL_ANNOTATION_FILE]
                 [--val_split VAL_SPLIT] [--classes_path CLASSES_PATH]
                 [--batch_size BATCH_SIZE] [--optimizer OPTIMIZER]
                 [--learning_rate LEARNING_RATE] [--cosine_decay_learning_rate]
-                [--init_epoch INIT_EPOCH] [--total_epoch TOTAL_EPOCH]
+                [--transfer_epoch TRANSFER_EPOCH]
+                [--freeze_level FREEZE_LEVEL] [--total_epoch TOTAL_EPOCH]
                 [--multiscale] [--rescale_interval RESCALE_INTERVAL]
                 [--model_pruning] [--label_smoothing LABEL_SMOOTHING]
                 [--data_shuffle] [--gpu_num GPU_NUM]
@@ -179,9 +180,6 @@ optional arguments:
                         416x416
   --weights_path WEIGHTS_PATH
                         Pretrained model/weights file for fine tune
-  --freeze_level FREEZE_LEVEL
-                        Freeze level of the model in initial train stage.
-                        0:NA/1:backbone/2:only open prediction layer
   --annotation_file ANNOTATION_FILE
                         train annotation txt file, default=trainval.txt
   --val_annotation_file VAL_ANNOTATION_FILE
@@ -201,9 +199,11 @@ optional arguments:
                         Initial learning rate, default=0.001
   --cosine_decay_learning_rate
                         Whether to use cosine decay for learning rate control
-  --init_epoch INIT_EPOCH
-                        Initial stage epochs, especially for transfer
-                        training, default=20
+  --transfer_epoch TRANSFER_EPOCH
+                        Transfer training stage epochs, default=20
+  --freeze_level FREEZE_LEVEL
+                        Freeze level of the model in transfer training stage.
+                        0:NA/1:backbone/2:only open prediction layer
   --total_epoch TOTAL_EPOCH
                         Total training epochs, default=250
   --multiscale          Whether to use multiscale training
