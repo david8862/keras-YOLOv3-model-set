@@ -87,7 +87,9 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, loop_c
         out_list.append(output_data)
 
     start = time.time()
-    if len(out_list) == 1:
+    if len(anchors) == 5:
+        # YOLOv2 use 5 anchors and have only 1 prediction
+        assert len(out_list) == 1, 'invalid YOLOv2 prediction number.'
         predictions = yolo2_head(out_list[0], anchors, num_classes=len(class_names), input_dims=(height, width))
     else:
         predictions = yolo3_head(out_list, anchors, num_classes=len(class_names), input_dims=(height, width))
