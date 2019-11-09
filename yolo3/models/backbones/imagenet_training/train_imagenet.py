@@ -6,6 +6,7 @@
 
 import os, sys, argparse
 import numpy as np
+from multiprocessing import cpu_count
 
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam, SGD, RMSprop
@@ -136,13 +137,14 @@ def main(args):
               metrics=['accuracy', 'top_k_categorical_accuracy'],
               loss='categorical_crossentropy')
 
+    print('Train on {} samples, val on {} samples, with batch size {}.'.format(train_generator.samples, test_generator.samples, args.batch_size))
     model.fit_generator(
             train_generator,
             steps_per_epoch=train_generator.samples // args.batch_size,
             epochs=args.total_epoch,
-            workers=7,
+            workers=cpu_count()-1,  #Try to parallized feeding image data but leave one cpu core idle
             initial_epoch=args.init_epoch,
-            use_multiprocessing=False,
+            use_multiprocessing=True,
             validation_data=test_generator,
             validation_steps=test_generator.samples // args.batch_size,
             callbacks=[logging, checkpoint, lr_scheduler, terminate_on_nan])

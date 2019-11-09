@@ -1,6 +1,6 @@
 ## C++ on-device (X86/ARM) inference app for YOLOv3 detection modelset
 
-Here are some C++ implementation of the on-device inference for trained YOLOv3 inference model, including forward propagation of the model, YOLO postprocess and bounding box NMS. It support YOLOv3/Tiny YOLOv3 arch and all kinds of backbones & head. Now we have 2 different inference engine versions for that:
+Here are some C++ implementation of the on-device inference for trained YOLOv3 inference model, including forward propagation of the model, YOLO postprocess and bounding box NMS. Generally it should support both YOLOv3/Tiny YOLOv3 arch and all kinds of backbones & head. Now we have 2 different inference engine versions for that:
 
 * Tensorflow-Lite (verified on commit id: 1b8f5bc8011a1e85d7a110125c852a4f431d0f59)
 * [MNN](https://github.com/alibaba/MNN) from Alibaba (verified on release: [0.2.1.0](https://github.com/alibaba/MNN/releases/tag/0.2.1.0))
