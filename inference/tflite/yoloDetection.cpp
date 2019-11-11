@@ -33,20 +33,21 @@ limitations under the License.
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <numeric>
 
 //#include "absl/memory/memory.h"
 //#include "tensorflow/lite/delegates/nnapi/nnapi_delegate.h"
 //#include "tensorflow/lite/string_util.h"
 //#include "tensorflow/lite/tools/evaluation/utils.h"
 
-#include "yolov3Detection.h"
+#include "yoloDetection.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include "resize_helpers.h"
 
 #define LOG(x) std::cerr
 
-namespace yolov3Detection {
+namespace yoloDetection {
 
 // definition of a bbox prediction record
 typedef struct prediction {
@@ -63,6 +64,21 @@ float sigmoid(float x)
     return (1 / (1 + exp(-x)));
 }
 
+void softmax(const std::vector<float> &logits, std::vector<float> &output){
+    float sum=0.0;
+    output.clear();
+
+    for(size_t i = 0; i<logits.size(); ++i) {
+        output.emplace_back(exp(logits[i]));
+    }
+    sum = std::accumulate(output.begin(), output.end(), sum);
+
+    for(size_t i = 0; i<output.size(); ++i) {
+        output[i] /= sum;
+    }
+    return;
+}
+
 double get_us(struct timeval t)
 {
     return (t.tv_sec * 1000000 + t.tv_usec);
@@ -75,7 +91,7 @@ void yolo_postprocess(const TfLiteTensor* feature_map, const int input_width, co
                       std::vector<t_prediction> &prediction_list, float conf_threshold)
 {
     // 1. do following transform to get the output bbox,
-    //    which is aligned with YOLOv3 paper:
+    //    which is aligned with YOLOv3/YOLOv2 paper:
     //
     //    bbox_x = sigmoid(pred_x) + grid_w
     //    bbox_y = sigmoid(pred_y) + grid_h
@@ -99,7 +115,7 @@ void yolo_postprocess(const TfLiteTensor* feature_map, const int input_width, co
     // 4. get bbox confidence (class_score * objectness)
     //    and filter with threshold
     //
-    //    bbox_conf[:] = sigmoid(bbox_class_score[:]) * bbox_obj
+    //    bbox_conf[:] = sigmoid/softmax(bbox_class_score[:]) * bbox_obj
     //    bbox_max_conf = max(bbox_conf[:])
     //    bbox_max_index = argmax(bbox_conf[:])
     //
@@ -144,8 +160,18 @@ void yolo_postprocess(const TfLiteTensor* feature_map, const int input_width, co
 
                     float bbox_x = sigmoid(bytes[bbox_x_offset]) + w;
                     float bbox_y = sigmoid(bytes[bbox_y_offset]) + h;
-                    float bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first / stride;
-                    float bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second / stride;
+                    float bbox_w = 0.0;
+                    float bbox_h = 0.0;
+                    if(anchor_num_per_layer == 5) {
+                        // YOLOv2 use 5 anchors and have only 1 prediction layer
+                        // currently it's anchor value doesn't contain stride
+                        bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first;
+                        bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second;
+                    }
+                    else {
+                        bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first / stride;
+                        bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second / stride;
+                    }
                     float bbox_obj = sigmoid(bytes[bbox_obj_offset]);
 
                     // Transfer anchor coordinates
@@ -158,11 +184,28 @@ void yolo_postprocess(const TfLiteTensor* feature_map, const int input_width, co
                     bbox_x = bbox_x - (bbox_w / 2);
                     bbox_y = bbox_y - (bbox_h / 2);
 
+                    // Get softmax score for YOLOv2 prediction
+                    std::vector<float> logits_bbox_score;
+                    std::vector<float> bbox_score;
+                    if(anchor_num_per_layer == 5) {
+                        for (int i = 0; i < num_classes; i++) {
+                            logits_bbox_score.emplace_back(bytes[bbox_scores_offset + i * bbox_scores_step]);
+                        }
+                        softmax(logits_bbox_score, bbox_score);
+                    }
+
                     //get anchor output confidence (class_score * objectness) and filter with threshold
                     float max_conf = 0.0;
                     int max_index = -1;
                     for (int i = 0; i < num_classes; i++) {
-                        float tmp_conf = sigmoid(bytes[bbox_scores_offset + i * bbox_scores_step]) * bbox_obj;
+                        float tmp_conf = 0.0;
+                        if(anchor_num_per_layer == 5) {
+                            // YOLOv2 use 5 anchors and softmax class scores
+                            tmp_conf = bbox_score[i] * bbox_obj;
+                        }
+                        else {
+                            tmp_conf = sigmoid(bytes[bbox_scores_offset + i * bbox_scores_step]) * bbox_obj;
+                        }
 
                         if(tmp_conf > max_conf) {
                             max_conf = tmp_conf;
@@ -192,11 +235,17 @@ void parse_anchors(std::string line, std::vector<std::pair<float, float>>& ancho
     // parse anchor definition txt file
     // which should be like follow:
     //
-    // yolo_anchors:
+    // yolo3_anchors:
     // 10,13,  16,30,  33,23,  30,61,  62,45,  59,119,  116,90,  156,198,  373,326
     //
-    // tiny_yolo_anchors:
+    // tiny_yolo3_anchors:
     // 10,14,  23,27,  37,58,  81,82,  135,169,  344,319
+    //
+    // yolo2_anchors:
+    // 0.57273,0.677385,  1.87446,2.06253,  3.33843,5.47434,  7.88282,3.52778,  9.77052,9.16828
+    //
+    // yolo2-voc_anchors.txt:
+    // 1.3221,1.73145,  3.19275,4.00944,  5.05587,8.09892,  9.47112,4.84053,  11.2364,10.0071
     size_t curr = 0, next = 0;
 
     while(next != std::string::npos) {
@@ -266,6 +315,10 @@ std::vector<std::pair<float, float>> get_anchorset(std::vector<std::pair<float, 
             LOG(ERROR) << "invalid anchorset index!\n";
             exit(-1);
         }
+    }
+    // YOLOv2 model has 5 anchors and 1 feature layers
+    else if (anchor_num == 5) {
+        anchorset = anchors;
     }
     else {
         LOG(ERROR) << "invalid anchor numbers!\n";
@@ -563,7 +616,7 @@ void RunInference(Settings* s) {
 
 void display_usage() {
   LOG(INFO)
-      << "Usage: yolov3Detection\n"
+      << "Usage: yoloDetection\n"
       << "--tflite_model, -m: model_name.tflite\n"
       << "--image, -i: image_name.jpg\n"
       << "--classes, -l: classes labels for the model\n"
@@ -660,8 +713,8 @@ int Main(int argc, char** argv) {
   return 0;
 }
 
-}  // namespace yolov3Detection
+}  // namespace yoloDetection
 
 int main(int argc, char** argv) {
-  return yolov3Detection::Main(argc, argv);
+  return yoloDetection::Main(argc, argv);
 }

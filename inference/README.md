@@ -180,8 +180,8 @@ Tensorflow-lite support both Float32 and UInt8 type model. We can dump out the k
 5. Run application to do inference with model, or put assets to ARM board and run if cross-compile
 ```
 # cd keras-YOLOv3-model-set/inference/tflite/build
-# ./yolov3Detection -h
-Usage: yolov3Detection
+# ./yoloDetection -h
+Usage: yoloDetection
 --tflite_model, -m: model_name.tflite
 --image, -i: image_name.jpg
 --classes, -l: classes labels for the model
@@ -194,7 +194,7 @@ Usage: yolov3Detection
 --warmup_runs, -w: number of warmup runs
 --verbose, -v: [0|1] print more information
 
-# ./yolov3Detection -m model.tflite -i ../../../example/dog.jpg -l ../../../configs/voc_classes.txt -a ../../../configs/tiny_yolo3_anchors.txt -t 8 -c 10 -w 3 -v 1
+# ./yoloDetection -m model.tflite -i ../../../example/dog.jpg -l ../../../configs/voc_classes.txt -a ../../../configs/tiny_yolo3_anchors.txt -t 8 -c 10 -w 3 -v 1
 Loaded model model.tflite
 resolved reporter
 num_classes: 20

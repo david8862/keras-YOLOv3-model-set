@@ -13,13 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef YOLOV3_DETECTION_YOLOV3_DETECTION_H_
-#define YOLOV3_DETECTION_YOLOV3_DETECTION_H_
+#ifndef YOLO_DETECTION_YOLO_DETECTION_H_
+#define YOLO_DETECTION_YOLO_DETECTION_H_
 
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/string_type.h"
 
-namespace yolov3Detection {
+namespace yoloDetection {
 
 struct Settings {
   bool verbose = false;
@@ -33,12 +33,12 @@ struct Settings {
   tflite::FlatBufferModel* model;
   std::string input_img_name = "./dog.jpg";
   std::string classes_file_name = "./classes.txt";
-  std::string anchors_file_name = "./yolo_anchors.txt";
+  std::string anchors_file_name = "./yolo3_anchors.txt";
   std::string input_layer_type = "uint8_t";
   int number_of_threads = 4;
   int number_of_warmup_runs = 2;
 };
 
-}  // namespace yolov3Detection
+}  // namespace yoloDetection
 
-#endif  // YOLOV3_DETECTION_YOLOV3_DETECTION_H_
+#endif  // YOLO_DETECTION_YOLO_DETECTION_H_

@@ -83,10 +83,15 @@ RUN ${PIP} --no-cache-dir install --upgrade \
 RUN ln -s $(which ${PYTHON}) /usr/local/bin/python 
 
 RUN apt-get update && apt-get install -y \
+    iputils-ping \
+    net-tools \
     build-essential \
     curl \
     git \
     wget \
+    vim \
+    cmake \
+    imagemagick \
     openjdk-8-jdk \
     ${PYTHON}-dev \
     virtualenv \

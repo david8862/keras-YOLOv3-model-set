@@ -13,17 +13,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef YOLOV3_DETECTION_RESIZE_HELPERS_IMPL_H_
-#define YOLOV3_DETECTION_RESIZE_HELPERS_IMPL_H_
+#ifndef YOLO_DETECTION_RESIZE_HELPERS_IMPL_H_
+#define YOLO_DETECTION_RESIZE_HELPERS_IMPL_H_
 
-#include "yolov3Detection.h"
+#include "yoloDetection.h"
 
 #include "tensorflow/lite/builtin_op_data.h"
 #include "tensorflow/lite/interpreter.h"
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/string_util.h"
 
-namespace yolov3Detection {
+namespace yoloDetection {
 
 template <class T>
 void resize(T* out, uint8_t* in, int image_height, int image_width,
@@ -88,6 +88,6 @@ void resize(T* out, uint8_t* in, int image_height, int image_width,
   }
 }
 
-}  // namespace yolov3Detection
+}  // namespace yoloDetection
 
-#endif  // YOLOV3_DETECTION_RESIZE_HELPERS_IMPL_H_
+#endif  // YOLO_DETECTION_RESIZE_HELPERS_IMPL_H_

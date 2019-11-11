@@ -13,13 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef YOLOV3_DETECTION_RESIZE_HELPERS_H_
-#define YOLOV3_DETECTION_RESIZE_HELPERS_H_
+#ifndef YOLO_DETECTION_RESIZE_HELPERS_H_
+#define YOLO_DETECTION_RESIZE_HELPERS_H_
 
 #include "resize_helpers_impl.h"
-#include "yolov3Detection.h"
+#include "yoloDetection.h"
 
-namespace yolov3Detection {
+namespace yoloDetection {
 
 template <class T>
 void resize(T* out, uint8_t* in, int image_height, int image_width,
@@ -32,6 +32,6 @@ template void resize<uint8_t>(uint8_t*, unsigned char*, int, int, int, int, int,
 template void resize<float>(float*, unsigned char*, int, int, int, int, int,
                             int, Settings*);
 
-}  // namespace yolov3Detection
+}  // namespace yoloDetection
 
-#endif  // YOLOV3_DETECTION_RESIZE_HELPERS_H_
+#endif  // YOLO_DETECTION_RESIZE_HELPERS_H_
