@@ -254,12 +254,12 @@ void parse_anchors(std::string line, std::vector<std::pair<float, float>>& ancho
         std::string num1 = line.substr(curr, next-curr);
         //get 2nd number
         curr = next + 1;
-        next = line.find(",  ", curr);
+        next = line.find(",", curr);
         std::string num2 = line.substr(curr, next-curr);
         //form up anchor
-        anchors.emplace_back(std::make_pair(std::stoi(num1), std::stoi(num2)));
+        anchors.emplace_back(std::make_pair(atof(num1.c_str()), atof(num2.c_str())));
         //get start of next anchor
-        curr = next + 3;
+        curr = next + 1;
     }
 }
 
