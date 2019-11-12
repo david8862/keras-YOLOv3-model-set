@@ -221,7 +221,7 @@ Checkpoints during training could be found at logs/000/. Choose a best one as re
 
 MultiGPU usage: use `--gpu_num N` to use N GPUs. It is passed to the [Keras multi_gpu_model()](https://keras.io/utils/#multi_gpu_model).
 
-Loss type couldn't be changed from CLI options. You can try them by changing params in [model.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo3/model.py)
+Loss type couldn't be changed from CLI options. You can try them by changing params in [loss.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo3/loss.py)
 
 ### Model dump
 We need to dump out inference model from training checkpoint for eval or demo. Following script cmd work for that.

@@ -48,7 +48,7 @@ def get_yolo2_model(model_type, num_anchors, num_classes, input_tensor=None, inp
         else:
             model_body = model_function(input_tensor, num_anchors, num_classes)
     else:
-        raise ValueError('This model type is not supported now')
+        raise ValueError('model type mismatch anchors')
 
     if model_pruning:
         model_body = get_pruning_model(model_body, begin_step=0, end_step=pruning_end_step)
@@ -122,7 +122,7 @@ def get_yolo2_train_model(model_type, anchors, num_classes, weights_path=None, f
         print('Unfreeze all of the layers.')
 
     model_loss, location_loss, confidence_loss, class_loss = Lambda(yolo2_loss, name='yolo_loss',
-            arguments={'anchors': anchors, 'num_classes': num_classes})(
+            arguments={'anchors': anchors, 'num_classes': num_classes, 'label_smoothing': label_smoothing})(
             [model_body.output, boxes_input, detectors_mask_input, matching_boxes_input])
 
     model = Model([model_body.input, boxes_input, detectors_mask_input, matching_boxes_input], model_loss)

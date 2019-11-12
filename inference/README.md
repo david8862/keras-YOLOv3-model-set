@@ -85,8 +85,8 @@ MNN support Post Training Integer quantization, so we can use its python CLI int
 5. Run application to do inference with model, or put all the assets to your ARM board and run if you use cross-compile
 ```
 # cd keras-YOLOv3-model-set/inference/MNN/build
-# ./yolov3Detection -h
-Usage: yolov3Detection
+# ./yoloDetection -h
+Usage: yoloDetection
 --mnn_model, -m: model_name.mnn
 --image, -i: image_name.jpg
 --classes, -l: classes labels for the model
@@ -98,7 +98,7 @@ Usage: yolov3Detection
 --warmup_runs, -w: number of warmup runs
 
 
-# ./yolov3Detection -m model.pb.mnn -i ../../../example/dog.jpg -l ../../../configs/voc_classes.txt -a ../../../configs/tiny_yolo3_anchors.txt -t 8 -c 10 -w 3
+# ./yoloDetection -m model.pb.mnn -i ../../../example/dog.jpg -l ../../../configs/voc_classes.txt -a ../../../configs/tiny_yolo3_anchors.txt -t 8 -c 10 -w 3
 Can't Find type=4 backend, use 0 instead
 image_input: w:320 , h:320, bpp: 3
 num_classes: 20

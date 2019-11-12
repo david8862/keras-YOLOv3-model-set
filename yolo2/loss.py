@@ -5,10 +5,12 @@ from tensorflow.keras import backend as K
 from yolo2.postprocess import yolo2_head
 
 
-def yolo2_loss(args,
-              anchors,
-              num_classes,
-              rescore_confidence=False):
+def _smooth_labels(y_true, label_smoothing):
+    label_smoothing = K.constant(label_smoothing, dtype=K.floatx())
+    return y_true * (1.0 - label_smoothing) + 0.5 * label_smoothing
+
+
+def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_loss=False, use_crossentropy_obj_loss=False, rescore_confidence=False):
     """YOLOv2 loss function.
 
     Parameters
@@ -113,24 +115,43 @@ def yolo2_loss(args,
     # training steps to encourage predictions to match anchor priors.
 
     # Determine confidence weights from object and no_object weights.
-    # NOTE: YOLOv2 does not use binary cross-entropy here.
+    # NOTE: YOLOv2 does not use binary cross-entropy. Here we try it.
     no_object_weights = (no_object_scale * (1 - object_detections) *
                          (1 - detectors_mask))
-    no_objects_loss = no_object_weights * K.square(-pred_confidence)
+    if use_crossentropy_obj_loss:
+        no_objects_loss = no_object_weights * K.binary_crossentropy(K.zeros(K.shape(pred_confidence)), pred_confidence, from_logits=False)
 
-    if rescore_confidence:
-        objects_loss = (object_scale * detectors_mask *
-                        K.square(best_ious - pred_confidence))
+        if rescore_confidence:
+            objects_loss = (object_scale * detectors_mask *
+                            K.binary_crossentropy(best_ious, pred_confidence, from_logits=False))
+        else:
+            objects_loss = (object_scale * detectors_mask *
+                            K.binary_crossentropy(K.ones(K.shape(pred_confidence)), pred_confidence, from_logits=False))
     else:
-        objects_loss = (object_scale * detectors_mask *
-                        K.square(1 - pred_confidence))
+        no_objects_loss = no_object_weights * K.square(-pred_confidence)
+
+        if rescore_confidence:
+            objects_loss = (object_scale * detectors_mask *
+                            K.square(best_ious - pred_confidence))
+        else:
+            objects_loss = (object_scale * detectors_mask *
+                            K.square(1 - pred_confidence))
     confidence_loss = objects_loss + no_objects_loss
 
     # Classification loss for matching detections.
-    # NOTE: YOLOv2 does not use categorical cross-entropy loss here.
+    # NOTE: YOLOv2 does not use categorical cross-entropy loss.
+    #       Here we try it.
     matching_classes = K.cast(matching_true_boxes[..., 4], 'int32')
     matching_classes = K.one_hot(matching_classes, num_classes)
-    classification_loss = (class_scale * detectors_mask *
+
+    if label_smoothing:
+        matching_classes = _smooth_labels(matching_classes, label_smoothing)
+
+    if use_crossentropy_loss:
+        classification_loss = (class_scale * detectors_mask *
+                           K.expand_dims(K.categorical_crossentropy(matching_classes, pred_class_prob, from_logits=False), axis=-1))
+    else:
+        classification_loss = (class_scale * detectors_mask *
                            K.square(matching_classes - pred_class_prob))
 
     # Coordinate loss for matching detection boxes.
