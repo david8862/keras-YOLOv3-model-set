@@ -1,13 +1,14 @@
-# TF Keras YOLOv3 Modelset
+# TF Keras YOLO Modelset
 
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](LICENSE)
 
 ## Introduction
 
-A common YOLOv3 object detection pipeline implement with tf.keras. Including data collection/annotation, model training/tuning, model evaluation and on device deployment. Support different architecture and different technologies, including:
+A common YOLOv3/v2 object detection pipeline implement with tf.keras. Including data collection/annotation, model training/tuning, model evaluation and on device deployment. Support different architecture and different technologies, including:
 
 #### Backbone
 - [x] Darknet53/Tiny Darknet
+- [x] Darknet19
 - [x] MobilenetV1
 - [x] MobilenetV2
 - [x] VGG16
@@ -20,9 +21,12 @@ A common YOLOv3 object detection pipeline implement with tf.keras. Including dat
 - [x] YOLOv3 Lite spp
 - [x] Tiny YOLOv3
 - [x] Tiny YOLOv3 Lite
+- [x] YOLOv2
+- [x] YOLOv2 Lite
 
 #### Loss
 - [x] Standard YOLOv3 loss
+- [x] Standard YOLOv2 loss
 - [x] Binary focal classification loss
 - [x] Softmax focal classification loss
 - [x] GIoU localization loss
@@ -30,10 +34,10 @@ A common YOLOv3 object detection pipeline implement with tf.keras. Including dat
 - [x] Label smoothing for classification loss
 
 #### Postprocess
-- [x] Numpy YOLOv3 postprocess implementation
-- [x] TFLite/MNN C++ YOLOv3 postprocess implementation
-- [x] TF YOLOv3 postprocess model
-- [x] tf.keras batch-wise YOLOv3 postprocess Lambda layer
+- [x] Numpy YOLOv3/v2 postprocess implementation
+- [x] TFLite/MNN C++ YOLOv3/v2 postprocess implementation
+- [x] TF YOLOv3/v2 postprocess model
+- [x] tf.keras batch-wise YOLOv3/v2 postprocess Lambda layer
 
 #### Train tech
 - [x] Transfer training from imagenet
@@ -148,7 +152,7 @@ For other model, just do in a similar way, but specify different model path and 
 
    For class names file format, refer to  [coco_classes.txt](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/configs/coco_classes.txt)
 
-2. If you're training Darknet YOLOv3/Tiny YOLOv3, make sure you have converted pretrain model weights as in [Quick Start](https://github.com/david8862/keras-YOLOv3-model-set#quick-start)
+2. If you're training Darknet YOLOv3/Tiny YOLOv3/Darknet YOLOv2, make sure you have converted pretrain model weights as in [Quick Start](https://github.com/david8862/keras-YOLOv3-model-set#quick-start)
 
 3. [train.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/train.py)
 ```
@@ -221,7 +225,7 @@ Checkpoints during training could be found at logs/000/. Choose a best one as re
 
 MultiGPU usage: use `--gpu_num N` to use N GPUs. It is passed to the [Keras multi_gpu_model()](https://keras.io/utils/#multi_gpu_model).
 
-Loss type couldn't be changed from CLI options. You can try them by changing params in [loss.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo3/loss.py)
+Loss type couldn't be changed from CLI options. You can try them by changing params in [loss.py(v3)](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo3/loss.py) or [loss.py(v2)](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo2/loss.py)
 
 ### Model dump
 We need to dump out inference model from training checkpoint for eval or demo. Following script cmd work for that.
@@ -301,7 +305,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 
 ### TODO
-- [ ] support YOLO nano model ([YOLO nano](https://arxiv.org/abs/1910.01271))
+- [ ] support YOLOv3 nano model ([YOLO nano](https://arxiv.org/abs/1910.01271))
 - [ ] add Attention mechanism/blocks to other backbone
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/yolo3/models/backbones/imagenet_training)
 
@@ -314,7 +318,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
     - tensorflow 2.0.0/tensorflow 1.14.0
     - tf.keras 2.2.4-tf
 
-2. Default YOLOv3 anchors are used. If you want to use your own anchors, probably some changes are needed. tools/kmeans.py could be used to do K-Means anchor clustering on your dataset
+2. Default YOLOv3/v2 anchors are used. If you want to use your own anchors, probably some changes are needed. tools/kmeans.py could be used to do K-Means anchor clustering on your dataset
 
 3. Always load pretrained weights and freeze layers in the first stage of training.
 
@@ -331,6 +335,11 @@ Please cite keras-YOLOv3-model-set in your publications if it helps your researc
 @article{keras-yolo3,
      Author = {qqwweee},
      Year = {2018}
+}
+@article{YAD2K,
+     title={YAD2K: Yet Another Darknet 2 Keras},
+     Author = {allanzelener},
+     Year = {2017}
 }
 @article{yolov3,
      title={YOLOv3: An Incremental Improvement},

@@ -10,11 +10,12 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback
 from tensorflow_model_optimization.sparsity import keras as sparsity
-from yolo3.model import get_yolo3_train_model, get_optimizer
+from yolo3.model import get_yolo3_train_model
 from yolo3.data import yolo3_data_generator_wrapper
 from yolo2.model import get_yolo2_train_model
 from yolo2.data import yolo2_data_generator_wrapper
-from yolo3.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
+from common.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
+from common.model_utils import get_optimizer
 
 # Try to enable Auto Mixed Precision on TF 2.0
 os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '1'
@@ -267,7 +268,7 @@ if __name__ == '__main__':
     parser.add_argument('--rescale_interval', type=int, required=False, default=10,
         help = "Number of iteration(batches) interval to rescale input image, default=10")
     parser.add_argument('--model_pruning', default=False, action="store_true",
-        help='Whether to use model pruning for optimization')
+        help='Use model pruning for optimization, only for TF 1.x')
     parser.add_argument('--label_smoothing', type=float, required=False, default=0,
         help = "Label smoothing factor (between 0 and 1) for classification loss, default=0")
     parser.add_argument('--data_shuffle', default=False, action="store_true",

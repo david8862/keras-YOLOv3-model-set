@@ -1,21 +1,17 @@
 #!/usr/bin/python3
 # -*- coding=utf-8 -*-
 """training data generation functions."""
+
 from PIL import Image
 import numpy as np
 import random, math
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 from tensorflow.keras.utils import Sequence
+from common.utils import get_multiscale_list
 
 
 def rand(a=0, b=1):
     return np.random.rand()*(b-a) + a
-
-
-def get_multiscale_list():
-    input_shape_list = [(320,320), (352,352), (384,384), (416,416), (448,448), (480,480), (512,512), (544,544), (576,576), (608,608)]
-
-    return input_shape_list
 
 
 def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jitter=.3, hue=.1, sat=1.5, val=1.5, proc_img=True):

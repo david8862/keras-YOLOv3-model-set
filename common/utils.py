@@ -30,6 +30,12 @@ def optimize_tf_gpu(tf, K):
         K.set_session(session)
 
 
+def get_multiscale_list():
+    input_shape_list = [(320,320), (352,352), (384,384), (416,416), (448,448), (480,480), (512,512), (544,544), (576,576), (608,608)]
+
+    return input_shape_list
+
+
 def touchdir(path):
     if not os.path.exists(path):
         os.makedirs(path)

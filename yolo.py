@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Run a YOLO_v3 style detection model on test images.
+Run a YOLOv3/YOLOv2 style detection model on test images.
 """
 
 import colorsys
@@ -21,8 +21,8 @@ from yolo3.model import get_yolo3_model, get_yolo3_inference_model, get_yolo3_pr
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo2.model import get_yolo2_model, get_yolo2_inference_model
 from yolo2.postprocess_np import yolo2_postprocess_np
-from yolo3.data import preprocess_image, letterbox_image
-from yolo3.utils import get_classes, get_anchors, get_colors, draw_boxes, touchdir
+from common.data_utils import preprocess_image
+from common.utils import get_classes, get_anchors, get_colors, draw_boxes, touchdir
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 from tensorflow.keras.utils import multi_gpu_model

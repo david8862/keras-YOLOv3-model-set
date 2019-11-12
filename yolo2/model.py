@@ -7,13 +7,14 @@ import warnings
 import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Input, Lambda, Conv2D
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam, RMSprop, SGD
-from tensorflow_model_optimization.sparsity import keras as sparsity
+from tensorflow.keras.optimizers import Adam
 
 from yolo2.models.yolo2_darknet import yolo2_body
 from yolo2.models.yolo2_mobilenet import yolo2_mobilenet_body, yolo2lite_mobilenet_body
 from yolo2.loss import yolo2_loss
 from yolo2.postprocess import batched_yolo2_postprocess
+
+from common.model_utils import add_metrics, get_pruning_model
 
 
 # A map of model type to construction info list for YOLOv2
@@ -54,40 +55,6 @@ def get_yolo2_model(model_type, num_anchors, num_classes, input_tensor=None, inp
         model_body = get_pruning_model(model_body, begin_step=0, end_step=pruning_end_step)
 
     return model_body, backbone_len
-
-
-
-def add_metrics(model, loss_dict):
-    '''
-    add loss scalar into model, which could be tracked in training
-    log and tensorboard callback
-    '''
-    for (name, loss) in loss_dict.items():
-        # seems add_metric() is newly added in tf.keras. So if you
-        # want to customize metrics on raw keras model, just use
-        # "metrics_names" and "metrics_tensors" as follow:
-        #
-        #model.metrics_names.append(name)
-        #model.metrics_tensors.append(loss)
-        model.add_metric(loss, name=name, aggregation='mean')
-
-
-def get_pruning_model(model, begin_step, end_step):
-    import tensorflow as tf
-    if tf.__version__.startswith('2'):
-        # model pruning API is not supported in TF 2.0 yet
-        raise Exception('model pruning is not fully supported in TF 2.x, Please switch env to TF 1.x for this feature')
-
-    pruning_params = {
-      'pruning_schedule': sparsity.PolynomialDecay(initial_sparsity=0.0,
-                                                   final_sparsity=0.7,
-                                                   begin_step=begin_step,
-                                                   end_step=end_step,
-                                                   frequency=100)
-    }
-
-    pruning_model = sparsity.prune_low_magnitude(model, **pruning_params)
-    return pruning_model
 
 
 

@@ -7,39 +7,11 @@ import numpy as np
 import cv2, random, math
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 from tensorflow.keras.utils import Sequence
-
-
-def letterbox_image(image, size):
-    '''resize image with unchanged aspect ratio using padding'''
-    iw, ih = image.size
-    w, h = size
-    scale = min(w/iw, h/ih)
-    nw = int(iw*scale)
-    nh = int(ih*scale)
-
-    image = image.resize((nw,nh), Image.BICUBIC)
-    new_image = Image.new('RGB', size, (128,128,128))
-    new_image.paste(image, ((w-nw)//2, (h-nh)//2))
-    return new_image
-
-
-def preprocess_image(image, model_image_size):
-    #resized_image = cv2.resize(image, tuple(reversed(model_image_size)), cv2.INTER_AREA)
-    resized_image = letterbox_image(image, tuple(reversed(model_image_size)))
-    image_data = np.asarray(resized_image).astype('float32')
-    image_data /= 255.
-    image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
-    return image_data
+from common.utils import get_multiscale_list
 
 
 def rand(a=0, b=1):
     return np.random.rand()*(b-a) + a
-
-
-def get_multiscale_list():
-    input_shape_list = [(320,320), (352,352), (384,384), (416,416), (448,448), (480,480), (512,512), (544,544), (576,576), (608,608)]
-
-    return input_shape_list
 
 
 def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jitter=.3, hue=.1, sat=1.5, val=1.5, proc_img=True):

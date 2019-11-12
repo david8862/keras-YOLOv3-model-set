@@ -7,8 +7,7 @@ import warnings
 import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam, RMSprop, SGD
-from tensorflow_model_optimization.sparsity import keras as sparsity
+from tensorflow.keras.optimizers import Adam
 
 from yolo3.models.yolo3_darknet import yolo3_body, custom_tiny_yolo3_body, yolo3lite_body, tiny_yolo3lite_body, custom_yolo3_spp_body
 from yolo3.models.yolo3_mobilenet import yolo3_mobilenet_body, tiny_yolo3_mobilenet_body, yolo3lite_mobilenet_body, yolo3lite_spp_mobilenet_body, tiny_yolo3lite_mobilenet_body
@@ -19,6 +18,8 @@ from yolo3.models.yolo3_xception import yolo3_xception_body, yolo3lite_xception_
 from yolo3.models.yolo3_nano import yolo3_nano_body
 from yolo3.loss import yolo3_loss
 from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Yolo3PostProcessLayer
+
+from common.model_utils import add_metrics, get_pruning_model
 
 
 # A map of model type to construction info list for YOLOv3
@@ -122,54 +123,6 @@ def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, in
 
     return model_body, backbone_len
 
-
-
-def add_metrics(model, loss_dict):
-    '''
-    add loss scalar into model, which could be tracked in training
-    log and tensorboard callback
-    '''
-    for (name, loss) in loss_dict.items():
-        # seems add_metric() is newly added in tf.keras. So if you
-        # want to customize metrics on raw keras model, just use
-        # "metrics_names" and "metrics_tensors" as follow:
-        #
-        #model.metrics_names.append(name)
-        #model.metrics_tensors.append(loss)
-        model.add_metric(loss, name=name, aggregation='mean')
-
-
-def get_pruning_model(model, begin_step, end_step):
-    import tensorflow as tf
-    if tf.__version__.startswith('2'):
-        # model pruning API is not supported in TF 2.0 yet
-        raise Exception('model pruning is not fully supported in TF 2.x, Please switch env to TF 1.x for this feature')
-
-    pruning_params = {
-      'pruning_schedule': sparsity.PolynomialDecay(initial_sparsity=0.0,
-                                                   final_sparsity=0.7,
-                                                   begin_step=begin_step,
-                                                   end_step=end_step,
-                                                   frequency=100)
-    }
-
-    pruning_model = sparsity.prune_low_magnitude(model, **pruning_params)
-    return pruning_model
-
-
-def get_optimizer(optim_type, learning_rate, decay=0):
-    optim_type = optim_type.lower()
-
-    if optim_type == 'adam':
-        optimizer = Adam(lr=learning_rate, decay=decay)
-    elif optim_type == 'rmsprop':
-        optimizer = RMSprop(lr=learning_rate, decay=decay)
-    elif optim_type == 'sgd':
-        optimizer = SGD(lr=learning_rate, decay=decay)
-    else:
-        raise ValueError('Unsupported optimizer type')
-
-    return optimizer
 
 
 def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, optimizer=Adam(lr=1e-3, decay=0), label_smoothing=0, model_pruning=False, pruning_end_step=10000):
