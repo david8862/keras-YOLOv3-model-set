@@ -162,193 +162,22 @@ void yolo_postprocess(const Tensor* feature_map, const int input_width, const in
     // the featuremap channel should be like 3*(num_classes + 5)
     MNN_ASSERT(anchor_num_per_layer * (num_classes + 5) == channel);
 
+    int bytesPerRow, bytesPerImage, bytesPerBatch;
     if (dimType == Tensor::TENSORFLOW) {
         // Tensorflow format tensor, NHWC
         MNN_PRINT("Tensorflow format: NHWC\n");
 
-        auto bytesPerRow   = channel * unit;
-        auto bytesPerImage = width * bytesPerRow;
-        auto bytesPerBatch = height * bytesPerImage;
+        bytesPerRow   = channel * unit;
+        bytesPerImage = width * bytesPerRow;
+        bytesPerBatch = height * bytesPerImage;
 
-        for (int b = 0; b < batch; b++) {
-            auto bytes = data + b * bytesPerBatch / unit;
-            MNN_PRINT("batch %d:\n", b);
-
-            for (int h = 0; h < height; h++) {
-                for (int w = 0; w < width; w++) {
-                    for (int anc = 0; anc < anchor_num_per_layer; anc++) {
-                        //get bbox prediction data for each anchor, each feature point
-                        int bbox_x_offset = h * width * channel + w * channel + anc * (num_classes + 5);
-                        int bbox_y_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 1;
-                        int bbox_w_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 2;
-                        int bbox_h_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 3;
-                        int bbox_obj_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 4;
-                        int bbox_scores_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 5;
-                        int bbox_scores_step = 1;
-
-                        float bbox_x = sigmoid(bytes[bbox_x_offset]) + w;
-                        float bbox_y = sigmoid(bytes[bbox_y_offset]) + h;
-                        float bbox_w = 0.0;
-                        float bbox_h = 0.0;
-                        if(anchor_num_per_layer == 5) {
-                            // YOLOv2 use 5 anchors and have only 1 prediction layer
-                            // currently it's anchor value doesn't contain stride
-                            bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first;
-                            bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second;
-                        }
-                        else {
-                            bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first / stride;
-                            bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second / stride;
-                        }
-                        float bbox_obj = sigmoid(bytes[bbox_obj_offset]);
-
-                        // Transfer anchor coordinates
-                        bbox_x = bbox_x * stride;
-                        bbox_y = bbox_y * stride;
-                        bbox_w = bbox_w * stride;
-                        bbox_h = bbox_h * stride;
-
-                        // Convert centoids to top left coordinates
-                        bbox_x = bbox_x - (bbox_w / 2);
-                        bbox_y = bbox_y - (bbox_h / 2);
-
-                        // Get softmax score for YOLOv2 prediction
-                        std::vector<float> logits_bbox_score;
-                        std::vector<float> bbox_score;
-                        if(anchor_num_per_layer == 5) {
-                            for (int i = 0; i < num_classes; i++) {
-                                logits_bbox_score.emplace_back(bytes[bbox_scores_offset + i * bbox_scores_step]);
-                            }
-                            softmax(logits_bbox_score, bbox_score);
-                        }
-
-                        //get anchor output confidence (class_score * objectness) and filter with threshold
-                        float max_conf = 0.0;
-                        int max_index = -1;
-                        for (int i = 0; i < num_classes; i++) {
-                            float tmp_conf = 0.0;
-                            if(anchor_num_per_layer == 5) {
-                                // YOLOv2 use 5 anchors and softmax class scores
-                                tmp_conf = bbox_score[i] * bbox_obj;
-                            }
-                            else {
-                                tmp_conf = sigmoid(bytes[bbox_scores_offset + i * bbox_scores_step]) * bbox_obj;
-                            }
-
-                            if(tmp_conf > max_conf) {
-                                max_conf = tmp_conf;
-                                max_index = i;
-                            }
-                        }
-                        if(max_conf >= conf_threshold) {
-                            // got a valid prediction, form up data and push to result vector
-                            t_prediction bbox_prediction;
-                            bbox_prediction.x = bbox_x;
-                            bbox_prediction.y = bbox_y;
-                            bbox_prediction.width = bbox_w;
-                            bbox_prediction.height = bbox_h;
-                            bbox_prediction.confidence = max_conf;
-                            bbox_prediction.class_index = max_index;
-
-                            prediction_list.emplace_back(bbox_prediction);
-                        }
-                    }
-                }
-            }
-        }
     } else if (dimType == Tensor::CAFFE) {
         // Caffe format tensor, NCHW
         MNN_PRINT("Caffe format: NCHW\n");
-        auto bytesPerRow   = width * unit;
-        auto bytesPerImage = height * bytesPerRow;
-        auto bytesPerBatch = channel * bytesPerImage;
 
-        for (int b = 0; b < batch; b++) {
-            auto bytes = data + b * bytesPerBatch / unit;
-            MNN_PRINT("batch %d:\n", b);
-
-            for (int h = 0; h < height; h++) {
-                for (int w = 0; w < width; w++) {
-                    for (int anc = 0; anc < anchor_num_per_layer; anc++) {
-                        //get bbox prediction data for each anchor, each feature point
-                        int bbox_x_offset = anc * (num_classes + 5) * width * height + h * width + w;
-                        int bbox_y_offset = (anc * (num_classes + 5) + 1) * width * height + h * width + w;
-                        int bbox_w_offset = (anc * (num_classes + 5) + 2) * width * height + h * width + w;
-                        int bbox_h_offset = (anc * (num_classes + 5) + 3) * width * height + h * width + w;
-                        int bbox_obj_offset = (anc * (num_classes + 5) + 4) * width * height + h * width + w;
-                        int bbox_scores_offset = (anc * (num_classes + 5) + 5) * width * height + h * width + w;
-                        int bbox_scores_step = width * height;
-
-                        float bbox_x = sigmoid(bytes[bbox_x_offset]) + w;
-                        float bbox_y = sigmoid(bytes[bbox_y_offset]) + h;
-                        float bbox_w = 0.0;
-                        float bbox_h = 0.0;
-                        if(anchor_num_per_layer == 5) {
-                            // YOLOv2 use 5 anchors and have only 1 prediction layer
-                            // currently it's anchor value doesn't contain stride
-                            bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first;
-                            bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second;
-                        }
-                        else {
-                            bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first / stride;
-                            bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second / stride;
-                        }
-                        float bbox_obj = sigmoid(bytes[bbox_obj_offset]);
-
-                        // Transfer anchor coordinates
-                        bbox_x = bbox_x * stride;
-                        bbox_y = bbox_y * stride;
-                        bbox_w = bbox_w * stride;
-                        bbox_h = bbox_h * stride;
-
-                        // Convert centoids to top left coordinates
-                        bbox_x = bbox_x - (bbox_w / 2);
-                        bbox_y = bbox_y - (bbox_h / 2);
-
-                        // Get softmax score for YOLOv2 prediction
-                        std::vector<float> logits_bbox_score;
-                        std::vector<float> bbox_score;
-                        if(anchor_num_per_layer == 5) {
-                            for (int i = 0; i < num_classes; i++) {
-                                logits_bbox_score.emplace_back(bytes[bbox_scores_offset + i * bbox_scores_step]);
-                            }
-                            softmax(logits_bbox_score, bbox_score);
-                        }
-
-                        //get anchor output confidence (class_score * objectness) and filter with threshold
-                        float max_conf = 0.0;
-                        int max_index = -1;
-                        for (int i = 0; i < num_classes; i++) {
-                            float tmp_conf = 0.0;
-                            if(anchor_num_per_layer == 5) {
-                                // YOLOv2 use 5 anchors and softmax class scores
-                                tmp_conf = bbox_score[i] * bbox_obj;
-                            }
-                            else {
-                                tmp_conf = sigmoid(bytes[bbox_scores_offset + i * bbox_scores_step]) * bbox_obj;
-                            }
-
-                            if(tmp_conf > max_conf) {
-                                max_conf = tmp_conf;
-                                max_index = i;
-                            }
-                        }
-                        if(max_conf >= conf_threshold) {
-                            // got a valid prediction, form up data and push to result vector
-                            t_prediction bbox_prediction;
-                            bbox_prediction.x = bbox_x;
-                            bbox_prediction.y = bbox_y;
-                            bbox_prediction.width = bbox_w;
-                            bbox_prediction.height = bbox_h;
-                            bbox_prediction.confidence = max_conf;
-                            bbox_prediction.class_index = max_index;
-
-                            prediction_list.emplace_back(bbox_prediction);
-                        }
-                    }
-                }
-            }
-        }
+        bytesPerRow   = width * unit;
+        bytesPerImage = height * bytesPerRow;
+        bytesPerBatch = channel * bytesPerImage;
 
     } else if (dimType == Tensor::CAFFE_C4) {
         MNN_PRINT("Caffe format: NC4HW4, not supported\n");
@@ -357,6 +186,115 @@ void yolo_postprocess(const Tensor* feature_map, const int input_width, const in
         MNN_PRINT("Invalid tensor dim type: %d\n", dimType);
         exit(-1);
     }
+
+    for (int b = 0; b < batch; b++) {
+        auto bytes = data + b * bytesPerBatch / unit;
+        MNN_PRINT("batch %d:\n", b);
+
+        for (int h = 0; h < height; h++) {
+            for (int w = 0; w < width; w++) {
+                for (int anc = 0; anc < anchor_num_per_layer; anc++) {
+                    //get bbox prediction data offset for each anchor, each feature point
+                    int bbox_x_offset, bbox_y_offset, bbox_w_offset, bbox_h_offset, bbox_obj_offset, bbox_scores_offset, bbox_scores_step;
+                    if (dimType == Tensor::TENSORFLOW) {
+                        // Tensorflow format tensor, NHWC
+                        bbox_x_offset = h * width * channel + w * channel + anc * (num_classes + 5);
+                        bbox_y_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 1;
+                        bbox_w_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 2;
+                        bbox_h_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 3;
+                        bbox_obj_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 4;
+                        bbox_scores_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 5;
+                        bbox_scores_step = 1;
+
+                    } else if (dimType == Tensor::CAFFE) {
+                        // Caffe format tensor, NCHW
+                        bbox_x_offset = anc * (num_classes + 5) * width * height + h * width + w;
+                        bbox_y_offset = (anc * (num_classes + 5) + 1) * width * height + h * width + w;
+                        bbox_w_offset = (anc * (num_classes + 5) + 2) * width * height + h * width + w;
+                        bbox_h_offset = (anc * (num_classes + 5) + 3) * width * height + h * width + w;
+                        bbox_obj_offset = (anc * (num_classes + 5) + 4) * width * height + h * width + w;
+                        bbox_scores_offset = (anc * (num_classes + 5) + 5) * width * height + h * width + w;
+                        bbox_scores_step = width * height;
+
+                    } else if (dimType == Tensor::CAFFE_C4) {
+                        MNN_PRINT("Caffe format: NC4HW4, not supported\n");
+                        exit(-1);
+                    } else {
+                        MNN_PRINT("Invalid tensor dim type: %d\n", dimType);
+                        exit(-1);
+                    }
+
+                    float bbox_x = sigmoid(bytes[bbox_x_offset]) + w;
+                    float bbox_y = sigmoid(bytes[bbox_y_offset]) + h;
+                    float bbox_w = 0.0;
+                    float bbox_h = 0.0;
+                    if(anchor_num_per_layer == 5) {
+                        // YOLOv2 use 5 anchors and have only 1 prediction layer
+                        // currently it's anchor value doesn't contain stride
+                        bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first;
+                        bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second;
+                    }
+                    else {
+                        bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first / stride;
+                        bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second / stride;
+                    }
+                    float bbox_obj = sigmoid(bytes[bbox_obj_offset]);
+
+                    // Transfer anchor coordinates
+                    bbox_x = bbox_x * stride;
+                    bbox_y = bbox_y * stride;
+                    bbox_w = bbox_w * stride;
+                    bbox_h = bbox_h * stride;
+
+                    // Convert centoids to top left coordinates
+                    bbox_x = bbox_x - (bbox_w / 2);
+                    bbox_y = bbox_y - (bbox_h / 2);
+
+                    // Get softmax score for YOLOv2 prediction
+                    std::vector<float> logits_bbox_score;
+                    std::vector<float> bbox_score;
+                    if(anchor_num_per_layer == 5) {
+                        for (int i = 0; i < num_classes; i++) {
+                            logits_bbox_score.emplace_back(bytes[bbox_scores_offset + i * bbox_scores_step]);
+                        }
+                        softmax(logits_bbox_score, bbox_score);
+                    }
+
+                    //get anchor output confidence (class_score * objectness) and filter with threshold
+                    float max_conf = 0.0;
+                    int max_index = -1;
+                    for (int i = 0; i < num_classes; i++) {
+                        float tmp_conf = 0.0;
+                        if(anchor_num_per_layer == 5) {
+                            // YOLOv2 use 5 anchors and softmax class scores
+                            tmp_conf = bbox_score[i] * bbox_obj;
+                        }
+                        else {
+                            tmp_conf = sigmoid(bytes[bbox_scores_offset + i * bbox_scores_step]) * bbox_obj;
+                        }
+
+                        if(tmp_conf > max_conf) {
+                            max_conf = tmp_conf;
+                            max_index = i;
+                        }
+                    }
+                    if(max_conf >= conf_threshold) {
+                        // got a valid prediction, form up data and push to result vector
+                        t_prediction bbox_prediction;
+                        bbox_prediction.x = bbox_x;
+                        bbox_prediction.y = bbox_y;
+                        bbox_prediction.width = bbox_w;
+                        bbox_prediction.height = bbox_h;
+                        bbox_prediction.confidence = max_conf;
+                        bbox_prediction.class_index = max_index;
+
+                        prediction_list.emplace_back(bbox_prediction);
+                    }
+                }
+            }
+        }
+    }
+
 }
 
 
