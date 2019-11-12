@@ -16,16 +16,16 @@ def yolo2_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
     # input: 416 x 416 x 3
-    # mobilenet.output       : 13 x 13 x (1024*alpha)
-    # conv_pw_11(layers[73]) : 26 x 26 x (512*alpha)
+    # mobilenet.output            : 13 x 13 x (1024*alpha)
+    # conv_pw_11_relu(layers[73]) : 26 x 26 x (512*alpha)
 
     conv_head1 = compose(
         DarknetConv2D_BN_Leaky(int(1024*alpha), (3, 3)),
         DarknetConv2D_BN_Leaky(int(1024*alpha), (3, 3)))(mobilenet.output)
 
-    # conv_pw_11 output shape: 26 x 26 x (512*alpha)
-    conv_pw_11 = mobilenet.layers[73].output
-    conv_head2 = DarknetConv2D_BN_Leaky(int(64*alpha), (1, 1))(conv_pw_11)
+    # conv_pw_11_relu output shape: 26 x 26 x (512*alpha)
+    conv_pw_11_relu = mobilenet.layers[73].output
+    conv_head2 = DarknetConv2D_BN_Leaky(int(64*alpha), (1, 1))(conv_pw_11_relu)
     # TODO: Allow Keras Lambda to use func arguments for output_shape?
     conv_head2_reshaped = Lambda(
         space_to_depth_x2,
@@ -39,21 +39,21 @@ def yolo2_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
 
 
 def yolo2lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
-    """Create YOLO_V2 MobileNet model CNN body in Keras."""
+    """Create YOLO_V2 Lite MobileNet model CNN body in Keras."""
 
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
     # input: 416 x 416 x 3
-    # mobilenet.output       : 13 x 13 x (1024*alpha)
-    # conv_pw_11(layers[73]) : 26 x 26 x (512*alpha)
+    # mobilenet.output            : 13 x 13 x (1024*alpha)
+    # conv_pw_11_relu(layers[73]) : 26 x 26 x (512*alpha)
 
     conv_head1 = compose(
         Depthwise_Separable_Conv2D_BN_Leaky(int(1024*alpha), (3, 3), block_id_str='14'),
         Depthwise_Separable_Conv2D_BN_Leaky(int(1024*alpha), (3, 3), block_id_str='15'))(mobilenet.output)
 
-    # conv_pw_11 output shape: 26 x 26 x (512*alpha)
-    conv_pw_11 = mobilenet.layers[73].output
-    conv_head2 = DarknetConv2D_BN_Leaky(int(64*alpha), (1, 1))(conv_pw_11)
+    # conv_pw_11_relu output shape: 26 x 26 x (512*alpha)
+    conv_pw_11_relu = mobilenet.layers[73].output
+    conv_head2 = DarknetConv2D_BN_Leaky(int(64*alpha), (1, 1))(conv_pw_11_relu)
     # TODO: Allow Keras Lambda to use func arguments for output_shape?
     conv_head2_reshaped = Lambda(
         space_to_depth_x2,

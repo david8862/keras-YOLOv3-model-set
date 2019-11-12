@@ -11,6 +11,8 @@ from tensorflow.keras.optimizers import Adam
 
 from yolo2.models.yolo2_darknet import yolo2_body
 from yolo2.models.yolo2_mobilenet import yolo2_mobilenet_body, yolo2lite_mobilenet_body
+from yolo2.models.yolo2_mobilenetv2 import yolo2_mobilenetv2_body, yolo2lite_mobilenetv2_body
+from yolo2.models.yolo2_xception import yolo2_xception_body, yolo2lite_xception_body
 from yolo2.loss import yolo2_loss
 from yolo2.postprocess import batched_yolo2_postprocess
 
@@ -26,7 +28,10 @@ yolo2_model_map = {
     'yolo2_darknet': [yolo2_body, 60, 'weights/darknet19.h5'],
     'yolo2_mobilenet': [yolo2_mobilenet_body, 87, None],
     'yolo2_mobilenet_lite': [yolo2lite_mobilenet_body, 87, None],
-
+    'yolo2_mobilenetv2': [yolo2_mobilenetv2_body, 155, None],
+    'yolo2_mobilenetv2_lite': [yolo2lite_mobilenetv2_body, 155, None],
+    'yolo2_xception': [yolo2_xception_body, 132, None],
+    'yolo2_xception_lite': [yolo2lite_xception_body, 132, None],
 }
 
 
