@@ -24,6 +24,15 @@ def darknet19_body():
         bottleneck_x2_block(1024, 512))
 
 
+def darknet19(inputs):
+    """Generate Darknet-19 model for Imagenet classification."""
+    body = darknet19_body()(inputs)
+    x = DarknetConv2D(1000, (1, 1))(body)
+    x = GlobalAveragePooling2D()(x)
+    logits = Softmax()(x)
+    return Model(inputs, logits)
+
+
 def yolo2_body(inputs, num_anchors, num_classes, weights_path=None):
     """Create YOLO_V2 model CNN body in Keras."""
     darknet19 = Model(inputs, darknet19_body()(inputs))
@@ -54,11 +63,33 @@ def yolo2_body(inputs, num_anchors, num_classes, weights_path=None):
     return Model(inputs, x)
 
 
-def darknet19(inputs):
-    """Generate Darknet-19 model for Imagenet classification."""
-    body = darknet19_body()(inputs)
-    x = DarknetConv2D(1000, (1, 1))(body)
-    x = GlobalAveragePooling2D()(x)
-    logits = Softmax()(x)
-    return Model(inputs, logits)
+
+def tiny_yolo2_body(inputs, num_anchors, num_classes):
+    '''Create Tiny YOLO_v2 model CNN body in keras.'''
+    x = compose(
+            DarknetConv2D_BN_Leaky(16, (3,3)),
+            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
+            DarknetConv2D_BN_Leaky(32, (3,3)),
+            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
+            DarknetConv2D_BN_Leaky(64, (3,3)),
+            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
+            DarknetConv2D_BN_Leaky(128, (3,3)),
+            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
+            DarknetConv2D_BN_Leaky(256, (3,3)),
+            MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
+            DarknetConv2D_BN_Leaky(512, (3,3)),
+            MaxPooling2D(pool_size=(2,2), strides=(1,1), padding='same'),
+            DarknetConv2D_BN_Leaky(1024, (3,3)))(inputs)
+
+    # TODO: darknet tiny YOLOv2 use different filter number for COCO and VOC
+    if num_classes == 80:
+        y = compose(
+                DarknetConv2D_BN_Leaky(512, (3,3)),
+                DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x)
+    else:
+        y = compose(
+                DarknetConv2D_BN_Leaky(1024, (3,3)),
+                DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x)
+
+    return Model(inputs, y)
 

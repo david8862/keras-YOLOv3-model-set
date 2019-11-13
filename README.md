@@ -1,4 +1,4 @@
-# TF Keras YOLO Modelset
+# TF Keras YOLOv3/v2 Modelset
 
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](LICENSE)
 
@@ -23,6 +23,7 @@ A common YOLOv3/v2 object detection pipeline implement with tf.keras. Including 
 - [x] Tiny YOLOv3 Lite
 - [x] YOLOv2
 - [x] YOLOv2 Lite
+- [x] Tiny YOLOv2
 
 #### Loss
 - [x] Standard YOLOv3 loss
@@ -59,7 +60,7 @@ A common YOLOv3/v2 object detection pipeline implement with tf.keras. Including 
 # pip install -r requirements.txt
 ```
 
-2. Download Darknet/YOLOv2/YOLOv3/YOLOv3-spp/Tiny YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
+2. Download Related Darknet/YOLOv2/YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
 3. Convert the Darknet YOLO model to a Keras model.
 4. Run YOLO detection on your image or video, default using Tiny YOLOv3 model.
 
@@ -71,12 +72,16 @@ A common YOLOv3/v2 object detection pipeline implement with tf.keras. Including 
 # wget -O weights/yolov3-spp.weights https://pjreddie.com/media/files/yolov3-spp.weights
 # wget -O weights/yolov2.weights http://pjreddie.com/media/files/yolo.weights
 # wget -O weights/yolov2-voc.weights http://pjreddie.com/media/files/yolo-voc.weights
+# wget -O weights/yolov2-tiny.weights https://pjreddie.com/media/files/yolov2-tiny.weights
+# wget -O weights/yolov2-tiny-voc.weights https://pjreddie.com/media/files/yolov2-tiny-voc.weights
 
 # python tools/convert.py cfg/yolov3.cfg weights/yolov3.weights weights/yolov3.h5
 # python tools/convert.py cfg/yolov3-tiny.cfg weights/yolov3-tiny.weights weights/yolov3-tiny.h5
 # python tools/convert.py cfg/yolov3-spp.cfg weights/yolov3-spp.weights weights/yolov3-spp.h5
 # python tools/convert.py cfg/yolov2.cfg weights/yolov2.weights weights/yolov2.h5
 # python tools/convert.py cfg/yolov2-voc.cfg weights/yolov2-voc.weights weights/yolov2-voc.h5
+# python tools/convert.py cfg/yolov2-tiny.cfg weights/yolov2-tiny.weights weights/yolov2-tiny.h5
+# python tools/convert.py cfg/yolov2-tiny-voc.cfg weights/yolov2-tiny-voc.weights weights/yolov2-tiny-voc.h5
 # python tools/convert.py cfg/darknet53.cfg weights/darknet53.conv.74.weights weights/darknet53.h5
 # python tools/convert.py cfg/darknet19_448_body.cfg weights/darknet19_448.conv.23.weights weights/darknet19.h5
 

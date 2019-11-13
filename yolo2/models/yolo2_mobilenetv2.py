@@ -65,3 +65,28 @@ def yolo2lite_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
     x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1))(x)
     return Model(inputs, x)
 
+
+def tiny_yolo2_mobilenetv2_body(inputs, num_anchors, num_classes):
+    """Create Tiny YOLO_V2 MobileNetV2 model CNN body in Keras."""
+    mobilenetv2 = MobileNetV2(input_tensor=inputs, weights='imagenet', include_top=False, alpha=1.0)
+
+    # input: 416 x 416 x 3
+    # mobilenetv2.output : 13 x 13 x 1280
+    y = compose(
+            DarknetConv2D_BN_Leaky(1280, (3,3)),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(mobilenetv2.output)
+
+    return Model(inputs, y)
+
+
+def tiny_yolo2lite_mobilenetv2_body(inputs, num_anchors, num_classes):
+    """Create Tiny YOLO_V2 Lite MobileNetV2 model CNN body in Keras."""
+    mobilenetv2 = MobileNetV2(input_tensor=inputs, weights='imagenet', include_top=False, alpha=1.0)
+
+    # input: 416 x 416 x 3
+    # mobilenetv2.output : 13 x 13 x 1280
+    y = compose(
+            Depthwise_Separable_Conv2D_BN_Leaky(1280, (3,3)),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(mobilenetv2.output)
+
+    return Model(inputs, y)

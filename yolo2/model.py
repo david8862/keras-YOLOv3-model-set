@@ -9,9 +9,9 @@ from tensorflow.keras.layers import Input, Lambda, Conv2D
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 
-from yolo2.models.yolo2_darknet import yolo2_body
-from yolo2.models.yolo2_mobilenet import yolo2_mobilenet_body, yolo2lite_mobilenet_body
-from yolo2.models.yolo2_mobilenetv2 import yolo2_mobilenetv2_body, yolo2lite_mobilenetv2_body
+from yolo2.models.yolo2_darknet import yolo2_body, tiny_yolo2_body
+from yolo2.models.yolo2_mobilenet import yolo2_mobilenet_body, yolo2lite_mobilenet_body, tiny_yolo2_mobilenet_body, tiny_yolo2lite_mobilenet_body
+from yolo2.models.yolo2_mobilenetv2 import yolo2_mobilenetv2_body, yolo2lite_mobilenetv2_body, tiny_yolo2_mobilenetv2_body, tiny_yolo2lite_mobilenetv2_body
 from yolo2.models.yolo2_xception import yolo2_xception_body, yolo2lite_xception_body
 from yolo2.loss import yolo2_loss
 from yolo2.postprocess import batched_yolo2_postprocess
@@ -32,6 +32,12 @@ yolo2_model_map = {
     'yolo2_mobilenetv2_lite': [yolo2lite_mobilenetv2_body, 155, None],
     'yolo2_xception': [yolo2_xception_body, 132, None],
     'yolo2_xception_lite': [yolo2lite_xception_body, 132, None],
+
+    'tiny_yolo2_darknet': [tiny_yolo2_body, 0, None],
+    'tiny_yolo2_mobilenet': [tiny_yolo2_mobilenet_body, 87, None],
+    'tiny_yolo2_mobilenet_lite': [tiny_yolo2lite_mobilenet_body, 87, None],
+    'tiny_yolo2_mobilenetv2': [tiny_yolo2_mobilenetv2_body, 155, None],
+    'tiny_yolo2_mobilenetv2_lite': [tiny_yolo2lite_mobilenetv2_body, 155, None],
 }
 
 
