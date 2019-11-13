@@ -33,7 +33,7 @@ def yolo2_xception_body(inputs, num_anchors, num_classes):
 
     x = Concatenate()([conv_head2_reshaped, conv_head1])
     x = DarknetConv2D_BN_Leaky(2048, (3, 3))(x)
-    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1))(x)
+    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1), name='predict_conv')(x)
     return Model(inputs, x)
 
 
@@ -61,6 +61,6 @@ def yolo2lite_xception_body(inputs, num_anchors, num_classes):
 
     x = Concatenate()([conv_head2_reshaped, conv_head1])
     x = Depthwise_Separable_Conv2D_BN_Leaky(2048, (3, 3))(x)
-    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1))(x)
+    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1), name='predict_conv')(x)
     return Model(inputs, x)
 

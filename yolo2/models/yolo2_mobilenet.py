@@ -34,7 +34,7 @@ def yolo2_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
 
     x = Concatenate()([conv_head2_reshaped, conv_head1])
     x = DarknetConv2D_BN_Leaky(int(1024*alpha), (3, 3))(x)
-    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1))(x)
+    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1), name='predict_conv')(x)
     return Model(inputs, x)
 
 
@@ -74,7 +74,7 @@ def tiny_yolo2_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     # mobilenet.output : 13 x 13 x (1024*alpha)
     y = compose(
             DarknetConv2D_BN_Leaky(int(1024*alpha), (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(mobilenet.output)
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv'))(mobilenet.output)
 
     return Model(inputs, y)
 
@@ -87,6 +87,6 @@ def tiny_yolo2lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     # mobilenet.output : 13 x 13 x (1024*alpha)
     y = compose(
             Depthwise_Separable_Conv2D_BN_Leaky(int(1024*alpha), (3,3), block_id_str='14'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(mobilenet.output)
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv'))(mobilenet.output)
 
     return Model(inputs, y)

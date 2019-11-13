@@ -85,11 +85,11 @@ def tiny_yolo2_body(inputs, num_anchors, num_classes):
     if num_classes == 80:
         y = compose(
                 DarknetConv2D_BN_Leaky(512, (3,3)),
-                DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x)
+                DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv'))(x)
     else:
         y = compose(
                 DarknetConv2D_BN_Leaky(1024, (3,3)),
-                DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x)
+                DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv'))(x)
 
     return Model(inputs, y)
 
