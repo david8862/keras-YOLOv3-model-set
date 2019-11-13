@@ -4,7 +4,7 @@
 
 ## Introduction
 
-A common YOLOv3/v2 object detection pipeline implement with tf.keras. Including data collection/annotation, model training/tuning, model evaluation and on device deployment. Support different architecture and different technologies, including:
+A common YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) and [allanzelener/YAD2K](https://github.com/allanzelener/YAD2K). Implement with tf.keras, including data collection/annotation, model training/tuning, model evaluation and on device deployment. Support different architecture and different technologies, including:
 
 #### Backbone
 - [x] Darknet53/Tiny Darknet
@@ -351,6 +351,12 @@ Please cite keras-YOLOv3-model-set in your publications if it helps your researc
      author={Redmon, Joseph and Farhadi, Ali},
      journal = {arXiv},
      year={2018}
+}
+@article{redmon2016yolo9000,
+  title={YOLO9000: Better, Faster, Stronger},
+  author={Redmon, Joseph and Farhadi, Ali},
+  journal={arXiv preprint arXiv:1612.08242},
+  year={2016}
 }
 @article{Focal Loss,
      title={Focal Loss for Dense Object Detection},
