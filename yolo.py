@@ -17,7 +17,7 @@ from tensorflow.keras.layers import Input, Lambda
 from tensorflow_model_optimization.sparsity import keras as sparsity
 from PIL import Image
 
-from yolo3.model import get_yolo3_model, get_yolo3_inference_model, get_yolo3_prenms_model
+from yolo3.model import get_yolo3_model, get_yolo3_inference_model#, get_yolo3_prenms_model
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo2.model import get_yolo2_model, get_yolo2_inference_model
 from yolo2.postprocess_np import yolo2_postprocess_np
