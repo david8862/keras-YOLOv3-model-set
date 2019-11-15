@@ -5,14 +5,13 @@
 //  Created by Xiaobin Zhang on 2019/09/20.
 //
 
-
-
 #include <fcntl.h>
 #include <getopt.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include <cstdarg>
 #include <cstdio>
@@ -27,6 +26,7 @@
 #include <unordered_set>
 #include <vector>
 #include <numeric>
+#include <algorithm>
 
 //#include "absl/memory/memory.h"
 //#include "tensorflow/lite/delegates/nnapi/nnapi_delegate.h"
@@ -221,6 +221,8 @@ void yolo_postprocess(const TfLiteTensor* feature_map, const int input_width, co
             }
         }
     }
+
+    return;
 }
 
 void parse_anchors(std::string line, std::vector<std::pair<float, float>>& anchors)
@@ -239,6 +241,12 @@ void parse_anchors(std::string line, std::vector<std::pair<float, float>>& ancho
     //
     // yolo2-voc_anchors.txt:
     // 1.3221,1.73145,  3.19275,4.00944,  5.05587,8.09892,  9.47112,4.84053,  11.2364,10.0071
+    //
+    // yolo2-tiny_anchors.txt:
+    // 0.57273, 0.677385, 1.87446, 2.06253, 3.33843, 5.47434, 7.88282, 3.52778, 9.77052, 9.16828
+    //
+    // yolo2-tiny-voc_anchors.txt
+    // 1.08,1.19,  3.42,4.41,  6.63,11.38,  9.42,5.11,  16.62,10.52
     size_t curr = 0, next = 0;
 
     while(next != std::string::npos) {
@@ -254,6 +262,8 @@ void parse_anchors(std::string line, std::vector<std::pair<float, float>>& ancho
         //get start of next anchor
         curr = next + 1;
     }
+
+    return;
 }
 
 
@@ -404,23 +414,77 @@ void nms_boxes(const std::vector<t_prediction> prediction_list, std::vector<t_pr
             prediction_nms_list.insert(prediction_nms_list.end(), class_pick_list.begin(), class_pick_list.end());
         }
     }
+
+    return;
 }
 
 
 void adjust_boxes(std::vector<t_prediction> &prediction_nms_list, int image_width, int image_height, int input_width, int input_height)
 {
-    // Rescale the final prediction back to original image
-    float scale_width = (float)(image_width-1) / (input_width-1);
-    float scale_height = (float)(image_height-1) / (input_height-1);
+    // Rescale the final prediction (letterboxed) back to original image
+    assert(input_width == input_height);
+
+    int square_dim = std::max(image_width, image_height);
+    float scale = float(square_dim) / float(input_width);
+    int x_offset, y_offset;
+
+    if ( image_width > image_height )
+    {
+        x_offset = 0;
+        y_offset = floor((image_width - image_height) / 2);
+    }
+    else
+    {
+        x_offset = floor((image_height - image_width) / 2);
+        y_offset = 0;
+    }
+
 
     for(auto &prediction_nms : prediction_nms_list) {
-        prediction_nms.x = prediction_nms.x * scale_width;
-        prediction_nms.y = prediction_nms.y * scale_height;
-        prediction_nms.width = prediction_nms.width * scale_width;
-        prediction_nms.height = prediction_nms.height * scale_height;
+        prediction_nms.x = prediction_nms.x * scale - x_offset;
+        prediction_nms.y = prediction_nms.y * scale - y_offset;
+        prediction_nms.width = prediction_nms.width * scale;
+        prediction_nms.height = prediction_nms.height * scale;
     }
+
+    return;
 }
 
+//Resize image with unchanged aspect ratio using padding
+uint8_t* letterbox_image(uint8_t* inputImage, int image_width, int image_height, int image_channel)
+{
+    // if input image is square, just return original
+    if (image_width == image_height) {
+        return inputImage;
+    }
+
+    int square_dim = std::max(image_width, image_height);
+    int x_offset, y_offset;
+
+    uint8_t* squareImage = (uint8_t*)malloc(square_dim * square_dim * image_channel * sizeof(uint8_t));
+
+    if ( image_width > image_height )
+    {
+        x_offset = 0;
+        y_offset = floor((image_width - image_height) / 2);
+    }
+    else
+    {
+        x_offset = floor((image_height - image_width) / 2);
+        y_offset = 0;
+    }
+
+    // paste input image into square image
+    for (int h = 0; h < image_height; h++) {
+        for (int w = 0; w < image_width; w++) {
+            for (int c = 0; c < image_channel; c++) {
+                squareImage[(h+y_offset)*square_dim*image_channel + (w+x_offset)*image_channel + c] = inputImage[h*image_width*image_channel + w*image_channel + c];
+            }
+        }
+    }
+
+    return squareImage;
+}
 
 void RunInference(Settings* s) {
   if (!s->model_name.c_str()) {
@@ -489,9 +553,20 @@ void RunInference(Settings* s) {
       LOG(FATAL) << "Can't open" << s->input_img_name << "\n";
       exit(-1);
   }
-  std::vector<uint8_t> in(input_image, input_image + image_width * image_height * image_channel * sizeof(uint8_t));
+
+  // pad input image to letterboxed for input resize
+  uint8_t* letterboxImage = letterbox_image(input_image, image_width, image_height, image_channel);
+  int square_dim = std::max(image_width, image_height);
+
+  std::vector<uint8_t> in(letterboxImage, letterboxImage + square_dim * square_dim * image_channel * sizeof(uint8_t));
+
   // free input image
   stbi_image_free(input_image);
+  if(letterboxImage != input_image) {
+      free(letterboxImage);
+  }
+  input_image = nullptr;
+  letterboxImage = nullptr;
 
   // assuming one input only
   int input = interpreter->inputs()[0];
@@ -514,18 +589,20 @@ void RunInference(Settings* s) {
                             << "height " << input_height << ", "
                             << "width " << input_width << ", "
                             << "channels " << input_channels << "\n";
+  // assume the model input is square
+  assert(input_width == input_height);
 
   // resize image to model input shape
   switch (interpreter->tensor(input)->type) {
     case kTfLiteFloat32:
       s->input_floating = true;
       resize<float>(interpreter->typed_tensor<float>(input), in.data(),
-                    image_height, image_width, image_channel, input_height,
+                    square_dim, square_dim, image_channel, input_height,
                     input_width, input_channels, s);
       break;
     case kTfLiteUInt8:
       resize<uint8_t>(interpreter->typed_tensor<uint8_t>(input), in.data(),
-                      image_height, image_width, image_channel, input_height,
+                      square_dim, square_dim, image_channel, input_height,
                       input_width, input_channels, s);
       break;
     default:
@@ -605,6 +682,8 @@ void RunInference(Settings* s) {
                 << "(" << int(prediction_nms.x) << ", " << int(prediction_nms.y) << ")"
                 << " (" << int(prediction_nms.x + prediction_nms.width) << ", " << int(prediction_nms.y + prediction_nms.height) << ")\n";
   }
+
+  return;
 }
 
 void display_usage() {
