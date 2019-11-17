@@ -28,15 +28,16 @@
 #include <numeric>
 #include <algorithm>
 
-//#include "absl/memory/memory.h"
-//#include "tensorflow/lite/delegates/nnapi/nnapi_delegate.h"
-//#include "tensorflow/lite/string_util.h"
-//#include "tensorflow/lite/tools/evaluation/utils.h"
+#include "tensorflow/lite/builtin_op_data.h"
+#include "tensorflow/lite/interpreter.h"
+#include "tensorflow/lite/kernels/register.h"
+#include "tensorflow/lite/string_util.h"
 
 #include "yoloDetection.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#include "resize_helpers.h"
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize.h"
 
 #define LOG(x) std::cerr
 
@@ -486,6 +487,34 @@ uint8_t* letterbox_image(uint8_t* inputImage, int image_width, int image_height,
     return squareImage;
 }
 
+
+template <class T>
+void resize(T* out, uint8_t* in, int image_width, int image_height,
+            int image_channels, int wanted_width, int wanted_height,
+            int wanted_channels, Settings* s) {
+  uint8_t* resized = (uint8_t*)malloc(wanted_height * wanted_width * wanted_channels * sizeof(uint8_t));
+  if (resized == nullptr) {
+      LOG(FATAL) << "Can't alloc memory" << "\n";
+      exit(-1);
+  }
+
+  stbir_resize_uint8(in, image_width, image_height, 0,
+                     resized, wanted_width, wanted_height, 0, wanted_channels);
+
+  auto output_number_of_pixels = wanted_height * wanted_width * wanted_channels;
+
+  for (int i = 0; i < output_number_of_pixels; i++) {
+    if (s->input_floating)
+      out[i] = (resized[i] - s->input_mean) / s->input_std;
+    else
+      out[i] = (uint8_t)resized[i];
+  }
+
+  free(resized);
+  return;
+}
+
+
 void RunInference(Settings* s) {
   if (!s->model_name.c_str()) {
     LOG(ERROR) << "no model file name\n";
@@ -597,13 +626,13 @@ void RunInference(Settings* s) {
     case kTfLiteFloat32:
       s->input_floating = true;
       resize<float>(interpreter->typed_tensor<float>(input), in.data(),
-                    square_dim, square_dim, image_channel, input_height,
-                    input_width, input_channels, s);
+                    square_dim, square_dim, image_channel, input_width,
+                    input_height, input_channels, s);
       break;
     case kTfLiteUInt8:
       resize<uint8_t>(interpreter->typed_tensor<uint8_t>(input), in.data(),
-                      square_dim, square_dim, image_channel, input_height,
-                      input_width, input_channels, s);
+                      square_dim, square_dim, image_channel, input_width,
+                      input_height, input_channels, s);
       break;
     default:
       LOG(FATAL) << "cannot handle input type "

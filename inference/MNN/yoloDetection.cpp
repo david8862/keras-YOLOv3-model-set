@@ -26,7 +26,8 @@
 #include "ErrorCode.hpp"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#include "stb_image_write.h"
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize.h"
 
 using namespace MNN;
 using namespace MNN::CV;
@@ -54,8 +55,8 @@ struct Settings {
   std::string input_img_name = "./dog.jpg";
   std::string classes_file_name = "./classes.txt";
   std::string anchors_file_name = "./yolo3_anchors.txt";
+  bool input_floating = false;
   //bool verbose = false;
-  //bool input_floating = false;
   //string input_layer_type = "uint8_t";
 };
 
@@ -565,6 +566,33 @@ uint8_t* letterbox_image(uint8_t* inputImage, int image_width, int image_height,
 }
 
 
+template <class T>
+void resize(T* out, uint8_t* in, int image_width, int image_height,
+            int image_channels, int input_width, int input_height,
+            int input_channels, Settings* s) {
+  uint8_t* resized = (uint8_t*)malloc(input_height * input_width * input_channels * sizeof(uint8_t));
+  if (resized == nullptr) {
+      MNN_PRINT("Can't alloc memory\n");
+      exit(-1);
+  }
+
+  stbir_resize_uint8(in, image_width, image_height, 0,
+                     resized, input_width, input_height, 0, input_channels);
+
+  auto output_number_of_pixels = input_height * input_width * input_channels;
+
+  for (int i = 0; i < output_number_of_pixels; i++) {
+    if (s->input_floating)
+      out[i] = (resized[i] - s->input_mean) / s->input_std;
+    else
+      out[i] = (uint8_t)resized[i];
+  }
+
+  free(resized);
+  return;
+}
+
+
 void RunInference(Settings* s) {
     // record run time for every stage
     struct timeval start_time, stop_time;
@@ -655,31 +683,17 @@ void RunInference(Settings* s) {
     letterboxImage = nullptr;
 
     MNN_PRINT("origin image size: width:%d, height:%d, channel:%d\n", image_width, image_height, image_channel);
-    Matrix trans;
-    trans.setScale((float)(square_dim-1) / (input_width-1), (float)(square_dim-1) / (input_height-1));
 
-    ImageProcess::Config pretreat_config;
-    pretreat_config.filterType = BILINEAR;
-
-    // normalize image input, In current training code we just do image/255.0
-    // so default mean=0, std=255. Change it if you use a different normalization
-    float input_normal = 1.0f / s->input_std;
-    float mean[3]     = {s->input_mean, s->input_mean, s->input_mean};
-    float normals[3] = {input_normal, input_normal, input_normal};
-
-    ::memcpy(pretreat_config.mean, mean, sizeof(mean));
-    ::memcpy(pretreat_config.normal, normals, sizeof(normals));
-    pretreat_config.sourceFormat = RGB;
-    pretreat_config.destFormat   = RGB;
-
-    std::shared_ptr<ImageProcess> pretreat(ImageProcess::create(pretreat_config));
-    pretreat->setMatrix(trans);
-    pretreat->convert((uint8_t*)(in.data()), square_dim, square_dim, 0, image_input);
+    // assume input tensor type is float
+    MNN_ASSERT(image_input->getType().code == halide_type_float);
+    s->input_floating = true;
 
     // run warm up session
     if (s->loop_count > 1)
         for (int i = 0; i < s->number_of_warmup_runs; i++) {
-            pretreat->convert((uint8_t*)(in.data()), square_dim, square_dim, 0, image_input);
+            resize<float>(image_input->host<float>(), in.data(),
+                square_dim, square_dim, image_channel, input_width,
+                input_height, input_channel, s);
             if (net->runSession(session) != NO_ERROR) {
                 MNN_PRINT("Failed to invoke MNN!\n");
             }
@@ -688,7 +702,9 @@ void RunInference(Settings* s) {
     // run model sessions to get output
     gettimeofday(&start_time, nullptr);
     for (int i = 0; i < s->loop_count; i++) {
-        pretreat->convert((uint8_t*)(in.data()), square_dim, square_dim, 0, image_input);
+        resize<float>(image_input->host<float>(), in.data(),
+            square_dim, square_dim, image_channel, input_width,
+            input_height, input_channel, s);
         if (net->runSession(session) != NO_ERROR) {
             MNN_PRINT("Failed to invoke MNN!\n");
         }
