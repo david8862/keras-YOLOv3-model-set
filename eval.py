@@ -9,7 +9,7 @@ import os, argparse
 from yolo3.postprocess_np import yolo3_postprocess_np, yolo3_head, yolo3_handle_predictions, yolo3_adjust_boxes
 from yolo2.postprocess_np import yolo2_postprocess_np, yolo2_head
 from common.data_utils import preprocess_image
-from common.utils import get_classes, get_anchors, get_colors, draw_boxes, touchdir, optimize_tf_gpu
+from common.utils import get_dataset, get_classes, get_anchors, get_colors, draw_boxes, touchdir, optimize_tf_gpu
 from PIL import Image
 import operator
 import matplotlib.pyplot as plt
@@ -23,9 +23,9 @@ import MNN
 optimize_tf_gpu(tf, KTF)
 
 
-def annotation_parse(annotation_file, class_names):
+def annotation_parse(annotation_lines, class_names):
     '''
-    parse annotation file to get image dict and ground truth class dict
+    parse annotation lines to get image dict and ground truth class dict
 
     image dict would be like:
     annotation_records = {
@@ -43,13 +43,6 @@ def annotation_parse(annotation_file, class_names):
         ...
     }
     '''
-    with open(annotation_file) as f:
-        annotation_lines = f.readlines()
-    # shuffle dataset
-    np.random.seed(10101)
-    np.random.shuffle(annotation_lines)
-    np.random.seed(None)
-
     annotation_records = {}
     classes_records = {class_name: [] for class_name in class_names}
 
@@ -202,7 +195,7 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
     return boxes, classes, scores
 
 
-def get_prediction_class_records(model_path, annotation_records, anchors, class_names, model_image_size, conf_threshold, save_result):
+def get_prediction_class_records(model, model_format, annotation_records, anchors, class_names, model_image_size, conf_threshold, save_result):
     '''
     Do the predict with YOLO model on annotation images to get predict class dict
 
@@ -217,19 +210,9 @@ def get_prediction_class_records(model_path, annotation_records, anchors, class_
         ...
     }
     '''
-
-    # support of tflite model
-    if model_path.endswith('.tflite'):
-        from tensorflow.lite.python import interpreter as interpreter_wrapper
-        interpreter = interpreter_wrapper.Interpreter(model_path=model_path)
-        interpreter.allocate_tensors()
-    # support of MNN model
-    elif model_path.endswith('.mnn'):
-        interpreter = MNN.Interpreter(model_path)
-        session = interpreter.createSession()
-    # normal keras h5 model
-    else:
-        model = load_model(model_path, compile=False)
+    if model_format == 'MNN':
+        #MNN inference engine need create session
+        session = model.createSession()
 
     pred_classes_records = {}
     for (image_name, gt_records) in annotation_records.items():
@@ -238,10 +221,10 @@ def get_prediction_class_records(model_path, annotation_records, anchors, class_
         image_data = preprocess_image(image, model_image_size)
         image_shape = image.size
 
-        if model_path.endswith('.tflite'):
-            pred_boxes, pred_classes, pred_scores = yolo_predict_tflite(interpreter, image, anchors, len(class_names), conf_threshold)
-        elif model_path.endswith('.mnn'):
-            pred_boxes, pred_classes, pred_scores = yolo_predict_mnn(interpreter, session, image, anchors, len(class_names), conf_threshold)
+        if model_format == 'TFLITE':
+            pred_boxes, pred_classes, pred_scores = yolo_predict_tflite(model, image, anchors, len(class_names), conf_threshold)
+        elif model_format == 'MNN':
+            pred_boxes, pred_classes, pred_scores = yolo_predict_mnn(model, session, image, anchors, len(class_names), conf_threshold)
         else:
             if len(anchors) == 5:
                 # YOLOv2 use 5 anchors
@@ -937,12 +920,12 @@ def get_scale_gt_dict(gt_classes_records, class_names):
 
 
 
-def eval_AP(eval_type, model_path, annotation_file, anchors, class_names, iou_threshold, conf_threshold, model_image_size, save_result):
+def eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, eval_type, iou_threshold, conf_threshold, save_result):
     '''
     Compute AP for detection model on annotation dataset
     '''
-    annotation_records, gt_classes_records = annotation_parse(annotation_file, class_names)
-    pred_classes_records = get_prediction_class_records(model_path, annotation_records, anchors, class_names, model_image_size, conf_threshold, save_result)
+    annotation_records, gt_classes_records = annotation_parse(annotation_lines, class_names)
+    pred_classes_records = get_prediction_class_records(model, model_format, annotation_records, anchors, class_names, model_image_size, conf_threshold, save_result)
 
     if eval_type == 'VOC':
         compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold)
@@ -954,6 +937,27 @@ def eval_AP(eval_type, model_path, annotation_file, anchors, class_names, iou_th
     else:
         raise ValueError('Unsupported evaluation type')
 
+
+def load_eval_model(model_path):
+
+    # support of tflite model
+    if model_path.endswith('.tflite'):
+        from tensorflow.lite.python import interpreter as interpreter_wrapper
+        model = interpreter_wrapper.Interpreter(model_path=model_path)
+        model.allocate_tensors()
+        model_format = 'TFLITE'
+
+    # support of MNN model
+    elif model_path.endswith('.mnn'):
+        model = MNN.Interpreter(model_path)
+        model_format = 'MNN'
+
+    # normal keras h5 model
+    else:
+        model = load_model(model_path, compile=False)
+        model_format = 'H5'
+
+    return model, model_format
 
 
 def main():
@@ -1007,7 +1011,10 @@ def main():
     height, width = args.model_image_size.split('x')
     model_image_size = (int(height), int(width))
 
-    eval_AP(args.eval_type, args.model_path, args.annotation_file, anchors, class_names, args.iou_threshold, args.conf_threshold, model_image_size, args.save_result)
+    annotation_lines = get_dataset(args.annotation_file)
+    model, model_format = load_eval_model(args.model_path)
+
+    eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, args.eval_type, args.iou_threshold, args.conf_threshold, args.save_result)
 
 
 if __name__ == '__main__':

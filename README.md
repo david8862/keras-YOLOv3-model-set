@@ -175,7 +175,8 @@ usage: train.py [-h] [--model_type MODEL_TYPE] [--anchors_path ANCHORS_PATH]
                 [--freeze_level FREEZE_LEVEL] [--total_epoch TOTAL_EPOCH]
                 [--multiscale] [--rescale_interval RESCALE_INTERVAL]
                 [--model_pruning] [--label_smoothing LABEL_SMOOTHING]
-                [--data_shuffle] [--gpu_num GPU_NUM]
+                [--data_shuffle] [--gpu_num GPU_NUM] [--eval_online]
+                [--eval_epoch_interval EVAL_EPOCH_INTERVAL]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -220,14 +221,24 @@ optional arguments:
   --rescale_interval RESCALE_INTERVAL
                         Number of iteration(batches) interval to rescale input
                         image, default=10
-  --model_pruning       Whether to use model pruning for optimization
+  --model_pruning       Use model pruning for optimization, only for TF 1.x
   --label_smoothing LABEL_SMOOTHING
                         Label smoothing factor (between 0 and 1) for
                         classification loss, default=0
   --data_shuffle        Whether to shuffle train/val data for cross-validation
   --gpu_num GPU_NUM     Number of GPU to use, default=1
+  --eval_online         Whether to do evaluation on validation dataset during
+                        training
+  --eval_epoch_interval EVAL_EPOCH_INTERVAL
+                        Number of iteration(epochs) interval to do evaluation,
+                        default=10
 ```
 Checkpoints during training could be found at logs/000/. Choose a best one as result
+
+You can also use Tensorboard to monitor the loss trend:
+```
+# tensorboard --logdir=logs/000
+```
 
 MultiGPU usage: use `--gpu_num N` to use N GPUs. It is passed to the [Keras multi_gpu_model()](https://keras.io/utils/#multi_gpu_model).
 
@@ -252,6 +263,8 @@ Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/ev
 ```
 # python eval.py --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.001 --annotation_file=2007_test.txt --save_result
 ```
+If you enable "--eval_online" option in train process, a default Pascal VOC mAP evaluation on validation dataset will be executed during training.
+
 
 Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalVOC dataset (using a reasonable score threshold=0.1):
 <p align="center">

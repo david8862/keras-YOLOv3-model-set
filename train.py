@@ -15,7 +15,7 @@ from yolo3.data import yolo3_data_generator_wrapper
 from yolo2.model import get_yolo2_train_model
 from yolo2.data import yolo2_data_generator_wrapper
 from common.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
-from common.model_utils import get_optimizer
+from common.model_utils import get_optimizer, EvalCallBack
 
 # Try to enable Auto Mixed Precision on TF 2.0
 os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '1'
@@ -152,6 +152,10 @@ def _main(args):
     else:
         raise ValueError('Unsupported anchors number')
 
+    # prepare online evaluation callback
+    if args.eval_online:
+        eval_callback = EvalCallBack(dataset[num_train:], anchors, class_names, args.model_image_size, eval_epoch_interval=args.eval_epoch_interval)
+        callbacks.append(eval_callback)
 
     # prepare model pruning config
     pruning_end_step = np.ceil(1.0 * num_train / args.batch_size).astype(np.int32) * args.total_epoch
@@ -194,7 +198,7 @@ def _main(args):
         callbacks.remove(reduce_lr)
         callbacks.append(lr_scheduler)
 
-    # Unfreeze the whole network for further training
+    # Unfreeze the whole network for further tuning
     # NOTE: more GPU memory is required after unfreezing the body
     print("Unfreeze and continue training, to fine-tune.")
     for i in range(len(model.layers)):
@@ -275,6 +279,12 @@ if __name__ == '__main__':
         help='Whether to shuffle train/val data for cross-validation')
     parser.add_argument('--gpu_num', type=int, required=False, default=1,
         help='Number of GPU to use, default=1')
+
+    # Evaluation options
+    parser.add_argument('--eval_online', default=False, action="store_true",
+        help='Whether to do evaluation on validation dataset during training')
+    parser.add_argument('--eval_epoch_interval', type=int, required=False, default=10,
+        help = "Number of iteration(epochs) interval to do evaluation, default=10")
 
     args = parser.parse_args()
     height, width = args.model_image_size.split('x')
