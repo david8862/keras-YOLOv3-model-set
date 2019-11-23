@@ -33,7 +33,7 @@ def yolo2_filter_boxes(boxes, box_confidence, box_class_probs, threshold=.6):
     return boxes, scores, classes
 
 
-def yolo2_head(feats, anchors, num_classes):
+def yolo2_head(feats, anchors, num_classes, input_shape):
     """Convert final layer features to bounding box parameters."""
     num_anchors = len(anchors)
     # Reshape to batch, height, width, num_anchors, box_params.
@@ -52,7 +52,8 @@ def yolo2_head(feats, anchors, num_classes):
 
     # Adjust preditions to each spatial grid point and anchor size.
     box_xy = (K.sigmoid(feats[..., :2]) + grid) / K.cast(grid_shape[::-1], K.dtype(feats))
-    box_wh = K.exp(feats[..., 2:4]) * anchors_tensor / K.cast(grid_shape[::-1], K.dtype(feats))
+    #box_wh = K.exp(feats[..., 2:4]) * anchors_tensor / K.cast(grid_shape[::-1], K.dtype(feats))
+    box_wh = K.exp(feats[..., 2:4]) * anchors_tensor / K.cast(input_shape[::-1], K.dtype(feats))
     box_confidence = K.sigmoid(feats[..., 4:5])
     box_class_probs = K.softmax(feats[..., 5:])
 
@@ -115,7 +116,7 @@ def yolo2_correct_boxes(box_xy, box_wh, input_shape, image_shape):
 def batched_yolo2_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape):
     '''Process Conv layer output'''
     box_xy, box_wh, box_confidence, box_class_probs = yolo2_head(feats,
-        anchors, num_classes)
+        anchors, num_classes, input_shape)
 
     num_anchors = len(anchors)
     grid_shape = K.shape(feats)[1:3] # height, width

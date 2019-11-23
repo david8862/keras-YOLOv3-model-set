@@ -47,16 +47,17 @@ def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_l
     """
     (yolo_output, true_boxes, detectors_mask, matching_true_boxes) = args
     num_anchors = len(anchors)
+    yolo_output_shape = K.shape(yolo_output)
+    input_shape = yolo_output_shape[1:3] * 32
     object_scale = 5
     no_object_scale = 1
     class_scale = 1
     coordinates_scale = 1
     pred_xy, pred_wh, pred_confidence, pred_class_prob = yolo2_head(
-        yolo_output, anchors, num_classes)
+        yolo_output, anchors, num_classes, input_shape)
 
     # Unadjusted box predictions for loss.
     # TODO: Remove extra computation shared with yolo2_head.
-    yolo_output_shape = K.shape(yolo_output)
     batch_size = yolo_output_shape[0] # batch size, tensor
     batch_size_f = K.cast(batch_size, K.dtype(yolo_output))
 

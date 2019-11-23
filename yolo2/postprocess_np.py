@@ -33,7 +33,7 @@ def yolo2_head(prediction, anchors, num_classes, input_dims):
     box_xy += x_y_offset
 
     # Log space transform of the height and width
-    #anchors = [(a[0] / stride, a[1] / stride) for a in anchors]
+    anchors = [(a[0] / stride, a[1] / stride) for a in anchors]
     anchors = np.tile(anchors, (grid_size * grid_size, 1))
     anchors = np.expand_dims(anchors, 0)
 

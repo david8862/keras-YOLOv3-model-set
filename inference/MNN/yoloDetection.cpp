@@ -228,18 +228,8 @@ void yolo_postprocess(const Tensor* feature_map, const int input_width, const in
 
                     float bbox_x = sigmoid(bytes[bbox_x_offset]) + w;
                     float bbox_y = sigmoid(bytes[bbox_y_offset]) + h;
-                    float bbox_w = 0.0;
-                    float bbox_h = 0.0;
-                    if(anchor_num_per_layer == 5) {
-                        // YOLOv2 use 5 anchors and have only 1 prediction layer
-                        // currently it's anchor value doesn't contain stride
-                        bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first;
-                        bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second;
-                    }
-                    else {
-                        bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first / stride;
-                        bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second / stride;
-                    }
+                    float bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first / stride;
+                    float bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second / stride;
                     float bbox_obj = sigmoid(bytes[bbox_obj_offset]);
 
                     // Transfer anchor coordinates

@@ -231,8 +231,8 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
             adjusted_box = np.array(
                 [
                     box[0] - j, box[1] - i,
-                    np.log(box[2] / anchors[best_anchor][0]),
-                    np.log(box[3] / anchors[best_anchor][1]), box_class
+                    np.log(box[2] / (anchors[best_anchor][0] / 32)),
+                    np.log(box[3] / (anchors[best_anchor][1] / 32)), box_class
                 ],
                 dtype=np.float32)
             matching_true_boxes[i, j, best_anchor] = adjusted_box

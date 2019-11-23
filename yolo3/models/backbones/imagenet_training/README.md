@@ -3,7 +3,7 @@
 This is a small submodule to train some tf.keras classification network with Imagenet2012 dataset
 
 ### Dataset prepare
-1. Download & extract Imagenet 2012 train/val/test dataset:
+1. Download & extract Imagenet 2012 train/val/test dataset (Update@2019.11.22: free download link is invalid now, may need to get the dataset with official website account):
 
 ```
 # mkdir data
@@ -19,14 +19,15 @@ This is a small submodule to train some tf.keras classification network with Ima
 
 It may cost some time since the dataset is quite large
 
-2. preprocess validation dataset to moves JPEG files into synset label dirs:
+2. preprocess train & validation dataset to moves JPEG files into synset label dirs:
 
 ```
 # cd imagenet_preprocess
+# python preprocess_imagenet_train_data.py --train_data_path=../data/ILSVRC2012_img_train
 # python preprocess_imagenet_validation_data.py ../data/ILSVRC2012_img_val imagenet_2012_validation_synset_labels.txt
 ```
 
-The script and synset labels file are from [tensorflow inception model](https://github.com/tensorflow/models/tree/master/research/inception/inception/data)
+The validation preprocess script and synset labels file are from [tensorflow inception model](https://github.com/tensorflow/models/tree/master/research/inception/inception/data)
 
 ### Train
 1. [train_imagenet.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo3/models/backbones/imagenet_training/train_imagenet.py)
