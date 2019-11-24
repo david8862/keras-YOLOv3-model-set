@@ -3,7 +3,6 @@
 """
 Retrain the YOLO model for your own dataset.
 """
-
 import os, random, argparse
 import numpy as np
 import tensorflow.keras.backend as K
@@ -154,7 +153,7 @@ def _main(args):
 
     # prepare online evaluation callback
     if args.eval_online:
-        eval_callback = EvalCallBack(dataset[num_train:], anchors, class_names, args.model_image_size, eval_epoch_interval=args.eval_epoch_interval)
+        eval_callback = EvalCallBack(dataset[num_train:], anchors, class_names, args.model_image_size, log_dir, eval_epoch_interval=args.eval_epoch_interval, save_eval_checkpoint=args.save_eval_checkpoint)
         callbacks.append(eval_callback)
 
     # prepare model pruning config
@@ -178,8 +177,8 @@ def _main(args):
     # Transfer training some epochs with frozen layers first if needed, to get a stable loss.
     input_shape = args.model_image_size
     assert (input_shape[0]%32 == 0 and input_shape[1]%32 == 0), 'Multiples of 32 required'
-    initial_epoch = 0
-    epochs = args.transfer_epoch
+    initial_epoch = args.init_epoch
+    epochs = initial_epoch + args.transfer_epoch
     print("Transfer training stage")
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, args.batch_size, input_shape))
     model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes),
@@ -265,6 +264,8 @@ if __name__ == '__main__':
         help = "Transfer training stage epochs, default=20")
     parser.add_argument('--freeze_level', type=int,required=False, default=None,
         help = "Freeze level of the model in transfer training stage. 0:NA/1:backbone/2:only open prediction layer")
+    parser.add_argument('--init_epoch', type=int,required=False, default=0,
+        help = "Initial training epochs for fine tune training, default=0")
     parser.add_argument('--total_epoch', type=int,required=False, default=250,
         help = "Total training epochs, default=250")
     parser.add_argument('--multiscale', default=False, action="store_true",
@@ -285,6 +286,8 @@ if __name__ == '__main__':
         help='Whether to do evaluation on validation dataset during training')
     parser.add_argument('--eval_epoch_interval', type=int, required=False, default=10,
         help = "Number of iteration(epochs) interval to do evaluation, default=10")
+    parser.add_argument('--save_eval_checkpoint', default=False, action="store_true",
+        help='Whether to save checkpoint with best evaluation result')
 
     args = parser.parse_args()
     height, width = args.model_image_size.split('x')

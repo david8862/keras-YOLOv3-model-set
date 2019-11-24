@@ -76,9 +76,8 @@ def get_yolo2_train_model(model_type, anchors, num_classes, weights_path=None, f
 
     # input boxes in form of relative x, y, w, h, class
     boxes_input = Input(shape=(None, 5))
-    detectors_mask_input = Input(shape=(None, None, num_anchors, 1))
-    matching_boxes_input = Input(shape=(None, None, num_anchors, 5))
-
+    # y_true in form of relative x, y, w, h, objectness, class
+    y_true_input = Input(shape=(None, None, num_anchors, 6))
 
     model_body, backbone_len = get_yolo2_model(model_type, num_anchors, num_classes, model_pruning=model_pruning, pruning_end_step=pruning_end_step)
     print('Create YOLOv2 {} model with {} anchors and {} classes.'.format(model_type, num_anchors, num_classes))
@@ -101,9 +100,9 @@ def get_yolo2_train_model(model_type, anchors, num_classes, weights_path=None, f
 
     model_loss, location_loss, confidence_loss, class_loss = Lambda(yolo2_loss, name='yolo_loss',
             arguments={'anchors': anchors, 'num_classes': num_classes, 'label_smoothing': label_smoothing})(
-            [model_body.output, boxes_input, detectors_mask_input, matching_boxes_input])
+            [model_body.output, boxes_input, y_true_input])
 
-    model = Model([model_body.input, boxes_input, detectors_mask_input, matching_boxes_input], model_loss)
+    model = Model([model_body.input, boxes_input, y_true_input], model_loss)
 
     model.compile(optimizer=optimizer, loss={
         # use custom yolo_loss Lambda layer.

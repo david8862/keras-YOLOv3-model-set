@@ -419,13 +419,11 @@ void adjust_boxes(std::vector<t_prediction> &prediction_nms_list, int image_widt
     float scale = float(square_dim) / float(input_width);
     int x_offset, y_offset;
 
-    if ( image_width > image_height )
-    {
+    if ( image_width > image_height ) {
         x_offset = 0;
         y_offset = floor((image_width - image_height) / 2);
     }
-    else
-    {
+    else {
         x_offset = floor((image_height - image_width) / 2);
         y_offset = 0;
     }
@@ -454,13 +452,11 @@ uint8_t* letterbox_image(uint8_t* inputImage, int image_width, int image_height,
 
     uint8_t* squareImage = (uint8_t*)malloc(square_dim * square_dim * image_channel * sizeof(uint8_t));
 
-    if ( image_width > image_height )
-    {
+    if ( image_width > image_height ) {
         x_offset = 0;
         y_offset = floor((image_width - image_height) / 2);
     }
-    else
-    {
+    else {
         x_offset = floor((image_height - image_width) / 2);
         y_offset = 0;
     }

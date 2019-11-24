@@ -1,10 +1,9 @@
 #!/usr/bin/python3
 # -*- coding=utf-8 -*-
 """training data generation functions."""
-
-from PIL import Image
 import numpy as np
 import random, math
+from PIL import Image
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 from tensorflow.keras.utils import Sequence
 from common.utils import get_multiscale_list
@@ -119,45 +118,6 @@ def get_random_data(annotation_line, input_shape, random=True, max_boxes=20, jit
     return image_data, box_data
 
 
-def process_data(images, input_shape, boxes=None):
-    '''processes the data'''
-    images = [Image.fromarray(i) for i in images]
-    orig_sizes = [np.array([i.width, i.height]) for i in images]
-
-    # Image preprocessing.
-    processed_images = [i.resize(input_shape, Image.BICUBIC) for i in images]
-    processed_images = [np.array(image, dtype=np.float) for image in processed_images]
-    processed_images = [image/255. for image in processed_images]
-
-    if boxes is not None:
-        # Box preprocessing.
-        # Original boxes stored as 1D list of x_min, y_min, x_max, y_max, class.
-        boxes = [box.reshape((-1, 5)) for box in boxes]
-
-        # Get box parameters as x_center, y_center, box_width, box_height, class.
-        boxes_xy = [0.5 * (box[:, 0:2] + box[:, 2:4]) for box in boxes]
-        boxes_wh = [box[:, 2:4] - box[:, 0:2] for box in boxes]
-        boxes_xy = [box_xy / orig_sizes[i] for i, box_xy in enumerate(boxes_xy)]
-        boxes_wh = [box_wh / orig_sizes[i] for i, box_wh in enumerate(boxes_wh)]
-        boxes = [np.concatenate((boxes_xy[i], boxes_wh[i], box[:, 4:5]), axis=1) for i, box in enumerate(boxes)]
-
-        # find the max number of boxes
-        max_boxes = 0
-        for boxz in boxes:
-            if boxz.shape[0] > max_boxes:
-                max_boxes = boxz.shape[0]
-
-        # add zero pad for training
-        for i, boxz in enumerate(boxes):
-            if boxz.shape[0]  < max_boxes:
-                zero_padding = np.zeros( (max_boxes-boxz.shape[0], 5), dtype=np.float32)
-                boxes[i] = np.vstack((boxz, zero_padding))
-
-        return np.array(processed_images), np.array(boxes)
-    else:
-        return np.array(processed_images)
-
-
 def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
     """Find detector in YOLO where ground truth box should appear.
 
@@ -173,15 +133,14 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
         is the spatial dimension of the final convolutional features.
     input_shape : array-like
         List of model input image dimensions in form of h, w in pixels.
+    num_classes : scalar
+        Number of train classes
 
     Returns
     -------
-    detectors_mask : array
-        0/1 mask for detectors in [conv_height, conv_width, num_anchors, 1]
-        that should be compared with a matching ground truth box.
-    matching_true_boxes: array
-        Same shape as detectors_mask with the corresponding ground truth box
-        adjusted for comparison with predicted parameters at training time.
+    y_true: array
+        y_true feature map array with shape [conv_height, conv_width, num_anchors, 6]
+        in form of relative x, y, w, h, objectness, class
     """
     assert (true_boxes[..., 4]<num_classes).all(), 'class id must be less than num_classes'
     height, width = input_shape
@@ -193,10 +152,8 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
     conv_height = height // 32
     conv_width = width // 32
     num_box_params = true_boxes.shape[1]
-    detectors_mask = np.zeros(
-        (conv_height, conv_width, num_anchors, 1), dtype=np.float32)
-    matching_true_boxes = np.zeros(
-        (conv_height, conv_width, num_anchors, num_box_params),
+    y_true = np.zeros(
+        (conv_height, conv_width, num_anchors, num_box_params+1),
         dtype=np.float32)
 
     for box in true_boxes:
@@ -226,33 +183,32 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
                 best_iou = iou
                 best_anchor = k
 
+        # Got best anchor and assign to true box
         if best_iou > 0:
-            detectors_mask[i, j, best_anchor] = 1
             adjusted_box = np.array(
                 [
                     box[0] - j, box[1] - i,
                     np.log(box[2] / (anchors[best_anchor][0] / 32)),
-                    np.log(box[3] / (anchors[best_anchor][1] / 32)), box_class
+                    np.log(box[3] / (anchors[best_anchor][1] / 32)),
+                    1,
+                    box_class
                 ],
                 dtype=np.float32)
-            matching_true_boxes[i, j, best_anchor] = adjusted_box
-    return detectors_mask, matching_true_boxes
+            y_true[i, j, best_anchor] = adjusted_box
+    return y_true
 
 
-def get_detector_mask(boxes, anchors, input_shape, num_classes):
+def get_y_true_data(box_data, anchors, input_shape, num_classes):
     '''
-    Precompute detectors_mask and matching_true_boxes for training.
-    Detectors mask is 1 for each spatial position in the final conv layer and
-    anchor that should be active for the given boxes and 0 otherwise.
-    Matching true boxes gives the regression targets for the ground truth box
-    that caused a detector to be active or 0 otherwise.
+    Precompute y_true feature map data on a batch for training.
+    y_true feature map array gives the regression targets for the ground truth
+    box with shape [conv_height, conv_width, num_anchors, 6]
     '''
-    detectors_mask = [0 for i in range(len(boxes))]
-    matching_true_boxes = [0 for i in range(len(boxes))]
-    for i, box in enumerate(boxes):
-        detectors_mask[i], matching_true_boxes[i] = preprocess_true_boxes(box, anchors, input_shape, num_classes)
+    y_true_data = [0 for i in range(len(box_data))]
+    for i, boxes in enumerate(box_data):
+        y_true_data[i] = preprocess_true_boxes(boxes, anchors, input_shape, num_classes)
 
-    return np.array(detectors_mask), np.array(matching_true_boxes)
+    return np.array(y_true_data)
 
 
 class Yolo2DataGenerator(Sequence):
@@ -296,9 +252,9 @@ class Yolo2DataGenerator(Sequence):
             box_data.append(box)
         image_data = np.array(image_data)
         box_data = np.array(box_data)
-        detectors_mask, matching_true_boxes = get_detector_mask(box_data, self.anchors, self.input_shape, self.num_classes)
+        y_true_data = get_y_true_data(box_data, self.anchors, self.input_shape, self.num_classes)
 
-        return [image_data, box_data, detectors_mask, matching_true_boxes], np.zeros(self.batch_size)
+        return [image_data, box_data, y_true_data], np.zeros(self.batch_size)
 
     def on_epoch_end(self):
         # shuffle annotation data on epoch end
@@ -325,21 +281,15 @@ def yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num
         for b in range(batch_size):
             if i==0:
                 np.random.shuffle(annotation_lines)
-
             image, box = get_random_data(annotation_lines[i], input_shape, random=True)
-            #line = annotation_lines[i].split()
-            #image = np.array(Image.open(line[0]))
-            #box = np.array([np.array(list(map(int,box.split(',')))) for box in line[1:]])
-
             image_data.append(image)
             box_data.append(box)
             i = (i+1) % n
         image_data = np.array(image_data)
         box_data = np.array(box_data)
-        #image_data, box_data = process_data(image_data, input_shape, box_data)
-        detectors_mask, matching_true_boxes = get_detector_mask(box_data, anchors, input_shape, num_classes)
+        y_true_data = get_y_true_data(box_data, anchors, input_shape, num_classes)
 
-        yield [image_data, box_data, detectors_mask, matching_true_boxes], np.zeros(batch_size)
+        yield [image_data, box_data, y_true_data], np.zeros(batch_size)
 
 
 def yolo2_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval=-1):

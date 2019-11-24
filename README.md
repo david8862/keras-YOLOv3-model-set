@@ -172,11 +172,13 @@ usage: train.py [-h] [--model_type MODEL_TYPE] [--anchors_path ANCHORS_PATH]
                 [--batch_size BATCH_SIZE] [--optimizer OPTIMIZER]
                 [--learning_rate LEARNING_RATE] [--cosine_decay_learning_rate]
                 [--transfer_epoch TRANSFER_EPOCH]
-                [--freeze_level FREEZE_LEVEL] [--total_epoch TOTAL_EPOCH]
-                [--multiscale] [--rescale_interval RESCALE_INTERVAL]
-                [--model_pruning] [--label_smoothing LABEL_SMOOTHING]
-                [--data_shuffle] [--gpu_num GPU_NUM] [--eval_online]
+                [--freeze_level FREEZE_LEVEL] [--init_epoch INIT_EPOCH]
+                [--total_epoch TOTAL_EPOCH] [--multiscale]
+                [--rescale_interval RESCALE_INTERVAL] [--model_pruning]
+                [--label_smoothing LABEL_SMOOTHING] [--data_shuffle]
+                [--gpu_num GPU_NUM] [--eval_online]
                 [--eval_epoch_interval EVAL_EPOCH_INTERVAL]
+                [--save_eval_checkpoint]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -215,6 +217,9 @@ optional arguments:
   --freeze_level FREEZE_LEVEL
                         Freeze level of the model in transfer training stage.
                         0:NA/1:backbone/2:only open prediction layer
+  --init_epoch INIT_EPOCH
+                        Initial training epochs for fine tune training,
+                        default=0
   --total_epoch TOTAL_EPOCH
                         Total training epochs, default=250
   --multiscale          Whether to use multiscale training
@@ -232,6 +237,8 @@ optional arguments:
   --eval_epoch_interval EVAL_EPOCH_INTERVAL
                         Number of iteration(epochs) interval to do evaluation,
                         default=10
+  --save_eval_checkpoint
+                        Whether to save checkpoint with best evaluation result
 ```
 Checkpoints during training could be found at logs/000/. Choose a best one as result
 
@@ -263,7 +270,9 @@ Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/ev
 ```
 # python eval.py --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.001 --annotation_file=2007_test.txt --save_result
 ```
-If you enable "--eval_online" option in train process, a default Pascal VOC mAP evaluation on validation dataset will be executed during training.
+
+
+If you enable "--eval_online" option in train.py, a default Pascal VOC mAP evaluation on validation dataset will be executed during training. But that may cost more time for train process.
 
 
 Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalVOC dataset (using a reasonable score threshold=0.1):

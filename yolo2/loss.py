@@ -22,12 +22,8 @@ def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_l
         Ground truth boxes tensor with shape [batch, num_true_boxes, 5]
         containing box x_center, y_center, width, height, and class.
 
-    detectors_mask : array
-        0/1 mask for detector positions where there is a matching ground truth.
-
-    matching_true_boxes : array
-        Corresponding ground truth boxes for positive detector positions.
-        Already adjusted for conv height and width.
+    y_true : array
+        output of preprocess_true_boxes, with shape [conv_height, conv_width, num_anchors, 6]
 
     anchors : tensor
         Anchor boxes for model.
@@ -42,10 +38,10 @@ def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_l
 
     Returns
     -------
-    mean_loss : float
-        mean localization loss across minibatch
+    total_loss : float
+        total mean YOLOv2 loss across minibatch
     """
-    (yolo_output, true_boxes, detectors_mask, matching_true_boxes) = args
+    (yolo_output, true_boxes, y_true) = args
     num_anchors = len(anchors)
     yolo_output_shape = K.shape(yolo_output)
     input_shape = yolo_output_shape[1:3] * 32
@@ -53,6 +49,7 @@ def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_l
     no_object_scale = 1
     class_scale = 1
     coordinates_scale = 1
+    object_mask = y_true[..., 4:5]
     pred_xy, pred_wh, pred_confidence, pred_class_prob = yolo2_head(
         yolo_output, anchors, num_classes, input_shape)
 
@@ -118,46 +115,46 @@ def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_l
     # Determine confidence weights from object and no_object weights.
     # NOTE: YOLOv2 does not use binary cross-entropy. Here we try it.
     no_object_weights = (no_object_scale * (1 - object_detections) *
-                         (1 - detectors_mask))
+                         (1 - object_mask))
     if use_crossentropy_obj_loss:
         no_objects_loss = no_object_weights * K.binary_crossentropy(K.zeros(K.shape(pred_confidence)), pred_confidence, from_logits=False)
 
         if rescore_confidence:
-            objects_loss = (object_scale * detectors_mask *
+            objects_loss = (object_scale * object_mask *
                             K.binary_crossentropy(best_ious, pred_confidence, from_logits=False))
         else:
-            objects_loss = (object_scale * detectors_mask *
+            objects_loss = (object_scale * object_mask *
                             K.binary_crossentropy(K.ones(K.shape(pred_confidence)), pred_confidence, from_logits=False))
     else:
         no_objects_loss = no_object_weights * K.square(-pred_confidence)
 
         if rescore_confidence:
-            objects_loss = (object_scale * detectors_mask *
+            objects_loss = (object_scale * object_mask *
                             K.square(best_ious - pred_confidence))
         else:
-            objects_loss = (object_scale * detectors_mask *
+            objects_loss = (object_scale * object_mask *
                             K.square(1 - pred_confidence))
     confidence_loss = objects_loss + no_objects_loss
 
     # Classification loss for matching detections.
     # NOTE: YOLOv2 does not use categorical cross-entropy loss.
     #       Here we try it.
-    matching_classes = K.cast(matching_true_boxes[..., 4], 'int32')
+    matching_classes = K.cast(y_true[..., 5], 'int32')
     matching_classes = K.one_hot(matching_classes, num_classes)
 
     if label_smoothing:
         matching_classes = _smooth_labels(matching_classes, label_smoothing)
 
     if use_crossentropy_loss:
-        classification_loss = (class_scale * detectors_mask *
+        classification_loss = (class_scale * object_mask *
                            K.expand_dims(K.categorical_crossentropy(matching_classes, pred_class_prob, from_logits=False), axis=-1))
     else:
-        classification_loss = (class_scale * detectors_mask *
+        classification_loss = (class_scale * object_mask *
                            K.square(matching_classes - pred_class_prob))
 
     # Coordinate loss for matching detection boxes.
-    matching_boxes = matching_true_boxes[..., 0:4]
-    coordinates_loss = (coordinates_scale * detectors_mask *
+    matching_boxes = y_true[..., 0:4]
+    coordinates_loss = (coordinates_scale * object_mask *
                         K.square(matching_boxes - pred_boxes))
 
     confidence_loss_sum = K.sum(confidence_loss) / batch_size_f
