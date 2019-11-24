@@ -4,7 +4,7 @@
 
 ## Introduction
 
-A common YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) and [allanzelener/YAD2K](https://github.com/allanzelener/YAD2K). Implement with tf.keras, including data collection/annotation, model training/tuning, model evaluation and on device deployment. Support different architecture and different technologies, including:
+A common YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) and [allanzelener/YAD2K](https://github.com/allanzelener/YAD2K). Implement with tf.keras, including data collection/annotation, model training/tuning, model evaluation and on device deployment. Support different architecture and different technologies:
 
 #### Backbone
 - [x] Darknet53/Tiny Darknet
@@ -142,7 +142,7 @@ For other model, just do in a similar way, but specify different model path and 
        ```
        # cd tools && python coco_annotation.py -h
        usage: coco_annotation.py [-h] [--dataset_path DATASET_PATH]
-                                 [--output_path OUTPUT_PATH]
+                                 [--output_path OUTPUT_PATH] [--include_no_obj]
 
        optional arguments:
          -h, --help            show this help message and exit
@@ -151,6 +151,7 @@ For other model, just do in a similar way, but specify different model path and 
          --output_path OUTPUT_PATH
                                output path for generated annotation txt files,
                                default is ./
+         --include_no_obj      to include no object image
        ```
        This script will try to convert COCO instances_train2017 and instances_val2017 under dataset_path. You can change the code for your dataset
 
