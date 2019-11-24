@@ -60,9 +60,6 @@ def get_optimizer(optim_type, learning_rate, decay=0):
     return optimizer
 
 
-# Global value to record best mAP
-best_mAP = 0
-
 class EvalCallBack(Callback):
     def __init__(self, annotation_lines, anchors, class_names, model_image_size, log_dir, eval_epoch_interval=10, save_eval_checkpoint=False):
         self.annotation_lines = annotation_lines
@@ -72,6 +69,7 @@ class EvalCallBack(Callback):
         self.log_dir = log_dir
         self.eval_epoch_interval = eval_epoch_interval
         self.save_eval_checkpoint = save_eval_checkpoint
+        self.best_mAP = 0.0
 
     def get_eval_model(self, model):
         # We strip the extra layers in training model to get eval model
@@ -103,12 +101,12 @@ class EvalCallBack(Callback):
 
 
     def on_epoch_end(self, epoch, logs=None):
-        if epoch % self.eval_epoch_interval == 0:
+        if (epoch+1) % self.eval_epoch_interval == 0:
             # Do eval every eval_epoch_interval epochs
             eval_model = self.get_eval_model(self.model)
             mAP = eval_AP(eval_model, 'H5', self.annotation_lines, self.anchors, self.class_names, self.model_image_size, eval_type='VOC', iou_threshold=0.5, conf_threshold=0.001, save_result=False)
-            if self.save_eval_checkpoint and mAP > best_mAP:
+            if self.save_eval_checkpoint and mAP > self.best_mAP:
                 # Save best mAP value and model checkpoint
-                best_mAP = mAP
-                self.model.save(self.log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}-mAP{mAP:.3f}.h5'.format(epoch=epoch, loss=logs.get('loss'), val_loss=logs.get('val_loss'), mAP=mAP))
+                self.best_mAP = mAP
+                self.model.save(self.log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}-mAP{mAP:.3f}.h5'.format(epoch=(epoch+1), loss=logs.get('loss'), val_loss=logs.get('val_loss'), mAP=mAP))
 

@@ -926,16 +926,19 @@ def eval_AP(model, model_format, annotation_lines, anchors, class_names, model_i
     '''
     annotation_records, gt_classes_records = annotation_parse(annotation_lines, class_names)
     pred_classes_records = get_prediction_class_records(model, model_format, annotation_records, anchors, class_names, model_image_size, conf_threshold, save_result)
+    AP = 0.0
 
     if eval_type == 'VOC':
-        compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold)
+        AP = compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold)
     elif eval_type == 'COCO':
-        compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names)
+        AP = compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names)
         # get AP for different scale: small, medium, large
         scale_gt_classes_records = get_scale_gt_dict(gt_classes_records, class_names)
         compute_AP_COCO_Scale(annotation_records, scale_gt_classes_records, pred_classes_records, class_names)
     else:
         raise ValueError('Unsupported evaluation type')
+
+    return AP
 
 
 def load_eval_model(model_path):
