@@ -240,7 +240,7 @@ def yolo3_nano_body(inputs, num_anchors, num_classes, weights_path=None):
 
 def NanoNet(input_shape=None, input_tensor=None, include_top=True, weights=None, classes=1000):
     """Generate nano net model for Imagenet classification."""
-    input_shape = _obtain_input_shape(input_shape, default_size=224, min_size=28, require_flatten=include_top, data_format=K.image_data_format())
+    input_shape = _obtain_input_shape(input_shape, default_size=416, min_size=28, require_flatten=include_top, data_format=K.image_data_format())
 
     if input_tensor is None:
         img_input = Input(shape=input_shape)
@@ -248,11 +248,14 @@ def NanoNet(input_shape=None, input_tensor=None, include_top=True, weights=None,
         img_input = input_tensor
 
     body_out = nano_net_body(img_input)
-    x = DarknetConv2D(classes, (1, 1))(body_out)
-    x = GlobalAveragePooling2D()(x)
-    logits = Softmax()(x)
 
-    model = Model(img_input, logits, name='nano_net')
+    if include_top:
+        x = DarknetConv2D(classes, (1, 1))(body_out)
+        x = GlobalAveragePooling2D()(x)
+        logits = Softmax()(x)
+        model = Model(img_input, logits, name='nano_net')
+    else:
+        model = Model(img_input, body_out, name='nano_net_headless')
 
     if weights is not None:
         model.load_weights(weights)

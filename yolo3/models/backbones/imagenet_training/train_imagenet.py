@@ -50,23 +50,28 @@ def preprocess(x):
             will normalize each channel with respect to the
             ImageNet dataset.
     """
-    x = preprocess_input(x, mode='tf')
-    #x /= 255.0
-    #x -= 0.5
-    #x *= 2.0
+    #x = preprocess_input(x, mode='tf')
+    x /= 255.0
+    x -= 0.5
+    x *= 2.0
     return x
 
 
-def get_model(model_type):
+def get_model(model_type, include_top=True):
     if model_type == 'shufflenet':
-        model = ShuffleNet(groups=3, weights=None)
+        input_shape = (224, 224, 3)
+        model = ShuffleNet(groups=3, weights=None, include_top=include_top)
     elif model_type == 'shufflenet_v2':
-        model = ShuffleNetV2(bottleneck_ratio=1, weights=None)
+        input_shape = (224, 224, 3)
+        model = ShuffleNetV2(bottleneck_ratio=1, weights=None, include_top=include_top)
     elif model_type == 'nanonet':
-        model = NanoNet(input_shape=(224, 224, 3), weights=None)
+        input_shape = (416, 416, 3)
+        # NanoNet doesn't support dynamic input shape (fcs_block has Dense layer),
+        # so we need to specify input_shape here
+        model = NanoNet(input_shape=input_shape, weights=None, include_top=include_top)
     else:
         raise ValueError('Unsupported model type')
-    return model
+    return model, input_shape
 
 
 def get_optimizer(optim_type, learning_rate):
@@ -81,17 +86,8 @@ def get_optimizer(optim_type, learning_rate):
     return optimizer
 
 
-def main(args):
+def train(args, model, input_shape):
     log_dir = 'logs/'
-
-    # prepare model
-    model = get_model(args.model_type)
-    if args.weights_path:
-        model.load_weights(args.weights_path, by_name=True)
-    # support multi-gpu training
-    if args.gpu_num >= 2:
-        model = multi_gpu_model(model, gpus=args.gpu_num)
-    model.summary()
 
     # callbacks for training process
     checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-val_loss{val_loss:.3f}-val_acc{val_acc:.3f}-val_top_k_categorical_accuracy{val_top_k_categorical_accuracy:.3f}.h5',
@@ -120,12 +116,12 @@ def main(args):
 
     train_generator = train_datagen.flow_from_directory(
             args.train_data_path,
-            target_size=(224, 224),
+            target_size=input_shape,
             batch_size=args.batch_size)
 
     test_generator = test_datagen.flow_from_directory(
             args.val_data_path,
-            target_size=(224, 224),
+            target_size=input_shape,
             batch_size=args.batch_size)
 
     # get optimizer
@@ -154,13 +150,55 @@ def main(args):
 
 
 
+def verify_with_image(model, input_shape):
+    from tensorflow.keras.applications.resnet50 import decode_predictions
+    from PIL import Image
+    while True:
+        img_file = input('Input image filename:')
+        try:
+            img = Image.open(img_file)
+            resized_img = img.resize(input_shape[:2], Image.BICUBIC)
+        except:
+            print('Open Error! Try again!')
+            continue
+        else:
+            img_array = np.asarray(resized_img).astype('float32')
+            x = preprocess(img_array)
+            preds = model.predict(x)
+            print('Predict result:', decode_predictions(preds))
+            img.show()
+
+
+def main(args):
+    include_top = True
+    if args.dump_headless:
+        include_top = False
+
+    # prepare model
+    model, input_shape = get_model(args.model_type, include_top=include_top)
+    if args.weights_path:
+        model.load_weights(args.weights_path, by_name=True)
+    # support multi-gpu training
+    if args.gpu_num >= 2:
+        model = multi_gpu_model(model, gpus=args.gpu_num)
+    model.summary()
+
+    if args.verify_with_image:
+        verify_with_image(model, input_shape)
+    elif args.dump_headless:
+        model.save(args.output_model_file)
+        print('export headless model to %s' % str(args.output_model_file))
+    else:
+        train(args, model, input_shape)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_type', type=str, required=False, default='shufflenet_v2',
         help='backbone model type: shufflenet/shufflenet_v2/nanonet, default=shufflenet_v2')
-    parser.add_argument('--train_data_path', type=str, required=True,
+    parser.add_argument('--train_data_path', type=str,# required=True,
         help='path to Imagenet train data')
-    parser.add_argument('--val_data_path', type=str, required=True,
+    parser.add_argument('--val_data_path', type=str,# required=True,
         help='path to Imagenet validation dataset')
     parser.add_argument('--weights_path', type=str,required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
@@ -176,6 +214,12 @@ if __name__ == '__main__':
         help = "Total training epochs, default=200")
     parser.add_argument('--gpu_num', type=int, required=False, default=1,
         help='Number of GPU to use, default=1')
+    parser.add_argument('--verify_with_image', default=False, action="store_true",
+        help='Verify trained model with image')
+    parser.add_argument('--dump_headless', default=False, action="store_true",
+        help='Dump out classification model to headless backbone model')
+    parser.add_argument('--output_model_file', type=str,
+        help='output headless backbone model file')
 
     args = parser.parse_args()
 
