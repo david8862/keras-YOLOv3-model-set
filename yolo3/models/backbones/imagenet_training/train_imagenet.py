@@ -71,7 +71,7 @@ def get_model(model_type, include_top=True):
         model = NanoNet(input_shape=input_shape, weights=None, include_top=include_top)
     else:
         raise ValueError('Unsupported model type')
-    return model, input_shape
+    return model, input_shape[:2]
 
 
 def get_optimizer(optim_type, learning_rate):
@@ -157,7 +157,7 @@ def verify_with_image(model, input_shape):
         img_file = input('Input image filename:')
         try:
             img = Image.open(img_file)
-            resized_img = img.resize(input_shape[:2], Image.BICUBIC)
+            resized_img = img.resize(input_shape, Image.BICUBIC)
         except:
             print('Open Error! Try again!')
             continue
