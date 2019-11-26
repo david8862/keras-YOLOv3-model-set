@@ -43,7 +43,7 @@ def validate_yolo_model(model, image_file, anchors, class_names, model_image_siz
     Image.fromarray(image_array).show()
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='validate keras h5 YOLO model with image')
     parser.add_argument('--model_path', help='model file to predict', type=str, required=True)
     parser.add_argument('--image_file', help='image file to predict', type=str, required=True)
     parser.add_argument('--anchors_path',help='path to anchor definitions', type=str, required=True)

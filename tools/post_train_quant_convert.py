@@ -50,7 +50,7 @@ def post_train_quant_convert(keras_model_file, annotation_file, sample_num, mode
 
 
 def main():
-    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
+    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='TF 2.x post training integer quantization converter')
 
     parser.add_argument('--keras_model_file', required=True, type=str, help='path to keras model file')
     parser.add_argument('--annotation_file', required=True, type=str, help='annotation txt file to feed the converter')

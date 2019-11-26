@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
-run this scipt to convert VOC images to RGB
+run this scipt to convert grey-scale images to RGB
 '''
 
 from PIL import Image
@@ -45,7 +45,7 @@ def RGB_convert(path, dst):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='convert grey-scale images to RGB')
     parser.add_argument('--output_path', help='Output path for the converted image', type=str, default=os.path.join(os.path.dirname(__file__), 'output'))
     args = parser.parse_args()
 

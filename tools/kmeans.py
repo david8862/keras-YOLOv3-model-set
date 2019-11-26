@@ -108,7 +108,7 @@ class YOLO_Kmeans:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='Do K-means anchor clustering on selected dataset')
     parser.add_argument('--annotation_file', required=True,
             help='annotation txt file for ground truth anchors', type=str)
     parser.add_argument('--cluster_number', required=True,

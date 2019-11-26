@@ -6,7 +6,7 @@ from os import getcwd
 
 sets=[('instances_train2017', 'train2017'), ('instances_val2017', 'val2017')]
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='convert COCO dataset annotation to txt annotation file')
 parser.add_argument('--dataset_path', type=str, help='path to MSCOCO dataset, default is ../mscoco2017', default=getcwd()+'/../mscoco2017')
 parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
 parser.add_argument('--include_no_obj', action="store_true", help='to include no object image', default=False)

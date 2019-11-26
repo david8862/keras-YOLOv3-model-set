@@ -20,7 +20,7 @@ def get_flops(model):
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description='tf.keras model FLOPs checking tool')
     parser.add_argument('--model_path', help='model file to evaluate', type=str, required=True)
     args = parser.parse_args()
 

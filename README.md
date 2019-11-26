@@ -113,6 +113,8 @@ For other model, just do in a similar way, but specify different model path and 
                                 [--classes_path CLASSES_PATH] [--include_difficult]
                                 [--include_no_obj]
 
+       convert PascalVOC dataset annotation to txt annotation file
+
        optional arguments:
          -h, --help            show this help message and exit
          --dataset_path DATASET_PATH
@@ -143,6 +145,8 @@ For other model, just do in a similar way, but specify different model path and 
        # cd tools && python coco_annotation.py -h
        usage: coco_annotation.py [-h] [--dataset_path DATASET_PATH]
                                  [--output_path OUTPUT_PATH] [--include_no_obj]
+
+       convert COCO dataset annotation to txt annotation file
 
        optional arguments:
          -h, --help            show this help message and exit

@@ -66,7 +66,7 @@ def get_classes(classes_path):
     return classes
 
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(description='convert PascalVOC dataset annotation to txt annotation file')
 parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default is ../VOCdevkit', default=getcwd()+'/../VOCdevkit')
 parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
 parser.add_argument('--classes_path', type=str, required=False, help='path to class definitions')
