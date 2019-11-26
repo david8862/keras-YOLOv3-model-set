@@ -130,9 +130,17 @@ def expand_dims2d(x):
     x = K.expand_dims(x, axis=2)
     return x
 
+def dynamic_upsampling2d(args):
+    import tensorflow as tf
+    x = args[0]
+    inputs = args[1]
+    in_shapes = K.shape(inputs)[1:3]
+    x = tf.image.resize(x, in_shapes)
+    return x
+
 def _fca_block(inputs, reduct_ratio, block_id):
     in_channels = inputs.shape.as_list()[-1]
-    in_shapes = inputs.shape.as_list()[1:3]
+    #in_shapes = inputs.shape.as_list()[1:3]
     reduct_channels = int(in_channels // reduct_ratio)
     prefix = 'fca_block_{}_'.format(block_id)
 
@@ -140,7 +148,8 @@ def _fca_block(inputs, reduct_ratio, block_id):
     x = Dense(reduct_channels, activation='relu', name=prefix + 'fc1')(x)
     x = Dense(in_channels, activation='sigmoid', name=prefix + 'fc2')(x)
     x = Lambda(expand_dims2d, name=prefix + 'expand_dims2d')(x)
-    x = UpSampling2D(in_shapes, name=prefix + 'upsample')(x)
+    #x = UpSampling2D(in_shapes, name=prefix + 'upsample')(x)
+    x = Lambda(dynamic_upsampling2d, name=prefix + 'upsample')([x, inputs])
     x = Multiply(name=prefix + 'multiply')([x, inputs])
     return x
 
@@ -240,7 +249,7 @@ def yolo3_nano_body(inputs, num_anchors, num_classes, weights_path=None):
 
 def NanoNet(input_shape=None, input_tensor=None, include_top=True, weights=None, classes=1000):
     """Generate nano net model for Imagenet classification."""
-    input_shape = _obtain_input_shape(input_shape, default_size=416, min_size=28, require_flatten=include_top, data_format=K.image_data_format())
+    input_shape = _obtain_input_shape(input_shape, default_size=224, min_size=28, require_flatten=include_top, data_format=K.image_data_format())
 
     if input_tensor is None:
         img_input = Input(shape=input_shape)

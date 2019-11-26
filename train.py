@@ -206,8 +206,6 @@ def _main(args):
 
 
     if args.multiscale:
-        if args.model_type == 'yolo3_nano':
-            raise ValueError("YOLOv3 nano model doesn't support multiscale training.")
         rescale_interval = args.rescale_interval
     else:
         rescale_interval = -1  #Doesn't rescale

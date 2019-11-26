@@ -65,15 +65,8 @@ def get_model(model_type, include_top=True):
         input_shape = (224, 224, 3)
         model = ShuffleNetV2(bottleneck_ratio=1, weights=None, include_top=include_top)
     elif model_type == 'nanonet':
-        # Due to GPU memory limit, we need to use small input_shape for
-        # ImageNet training and large input_shape for headless backbone
-        if include_top == True:
-            input_shape = (224, 224, 3)
-        else:
-            input_shape = (416, 416, 3)
-        # NanoNet doesn't support dynamic input shape (fcs_block has Dense layer),
-        # so we need to specify input_shape here
-        model = NanoNet(input_shape=input_shape, weights=None, include_top=include_top)
+        input_shape = (224, 224, 3)
+        model = NanoNet(weights=None, include_top=include_top)
     else:
         raise ValueError('Unsupported model type')
     return model, input_shape[:2]
