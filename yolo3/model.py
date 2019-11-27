@@ -48,7 +48,7 @@ yolo3_model_map = {
     'yolo3_xception_lite': [yolo3lite_xception_body, 132, None],
     'yolo3_xception_spp': [yolo3_spp_xception_body, 132, None],
 
-    # TODO: NanoNet backbone has 269 layers, update when got Imagenet
+    # TODO: NanoNet backbone has 268 layers, update when got Imagenet
     # pretrained weights
     'yolo3_nano': [yolo3_nano_body, 0, None],
 }

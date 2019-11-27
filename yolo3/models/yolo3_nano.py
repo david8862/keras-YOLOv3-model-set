@@ -125,18 +125,22 @@ def _pep_block(inputs, proj_filters, filters, stride, expansion, block_id):
     return x
 
 
-def expand_dims2d(x):
-    x = K.expand_dims(x, axis=1)
-    x = K.expand_dims(x, axis=2)
-    return x
+#def expand_dims2d(x):
+    #x = K.expand_dims(x, axis=1)
+    #x = K.expand_dims(x, axis=2)
+    #return x
 
-def dynamic_upsampling2d(args):
+
+def expand_upsampling2d(args):
     import tensorflow as tf
     x = args[0]
     inputs = args[1]
     in_shapes = K.shape(inputs)[1:3]
+    x = K.expand_dims(x, axis=1)
+    x = K.expand_dims(x, axis=2)
     x = tf.image.resize(x, in_shapes)
     return x
+
 
 def _fca_block(inputs, reduct_ratio, block_id):
     in_channels = inputs.shape.as_list()[-1]
@@ -147,9 +151,9 @@ def _fca_block(inputs, reduct_ratio, block_id):
     x = GlobalAveragePooling2D(name=prefix + 'average_pooling')(inputs)
     x = Dense(reduct_channels, activation='relu', name=prefix + 'fc1')(x)
     x = Dense(in_channels, activation='sigmoid', name=prefix + 'fc2')(x)
-    x = Lambda(expand_dims2d, name=prefix + 'expand_dims2d')(x)
+    #x = Lambda(expand_dims2d, name=prefix + 'expand_dims2d')(x)
     #x = UpSampling2D(in_shapes, name=prefix + 'upsample')(x)
-    x = Lambda(dynamic_upsampling2d, name=prefix + 'upsample')([x, inputs])
+    x = Lambda(expand_upsampling2d, name=prefix + 'expand_upsample')([x, inputs])
     x = Multiply(name=prefix + 'multiply')([x, inputs])
     return x
 
