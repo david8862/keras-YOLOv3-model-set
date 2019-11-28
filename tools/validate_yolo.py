@@ -28,11 +28,11 @@ def validate_yolo_model(model_path, image_file, anchors, class_names, model_imag
 
     start = time.time()
     for i in range(loop_count):
-        out_list = model.predict([image_data])
+        prediction = model.predict([image_data])
     end = time.time()
     print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
 
-    handle_prediction(out_list, image_file, image, image_shape, anchors, class_names, model_image_size)
+    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size)
     return
 
 
@@ -71,12 +71,12 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, loo
     end = time.time()
     print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
 
-    out_list = []
+    prediction = []
     for output_detail in output_details:
         output_data = interpreter.get_tensor(output_detail['index'])
-        out_list.append(output_data)
+        prediction.append(output_data)
 
-    handle_prediction(out_list, image_file, image, image_shape, anchors, class_names, model_image_size)
+    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size)
     return
 
 

@@ -91,6 +91,12 @@ A common YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilen
 ```
 For other model, just do in a similar way, but specify different model path and anchor path with `--model_path` and `--anchors_path`.
 
+Image detection sample:
+
+<p align="center">
+  <img src="assets/dog_inference.jpg">
+  <img src="assets/person_inference.jpg">
+</p>
 
 ## Guide of train/evaluate/demo
 
