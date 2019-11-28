@@ -120,6 +120,12 @@ dog 0.519254 (111, 213) (324, 520)
 ```
 Here the [classes](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/configs/voc_classes.txt) & [anchors](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/configs/tiny_yolo3_anchors.txt) file format are the same as used in training part
 
+To visualize the detection result, we can use [validate_yolo.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/validate_yolo.py):
+
+<p align="center">
+  <img src="assets/dog_inference.jpg">
+</p>
+
 
 ### Tensorflow-Lite
 
