@@ -74,11 +74,18 @@ MNN support Post Training Integer quantization, so we can use its python CLI int
     # mnnquant model.pb.mnn model_quant.pb.mnn quantizeConfig.json
     ```
 
-4. Run MNN model validate script
+4. Run validate script to check MNN model
 ```
 # cd keras-YOLOv3-model-set/tools/
-# python validate_yolo_mnn.py --model_path=model_quant.pb.mnn --anchors_path=../configs/tiny_yolo3_anchors.txt --classes_path=../configs/voc_classes.txt --image_file=../example/dog.jpg --loop_count=5
+# python validate_yolo.py --model_path=model_quant.pb.mnn --anchors_path=../configs/tiny_yolo3_anchors.txt --classes_path=../configs/voc_classes.txt --image_file=../example/dog.jpg --loop_count=5
 ```
+
+Visualized detection result:
+
+<p align="center">
+  <img src="../assets/dog_inference.jpg">
+</p>
+
 #### You can also use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set#evaluation) to do evaluation on the MNN model
 
 
@@ -120,11 +127,7 @@ dog 0.519254 (111, 213) (324, 520)
 ```
 Here the [classes](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/configs/voc_classes.txt) & [anchors](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/configs/tiny_yolo3_anchors.txt) file format are the same as used in training part
 
-To visualize the detection result, we can use [validate_yolo.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/validate_yolo.py):
 
-<p align="center">
-  <img src="../assets/dog_inference.jpg">
-</p>
 
 
 ### Tensorflow-Lite
@@ -174,10 +177,10 @@ Tensorflow-lite support both Float32 and UInt8 type model. We can dump out the k
     ```
 
 
-4. Run TFLite validate script
+4. Run validate script to check TFLite model
 ```
 # cd keras-YOLOv3-model-set/tools/
-# python validate_yolo_tflite.py --model_path=model.tflite --anchors_path=../configs/tiny_yolo3_anchors.txt --classes_path=../configs/voc_classes.txt --image_file=../example/dog.jpg --loop_count=5
+# python validate_yolo.py --model_path=model.tflite --anchors_path=../configs/tiny_yolo3_anchors.txt --classes_path=../configs/voc_classes.txt --image_file=../example/dog.jpg --loop_count=5
 ```
 #### You can also use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set#evaluation) to do evaluation on the TFLite model
 
