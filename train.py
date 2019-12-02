@@ -129,11 +129,13 @@ def main(args):
             use_multiprocessing=False,
             callbacks=callbacks)
 
-    # rebuild optimizer to apply learning rate decay, only after
-    # unfreeze all layers
-    steps_per_epoch = max(1, num_train//args.batch_size)
-    decay_steps = steps_per_epoch * (args.total_epoch - args.init_epoch - args.transfer_epoch)
-    optimizer = get_optimizer(args.optimizer, args.learning_rate, decay_type=args.decay_type, decay_steps=decay_steps)
+    if args.decay_type:
+        # rebuild optimizer to apply learning rate decay, only after
+        # unfreeze all layers
+        callbacks.remove(reduce_lr)
+        steps_per_epoch = max(1, num_train//args.batch_size)
+        decay_steps = steps_per_epoch * (args.total_epoch - args.init_epoch - args.transfer_epoch)
+        optimizer = get_optimizer(args.optimizer, args.learning_rate, decay_type=args.decay_type, decay_steps=decay_steps)
 
     # Unfreeze the whole network for further tuning
     # NOTE: more GPU memory is required after unfreezing the body
