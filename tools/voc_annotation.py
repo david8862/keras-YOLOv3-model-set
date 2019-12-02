@@ -17,7 +17,7 @@ def convert_annotation(dataset_path, year, image_id, list_file, include_difficul
 
     for obj in root.iter('object'):
         difficult = obj.find('difficult')
-        if not difficult:
+        if difficult is None:
             difficult = '0'
         else:
             difficult = difficult.text
@@ -45,7 +45,7 @@ def has_object(dataset_path, year, image_id, include_difficult):
 
     for obj in root.iter('object'):
         difficult = obj.find('difficult')
-        if not difficult:
+        if difficult is None:
             difficult = '0'
         else:
             difficult = difficult.text

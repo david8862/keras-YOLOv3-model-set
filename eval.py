@@ -15,12 +15,12 @@ import operator
 import matplotlib.pyplot as plt
 
 from tensorflow.keras.models import load_model
-import tensorflow.keras.backend as KTF
+import tensorflow.keras.backend as K
 
 import tensorflow as tf
 import MNN
 
-optimize_tf_gpu(tf, KTF)
+optimize_tf_gpu(tf, K)
 
 
 def annotation_parse(annotation_lines, class_names):
@@ -959,6 +959,7 @@ def load_eval_model(model_path):
     else:
         model = load_model(model_path, compile=False)
         model_format = 'H5'
+        K.set_learning_phase(0)
 
     return model, model_format
 
