@@ -24,68 +24,7 @@ import tensorflow as tf
 optimize_tf_gpu(tf, K)
 
 
-# some global value for lr scheduler
-# need to update to CLI option in main()
-lr_base = 1e-3
-total_epochs = 250
-
-def learning_rate_scheduler(epoch, curr_lr, mode='cosine_decay'):
-    lr_power = 0.9
-    lr = curr_lr
-
-    # adam default lr
-    if mode is 'adam':
-        lr = 0.001
-
-    # original lr scheduler
-    if mode is 'power_decay':
-        lr = lr_base * ((1 - float(epoch) / total_epochs) ** lr_power)
-
-    # exponential decay policy
-    if mode is 'exp_decay':
-        lr = (float(lr_base) ** float(lr_power)) ** float(epoch + 1)
-
-    # cosine decay policy, including warmup and hold stage
-    if mode is 'cosine_decay':
-        #warmup & hold hyperparams, adjust for your training
-        warmup_epochs = 0
-        hold_base_rate_epochs = 0
-        warmup_lr = lr_base * 0.01
-        lr = 0.5 * lr_base * (1 + np.cos(
-             np.pi * float(epoch - warmup_epochs - hold_base_rate_epochs) /
-             float(total_epochs - warmup_epochs - hold_base_rate_epochs)))
-
-        if hold_base_rate_epochs > 0 and epoch < warmup_epochs + hold_base_rate_epochs:
-            lr = lr_base
-
-        if warmup_epochs > 0 and epoch < warmup_epochs:
-            if lr_base < warmup_lr:
-                raise ValueError('learning_rate_base must be larger or equal to '
-                                 'warmup_learning_rate.')
-            slope = (lr_base - warmup_lr) / float(warmup_epochs)
-            warmup_rate = slope * float(epoch) + warmup_lr
-            lr = warmup_rate
-
-    if mode is 'progressive_drops':
-        # drops as progression proceeds, good for sgd
-        if epoch > 0.9 * total_epochs:
-            lr = 0.0001
-        elif epoch > 0.75 * total_epochs:
-            lr = 0.001
-        elif epoch > 0.5 * total_epochs:
-            lr = 0.01
-        else:
-            lr = 0.1
-
-    print('learning_rate change to: {}'.format(lr))
-    return lr
-
-
-def _main(args):
-    global lr_base, total_epochs
-    lr_base = args.learning_rate
-    total_epochs = args.total_epoch
-
+def main(args):
     annotation_file = args.annotation_file
     log_dir = 'logs/000/'
     classes_path = args.classes_path
@@ -114,7 +53,6 @@ def _main(args):
         save_best_only=True,
         period=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=20, verbose=1, cooldown=0, min_lr=1e-10)
-    lr_scheduler = LearningRateScheduler(learning_rate_scheduler)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=50, verbose=1)
     terminate_on_nan = TerminateOnNaN()
 
@@ -163,7 +101,7 @@ def _main(args):
         callbacks = callbacks + pruning_callbacks
 
     # prepare optimizer
-    optimizer = get_optimizer(args.optimizer, args.learning_rate)
+    optimizer = get_optimizer(args.optimizer, args.learning_rate, decay_type=None)
 
     # get train model
     model = get_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, optimizer=optimizer, label_smoothing=args.label_smoothing, model_pruning=args.model_pruning, pruning_end_step=pruning_end_step)
@@ -191,11 +129,11 @@ def _main(args):
             use_multiprocessing=False,
             callbacks=callbacks)
 
-    # Apply Cosine learning rate decay only after
+    # rebuild optimizer to apply learning rate decay, only after
     # unfreeze all layers
-    if args.cosine_decay_learning_rate:
-        callbacks.remove(reduce_lr)
-        callbacks.append(lr_scheduler)
+    steps_per_epoch = max(1, num_train//args.batch_size)
+    decay_steps = steps_per_epoch * (args.total_epoch - args.init_epoch - args.transfer_epoch)
+    optimizer = get_optimizer(args.optimizer, args.learning_rate, decay_type=args.decay_type, decay_steps=decay_steps)
 
     # Unfreeze the whole network for further tuning
     # NOTE: more GPU memory is required after unfreezing the body
@@ -256,8 +194,8 @@ if __name__ == '__main__':
         help = "optimizer for training (adam/rmsprop/sgd), default=adam")
     parser.add_argument('--learning_rate', type=float,required=False, default=1e-3,
         help = "Initial learning rate, default=0.001")
-    parser.add_argument('--cosine_decay_learning_rate', default=False, action="store_true",
-        help='Whether to use cosine decay for learning rate control')
+    parser.add_argument('--decay_type', type=str,required=False, default=None,
+        help = "Learning rate decay type (None/cosine/exponential/polynomial), default=None")
     parser.add_argument('--transfer_epoch', type=int,required=False, default=20,
         help = "Transfer training stage epochs, default=20")
     parser.add_argument('--freeze_level', type=int,required=False, default=None,
@@ -291,4 +229,4 @@ if __name__ == '__main__':
     height, width = args.model_image_size.split('x')
     args.model_image_size = (int(height), int(width))
 
-    _main(args)
+    main(args)

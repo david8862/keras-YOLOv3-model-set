@@ -96,7 +96,9 @@ for year, image_set in sets:
     list_file.close()
     # print out item number statistic
     print('\nDone for %s_%s.txt. classes number statistic'%(year, image_set))
+    print('Image number: %d'%(len(image_ids)))
+    print('Object class number:')
     for (class_name, number) in class_count.items():
         print('%s: %d' % (class_name, number))
-    print('total number:', np.sum(list(class_count.values())))
+    print('total object number:', np.sum(list(class_count.values())))
 

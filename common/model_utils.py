@@ -4,6 +4,8 @@
 
 import os, sys
 from tensorflow.keras.optimizers import Adam, RMSprop, SGD
+from tensorflow.keras.optimizers.schedules import ExponentialDecay, PolynomialDecay
+from tensorflow.keras.experimental import CosineDecay
 from tensorflow_model_optimization.sparsity import keras as sparsity
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import Callback
@@ -45,15 +47,92 @@ def get_pruning_model(model, begin_step, end_step):
     return pruning_model
 
 
-def get_optimizer(optim_type, learning_rate, decay=0):
+# some global value for lr scheduler
+# need to update to CLI option in main()
+#lr_base = 1e-3
+#total_epochs = 250
+
+#def learning_rate_scheduler(epoch, curr_lr, mode='cosine_decay'):
+    #lr_power = 0.9
+    #lr = curr_lr
+
+    ## adam default lr
+    #if mode is 'adam':
+        #lr = 0.001
+
+    ## original lr scheduler
+    #if mode is 'power_decay':
+        #lr = lr_base * ((1 - float(epoch) / total_epochs) ** lr_power)
+
+    ## exponential decay policy
+    #if mode is 'exp_decay':
+        #lr = (float(lr_base) ** float(lr_power)) ** float(epoch + 1)
+
+    ## cosine decay policy, including warmup and hold stage
+    #if mode is 'cosine_decay':
+        ##warmup & hold hyperparams, adjust for your training
+        #warmup_epochs = 0
+        #hold_base_rate_epochs = 0
+        #warmup_lr = lr_base * 0.01
+        #lr = 0.5 * lr_base * (1 + np.cos(
+             #np.pi * float(epoch - warmup_epochs - hold_base_rate_epochs) /
+             #float(total_epochs - warmup_epochs - hold_base_rate_epochs)))
+
+        #if hold_base_rate_epochs > 0 and epoch < warmup_epochs + hold_base_rate_epochs:
+            #lr = lr_base
+
+        #if warmup_epochs > 0 and epoch < warmup_epochs:
+            #if lr_base < warmup_lr:
+                #raise ValueError('learning_rate_base must be larger or equal to '
+                                 #'warmup_learning_rate.')
+            #slope = (lr_base - warmup_lr) / float(warmup_epochs)
+            #warmup_rate = slope * float(epoch) + warmup_lr
+            #lr = warmup_rate
+
+    #if mode is 'progressive_drops':
+        ## drops as progression proceeds, good for sgd
+        #if epoch > 0.9 * total_epochs:
+            #lr = 0.0001
+        #elif epoch > 0.75 * total_epochs:
+            #lr = 0.001
+        #elif epoch > 0.5 * total_epochs:
+            #lr = 0.01
+        #else:
+            #lr = 0.1
+
+    #print('learning_rate change to: {}'.format(lr))
+    #return lr
+
+
+def get_lr_scheduler(learning_rate, decay_type, decay_steps):
+    if decay_type:
+        decay_type = decay_type.lower()
+
+    if decay_type == None:
+        lr_scheduler = learning_rate
+    elif decay_type == 'cosine':
+        lr_scheduler = CosineDecay(initial_learning_rate=learning_rate, decay_steps=decay_steps)
+    elif decay_type == 'exponential':
+        lr_scheduler = ExponentialDecay(initial_learning_rate=learning_rate, decay_steps=decay_steps, decay_rate=0.9)
+    elif decay_type == 'polynomial':
+        lr_scheduler = PolynomialDecay(initial_learning_rate=learning_rate, decay_steps=decay_steps, end_learning_rate=learning_rate/100)
+    else:
+        raise ValueError('Unsupported lr decay type')
+
+    return lr_scheduler
+
+
+def get_optimizer(optim_type, learning_rate, decay_type='cosine', decay_steps=100000):
     optim_type = optim_type.lower()
 
+    lr_scheduler = get_lr_scheduler(learning_rate, decay_type, decay_steps)
+
     if optim_type == 'adam':
-        optimizer = Adam(lr=learning_rate, decay=decay)
+        optimizer = Adam(learning_rate=lr_scheduler)
     elif optim_type == 'rmsprop':
-        optimizer = RMSprop(lr=learning_rate, decay=decay)
+        optimizer = RMSprop(learning_rate=lr_scheduler)
     elif optim_type == 'sgd':
-        optimizer = SGD(lr=learning_rate, decay=decay)
+        optimizer = SGD(learning_rate=lr_scheduler)
     else:
         raise ValueError('Unsupported optimizer type')
 
@@ -109,4 +188,3 @@ class EvalCallBack(Callback):
                 # Save best mAP value and model checkpoint
                 self.best_mAP = mAP
                 self.model.save(self.log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}-mAP{mAP:.3f}.h5'.format(epoch=(epoch+1), loss=logs.get('loss'), val_loss=logs.get('val_loss'), mAP=mAP))
-

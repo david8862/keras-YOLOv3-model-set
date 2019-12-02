@@ -45,7 +45,7 @@ A common YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilen
 - [x] Transfer training from imagenet
 - [x] Singlescale image input training
 - [x] Multiscale image input training
-- [x] Cosine learning rate decay
+- [x] Dynamic learning rate decay (Cosine/Exponential/Polynomial)
 - [x] Pruned model training (only valid for TF 1.x)
 
 #### On-device deployment
@@ -181,7 +181,7 @@ usage: train.py [-h] [--model_type MODEL_TYPE] [--anchors_path ANCHORS_PATH]
                 [--val_annotation_file VAL_ANNOTATION_FILE]
                 [--val_split VAL_SPLIT] [--classes_path CLASSES_PATH]
                 [--batch_size BATCH_SIZE] [--optimizer OPTIMIZER]
-                [--learning_rate LEARNING_RATE] [--cosine_decay_learning_rate]
+                [--learning_rate LEARNING_RATE] [--decay_type DECAY_TYPE]
                 [--transfer_epoch TRANSFER_EPOCH]
                 [--freeze_level FREEZE_LEVEL] [--init_epoch INIT_EPOCH]
                 [--total_epoch TOTAL_EPOCH] [--multiscale]
@@ -221,8 +221,9 @@ optional arguments:
                         default=adam
   --learning_rate LEARNING_RATE
                         Initial learning rate, default=0.001
-  --cosine_decay_learning_rate
-                        Whether to use cosine decay for learning rate control
+  --decay_type DECAY_TYPE
+                        Learning rate decay type
+                        (None/Cosine/Exponential/Polynomial), default=None
   --transfer_epoch TRANSFER_EPOCH
                         Transfer training stage epochs, default=20
   --freeze_level FREEZE_LEVEL
