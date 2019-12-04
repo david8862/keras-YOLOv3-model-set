@@ -19,7 +19,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from shufflenet import ShuffleNet
 from shufflenet_v2 import ShuffleNetV2
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../..'))
 from yolo3.models.yolo3_nano import NanoNet
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -182,8 +182,10 @@ def main(args):
     model.summary()
 
     if args.verify_with_image:
+        K.set_learning_phase(0)
         verify_with_image(model, input_shape)
     elif args.dump_headless:
+        K.set_learning_phase(0)
         model.save(args.output_model_file)
         print('export headless model to %s' % str(args.output_model_file))
     else:

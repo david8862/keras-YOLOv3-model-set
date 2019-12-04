@@ -347,7 +347,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 ### TODO
 - [ ] support YOLOv3 nano model ([YOLO nano](https://arxiv.org/abs/1910.01271))
 - [ ] add Attention mechanism/blocks to other backbone
-- [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/yolo3/models/backbones/imagenet_training)
+- [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones/imagenet_training)
 
 
 ## Some issues to know

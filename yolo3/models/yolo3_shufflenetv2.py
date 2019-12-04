@@ -2,7 +2,7 @@
 
 from tensorflow.keras.layers import UpSampling2D, Concatenate
 from tensorflow.keras.models import Model
-from yolo3.models.backbones.shufflenet_v2 import ShuffleNetV2
+from common.backbones.shufflenet_v2 import ShuffleNetV2
 
 from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, make_last_layers, make_depthwise_separable_last_layers, make_spp_depthwise_separable_last_layers
 

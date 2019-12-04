@@ -8,6 +8,7 @@ to the freezed .pb tensorflow weight file. The resultant TensorFlow model
 holds both the model architecture and its associated weights.
 """
 
+import os, sys
 import tensorflow as tf
 from tensorflow.python.framework import graph_util
 from tensorflow.python.framework import graph_io
@@ -19,6 +20,9 @@ from absl import logging
 from tensorflow.keras import backend as K
 from tensorflow.keras.models import model_from_json, model_from_yaml, load_model
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+from common.backbones.efficientnet import swish
+
 K.set_learning_phase(0)
 FLAGS = flags.FLAGS
 
@@ -29,6 +33,8 @@ flags.DEFINE_string('input_model_yaml', None, 'Path to the input model '
                                               'architecture in yaml format.')
 flags.DEFINE_string('output_model', None, 'Path where the converted model will '
                                           'be stored.')
+flags.DEFINE_string('custom_objects', None, 'Custom objects in converting keras model (swish/). '
+                                          'Separated with comma if more than one.')
 flags.DEFINE_boolean('save_graph_def', False,
                      'Whether to save the graphdef.pbtxt file which contains '
                      'the graph definition in ASCII format.')
@@ -54,12 +60,27 @@ flags.mark_flag_as_required('input_model')
 flags.mark_flag_as_required('output_model')
 
 
-def load_input_model(input_model_path, input_json_path=None, input_yaml_path=None):
+def get_custom_objects(custom_objects_string):
+    custom_objects_dict = {}
+    if custom_objects_string:
+        custom_object_names = custom_objects_string.split(',')
+        for custom_object_name in custom_object_names:
+            if custom_object_name == 'swish':
+                custom_objects_dict['swish'] = swish
+            else:
+                raise ValueError('unsupported custom objects: ', custom_object_name)
+    else:
+        custom_objects_dict = None
+
+    return custom_objects_dict
+
+
+def load_input_model(input_model_path, input_json_path=None, input_yaml_path=None, custom_objects=None):
     if not Path(input_model_path).exists():
         raise FileNotFoundError(
             'Model file `{}` does not exist.'.format(input_model_path))
     try:
-        model = load_model(input_model_path)
+        model = load_model(input_model_path, custom_objects=custom_objects)
         return model
     except FileNotFoundError as err:
         logging.error('Input mode file (%s) does not exist.', FLAGS.input_model)
@@ -124,7 +145,9 @@ def main(args):
     else:
         K.set_image_data_format('channels_last')
 
-    model = load_input_model(FLAGS.input_model, FLAGS.input_model_json, FLAGS.input_model_yaml)
+    custom_object_dict = get_custom_objects(FLAGS.custom_objects)
+
+    model = load_input_model(FLAGS.input_model, FLAGS.input_model_json, FLAGS.input_model_yaml, custom_objects=custom_object_dict)
 
     # TODO(amirabdi): Support networks with multiple inputs
     orig_output_node_names = [node.op.name for node in model.outputs]

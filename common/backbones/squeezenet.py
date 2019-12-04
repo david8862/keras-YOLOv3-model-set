@@ -169,7 +169,7 @@ if __name__ == '__main__':
 
     model = SqueezeNet()
 
-    img = image.load_img('dog.jpg', target_size=(227, 227))
+    img = image.load_img('../../example/eagle.jpg', target_size=(227, 227))
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     x = preprocess_input(x)

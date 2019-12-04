@@ -30,7 +30,7 @@ It may cost some time since the dataset is quite large
 The validation preprocess script and synset labels file are from [tensorflow inception model](https://github.com/tensorflow/models/tree/master/research/inception/inception/data)
 
 ### Train
-1. [train_imagenet.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo3/models/backbones/imagenet_training/train_imagenet.py)
+1. [train_imagenet.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/common/backbones/imagenet_training/train_imagenet.py)
 ```
 # python train_imagenet.py -h
 usage: train_imagenet.py [-h] [--model_type MODEL_TYPE]
@@ -80,7 +80,7 @@ For example, following cmd will start training shufflenet_v2 with the Imagenet t
 # python train_imagenet.py --model_type=shufflenet_v2 --train_data_path=data/ILSVRC2012_img_train/ --val_data_path=data/ILSVRC2012_img_val/ --batch_size=64
 ```
 
-Currently it support shufflenet/shufflenet_v2/nanonet which is implement under [backbones](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/yolo3/models/backbones) with fixed hyperparam.
+Currently it support shufflenet/shufflenet_v2/nanonet which is implement under [backbones](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones) with fixed hyperparam.
 
 Checkpoints during training could be found at logs/. Choose a best one as result
 
