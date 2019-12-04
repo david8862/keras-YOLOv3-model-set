@@ -12,18 +12,36 @@ from tensorflow.keras.models import load_model
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from yolo3.data import get_random_data
+from common.backbones.efficientnet import swish
 
 #tf.enable_eager_execution()
 
 
-def post_train_quant_convert(keras_model_file, annotation_file, sample_num, model_input_shape, output_file):
+def get_custom_objects(custom_objects_string):
+    custom_objects_dict = {}
+    if custom_objects_string:
+        custom_object_names = custom_objects_string.split(',')
+        for custom_object_name in custom_object_names:
+            if custom_object_name == 'swish':
+                custom_objects_dict['swish'] = swish
+            else:
+                raise ValueError('unsupported custom objects: ', custom_object_name)
+    else:
+        custom_objects_dict = None
+
+    return custom_objects_dict
+
+
+def post_train_quant_convert(keras_model_file, custom_objects_string, annotation_file, sample_num, model_input_shape, output_file):
     #get input_shapes for converter
     input_shapes=list((1,)+model_input_shape+(3,))
 
     with open(annotation_file) as f:
         annotation_lines = f.readlines()
 
-    model = load_model(keras_model_file)
+    custom_object_dict = get_custom_objects(custom_objects_string)
+
+    model = load_model(keras_model_file, custom_objects=custom_object_dict)
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
 
     def data_generator():
@@ -57,12 +75,13 @@ def main():
     parser.add_argument('--sample_num', type=int, help='annotation sample number to feed the converter,default 30', default=30)
     parser.add_argument('--model_input_shape', type=str, help='model image input shape as <num>x<num>, default 416x416', default='416x416')
     parser.add_argument('--output_file', required=True, type=str, help='output tflite model file')
+    parser.add_argument('--custom_objects', required=False, type=str, help="Custom objects in converting keras model (swish/). Separated with comma if more than one.", default=None)
 
     args = parser.parse_args()
     height, width = args.model_input_shape.split('x')
     model_input_shape = (int(height), int(width))
 
-    post_train_quant_convert(args.keras_model_file, args.annotation_file, args.sample_num, model_input_shape, args.output_file)
+    post_train_quant_convert(args.keras_model_file, args.custom_objects, args.annotation_file, args.sample_num, model_input_shape, args.output_file)
 
 
 
