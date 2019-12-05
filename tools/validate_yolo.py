@@ -7,6 +7,7 @@ import numpy as np
 import MNN
 from tensorflow.keras.models import load_model
 from tensorflow.lite.python import interpreter as interpreter_wrapper
+import tensorflow as tf
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from yolo3.postprocess_np import yolo3_postprocess_np
@@ -159,6 +160,82 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, loop_c
     return
 
 
+def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_image_size, loop_count):
+    # NOTE: TF 1.x frozen pb graph need to specify input/output tensor name
+    # so we need to hardcode the input/output tensor names here to get them from model
+    if len(anchors) == 6:
+        output_tensor_names = ['graph/conv2d_1/BiasAdd:0', 'graph/conv2d_3/BiasAdd:0']
+    elif len(anchors) == 9:
+        output_tensor_names = ['graph/conv2d_3/BiasAdd:0', 'graph/conv2d_8/BiasAdd:0', 'graph/conv2d_13/BiasAdd:0']
+    elif len(anchors) == 5:
+        # YOLOv2 use 5 anchors and have only 1 prediction
+        output_tensor_names = ['graph/predict_conv/BiasAdd:0']
+    else:
+        raise ValueError('invalid anchor number')
+
+    # assume only 1 input tensor for image
+    input_tensor_name = 'graph/image_input:0'
+
+    img = Image.open(image_file)
+    image = np.array(img, dtype='uint8')
+    image_data = preprocess_image(img, model_image_size)
+    image_shape = img.size
+
+    #load frozen pb graph
+    def load_pb_graph(model_path):
+        # We parse the graph_def file
+        with tf.gfile.GFile(model_path, "rb") as f:
+            graph_def = tf.GraphDef()
+            graph_def.ParseFromString(f.read())
+
+        # We load the graph_def in the default graph
+        with tf.Graph().as_default() as graph:
+            tf.import_graph_def(
+                graph_def,
+                input_map=None,
+                return_elements=None,
+                name="graph",
+                op_dict=None,
+                producer_op_list=None
+            )
+        return graph
+
+    graph = load_pb_graph(model_path)
+
+    # We can list operations, op.values() gives you a list of tensors it produces
+    # op.name gives you the name. These op also include input & output node
+    # print output like:
+    # prefix/Placeholder/inputs_placeholder
+    # ...
+    # prefix/Accuracy/predictions
+    #
+    # NOTE: prefix/Placeholder/inputs_placeholder is only op's name.
+    # tensor name should be like prefix/Placeholder/inputs_placeholder:0
+
+    #for op in graph.get_operations():
+        #print(op.name, op.values())
+
+    image_input = graph.get_tensor_by_name(input_tensor_name)
+    output_tensors = [graph.get_tensor_by_name(output_tensor_name) for output_tensor_name in output_tensor_names]
+
+    # predict once first to bypass the model building time
+    with tf.Session(graph=graph) as sess:
+        prediction = sess.run(output_tensors, feed_dict={
+            image_input: image_data
+        })
+
+    start = time.time()
+    for i in range(loop_count):
+            with tf.Session(graph=graph) as sess:
+                prediction = sess.run(output_tensors, feed_dict={
+                    image_input: image_data
+                })
+    end = time.time()
+    print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
+
+    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size)
+
+
 def handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size):
     start = time.time()
     if len(anchors) == 5:
@@ -183,7 +260,7 @@ def handle_prediction(prediction, image_file, image, image_shape, anchors, class
 
 
 def main():
-    parser = argparse.ArgumentParser(description='validate YOLO model (h5/tflite/mnn) with image')
+    parser = argparse.ArgumentParser(description='validate YOLO model (h5/pb/tflite/mnn) with image')
     parser.add_argument('--model_path', help='model file to predict', type=str, required=True)
     parser.add_argument('--image_file', help='image file to predict', type=str, required=True)
     parser.add_argument('--anchors_path',help='path to anchor definitions', type=str, required=True)
@@ -205,9 +282,14 @@ def main():
     # support of MNN model
     elif args.model_path.endswith('.mnn'):
         validate_yolo_model_mnn(args.model_path, args.image_file, anchors, class_names, args.loop_count)
+    # support of TF 1.x frozen pb model
+    elif args.model_path.endswith('.pb'):
+        validate_yolo_model_pb(args.model_path, args.image_file, anchors, class_names, model_image_size, args.loop_count)
     # normal keras h5 model
-    else:
+    elif args.model_path.endswith('.h5'):
         validate_yolo_model(args.model_path, args.image_file, anchors, class_names, model_image_size, args.loop_count)
+    else:
+        raise ValueError('invalid model file')
 
 
 if __name__ == '__main__':

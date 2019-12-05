@@ -6,8 +6,8 @@ Calculate mAP for YOLO model on some annotation dataset
 import numpy as np
 import random
 import os, argparse
-from yolo3.postprocess_np import yolo3_postprocess_np, yolo3_head, yolo3_handle_predictions, yolo3_adjust_boxes
-from yolo2.postprocess_np import yolo2_postprocess_np, yolo2_head
+from yolo3.postprocess_np import yolo3_postprocess_np
+from yolo2.postprocess_np import yolo2_postprocess_np
 from common.data_utils import preprocess_image
 from common.utils import get_dataset, get_classes, get_anchors, get_colors, draw_boxes, touchdir, optimize_tf_gpu
 from PIL import Image
@@ -104,24 +104,27 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
 
     height = input_details[0]['shape'][1]
     width = input_details[0]['shape'][2]
+    model_image_size = (height, width)
 
-    image_data = preprocess_image(image, (height, width))
+    image_data = preprocess_image(image, model_image_size)
     image_shape = image.size
 
     interpreter.set_tensor(input_details[0]['index'], image_data)
     interpreter.invoke()
 
-    out_list = []
+    prediction = []
     for output_detail in output_details:
         output_data = interpreter.get_tensor(output_detail['index'])
-        out_list.append(output_data)
+        prediction.append(output_data)
 
-    predictions = yolo3_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
+    if len(anchors) == 5:
+        # YOLOv2 use 5 anchors and have only 1 prediction
+        assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+    else:
+        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
 
-    boxes, classes, scores = yolo3_handle_predictions(predictions, max_boxes=100, confidence=conf_threshold, iou_threshold=0.4)
-    boxes = yolo3_adjust_boxes(boxes, image_shape, (height, width))
-
-    return boxes, classes, scores
+    return pred_boxes, pred_classes, pred_scores
 
 
 def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_threshold):
@@ -133,6 +136,9 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
         output_tensor_names = ['conv2d_1/Conv2D', 'conv2d_3/Conv2D']
     elif len(anchors) == 9:
         output_tensor_names = ['conv2d_3/Conv2D', 'conv2d_8/Conv2D', 'conv2d_13/Conv2D']
+    elif len(anchors) == 5:
+        # YOLOv2 use 5 anchors and have only 1 prediction
+        output_tensor_names = ['predict_conv/Conv2D']
     else:
         raise ValueError('invalid anchor number')
 
@@ -148,8 +154,10 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
         # should be MNN.Tensor_DimensionType_Caffe_C4, unsupported now
         raise ValueError('unsupported input tensor dimension type')
 
+    model_image_size = (height, width)
+
     # prepare input image
-    image_data = preprocess_image(image, (height, width))
+    image_data = preprocess_image(image, model_image_size)
     image_shape = image.size
 
     # use a temp tensor to copy data
@@ -162,7 +170,7 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
     input_tensor.copyFrom(tmp_input)
     interpreter.runSession(session)
 
-    out_list = []
+    prediction = []
     for output_tensor_name in output_tensor_names:
         output_tensor = interpreter.getSessionOutput(session, output_tensor_name)
         output_shape = output_tensor.getShape()
@@ -185,14 +193,69 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
         elif output_tensor.getDimensionType() == MNN.Tensor_DimensionType_Caffe_C4:
             raise ValueError('unsupported output tensor dimension type')
 
-        out_list.append(output_data)
+        prediction.append(output_data)
 
-    predictions = yolo3_head(out_list, anchors, num_classes=num_classes, input_dims=(height, width))
+    if len(anchors) == 5:
+        # YOLOv2 use 5 anchors and have only 1 prediction
+        assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+    else:
+        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
 
-    boxes, classes, scores = yolo3_handle_predictions(predictions, max_boxes=100, confidence=conf_threshold, iou_threshold=0.4)
-    boxes = yolo3_adjust_boxes(boxes, image_shape, (height, width))
+    return pred_boxes, pred_classes, pred_scores
 
-    return boxes, classes, scores
+
+def yolo_predict_pb(model, image, anchors, num_classes, model_image_size, conf_threshold):
+    # NOTE: TF 1.x frozen pb graph need to specify input/output tensor name
+    # so we need to hardcode the input/output tensor names here to get them from model
+    if len(anchors) == 6:
+        output_tensor_names = ['graph/conv2d_1/BiasAdd:0', 'graph/conv2d_3/BiasAdd:0']
+    elif len(anchors) == 9:
+        output_tensor_names = ['graph/conv2d_3/BiasAdd:0', 'graph/conv2d_8/BiasAdd:0', 'graph/conv2d_13/BiasAdd:0']
+    elif len(anchors) == 5:
+        # YOLOv2 use 5 anchors and have only 1 prediction
+        output_tensor_names = ['graph/predict_conv/BiasAdd:0']
+    else:
+        raise ValueError('invalid anchor number')
+
+    # assume only 1 input tensor for image
+    input_tensor_name = 'graph/image_input:0'
+
+    # prepare input image
+    image_data = preprocess_image(image, model_image_size)
+    image_shape = image.size
+
+    # get input/output tensors
+    image_input = model.get_tensor_by_name(input_tensor_name)
+    output_tensors = [model.get_tensor_by_name(output_tensor_name) for output_tensor_name in output_tensor_names]
+
+    with tf.Session(graph=model) as sess:
+        prediction = sess.run(output_tensors, feed_dict={
+            image_input: image_data
+        })
+
+    if len(anchors) == 5:
+        # YOLOv2 use 5 anchors and have only 1 prediction
+        assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+    else:
+        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+
+    return pred_boxes, pred_classes, pred_scores
+
+
+def yolo_predict_keras(model, image, anchors, num_classes, model_image_size, conf_threshold):
+    image_data = preprocess_image(image, model_image_size)
+    image_shape = image.size
+
+    prediction = model.predict([image_data])
+    if len(anchors) == 5:
+        # YOLOv2 use 5 anchors
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+    else:
+        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+
+    return pred_boxes, pred_classes, pred_scores
 
 
 def get_prediction_class_records(model, model_format, annotation_records, anchors, class_names, model_image_size, conf_threshold, save_result):
@@ -218,19 +281,21 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
     for (image_name, gt_records) in annotation_records.items():
         image = Image.open(image_name)
         image_array = np.array(image, dtype='uint8')
-        image_data = preprocess_image(image, model_image_size)
-        image_shape = image.size
 
+        # support of tflite model
         if model_format == 'TFLITE':
             pred_boxes, pred_classes, pred_scores = yolo_predict_tflite(model, image, anchors, len(class_names), conf_threshold)
+        # support of MNN model
         elif model_format == 'MNN':
             pred_boxes, pred_classes, pred_scores = yolo_predict_mnn(model, session, image, anchors, len(class_names), conf_threshold)
+        # support of TF 1.x frozen pb model
+        elif model_format == 'PB':
+            pred_boxes, pred_classes, pred_scores = yolo_predict_pb(model, image, anchors, len(class_names), model_image_size, conf_threshold)
+        # normal keras h5 model
+        elif model_format == 'H5':
+            pred_boxes, pred_classes, pred_scores = yolo_predict_keras(model, image, anchors, len(class_names), model_image_size, conf_threshold)
         else:
-            if len(anchors) == 5:
-                # YOLOv2 use 5 anchors
-                pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size, max_boxes=100, confidence=conf_threshold)
-            else:
-                pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(model.predict([image_data]), image_shape, anchors, len(class_names), model_image_size, max_boxes=100, confidence=conf_threshold)
+            raise ValueError('invalid model format')
 
         print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
 
@@ -941,6 +1006,26 @@ def eval_AP(model, model_format, annotation_lines, anchors, class_names, model_i
     return AP
 
 
+#load TF 1.x frozen pb graph
+def load_graph(model_path):
+    # We parse the graph_def file
+    with tf.gfile.GFile(model_path, "rb") as f:
+        graph_def = tf.GraphDef()
+        graph_def.ParseFromString(f.read())
+
+    # We load the graph_def in the default graph
+    with tf.Graph().as_default() as graph:
+        tf.import_graph_def(
+            graph_def,
+            input_map=None,
+            return_elements=None,
+            name="graph",
+            op_dict=None,
+            producer_op_list=None
+        )
+    return graph
+
+
 def load_eval_model(model_path):
 
     # support of tflite model
@@ -955,11 +1040,18 @@ def load_eval_model(model_path):
         model = MNN.Interpreter(model_path)
         model_format = 'MNN'
 
+    # support of TF 1.x frozen pb model
+    elif model_path.endswith('.pb'):
+        model = load_graph(model_path)
+        model_format = 'PB'
+
     # normal keras h5 model
-    else:
+    elif model_path.endswith('.h5'):
         model = load_model(model_path, compile=False)
         model_format = 'H5'
         K.set_learning_phase(0)
+    else:
+        raise ValueError('invalid model file')
 
     return model, model_format
 

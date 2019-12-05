@@ -340,6 +340,8 @@ Using [keras_to_tensorflow.py](https://github.com/david8862/keras-YOLOv3-model-s
     --output_model="path/to/save/model.pb"
 ```
 
+You can also use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/eval.py) to do evaluation on the pb inference model
+
 ### Inference model deployment
 See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/inference) for TFLite & MNN model deployment
 
