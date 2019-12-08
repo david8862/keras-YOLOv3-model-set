@@ -11,6 +11,7 @@ A common YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilen
 - [x] Darknet19
 - [x] MobilenetV1
 - [x] MobilenetV2
+- [x] EfficientNetB0
 - [x] VGG16
 - [x] Xception
 
@@ -360,11 +361,11 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
     - tensorflow 2.0.0/tensorflow 1.14.0
     - tf.keras 2.2.4-tf
 
-2. Default YOLOv3/v2 anchors are used. If you want to use your own anchors, probably some changes are needed. tools/kmeans.py could be used to do K-Means anchor clustering on your dataset
+2. Default YOLOv3/v2 anchors are used. If you want to use your own anchors, probably some changes are needed. [kmeans.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/kmeans.py) could be used to do K-Means anchor clustering on your dataset
 
 3. Always load pretrained weights and freeze layers in the first stage of training.
 
-4. The training strategy is for reference only. Adjust it according to your dataset and your goal. And add further strategy if needed.
+4. Training strategy is for reference only. Adjust it according to your dataset and your goal. And add further strategy if needed.
 
 
 # Citation

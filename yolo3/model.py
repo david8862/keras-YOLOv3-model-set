@@ -16,6 +16,7 @@ from yolo3.models.yolo3_shufflenetv2 import yolo3_shufflenetv2_body, tiny_yolo3_
 from yolo3.models.yolo3_vgg16 import yolo3_vgg16_body, tiny_yolo3_vgg16_body
 from yolo3.models.yolo3_xception import yolo3_xception_body, yolo3lite_xception_body, tiny_yolo3_xception_body, tiny_yolo3lite_xception_body, yolo3_spp_xception_body
 from yolo3.models.yolo3_nano import yolo3_nano_body
+from yolo3.models.yolo3_efficientnet import yolo3_efficientnetb0_body, tiny_yolo3_efficientnetb0_body, yolo3lite_efficientnetb0_body, yolo3lite_spp_efficientnetb0_body, tiny_yolo3lite_efficientnetb0_body
 from yolo3.loss import yolo3_loss
 from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Yolo3PostProcessLayer
 
@@ -38,6 +39,10 @@ yolo3_model_map = {
     'yolo3_shufflenetv2': [yolo3_shufflenetv2_body, 205, None],
     'yolo3_shufflenetv2_lite': [yolo3lite_shufflenetv2_body, 205, None],
     'yolo3_shufflenetv2_lite_spp': [yolo3lite_spp_shufflenetv2_body, 205, None],
+
+    'yolo3_efficientnetb0': [yolo3_efficientnetb0_body, 235, None],
+    'yolo3_efficientnetb0_lite': [yolo3lite_efficientnetb0_body, 235, None],
+    'yolo3_efficientnetb0_lite_spp': [yolo3lite_spp_efficientnetb0_body, 235, None],
 
     'yolo3_darknet': [yolo3_body, 185, 'weights/darknet53.h5'],
     'yolo3_darknet_spp': [custom_yolo3_spp_body, 185, 'weights/yolov3-spp.h5'],
@@ -67,6 +72,9 @@ yolo3_tiny_model_map = {
 
     'tiny_yolo3_shufflenetv2': [tiny_yolo3_shufflenetv2_body, 205, None],
     'tiny_yolo3_shufflenetv2_lite': [tiny_yolo3lite_shufflenetv2_body, 205, None],
+
+    'tiny_yolo3_efficientnetb0': [tiny_yolo3_efficientnetb0_body, 235, None],
+    'tiny_yolo3_efficientnetb0_lite': [tiny_yolo3lite_efficientnetb0_body, 235, None],
 
     'tiny_yolo3_darknet': [custom_tiny_yolo3_body, 20, 'weights/yolov3-tiny.h5'],
     #Doesn't have pretrained weights, so no need to return backbone length

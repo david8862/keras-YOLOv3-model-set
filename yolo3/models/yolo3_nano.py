@@ -1,4 +1,6 @@
-"""YOLO_v3 Model Defined in Keras."""
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""YOLO_v3 Nano Model Defined in Keras."""
 
 from keras_applications.imagenet_utils import _obtain_input_shape
 from tensorflow.keras.layers import UpSampling2D, Concatenate, Dense, Multiply, Add, Lambda, Input

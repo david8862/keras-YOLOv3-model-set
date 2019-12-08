@@ -1,4 +1,6 @@
-"""YOLO_v3 Model Defined in Keras."""
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""YOLO_v3 Xception Model Defined in Keras."""
 
 import tensorflow as tf
 from tensorflow.keras.layers import UpSampling2D, Concatenate

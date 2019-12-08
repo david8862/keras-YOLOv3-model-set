@@ -1,4 +1,6 @@
-"""YOLO_v3 Model Defined in Keras."""
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""YOLO_v3 ShuffleNetV2 Model Defined in Keras."""
 
 from tensorflow.keras.layers import UpSampling2D, Concatenate
 from tensorflow.keras.models import Model

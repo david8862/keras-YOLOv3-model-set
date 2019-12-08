@@ -1,4 +1,6 @@
-"""YOLO_v3 Model Defined in Keras."""
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""YOLO_v3 VGG16 Model Defined in Keras."""
 
 from tensorflow.keras.layers import Conv2D, UpSampling2D, Concatenate, MaxPooling2D
 from tensorflow.keras.models import Model
