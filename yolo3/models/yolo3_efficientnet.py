@@ -142,6 +142,9 @@ def get_efficientnet_backbone_info(input_tensor, level=0):
     else:
         raise ValueError('Invalid efficientnet backbone type')
 
+    # f1 shape : 13 x 13 x f1_channel_num
+    # f2 shape : 26 x 26 x f2_channel_num
+    # f3 shape : 52 x 52 x f3_channel_num
     feature_map_info = {'f1_name' : f1_name,
                         'f1_channel_num' : f1_channel_num,
                         'f2_name' : f2_name,

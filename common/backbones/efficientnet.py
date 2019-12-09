@@ -606,8 +606,8 @@ setattr(EfficientNetB7, '__doc__', EfficientNet.__doc__)
 
 if __name__ == '__main__':
     input_tensor = Input(shape=(None, None, 3), name='image_input')
-    model = EfficientNetB1(include_top=False, input_shape=(416, 416, 3), weights='imagenet')
-    #model = EfficientNetB0(include_top=True, input_tensor=input_tensor, weights='imagenet')
+    #model = EfficientNetB0(include_top=False, input_shape=(416, 416, 3), weights='imagenet')
+    model = EfficientNetB0(include_top=True, input_tensor=input_tensor, weights='imagenet')
     model.summary()
 
     import numpy as np
