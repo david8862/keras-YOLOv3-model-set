@@ -117,7 +117,8 @@ def draw_boxes(image, boxes, classes, scores, class_names, colors, show_score=Tr
             label = '{} {:.2f}'.format(class_name, score)
         else:
             label = '{}'.format(class_name)
-        print(label, (xmin, ymin), (xmax, ymax))
+        #print(label, (xmin, ymin), (xmax, ymax))
+
         # if no color info, use black(0,0,0)
         if colors == None:
             color = (0,0,0)

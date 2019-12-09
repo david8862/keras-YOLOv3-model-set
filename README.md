@@ -11,7 +11,7 @@ A common YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilen
 - [x] Darknet19
 - [x] MobilenetV1
 - [x] MobilenetV2
-- [x] EfficientNetB0
+- [x] EfficientNet
 - [x] VGG16
 - [x] Xception
 

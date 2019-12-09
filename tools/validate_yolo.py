@@ -250,7 +250,8 @@ def handle_prediction(prediction, image_file, image, image_shape, anchors, class
 
     print('Found {} boxes for {}'.format(len(boxes), image_file))
     for box, cls, score in zip(boxes, classes, scores):
-        print("Class: {}, Score: {}".format(class_names[cls], score))
+        xmin, ymin, xmax, ymax = box
+        print("Class: {}, Score: {}, Box: {},{}".format(class_names[cls], score, (xmin, ymin), (xmax, ymax)))
 
     colors = get_colors(class_names)
     image = draw_boxes(image, boxes, classes, scores, class_names, colors)

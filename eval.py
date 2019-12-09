@@ -13,6 +13,7 @@ from common.utils import get_dataset, get_classes, get_anchors, get_colors, draw
 from PIL import Image
 import operator
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 from tensorflow.keras.models import load_model
 import tensorflow.keras.backend as K
@@ -278,6 +279,7 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
         session = model.createSession()
 
     pred_classes_records = {}
+    pbar = tqdm(total=len(annotation_records), desc='Eval model')
     for (image_name, gt_records) in annotation_records.items():
         image = Image.open(image_name)
         image_array = np.array(image, dtype='uint8')
@@ -297,7 +299,8 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
         else:
             raise ValueError('invalid model format')
 
-        print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
+        #print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
+        pbar.update(1)
 
         if save_result:
 
@@ -334,6 +337,7 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
     for pred_class_list in pred_classes_records.values():
         pred_class_list.sort(key=lambda ele: ele[2], reverse=True)
 
+    pbar.close()
     return pred_classes_records
 
 
