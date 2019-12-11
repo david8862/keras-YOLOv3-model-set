@@ -20,6 +20,7 @@ A common YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilen
 - [x] YOLOv3 Lite
 - [x] YOLOv3 spp
 - [x] YOLOv3 Lite spp
+- [x] YOLOv3 Nano ([YOLO nano](https://arxiv.org/abs/1910.01271))
 - [x] Tiny YOLOv3
 - [x] Tiny YOLOv3 Lite
 - [x] YOLOv2
@@ -348,8 +349,6 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 
 ### TODO
-- [ ] support YOLOv3 nano model ([YOLO nano](https://arxiv.org/abs/1910.01271))
-- [ ] add Attention mechanism/blocks to other backbone
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones/imagenet_training)
 
 

@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 """YOLO_v3 Nano Model Defined in Keras."""
 
+import os
 from keras_applications.imagenet_utils import _obtain_input_shape
+from tensorflow.keras.utils import get_source_inputs, get_file
 from tensorflow.keras.layers import UpSampling2D, Concatenate, Dense, Multiply, Add, Lambda, Input
-from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Concatenate, BatchNormalization, ReLU, ZeroPadding2D, GlobalAveragePooling2D, Softmax
+from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Concatenate, BatchNormalization, ReLU, ZeroPadding2D, GlobalAveragePooling2D, GlobalMaxPooling2D, Softmax
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 
@@ -205,7 +207,7 @@ def yolo3_nano_body(inputs, num_anchors, num_classes, weights_path=None):
         "YOLO Nano: a Highly Compact You Only Look Once Convolutional Neural Network for Object Detection"
         https://arxiv.org/abs/1910.01271
     """
-    nano_net = Model(inputs, nano_net_body(inputs))
+    nano_net = NanoNet(input_tensor=inputs, weights='imagenet', include_top=False)
     if weights_path is not None:
         nano_net.load_weights(weights_path, by_name=True)
         print('Load weights {}.'.format(weights_path))
@@ -253,26 +255,78 @@ def yolo3_nano_body(inputs, num_anchors, num_classes, weights_path=None):
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def NanoNet(input_shape=None, input_tensor=None, include_top=True, weights=None, classes=1000):
+BASE_WEIGHT_PATH = (
+    'https://github.com/david8862/keras-YOLOv3-model-set/'
+    'releases/download/v1.0.1/')
+
+def NanoNet(input_shape=None,
+            input_tensor=None,
+            include_top=True,
+            weights='imagenet',
+            pooling=None,
+            classes=1000,
+            **kwargs):
     """Generate nano net model for Imagenet classification."""
-    input_shape = _obtain_input_shape(input_shape, default_size=224, min_size=28, require_flatten=include_top, data_format=K.image_data_format())
+
+    if not (weights in {'imagenet', None} or os.path.exists(weights)):
+        raise ValueError('The `weights` argument should be either '
+                         '`None` (random initialization), `imagenet` '
+                         '(pre-training on ImageNet), '
+                         'or the path to the weights file to be loaded.')
+
+    if weights == 'imagenet' and include_top and classes != 1000:
+        raise ValueError('If using `weights` as `"imagenet"` with `include_top`'
+                         ' as true, `classes` should be 1000')
+
+    # Determine proper input shape
+    input_shape = _obtain_input_shape(input_shape,
+                                      default_size=224,
+                                      min_size=28,
+                                      data_format=K.image_data_format(),
+                                      require_flatten=include_top,
+                                      weights=weights)
 
     if input_tensor is None:
         img_input = Input(shape=input_shape)
     else:
         img_input = input_tensor
 
-    body_out = nano_net_body(img_input)
+    x = nano_net_body(img_input)
 
     if include_top:
-        x = DarknetConv2D(classes, (1, 1))(body_out)
-        x = GlobalAveragePooling2D()(x)
-        logits = Softmax()(x)
-        model = Model(img_input, logits, name='nano_net')
+        model_name='nano_net'
+        x = DarknetConv2D(classes, (1, 1))(x)
+        x = GlobalAveragePooling2D(name='avg_pool')(x)
+        x = Softmax()(x)
     else:
-        model = Model(img_input, body_out, name='nano_net_headless')
+        model_name='nano_net_headless'
+        if pooling == 'avg':
+            x = GlobalAveragePooling2D(name='avg_pool')(x)
+        elif pooling == 'max':
+            x = GlobalMaxPooling2D(name='max_pool')(x)
 
-    if weights is not None:
+    # Ensure that the model takes into account
+    # any potential predecessors of `input_tensor`.
+    if input_tensor is not None:
+        inputs = get_source_inputs(input_tensor)
+    else:
+        inputs = img_input
+
+    # Create model.
+    model = Model(inputs, x, name=model_name)
+
+    # Load weights.
+    if weights == 'imagenet':
+        if include_top:
+            file_name = 'nanonet_weights_tf_dim_ordering_tf_kernels_224.h5'
+            weight_path = BASE_WEIGHT_PATH + file_name
+        else:
+            file_name = 'nanonet_weights_tf_dim_ordering_tf_kernels_224_no_top.h5'
+            weight_path = BASE_WEIGHT_PATH + file_name
+
+        weights_path = get_file(file_name, weight_path, cache_subdir='models')
+        model.load_weights(weights_path)
+    elif weights is not None:
         model.load_weights(weights)
 
     return model

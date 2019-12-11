@@ -57,7 +57,7 @@ yolo3_model_map = {
 
     # TODO: NanoNet backbone has 268 layers, update when got Imagenet
     # pretrained weights
-    'yolo3_nano': [yolo3_nano_body, 0, None],
+    'yolo3_nano': [yolo3_nano_body, 268, None],
 }
 
 
