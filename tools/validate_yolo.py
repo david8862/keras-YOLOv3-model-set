@@ -270,7 +270,7 @@ def main():
     parser.add_argument('--classes_path', help='path to class definitions, default ../configs/voc_classes.txt', type=str, default='../configs/voc_classes.txt')
     parser.add_argument('--model_image_size', help='model image input size as <num>x<num>, default 416x416', type=str, default='416x416')
     parser.add_argument('--loop_count', help='loop inference for certain times', type=int, default=1)
-    parser.add_argument('--custom_objects', required=False, type=str, help="Custom objects in keras model (swish/). Separated with comma if more than one.", default=None)
+    parser.add_argument('--custom_objects', required=False, type=str, help="Custom objects in keras model (swish/tf). Separated with comma if more than one.", default=None)
 
     args = parser.parse_args()
 

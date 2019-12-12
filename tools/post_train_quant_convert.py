@@ -60,7 +60,7 @@ def main():
     parser.add_argument('--sample_num', type=int, help='annotation sample number to feed the converter,default 30', default=30)
     parser.add_argument('--model_input_shape', type=str, help='model image input shape as <num>x<num>, default 416x416', default='416x416')
     parser.add_argument('--output_file', required=True, type=str, help='output tflite model file')
-    parser.add_argument('--custom_objects', required=False, type=str, help="Custom objects in keras model (swish/). Separated with comma if more than one.", default=None)
+    parser.add_argument('--custom_objects', required=False, type=str, help="Custom objects in keras model (swish/tf). Separated with comma if more than one.", default=None)
 
     args = parser.parse_args()
     height, width = args.model_input_shape.split('x')

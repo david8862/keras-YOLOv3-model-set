@@ -33,7 +33,7 @@ flags.DEFINE_string('input_model_yaml', None, 'Path to the input model '
                                               'architecture in yaml format.')
 flags.DEFINE_string('output_model', None, 'Path where the converted model will '
                                           'be stored.')
-flags.DEFINE_string('custom_objects', None, 'Custom objects in keras model (swish/). '
+flags.DEFINE_string('custom_objects', None, 'Custom objects in keras model (swish/tf). '
                                           'Separated with comma if more than one.')
 flags.DEFINE_boolean('save_graph_def', False,
                      'Whether to save the graphdef.pbtxt file which contains '

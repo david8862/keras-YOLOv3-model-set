@@ -1074,7 +1074,7 @@ def main():
 
     parser.add_argument(
         '--custom_objects', type=str, required=False, default=None,
-        help="Custom objects in keras model (swish/). Separated with comma if more than one.")
+        help="Custom objects in keras model (swish/tf). Separated with comma if more than one.")
 
     parser.add_argument(
         '--anchors_path', type=str, required=True,
