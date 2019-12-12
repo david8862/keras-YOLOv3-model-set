@@ -20,7 +20,7 @@ A common YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilen
 - [x] YOLOv3 Lite
 - [x] YOLOv3 spp
 - [x] YOLOv3 Lite spp
-- [x] YOLOv3 Nano ([YOLO nano](https://arxiv.org/abs/1910.01271))
+- [x] YOLOv3 Nano ([YOLO nano](https://arxiv.org/abs/1910.01271)) (unofficially)
 - [x] Tiny YOLOv3
 - [x] Tiny YOLOv3 Lite
 - [x] YOLOv2
@@ -227,7 +227,8 @@ optional arguments:
                         Learning rate decay type
                         (None/Cosine/Exponential/Polynomial), default=None
   --transfer_epoch TRANSFER_EPOCH
-                        Transfer training stage epochs, default=20
+                        Transfer training (from Imagenet) stage epochs,
+                        default=20
   --freeze_level FREEZE_LEVEL
                         Freeze level of the model in transfer training stage.
                         0:NA/1:backbone/2:only open prediction layer

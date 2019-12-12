@@ -9,7 +9,7 @@ import os, argparse
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo2.postprocess_np import yolo2_postprocess_np
 from common.data_utils import preprocess_image
-from common.utils import get_dataset, get_classes, get_anchors, get_colors, draw_boxes, touchdir, optimize_tf_gpu
+from common.utils import get_dataset, get_classes, get_anchors, get_colors, draw_boxes, touchdir, optimize_tf_gpu, get_custom_objects
 from PIL import Image
 import operator
 import matplotlib.pyplot as plt
@@ -1030,7 +1030,7 @@ def load_graph(model_path):
     return graph
 
 
-def load_eval_model(model_path):
+def load_eval_model(model_path, custom_objects_string):
 
     # support of tflite model
     if model_path.endswith('.tflite'):
@@ -1051,7 +1051,9 @@ def load_eval_model(model_path):
 
     # normal keras h5 model
     elif model_path.endswith('.h5'):
-        model = load_model(model_path, compile=False)
+        custom_object_dict = get_custom_objects(custom_objects_string)
+
+        model = load_model(model_path, compile=False, custom_objects=custom_object_dict)
         model_format = 'H5'
         K.set_learning_phase(0)
     else:
@@ -1069,6 +1071,10 @@ def main():
     parser.add_argument(
         '--model_path', type=str, required=True,
         help='path to model weight file')
+
+    parser.add_argument(
+        '--custom_objects', type=str, required=False, default=None,
+        help="Custom objects in keras model (swish/). Separated with comma if more than one.")
 
     parser.add_argument(
         '--anchors_path', type=str, required=True,
@@ -1112,7 +1118,7 @@ def main():
     model_image_size = (int(height), int(width))
 
     annotation_lines = get_dataset(args.annotation_file)
-    model, model_format = load_eval_model(args.model_path)
+    model, model_format = load_eval_model(args.model_path, args.custom_objects)
 
     eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, args.eval_type, args.iou_threshold, args.conf_threshold, args.save_result)
 

@@ -6,6 +6,8 @@ from PIL import Image
 import numpy as np
 import os, cv2, colorsys
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
+from common.backbones.efficientnet import swish
+import tensorflow as tf
 
 
 def optimize_tf_gpu(tf, K):
@@ -28,6 +30,28 @@ def optimize_tf_gpu(tf, K):
 
         # set session
         K.set_session(session)
+
+
+def get_custom_objects(custom_objects_string):
+    '''
+    form up a custom_objects dict so that the customized
+    layer/function call could be correctly parsed when keras
+    .h5 model is loading or converting
+    '''
+    custom_objects_dict = {}
+    if custom_objects_string:
+        custom_object_names = custom_objects_string.split(',')
+        for custom_object_name in custom_object_names:
+            if custom_object_name == 'swish':
+                custom_objects_dict['swish'] = swish
+            elif custom_object_name == 'tf':
+                custom_objects_dict['tf'] = tf
+            else:
+                raise ValueError('unsupported custom objects: ', custom_object_name)
+    else:
+        custom_objects_dict = None
+
+    return custom_objects_dict
 
 
 def get_multiscale_list():

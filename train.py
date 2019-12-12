@@ -199,7 +199,7 @@ if __name__ == '__main__':
     parser.add_argument('--decay_type', type=str,required=False, default=None,
         help = "Learning rate decay type (None/cosine/exponential/polynomial), default=None")
     parser.add_argument('--transfer_epoch', type=int,required=False, default=20,
-        help = "Transfer training stage epochs, default=20")
+        help = "Transfer training (from Imagenet) stage epochs, default=20")
     parser.add_argument('--freeze_level', type=int,required=False, default=None,
         help = "Freeze level of the model in transfer training stage. 0:NA/1:backbone/2:only open prediction layer")
     parser.add_argument('--init_epoch', type=int,required=False, default=0,

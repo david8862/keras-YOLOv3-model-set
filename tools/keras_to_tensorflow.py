@@ -21,7 +21,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.models import model_from_json, model_from_yaml, load_model
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-from common.backbones.efficientnet import swish
+from common.utils import get_custom_objects
 
 K.set_learning_phase(0)
 FLAGS = flags.FLAGS
@@ -33,7 +33,7 @@ flags.DEFINE_string('input_model_yaml', None, 'Path to the input model '
                                               'architecture in yaml format.')
 flags.DEFINE_string('output_model', None, 'Path where the converted model will '
                                           'be stored.')
-flags.DEFINE_string('custom_objects', None, 'Custom objects in converting keras model (swish/). '
+flags.DEFINE_string('custom_objects', None, 'Custom objects in keras model (swish/). '
                                           'Separated with comma if more than one.')
 flags.DEFINE_boolean('save_graph_def', False,
                      'Whether to save the graphdef.pbtxt file which contains '
@@ -58,21 +58,6 @@ flags.DEFINE_boolean('output_meta_ckpt', False,
 
 flags.mark_flag_as_required('input_model')
 flags.mark_flag_as_required('output_model')
-
-
-def get_custom_objects(custom_objects_string):
-    custom_objects_dict = {}
-    if custom_objects_string:
-        custom_object_names = custom_objects_string.split(',')
-        for custom_object_name in custom_object_names:
-            if custom_object_name == 'swish':
-                custom_objects_dict['swish'] = swish
-            else:
-                raise ValueError('unsupported custom objects: ', custom_object_name)
-    else:
-        custom_objects_dict = None
-
-    return custom_objects_dict
 
 
 def load_input_model(input_model_path, input_json_path=None, input_yaml_path=None, custom_objects=None):
