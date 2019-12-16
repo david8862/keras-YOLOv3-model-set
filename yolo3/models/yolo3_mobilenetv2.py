@@ -20,7 +20,8 @@ def yolo3_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
 
     f1 = mobilenetv2.get_layer('out_relu').output
     # f1 :13 x 13 x 1280
-    x, y1 = make_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5), predict_filters=int(1024*alpha))
+    x, y1 = make_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5))
+    #x, y1 = make_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5), predict_filters=int(1024*alpha))
 
     x = compose(
             DarknetConv2D_BN_Leaky(int(288*alpha), (1,1)),
@@ -30,7 +31,8 @@ def yolo3_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
     # f2: 26 x 26 x (576*alpha)
     x = Concatenate()([x,f2])
 
-    x, y2 = make_last_layers(x, int(192*alpha), num_anchors*(num_classes+5), predict_filters=int(512*alpha))
+    x, y2 = make_last_layers(x, int(192*alpha), num_anchors*(num_classes+5))
+    #x, y2 = make_last_layers(x, int(192*alpha), num_anchors*(num_classes+5), predict_filters=int(512*alpha))
 
     x = compose(
             DarknetConv2D_BN_Leaky(int(96*alpha), (1,1)),
@@ -39,7 +41,8 @@ def yolo3_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
     f3 = mobilenetv2.get_layer('block_6_expand_relu').output
     # f3 : 52 x 52 x (192*alpha)
     x = Concatenate()([x, f3])
-    x, y3 = make_last_layers(x, int(96*alpha), num_anchors*(num_classes+5), predict_filters=int(256*alpha))
+    x, y3 = make_last_layers(x, int(96*alpha), num_anchors*(num_classes+5))
+    #x, y3 = make_last_layers(x, int(96*alpha), num_anchors*(num_classes+5), predict_filters=int(256*alpha))
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
@@ -55,7 +58,8 @@ def yolo3lite_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
 
     f1 = mobilenetv2.get_layer('out_relu').output
     # f1 :13 x 13 x 1280
-    x, y1 = make_depthwise_separable_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5), block_id_str='17', predict_filters=int(1024*alpha))
+    x, y1 = make_depthwise_separable_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5), block_id_str='17')
+    #x, y1 = make_depthwise_separable_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5), block_id_str='17', predict_filters=int(1024*alpha))
 
     x = compose(
             DarknetConv2D_BN_Leaky(int(288*alpha), (1,1)),
@@ -65,7 +69,8 @@ def yolo3lite_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
     # f2: 26 x 26 x (576*alpha)
     x = Concatenate()([x,f2])
 
-    x, y2 = make_depthwise_separable_last_layers(x, int(192*alpha), num_anchors * (num_classes + 5), block_id_str='18', predict_filters=int(512*alpha))
+    x, y2 = make_depthwise_separable_last_layers(x, int(192*alpha), num_anchors * (num_classes + 5), block_id_str='18')
+    #x, y2 = make_depthwise_separable_last_layers(x, int(192*alpha), num_anchors * (num_classes + 5), block_id_str='18', predict_filters=int(512*alpha))
 
     x = compose(
             DarknetConv2D_BN_Leaky(int(96*alpha), (1,1)),
@@ -74,7 +79,8 @@ def yolo3lite_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
     f3 = mobilenetv2.get_layer('block_6_expand_relu').output
     # f3 : 52 x 52 x (192*alpha)
     x = Concatenate()([x, f3])
-    x, y3 = make_depthwise_separable_last_layers(x, int(96*alpha), num_anchors * (num_classes + 5), block_id_str='19', predict_filters=int(256*alpha))
+    x, y3 = make_depthwise_separable_last_layers(x, int(96*alpha), num_anchors * (num_classes + 5), block_id_str='19')
+    #x, y3 = make_depthwise_separable_last_layers(x, int(96*alpha), num_anchors * (num_classes + 5), block_id_str='19', predict_filters=int(256*alpha))
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
@@ -90,7 +96,8 @@ def yolo3lite_spp_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
 
     f1 = mobilenetv2.get_layer('out_relu').output
     # f1 :13 x 13 x 1280
-    x, y1 = make_spp_depthwise_separable_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5), block_id_str='17', predict_filters=int(1024*alpha))
+    x, y1 = make_spp_depthwise_separable_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5), block_id_str='17')
+    #x, y1 = make_spp_depthwise_separable_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5), block_id_str='17', predict_filters=int(1024*alpha))
 
     x = compose(
             DarknetConv2D_BN_Leaky(int(288*alpha), (1,1)),
@@ -100,7 +107,8 @@ def yolo3lite_spp_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
     # f2: 26 x 26 x (576*alpha)
     x = Concatenate()([x,f2])
 
-    x, y2 = make_depthwise_separable_last_layers(x, int(192*alpha), num_anchors * (num_classes + 5), block_id_str='18', predict_filters=int(512*alpha))
+    x, y2 = make_depthwise_separable_last_layers(x, int(192*alpha), num_anchors * (num_classes + 5), block_id_str='18')
+    #x, y2 = make_depthwise_separable_last_layers(x, int(192*alpha), num_anchors * (num_classes + 5), block_id_str='18', predict_filters=int(512*alpha))
 
     x = compose(
             DarknetConv2D_BN_Leaky(int(96*alpha), (1,1)),
@@ -109,7 +117,8 @@ def yolo3lite_spp_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
     f3 = mobilenetv2.get_layer('block_6_expand_relu').output
     # f3 : 52 x 52 x (192*alpha)
     x = Concatenate()([x, f3])
-    x, y3 = make_depthwise_separable_last_layers(x, int(96*alpha), num_anchors * (num_classes + 5), block_id_str='19', predict_filters=int(256*alpha))
+    x, y3 = make_depthwise_separable_last_layers(x, int(96*alpha), num_anchors * (num_classes + 5), block_id_str='19')
+    #x, y3 = make_depthwise_separable_last_layers(x, int(96*alpha), num_anchors * (num_classes + 5), block_id_str='19', predict_filters=int(256*alpha))
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
