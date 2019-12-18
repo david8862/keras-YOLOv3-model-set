@@ -1,17 +1,10 @@
 #!/usr/bin/python3
 # -*- coding=utf-8 -*-
 """Model utility functions."""
-
-import os, sys
 from tensorflow.keras.optimizers import Adam, RMSprop, SGD
 from tensorflow.keras.optimizers.schedules import ExponentialDecay, PolynomialDecay
 from tensorflow.keras.experimental import CosineDecay
 from tensorflow_model_optimization.sparsity import keras as sparsity
-from tensorflow.keras.models import Model
-from tensorflow.keras.callbacks import Callback
-
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-from eval import eval_AP
 
 
 def add_metrics(model, metric_dict):
@@ -138,53 +131,3 @@ def get_optimizer(optim_type, learning_rate, decay_type='cosine', decay_steps=10
 
     return optimizer
 
-
-class EvalCallBack(Callback):
-    def __init__(self, annotation_lines, anchors, class_names, model_image_size, log_dir, eval_epoch_interval=10, save_eval_checkpoint=False):
-        self.annotation_lines = annotation_lines
-        self.anchors = anchors
-        self.class_names = class_names
-        self.model_image_size = model_image_size
-        self.log_dir = log_dir
-        self.eval_epoch_interval = eval_epoch_interval
-        self.save_eval_checkpoint = save_eval_checkpoint
-        self.best_mAP = 0.0
-
-    def get_eval_model(self, model):
-        # We strip the extra layers in training model to get eval model
-        num_anchors = len(self.anchors)
-
-        if num_anchors == 9:
-            # YOLOv3 use 9 anchors and 3 prediction layers.
-            # Has 7 extra layers (including metrics) in training model
-            y1 = model.layers[-10].output
-            y2 = model.layers[-9].output
-            y3 = model.layers[-8].output
-
-            eval_model = Model(inputs=model.input[0], outputs=[y1,y2,y3])
-        elif num_anchors == 6:
-            # Tiny YOLOv3 use 6 anchors and 2 prediction layers.
-            # Has 6 extra layers in training model
-            y1 = model.layers[-8].output
-            y2 = model.layers[-7].output
-
-            eval_model = Model(inputs=model.input[0], outputs=[y1,y2])
-        elif num_anchors == 5:
-            # YOLOv2 use 5 anchors and 1 prediction layer.
-            # Has 6 extra layers in training model
-            eval_model = Model(inputs=model.input[0], outputs=model.layers[-7].output)
-        else:
-            raise ValueError('Invalid anchor set')
-
-        return eval_model
-
-
-    def on_epoch_end(self, epoch, logs=None):
-        if (epoch+1) % self.eval_epoch_interval == 0:
-            # Do eval every eval_epoch_interval epochs
-            eval_model = self.get_eval_model(self.model)
-            mAP = eval_AP(eval_model, 'H5', self.annotation_lines, self.anchors, self.class_names, self.model_image_size, eval_type='VOC', iou_threshold=0.5, conf_threshold=0.001, save_result=False)
-            if self.save_eval_checkpoint and mAP > self.best_mAP:
-                # Save best mAP value and model checkpoint
-                self.best_mAP = mAP
-                self.model.save(self.log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}-mAP{mAP:.3f}.h5'.format(epoch=(epoch+1), loss=logs.get('loss'), val_loss=logs.get('val_loss'), mAP=mAP))

@@ -14,7 +14,8 @@ from yolo3.data import yolo3_data_generator_wrapper
 from yolo2.model import get_yolo2_train_model
 from yolo2.data import yolo2_data_generator_wrapper
 from common.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
-from common.model_utils import get_optimizer, EvalCallBack
+from common.model_utils import get_optimizer
+from common.callbacks import EvalCallBack
 
 # Try to enable Auto Mixed Precision on TF 2.0
 os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '1'
@@ -91,7 +92,7 @@ def main(args):
 
     # prepare online evaluation callback
     if args.eval_online:
-        eval_callback = EvalCallBack(dataset[num_train:], anchors, class_names, args.model_image_size, log_dir, eval_epoch_interval=args.eval_epoch_interval, save_eval_checkpoint=args.save_eval_checkpoint)
+        eval_callback = EvalCallBack(args.model_type, dataset[num_train:], anchors, class_names, args.model_image_size, args.model_pruning, log_dir, eval_epoch_interval=args.eval_epoch_interval, save_eval_checkpoint=args.save_eval_checkpoint)
         callbacks.append(eval_callback)
 
     # prepare model pruning config
@@ -106,7 +107,10 @@ def main(args):
     # get train model
     model = get_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, optimizer=optimizer, label_smoothing=args.label_smoothing, model_pruning=args.model_pruning, pruning_end_step=pruning_end_step)
     # support multi-gpu training
+    template_model = None
     if args.gpu_num >= 2:
+        # keep the template model for saving result
+        template_model = model
         model = multi_gpu_model(model, gpus=args.gpu_num)
         # recompile multi gpu model
         model.compile(optimizer=optimizer, loss={'yolo_loss': lambda y_true, y_pred: y_pred})
@@ -163,8 +167,15 @@ def main(args):
 
     # Finally store model
     if args.model_pruning:
-        model = sparsity.strip_pruning(model)
-    model.save(log_dir + 'trained_final.h5')
+        if template_model is not None:
+            template_model = sparsity.strip_pruning(template_model)
+        else:
+            model = sparsity.strip_pruning(model)
+
+    if template_model is not None:
+        template_model.save(log_dir + 'trained_final.h5')
+    else:
+        model.save(log_dir + 'trained_final.h5')
 
 
 if __name__ == '__main__':
