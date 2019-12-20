@@ -5,7 +5,7 @@ import numpy as np
 import random, math
 from PIL import Image
 from tensorflow.keras.utils import Sequence
-from common.data_utils import letterbox_resize_image, random_resize_image, reshape_boxes, hsv_distort_image
+from common.data_utils import letterbox_resize, random_resize_crop_pad, reshape_boxes, random_hsv_distort, random_horizontal_flip, random_vertical_flip, random_grayscale, random_brightness, random_chroma, random_contrast, random_sharpness
 from common.utils import get_multiscale_list
 
 
@@ -18,7 +18,7 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
     boxes = np.array([np.array(list(map(int,box.split(',')))) for box in line[1:]])
 
     if not augment:
-        new_image, padding_size, offset = letterbox_resize_image(image, target_size=model_input_size, return_padding_info=True)
+        new_image, padding_size, offset = letterbox_resize(image, target_size=model_input_size, return_padding_info=True)
         image_data = np.array(new_image)/255.
 
         # reshape boxes
@@ -34,23 +34,21 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
         return image_data, box_data
 
     # random resize image and crop|padding to target size
-    image, padding_size, padding_offset = random_resize_image(image, target_size=model_input_size)
+    image, padding_size, padding_offset = random_resize_crop_pad(image, target_size=model_input_size)
 
-    # random flip image
-    flip = random.random()<.5
-    if flip:
-        image = image.transpose(Image.FLIP_LEFT_RIGHT)
+    # random horizontal flip image
+    image, horizontal_flip = random_horizontal_flip(image)
 
     # random distort image in HSV color space
-    image = hsv_distort_image(image)
-    image_data = np.array(image)/255.
+    image = random_hsv_distort(image)
 
     # reshape boxes based on augment
-    boxes = reshape_boxes(boxes, src_shape=image_size, target_shape=model_input_size, padding_shape=padding_size, offset=padding_offset, flip=flip)
+    boxes = reshape_boxes(boxes, src_shape=image_size, target_shape=model_input_size, padding_shape=padding_size, offset=padding_offset, horizontal_flip=horizontal_flip)
     if len(boxes)>max_boxes:
         boxes = boxes[:max_boxes]
 
-    # fill in box data
+    # prepare image & box data
+    image_data = np.array(image)/255.
     box_data = np.zeros((max_boxes,5))
     if len(boxes)>0:
         box_data[:len(boxes)] = boxes

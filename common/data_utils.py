@@ -2,7 +2,7 @@
 # -*- coding=utf-8 -*-
 """Data process utility functions."""
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageEnhance
 #import cv2
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 
@@ -11,7 +11,7 @@ def rand(a=0, b=1):
     return np.random.rand()*(b-a) + a
 
 
-def letterbox_resize_image(image, target_size, return_padding_info=False):
+def letterbox_resize(image, target_size, return_padding_info=False):
     """
     Resize image with unchanged aspect ratio using padding
 
@@ -55,7 +55,7 @@ def letterbox_resize_image(image, target_size, return_padding_info=False):
         return new_image
 
 
-def random_resize_image(image, target_size, aspect_ratio_jitter=0.3, scale_jitter=0.5):
+def random_resize_crop_pad(image, target_size, aspect_ratio_jitter=0.3, scale_jitter=0.5):
     """
     Randomly resize image and crop|padding to target size. It can
     be used for data augment in training data preprocess
@@ -105,7 +105,7 @@ def random_resize_image(image, target_size, aspect_ratio_jitter=0.3, scale_jitte
     return new_image, padding_size, padding_offset
 
 
-def reshape_boxes(boxes, src_shape, target_shape, padding_shape, offset, flip=False):
+def reshape_boxes(boxes, src_shape, target_shape, padding_shape, offset, horizontal_flip=False, vertical_flip=False):
     """
     Reshape bounding boxes from src_shape image to target_shape image,
     usually for training data preprocess
@@ -122,6 +122,10 @@ def reshape_boxes(boxes, src_shape, target_shape, padding_shape, offset, flip=Fa
             tuple of format (width, height).
         offset: top-left offset when padding target image.
             tuple of format (dx, dy).
+        horizontal_flip: whether to do horizontal flip.
+            boolean flag.
+        vertical_flip: whether to do vertical flip.
+            boolean flag.
 
     # Returns
         boxes: reshaped bounding box numpy array
@@ -137,8 +141,11 @@ def reshape_boxes(boxes, src_shape, target_shape, padding_shape, offset, flip=Fa
         boxes[:, [0,2]] = boxes[:, [0,2]]*padding_w/src_w + dx
         boxes[:, [1,3]] = boxes[:, [1,3]]*padding_h/src_h + dy
         # horizontal flip boxes if needed
-        if flip:
+        if horizontal_flip:
             boxes[:, [0,2]] = target_w - boxes[:, [2,0]]
+        # vertical flip boxes if needed
+        if vertical_flip:
+            boxes[:, [1,3]] = target_h - boxes[:, [3,1]]
 
         # check box coordinate range
         boxes[:, 0:2][boxes[:, 0:2] < 0] = 0
@@ -153,7 +160,7 @@ def reshape_boxes(boxes, src_shape, target_shape, padding_shape, offset, flip=Fa
     return boxes
 
 
-def hsv_distort_image(image, hue=.1, sat=1.5, val=1.5):
+def random_hsv_distort(image, hue=.1, sat=1.5, val=1.5):
     """
     Random distort image in HSV color space
     usually for training data preprocess
@@ -193,6 +200,151 @@ def hsv_distort_image(image, hue=.1, sat=1.5, val=1.5):
     new_image = Image.fromarray(x)
 
     return new_image
+
+
+def random_brightness(image, jitter=.5):
+    """
+    Random adjust brightness for image
+
+    # Arguments
+        image: origin image for brightness change
+            PIL Image object containing image data
+        jitter: jitter range for random brightness,
+            scalar to control the random brightness level.
+
+    # Returns
+        new_image: adjusted PIL Image object.
+    """
+    enh_bri = ImageEnhance.Brightness(image)
+    brightness = rand(jitter, 1/jitter)
+    new_image = enh_bri.enhance(brightness)
+
+    return new_image
+
+
+def random_chroma(image, jitter=.5):
+    """
+    Random adjust chroma (color level) for image
+
+    # Arguments
+        image: origin image for chroma change
+            PIL Image object containing image data
+        jitter: jitter range for random chroma,
+            scalar to control the random color level.
+
+    # Returns
+        new_image: adjusted PIL Image object.
+    """
+    enh_col = ImageEnhance.Color(image)
+    color = rand(jitter, 1/jitter)
+    new_image = enh_col.enhance(color)
+
+    return new_image
+
+
+def random_contrast(image, jitter=.5):
+    """
+    Random adjust contrast for image
+
+    # Arguments
+        image: origin image for contrast change
+            PIL Image object containing image data
+        jitter: jitter range for random contrast,
+            scalar to control the random contrast level.
+
+    # Returns
+        new_image: adjusted PIL Image object.
+    """
+    enh_con = ImageEnhance.Contrast(image)
+    contrast = rand(jitter, 1/jitter)
+    new_image = enh_con.enhance(contrast)
+
+    return new_image
+
+
+def random_sharpness(image, jitter=.5):
+    """
+    Random adjust sharpness for image
+
+    # Arguments
+        image: origin image for sharpness change
+            PIL Image object containing image data
+        jitter: jitter range for random sharpness,
+            scalar to control the random sharpness level.
+
+    # Returns
+        new_image: adjusted PIL Image object.
+    """
+    enh_sha = ImageEnhance.Sharpness(image)
+    sharpness = rand(jitter, 1/jitter)
+    new_image = enh_sha.enhance(sharpness)
+
+    return new_image
+
+
+def random_horizontal_flip(image, jitter=.5):
+    """
+    Random horizontal flip for image
+
+    # Arguments
+        image: origin image for horizontal flip
+            PIL Image object containing image data
+        jitter: jitter range for flip probability,
+            scalar to control the flip probability.
+
+    # Returns
+        image: adjusted PIL Image object.
+        flip: boolean flag for horizontal flip action
+    """
+    flip = rand() < jitter
+    if flip:
+        image = image.transpose(Image.FLIP_LEFT_RIGHT)
+
+    return image, flip
+
+
+def random_vertical_flip(image, jitter=.2):
+    """
+    Random vertical flip for image
+
+    # Arguments
+        image: origin image for vertical flip
+            PIL Image object containing image data
+        jitter: jitter range for flip probability,
+            scalar to control the flip probability.
+
+    # Returns
+        image: adjusted PIL Image object.
+        flip: boolean flag for vertical flip action
+    """
+    flip = rand() < jitter
+    if flip:
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+
+    return image, flip
+
+
+def random_grayscale(image, jitter=.2):
+    """
+    Random convert image to grayscale
+
+    # Arguments
+        image: origin image for grayscale convert
+            PIL Image object containing image data
+        jitter: jitter range for convert probability,
+            scalar to control the convert probability.
+
+    # Returns
+        image: adjusted PIL Image object.
+    """
+    convert = rand() < jitter
+    if convert:
+        #convert to grayscale first, and then
+        #back to 3 channels fake RGB
+        image = image.convert('L')
+        image = image.convert('RGB')
+
+    return image
 
 
 def preprocess_image(image, model_image_size):
