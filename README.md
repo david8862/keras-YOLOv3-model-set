@@ -306,6 +306,7 @@ Some experiment on PascalVOC dataset and comparison:
 | [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/tiny_yolo3_mobilnet_lite_320_voc.tar.gz) | 320x320 | VOC07+12 | VOC07 | 69.12% | 20.1MB | 9ms | Keras on Titan XP |
 | [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/tiny_yolo3_mobilnet_lite_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 72.60% | 20.1MB | 11ms | Keras on Titan XP |
 | [Tiny YOLOv3 Lite-Mobilenet with GIoU loss](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/tiny_yolo3_mobilnet_lite_giou_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 72.73% | 20.1MB | 11ms | Keras on Titan XP |
+| [YOLOv3 Nano](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.1/yolo3_nano_weights_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 69.40% | 19MB | 11ms | Keras on Titan XP |
 | [YOLOv3-Xception](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_xception_512_voc.tar.gz) | 512x512 | VOC07+12 | VOC07 | 78.89% | 419.8MB | 48ms | Keras on Titan XP |
 | [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 320x320 | VOC07 | VOC07 | 64.22% || 29fps | Keras on 1080Ti |
 | [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 320x320 | VOC07+12 | VOC07 | 74.56% || 29fps | Keras on 1080Ti |
@@ -350,6 +351,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 
 ### TODO
+- [ ] enhance data augmentation ([Mixup](https://arxiv.org/abs/1710.09412)/[AutoAugment](https://arxiv.org/abs/1805.09501))
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones/imagenet_training)
 
 
