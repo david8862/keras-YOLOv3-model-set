@@ -362,7 +362,7 @@ def preprocess_image(image, model_image_size):
         image_data: numpy array of image data for model input.
     """
     #resized_image = cv2.resize(image, tuple(reversed(model_image_size)), cv2.INTER_AREA)
-    resized_image = letterbox_resize_image(image, tuple(reversed(model_image_size)))
+    resized_image = letterbox_resize(image, tuple(reversed(model_image_size)))
     image_data = np.asarray(resized_image).astype('float32')
     image_data /= 255.
     image_data = np.expand_dims(image_data, 0)  # Add batch dimension.
