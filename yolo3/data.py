@@ -78,6 +78,8 @@ def preprocess_true_boxes(true_boxes, input_shape, anchors, num_classes):
     num_layers = len(anchors)//3 # default setting
     anchor_mask = [[6,7,8], [3,4,5], [0,1,2]] if num_layers==3 else [[3,4,5], [0,1,2]]
 
+    #Transform box info to (x_center, y_center, box_width, box_height, cls_id)
+    #and image relative coordinate.
     true_boxes = np.array(true_boxes, dtype='float32')
     input_shape = np.array(input_shape, dtype='int32')
     boxes_xy = (true_boxes[..., 0:2] + true_boxes[..., 2:4]) // 2

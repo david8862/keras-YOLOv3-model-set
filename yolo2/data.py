@@ -9,20 +9,20 @@ from common.data_utils import letterbox_resize_image, random_resize_image, resha
 from common.utils import get_multiscale_list
 
 
-def transform_box_info(boxes, image_size):
-    """
-    Transform box info to (x_center, y_center, box_width, box_height, cls_id)
-    and image relative coordinate. This is for YOLOv2 y_true data
-    """
-    # center-lized box coordinate
-    boxes_xy = 0.5 * (boxes[:, 0:2] + boxes[:, 2:4])
-    boxes_wh = boxes[:, 2:4] - boxes[:, 0:2]
-    # transform to relative coordinate
-    boxes_xy = boxes_xy / image_size
-    boxes_wh = boxes_wh / image_size
-    boxes = np.concatenate((boxes_xy, boxes_wh, boxes[:, 4:5]), axis=1)
+#def transform_box_info(boxes, image_size):
+    #"""
+    #Transform box info to (x_center, y_center, box_width, box_height, cls_id)
+    #and image relative coordinate. This is for YOLOv2 y_true data
+    #"""
+    ## center-lized box coordinate
+    #boxes_xy = 0.5 * (boxes[:, 0:2] + boxes[:, 2:4])
+    #boxes_wh = boxes[:, 2:4] - boxes[:, 0:2]
+    ## transform to relative coordinate
+    #boxes_xy = boxes_xy / image_size
+    #boxes_wh = boxes_wh / image_size
+    #boxes = np.concatenate((boxes_xy, boxes_wh, boxes[:, 4:5]), axis=1)
 
-    return boxes
+    #return boxes
 
 
 def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=20):
@@ -40,7 +40,7 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
         # reshape boxes
         boxes = reshape_boxes(boxes, src_shape=image_size, target_shape=model_input_size, padding_shape=padding_size, offset=offset)
         # Get box parameters as (x_center, y_center, box_width, box_height, cls_id)
-        boxes = transform_box_info(boxes, model_input_size)
+        #boxes = transform_box_info(boxes, model_input_size)
 
         if len(boxes)>max_boxes:
             boxes = boxes[:max_boxes]
@@ -67,7 +67,7 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
     # reshape boxes based on augment
     boxes = reshape_boxes(boxes, src_shape=image_size, target_shape=model_input_size, padding_shape=padding_size, offset=padding_offset, flip=flip)
     # Get box parameters as (x_center, y_center, box_width, box_height, cls_id)
-    boxes = transform_box_info(boxes, model_input_size)
+    #boxes = transform_box_info(boxes, model_input_size)
 
     if len(boxes)>max_boxes:
         boxes = boxes[:max_boxes]
@@ -86,7 +86,7 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
     Parameters
     ----------
     true_boxes : array
-        List of ground truth boxes in form of relative x, y, w, h, class.
+        List of ground truth boxes in form of (xmin, ymin, xmax, ymax, cls_id).
         Relative coordinates are in the range [0, 1] indicating a percentage
         of the original image dimensions.
     anchors : array
@@ -113,6 +113,16 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
     assert width % 32 == 0, 'Image sizes in YOLO_v2 must be multiples of 32.'
     conv_height = height // 32
     conv_width = width // 32
+
+    #Transform box info to (x_center, y_center, box_width, box_height, cls_id)
+    #and image relative coordinate.
+    true_boxes = np.array(true_boxes, dtype='float32')
+    input_shape = np.array(input_shape, dtype='int32')
+    boxes_xy = (true_boxes[..., 0:2] + true_boxes[..., 2:4]) // 2
+    boxes_wh = true_boxes[..., 2:4] - true_boxes[..., 0:2]
+    true_boxes[..., 0:2] = boxes_xy/input_shape[::-1]
+    true_boxes[..., 2:4] = boxes_wh/input_shape[::-1]
+
     num_box_params = true_boxes.shape[1]
     y_true = np.zeros(
         (conv_height, conv_width, num_anchors, num_box_params+1),
