@@ -39,11 +39,29 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
     # random horizontal flip image
     image, horizontal_flip = random_horizontal_flip(image)
 
+    # random adjust brightness
+    image = random_brightness(image)
+
+    # random adjust color level
+    image = random_chroma(image)
+
+    # random adjust contrast
+    image = random_contrast(image)
+
+    # random adjust sharpness
+    image = random_sharpness(image)
+
+    # random convert image to grayscale
+    image = random_grayscale(image)
+
+    # random vertical flip image
+    image, vertical_flip = random_vertical_flip(image)
+
     # random distort image in HSV color space
     image = random_hsv_distort(image)
 
     # reshape boxes based on augment
-    boxes = reshape_boxes(boxes, src_shape=image_size, target_shape=model_input_size, padding_shape=padding_size, offset=padding_offset, horizontal_flip=horizontal_flip)
+    boxes = reshape_boxes(boxes, src_shape=image_size, target_shape=model_input_size, padding_shape=padding_size, offset=padding_offset, horizontal_flip=horizontal_flip, vertical_flip=vertical_flip)
     if len(boxes)>max_boxes:
         boxes = boxes[:max_boxes]
 
