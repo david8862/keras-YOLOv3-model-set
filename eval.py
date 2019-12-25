@@ -1064,13 +1064,13 @@ def load_eval_model(model_path, custom_objects_string):
 
 def main():
     # class YOLO defines the default value, so suppress any default here
-    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
+    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='evaluate YOLO model (h5/pb/tflite/mnn) with test dataset')
     '''
     Command line options
     '''
     parser.add_argument(
         '--model_path', type=str, required=True,
-        help='path to model weight file')
+        help='path to model file')
 
     parser.add_argument(
         '--custom_objects', type=str, required=False, default=None,
@@ -1086,7 +1086,7 @@ def main():
 
     parser.add_argument(
         '--annotation_file', type=str, required=True,
-        help='annotation txt file to varify')
+        help='test annotation txt file')
 
     parser.add_argument(
         '--eval_type', type=str,

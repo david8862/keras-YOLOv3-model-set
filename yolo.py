@@ -326,7 +326,7 @@ def detect_img(yolo):
 
 if __name__ == '__main__':
     # class YOLO defines the default value, so suppress any default here
-    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
+    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='demo or dump out YOLO h5 model')
     '''
     Command line options
     '''
@@ -336,7 +336,7 @@ if __name__ == '__main__':
     )
 
     parser.add_argument(
-        '--model_path', type=str,
+        '--weights_path', type=str,
         help='path to model weight file, default ' + YOLO.get_defaults("model_path")
     )
 
