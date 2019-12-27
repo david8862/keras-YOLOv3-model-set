@@ -91,7 +91,7 @@ A common YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilen
 # python yolo.py --image
 # python yolo.py --input=<your video file>
 ```
-For other model, just do in a similar way, but specify different model path and anchor path with `--model_path` and `--anchors_path`.
+For other model, just do in a similar way, but specify different model type, weights path and anchor path with `--model_type`, `--weights_path` and `--anchors_path`.
 
 Image detection sample:
 
@@ -328,11 +328,11 @@ And some unsuccessful experiment...
 
 image detection mode
 ```
-# python yolo.py --model_type=yolo3_mobilenet_lite --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --image
+# python yolo.py --model_type=yolo3_mobilenet_lite --weights_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --image
 ```
 video detection mode
 ```
-# python yolo.py --model_type=yolo3_mobilenet_lite --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --input=test.mp4
+# python yolo.py --model_type=yolo3_mobilenet_lite --weights_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --input=test.mp4
 ```
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 
