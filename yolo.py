@@ -31,7 +31,7 @@ from tensorflow.keras.utils import multi_gpu_model
 
 default_config = {
         "model_type": 'tiny_yolo3_darknet',
-        "model_path": 'weights/yolov3-tiny.h5',
+        "weights_path": 'weights/yolov3-tiny.h5',
         "pruning_model": False,
         "anchors_path": 'configs/tiny_yolo3_anchors.txt',
         "classes_path": 'configs/coco_classes.txt',
@@ -64,8 +64,8 @@ class YOLO_np(object):
 
     def _generate_model(self):
         '''to generate the bounding boxes'''
-        model_path = os.path.expanduser(self.model_path)
-        assert model_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
+        weights_path = os.path.expanduser(self.weights_path)
+        assert weights_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
 
         # Load model, or construct model and load weights.
         num_anchors = len(self.anchors)
@@ -81,7 +81,7 @@ class YOLO_np(object):
                 yolo_model, _ = get_yolo2_model(self.model_type, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.pruning_model)
             else:
                 yolo_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.pruning_model)
-            yolo_model.load_weights(model_path) # make sure model, anchors and classes match
+            yolo_model.load_weights(weights_path) # make sure model, anchors and classes match
             if self.pruning_model:
                 yolo_model = sparsity.strip_pruning(yolo_model)
             yolo_model.summary()
@@ -90,7 +90,7 @@ class YOLO_np(object):
             assert yolo_model.layers[-1].output_shape[-1] == \
                 num_anchors/len(yolo_model.output) * (num_classes + 5), \
                 'Mismatch between model and given anchor and class sizes'
-        print('{} model, anchors, and classes loaded.'.format(model_path))
+        print('{} model, anchors, and classes loaded.'.format(weights_path))
         if self.gpu_num>=2:
             yolo_model = multi_gpu_model(yolo_model, gpus=self.gpu_num)
 
@@ -154,8 +154,8 @@ class YOLO(object):
 
     def _generate_model(self):
         '''to generate the bounding boxes'''
-        model_path = os.path.expanduser(self.model_path)
-        assert model_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
+        weights_path = os.path.expanduser(self.weights_path)
+        assert weights_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
 
         # Load model, or construct model and load weights.
         num_anchors = len(self.anchors)
@@ -167,9 +167,9 @@ class YOLO(object):
 
         if num_anchors == 5:
             # YOLOv2 use 5 anchors
-            inference_model = get_yolo2_inference_model(self.model_type, self.anchors, num_classes, weights_path=model_path, input_shape=self.model_image_size + (3,), confidence=0.1)
+            inference_model = get_yolo2_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=0.1)
         else:
-            inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=model_path, input_shape=self.model_image_size + (3,), confidence=0.1)
+            inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=0.1)
 
         inference_model.summary()
         return inference_model
@@ -238,8 +238,8 @@ class YOLO(object):
 
     #def _generate_model(self):
         #'''to generate the bounding boxes'''
-        #model_path = os.path.expanduser(self.model_path)
-        #assert model_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
+        #weights_path = os.path.expanduser(self.weights_path)
+        #assert weights_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
 
         ## Load model, or construct model and load weights.
         #num_anchors = len(self.anchors)
@@ -249,7 +249,7 @@ class YOLO(object):
         ##so we can calculate feature layers number to get model type
         #num_feature_layers = num_anchors//3
 
-        #prenms_model = get_yolo3_prenms_model(self.model_type, self.anchors, num_classes, weights_path=model_path, input_shape=self.model_image_size + (3,))
+        #prenms_model = get_yolo3_prenms_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,))
 
         #return prenms_model
 
@@ -337,7 +337,7 @@ if __name__ == '__main__':
 
     parser.add_argument(
         '--weights_path', type=str,
-        help='path to model weight file, default ' + YOLO.get_defaults("model_path")
+        help='path to model weight file, default ' + YOLO.get_defaults("weights_path")
     )
 
     parser.add_argument(
