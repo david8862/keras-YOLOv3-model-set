@@ -15,7 +15,7 @@ from yolo2.model import get_yolo2_train_model
 from yolo2.data import yolo2_data_generator_wrapper
 from common.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
 from common.model_utils import get_optimizer
-from common.callbacks import EvalCallBack
+from common.callbacks import EvalCallBack, DatasetShuffleCallBack
 
 # Try to enable Auto Mixed Precision on TF 2.0
 os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '1'
@@ -94,6 +94,11 @@ def main(args):
     if args.eval_online:
         eval_callback = EvalCallBack(args.model_type, dataset[num_train:], anchors, class_names, args.model_image_size, args.model_pruning, log_dir, eval_epoch_interval=args.eval_epoch_interval, save_eval_checkpoint=args.save_eval_checkpoint)
         callbacks.append(eval_callback)
+
+    # prepare train/val data shuffle callback
+    if args.data_shuffle:
+        shuffle_callback = DatasetShuffleCallBack(dataset)
+        callbacks.append(shuffle_callback)
 
     # prepare model pruning config
     pruning_end_step = np.ceil(1.0 * num_train / args.batch_size).astype(np.int32) * args.total_epoch
