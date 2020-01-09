@@ -11,7 +11,7 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
-from yolo3.data import get_random_data
+from yolo3.data import get_ground_truth_data
 from common.utils import get_custom_objects
 
 #tf.enable_eager_execution()
@@ -33,7 +33,7 @@ def post_train_quant_convert(keras_model_file, custom_objects_string, annotation
         n = len(annotation_lines)
         i = 0
         for num in range(sample_num):
-            image, _ = get_random_data(annotation_lines[i], model_input_shape, random=True)
+            image, _ = get_ground_truth_data(annotation_lines[i], model_input_shape, augment=True)
             i = (i+1) % n
             image = np.array([image], dtype=np.float32)
             yield [image]
