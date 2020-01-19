@@ -673,6 +673,8 @@ void RunInference(Settings* s) {
       TfLiteTensor* feature_map = interpreter->tensor(output);
       std::vector<std::pair<float, float>> anchorset = get_anchorset(anchors, feature_map->dims->data[2], input_width);
 
+      // Now we only support float32 type output tensor
+      assert(feature_map->type == kTfLiteFloat32);
       yolo_postprocess(feature_map, input_width, input_height, num_classes, anchorset, prediction_list, conf_threshold);
   }
   gettimeofday(&stop_time, nullptr);

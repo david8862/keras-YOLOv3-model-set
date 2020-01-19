@@ -6,8 +6,8 @@
 //
 
 #include <stdio.h>
-#include "ImageProcess.hpp"
-#include "Interpreter.hpp"
+#include "MNN/ImageProcess.hpp"
+#include "MNN/Interpreter.hpp"
 #define MNN_OPEN_TIME_TRACE
 #include <algorithm>
 #include <fstream>
@@ -22,8 +22,8 @@
 #include <getopt.h>
 #include <string.h>
 #include <sys/time.h>
-#include "AutoTime.hpp"
-#include "ErrorCode.hpp"
+#include "MNN/AutoTime.hpp"
+#include "MNN/ErrorCode.hpp"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
@@ -646,11 +646,11 @@ void RunInference(Settings* s) {
         MNN_ASSERT(anchors.size() / num_layers == 3);
 
     // load input image
-    auto inputPatch = s->input_img_name.c_str();
+    auto inputPath = s->input_img_name.c_str();
     int image_width, image_height, image_channel;
-    uint8_t* inputImage = (uint8_t*)stbi_load(inputPatch, &image_width, &image_height, &image_channel, input_channel);
+    uint8_t* inputImage = (uint8_t*)stbi_load(inputPath, &image_width, &image_height, &image_channel, input_channel);
     if (nullptr == inputImage) {
-        MNN_ERROR("Can't open %s\n", inputPatch);
+        MNN_ERROR("Can't open %s\n", inputPath);
         return;
     }
 
@@ -724,7 +724,9 @@ void RunInference(Settings* s) {
         Tensor* feature_map = featureTensors[i].get();
         std::vector<std::pair<float, float>> anchorset = get_anchorset(anchors, feature_map->width(), input_width);
 
+        // Now we only support float32 type output tensor
         MNN_ASSERT(featureTensors[i]->getType().code == halide_type_float);
+        MNN_ASSERT(featureTensors[i]->getType().bits == 32);
         yolo_postprocess(featureTensors[i].get(), input_width, input_height, num_classes, anchorset, prediction_list, conf_threshold);
     }
 

@@ -4,7 +4,7 @@
 
 ## Introduction
 
-A common YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) and [allanzelener/YAD2K](https://github.com/allanzelener/YAD2K). Implement with tf.keras, including data collection/annotation, model training/tuning, model evaluation and on device deployment. Support different architecture and different technologies:
+A general YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) and [YAD2K](https://github.com/allanzelener/YAD2K). Implement with tf.keras, including data collection/annotation, model training/tuning, model evaluation and on device deployment. Support different architecture and different technologies:
 
 #### Backbone
 - [x] Darknet53/Tiny Darknet
@@ -368,6 +368,10 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 3. Always load pretrained weights and freeze layers in the first stage of training.
 
 4. Training strategy is for reference only. Adjust it according to your dataset and your goal. And add further strategy if needed.
+
+
+## Contribution guidelines
+New features, improvements and any other kind of contributions are warmly welcome via pull request :)
 
 
 # Citation

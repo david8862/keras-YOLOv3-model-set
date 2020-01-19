@@ -5,24 +5,8 @@ import numpy as np
 import random, math
 from PIL import Image
 from tensorflow.keras.utils import Sequence
-from common.data_utils import letterbox_resize, random_resize_crop_pad, reshape_boxes, random_hsv_distort, random_horizontal_flip, random_vertical_flip, random_grayscale, random_brightness, random_chroma, random_contrast, random_sharpness
+from common.data_utils import normalize_image, letterbox_resize, random_resize_crop_pad, reshape_boxes, random_hsv_distort, random_horizontal_flip, random_vertical_flip, random_grayscale, random_brightness, random_chroma, random_contrast, random_sharpness
 from common.utils import get_multiscale_list
-
-
-#def transform_box_info(boxes, image_size):
-    #"""
-    #Transform box info to (x_center, y_center, box_width, box_height, cls_id)
-    #and image relative coordinate. This is for YOLOv2 y_true data
-    #"""
-    ## center-lized box coordinate
-    #boxes_xy = 0.5 * (boxes[:, 0:2] + boxes[:, 2:4])
-    #boxes_wh = boxes[:, 2:4] - boxes[:, 0:2]
-    ## transform to relative coordinate
-    #boxes_xy = boxes_xy / image_size
-    #boxes_wh = boxes_wh / image_size
-    #boxes = np.concatenate((boxes_xy, boxes_wh, boxes[:, 4:5]), axis=1)
-
-    #return boxes
 
 
 def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=20):
@@ -35,12 +19,11 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
 
     if not augment:
         new_image, padding_size, offset = letterbox_resize(image, target_size=model_input_size, return_padding_info=True)
-        image_data = np.array(new_image)/255.
+        image_data = np.array(new_image)
+        image_data = normalize_image(image_data)
 
         # reshape boxes
         boxes = reshape_boxes(boxes, src_shape=image_size, target_shape=model_input_size, padding_shape=padding_size, offset=offset)
-        # Get box parameters as (x_center, y_center, box_width, box_height, cls_id)
-        #boxes = transform_box_info(boxes, model_input_size)
 
         if len(boxes)>max_boxes:
             boxes = boxes[:max_boxes]
@@ -81,14 +64,13 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
 
     # reshape boxes based on augment
     boxes = reshape_boxes(boxes, src_shape=image_size, target_shape=model_input_size, padding_shape=padding_size, offset=padding_offset, horizontal_flip=horizontal_flip, vertical_flip=vertical_flip)
-    # Get box parameters as (x_center, y_center, box_width, box_height, cls_id)
-    #boxes = transform_box_info(boxes, model_input_size)
 
     if len(boxes)>max_boxes:
         boxes = boxes[:max_boxes]
 
     # prepare image & box data
-    image_data = np.array(image)/255.
+    image_data = np.array(image)
+    image_data = normalize_image(image_data)
     box_data = np.zeros((max_boxes,5))
     if len(boxes)>0:
         box_data[:len(boxes)] = boxes

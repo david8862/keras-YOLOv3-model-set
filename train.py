@@ -136,6 +136,7 @@ def main(args):
             initial_epoch=initial_epoch,
             workers=1,
             use_multiprocessing=False,
+            max_queue_size=10,
             callbacks=callbacks)
 
     if args.decay_type:
@@ -168,6 +169,7 @@ def main(args):
         initial_epoch=epochs,
         workers=1,
         use_multiprocessing=False,
+        max_queue_size=10,
         callbacks=callbacks)
 
     # Finally store model

@@ -5,7 +5,7 @@ import numpy as np
 import random, math
 from PIL import Image
 from tensorflow.keras.utils import Sequence
-from common.data_utils import letterbox_resize, random_resize_crop_pad, reshape_boxes, random_hsv_distort, random_horizontal_flip, random_vertical_flip, random_grayscale, random_brightness, random_chroma, random_contrast, random_sharpness
+from common.data_utils import normalize_image, letterbox_resize, random_resize_crop_pad, reshape_boxes, random_hsv_distort, random_horizontal_flip, random_vertical_flip, random_grayscale, random_brightness, random_chroma, random_contrast, random_sharpness
 from common.utils import get_multiscale_list
 
 
@@ -19,7 +19,8 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
 
     if not augment:
         new_image, padding_size, offset = letterbox_resize(image, target_size=model_input_size, return_padding_info=True)
-        image_data = np.array(new_image)/255.
+        image_data = np.array(new_image)
+        image_data = normalize_image(image_data)
 
         # reshape boxes
         boxes = reshape_boxes(boxes, src_shape=image_size, target_shape=model_input_size, padding_shape=padding_size, offset=offset)
@@ -66,7 +67,8 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
         boxes = boxes[:max_boxes]
 
     # prepare image & box data
-    image_data = np.array(image)/255.
+    image_data = np.array(image)
+    image_data = normalize_image(image_data)
     box_data = np.zeros((max_boxes,5))
     if len(boxes)>0:
         box_data[:len(boxes)] = boxes
