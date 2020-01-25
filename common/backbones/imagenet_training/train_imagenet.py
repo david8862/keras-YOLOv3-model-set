@@ -139,6 +139,7 @@ def train(args, model, input_shape):
             workers=cpu_count()-1,  #Try to parallized feeding image data but leave one cpu core idle
             initial_epoch=args.init_epoch,
             use_multiprocessing=True,
+            max_queue_size=10,
             validation_data=test_generator,
             validation_steps=test_generator.samples // args.batch_size,
             callbacks=[logging, checkpoint, lr_scheduler, terminate_on_nan])

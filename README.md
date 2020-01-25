@@ -104,6 +104,7 @@ Image detection sample:
 
 ### Train
 1. Generate train/val/test annotation file and class names file.
+    Data annotation file format:
     * One row for one image in annotation file;
     * Row format: `image_file_path box1 box2 ... boxN`;
     * Box format: `x_min,y_min,x_max,y_max,class_id` (no space).
@@ -240,7 +241,7 @@ optional arguments:
   --multiscale          Whether to use multiscale training
   --rescale_interval RESCALE_INTERVAL
                         Number of iteration(batches) interval to rescale input
-                        image, default=10
+                        size, default=10
   --model_pruning       Use model pruning for optimization, only for TF 1.x
   --label_smoothing LABEL_SMOOTHING
                         Label smoothing factor (between 0 and 1) for
@@ -255,9 +256,15 @@ optional arguments:
   --save_eval_checkpoint
                         Whether to save checkpoint with best evaluation result
 ```
-Checkpoints during training could be found at logs/000/. Choose a best one as result
 
-You can also use Tensorboard to monitor the loss trend:
+Following is a reference training config cmd:
+```
+# python train.py --model_type=yolo3_mobilenet_lite --anchors_path=configs/yolo3_anchors.txt --annotation_file=trainval.txt --classes_path=configs/voc_classes.txt --eval_online --save_eval_checkpoint
+```
+
+Checkpoints during training could be found at `logs/000/`. Choose a best one as result
+
+You can also use Tensorboard to monitor the loss trend during train:
 ```
 # tensorboard --logdir=logs/000
 ```
@@ -351,6 +358,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 
 ### TODO
+- [ ] add support for DIoU Loss ([Distance-IoU Loss](https://arxiv.org/abs/1911.08287))
 - [ ] enhance data augmentation ([Mixup](https://arxiv.org/abs/1710.09412)/[AutoAugment](https://arxiv.org/abs/1805.09501))
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones/imagenet_training)
 

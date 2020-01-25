@@ -227,7 +227,7 @@ if __name__ == '__main__':
     parser.add_argument('--multiscale', default=False, action="store_true",
         help='Whether to use multiscale training')
     parser.add_argument('--rescale_interval', type=int, required=False, default=10,
-        help = "Number of iteration(batches) interval to rescale input image, default=10")
+        help = "Number of iteration(batches) interval to rescale input size, default=10")
     parser.add_argument('--model_pruning', default=False, action="store_true",
         help='Use model pruning for optimization, only for TF 1.x')
     parser.add_argument('--label_smoothing', type=float, required=False, default=0,
