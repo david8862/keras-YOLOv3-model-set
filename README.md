@@ -104,6 +104,7 @@ Image detection sample:
 
 ### Train
 1. Generate train/val/test annotation file and class names file.
+
     Data annotation file format:
     * One row for one image in annotation file;
     * Row format: `image_file_path box1 box2 ... boxN`;
