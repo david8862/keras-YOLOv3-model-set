@@ -105,7 +105,7 @@ def yolo3_handle_predictions(predictions, max_boxes=100, confidence=0.1, iou_thr
     scores = box_class_scores[pos]
 
     # Boxes, Classes and Scores returned from NMS
-    n_boxes, n_classes, n_scores = nms_boxes(boxes, classes, scores, iou_threshold, confidence=confidence)
+    n_boxes, n_classes, n_scores = nms_boxes(boxes, classes, scores, iou_threshold, confidence=confidence, use_diou=False, is_soft=False)
 
     if n_boxes:
         boxes = np.concatenate(n_boxes)
@@ -139,8 +139,98 @@ def filter_boxes(boxes, classes, scores, max_boxes):
     return nboxes, nclasses, nscores
 
 
+def box_iou(boxes):
+    """
+    Calculate iou on box array
 
-def soft_nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.1, is_soft=True, use_exp=False, sigma=0.5):
+    Parameters
+    ----------
+    boxes: bbox numpy array, shape=(N, 4), xywh
+           x,y are top left coordinates
+
+    Returns
+    -------
+    iou: numpy array, shape=(N-1,)
+         IoU value of boxes[:-1] with boxes[-1]
+    """
+    # get box coordinate and area
+    x = boxes[:, 0]
+    y = boxes[:, 1]
+    w = boxes[:, 2]
+    h = boxes[:, 3]
+    areas = w * h
+
+    # check IoU
+    inter_xmin = np.maximum(x[:-1], x[-1])
+    inter_ymin = np.maximum(y[:-1], y[-1])
+    inter_xmax = np.minimum(x[:-1] + w[:-1], x[-1] + w[-1])
+    inter_ymax = np.minimum(y[:-1] + h[:-1], y[-1] + h[-1])
+
+    inter_w = np.maximum(0.0, inter_xmax - inter_xmin + 1)
+    inter_h = np.maximum(0.0, inter_ymax - inter_ymin + 1)
+
+    inter = inter_w * inter_h
+    iou = inter / (areas[:-1] + areas[-1] - inter)
+    return iou
+
+
+def box_diou(boxes):
+    """
+    Calculate diou on box array
+    Reference Paper:
+        "Distance-IoU Loss: Faster and Better Learning for Bounding Box Regression"
+        https://arxiv.org/abs/1911.08287
+
+    Parameters
+    ----------
+    boxes: bbox numpy array, shape=(N, 4), xywh
+           x,y are top left coordinates
+
+    Returns
+    -------
+    diou: numpy array, shape=(N-1,)
+         IoU value of boxes[:-1] with boxes[-1]
+    """
+    # get box coordinate and area
+    x = boxes[:, 0]
+    y = boxes[:, 1]
+    w = boxes[:, 2]
+    h = boxes[:, 3]
+    areas = w * h
+
+    # check IoU
+    inter_xmin = np.maximum(x[:-1], x[-1])
+    inter_ymin = np.maximum(y[:-1], y[-1])
+    inter_xmax = np.minimum(x[:-1] + w[:-1], x[-1] + w[-1])
+    inter_ymax = np.minimum(y[:-1] + h[:-1], y[-1] + h[-1])
+
+    inter_w = np.maximum(0.0, inter_xmax - inter_xmin + 1)
+    inter_h = np.maximum(0.0, inter_ymax - inter_ymin + 1)
+
+    inter = inter_w * inter_h
+    iou = inter / (areas[:-1] + areas[-1] - inter)
+
+    # box center distance
+    x_center = x + w/2
+    y_center = y + h/2
+    center_distance = np.power(x_center[:-1] - x_center[-1], 2) + np.power(y_center[:-1] - y_center[-1], 2)
+
+    # get enclosed area
+    enclose_xmin = np.minimum(x[:-1], x[-1])
+    enclose_ymin = np.minimum(y[:-1], y[-1])
+    enclose_xmax = np.maximum(x[:-1] + w[:-1], x[-1] + w[-1])
+    enclose_ymax = np.maximum(x[:-1] + w[:-1], x[-1] + w[-1])
+    enclose_w = np.maximum(0.0, enclose_xmax - enclose_xmin + 1)
+    enclose_h = np.maximum(0.0, enclose_ymax - enclose_ymin + 1)
+    # get enclosed diagonal distance
+    enclose_diagonal = np.power(enclose_w, 2) + np.power(enclose_h, 2)
+    # calculate DIoU, add epsilon in denominator to avoid dividing by 0
+    diou = iou - 1.0 * (center_distance) / (enclose_diagonal + np.finfo(float).eps)
+
+    return diou
+
+
+def nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.1, use_diou=False, is_soft=False, use_exp=False, sigma=0.5):
     nboxes, nclasses, nscores = [], [], []
     for c in set(classes):
         # handle data for one class
@@ -168,25 +258,10 @@ def soft_nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.1, is_sof
             c_nms[[i,-1]] = c_nms[[-1,i]]
             s_nms[[i,-1]] = s_nms[[-1,i]]
 
-            # get box coordinate and area
-            x = b_nms[:, 0]
-            y = b_nms[:, 1]
-            w = b_nms[:, 2]
-            h = b_nms[:, 3]
-
-            areas = w * h
-
-            # check IOU
-            xx1 = np.maximum(x[-1], x[:-1])
-            yy1 = np.maximum(y[-1], y[-1])
-            xx2 = np.minimum(x[-1] + w[-1], x[:-1] + w[:-1])
-            yy2 = np.minimum(y[-1] + h[-1], y[:-1] + h[:-1])
-
-            w1 = np.maximum(0.0, xx2 - xx1 + 1)
-            h1 = np.maximum(0.0, yy2 - yy1 + 1)
-
-            inter = w1 * h1
-            iou = inter / (areas[-1] + areas[:-1] - inter)
+            if use_diou:
+                iou = box_diou(b_nms)
+            else:
+                iou = box_iou(b_nms)
 
             # drop the last line since it has been record
             b_nms = b_nms[:-1]
@@ -218,48 +293,6 @@ def soft_nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.1, is_sof
     nboxes = [np.array(nboxes)]
     nclasses = [np.array(nclasses)]
     nscores = [np.array(nscores)]
-    return nboxes, nclasses, nscores
-
-
-def nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.1):
-    nboxes, nclasses, nscores = [], [], []
-    for c in set(classes):
-        inds = np.where(classes == c)
-        b = boxes[inds]
-        c = classes[inds]
-        s = scores[inds]
-
-        x = b[:, 0]
-        y = b[:, 1]
-        w = b[:, 2]
-        h = b[:, 3]
-
-        areas = w * h
-        order = s.argsort()[::-1]
-
-        keep = []
-        while order.size > 0:
-            i = order[0]
-            keep.append(i)
-
-            xx1 = np.maximum(x[i], x[order[1:]])
-            yy1 = np.maximum(y[i], y[order[1:]])
-            xx2 = np.minimum(x[i] + w[i], x[order[1:]] + w[order[1:]])
-            yy2 = np.minimum(y[i] + h[i], y[order[1:]] + h[order[1:]])
-
-            w1 = np.maximum(0.0, xx2 - xx1 + 1)
-            h1 = np.maximum(0.0, yy2 - yy1 + 1)
-
-            inter = w1 * h1
-            ovr = inter / (areas[i] + areas[order[1:]] - inter)
-            inds = np.where(ovr <= iou_threshold)[0]
-            order = order[inds + 1]
-
-        keep = np.array(keep)
-
-        nboxes.append(b[keep])
-        nclasses.append(c[keep])
-        nscores.append(s[keep])
     return nboxes, nclasses, nscores
 
 

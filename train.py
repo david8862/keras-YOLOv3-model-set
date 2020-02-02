@@ -10,9 +10,9 @@ from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback
 from tensorflow_model_optimization.sparsity import keras as sparsity
 from yolo3.model import get_yolo3_train_model
-from yolo3.data import yolo3_data_generator_wrapper
+from yolo3.data import yolo3_data_generator_wrapper, Yolo3DataGenerator
 from yolo2.model import get_yolo2_train_model
-from yolo2.data import yolo2_data_generator_wrapper
+from yolo2.data import yolo2_data_generator_wrapper, Yolo2DataGenerator
 from common.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
 from common.model_utils import get_optimizer
 from common.callbacks import EvalCallBack, DatasetShuffleCallBack

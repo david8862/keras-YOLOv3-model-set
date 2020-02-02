@@ -1,6 +1,7 @@
 # -*- coding=utf-8 -*-
 #!/usr/bin/python3
 
+import math
 import tensorflow as tf
 from tensorflow.keras import backend as K
 from yolo3.postprocess import yolo3_head
@@ -74,7 +75,8 @@ def sigmoid_focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
 
 
 def box_iou(b1, b2):
-    '''Return iou tensor
+    """
+    Return iou tensor
 
     Parameters
     ----------
@@ -84,9 +86,7 @@ def box_iou(b1, b2):
     Returns
     -------
     iou: tensor, shape=(i1,...,iN, j)
-
-    '''
-
+    """
     # Expand dim to apply broadcasting.
     b1 = K.expand_dims(b1, -2)
     b1_xy = b1[..., :2]
@@ -115,7 +115,7 @@ def box_iou(b1, b2):
 
 
 def box_giou(b1, b2):
-    '''
+    """
     Calculate GIoU loss on anchor boxes
     Reference Paper:
         "Generalized Intersection over Union: A Metric and A Loss for Bounding Box Regression"
@@ -129,8 +129,7 @@ def box_giou(b1, b2):
     Returns
     -------
     giou: tensor, shape=(batch, feat_w, feat_h, anchor_num, 1)
-
-    '''
+    """
     b1_xy = b1[..., :2]
     b1_wh = b1[..., 2:4]
     b1_wh_half = b1_wh/2.
@@ -164,12 +163,69 @@ def box_giou(b1, b2):
     return giou
 
 
+def box_diou(b1, b2):
+    """
+    Calculate DIoU loss on anchor boxes
+    Reference Paper:
+        "Distance-IoU Loss: Faster and Better Learning for Bounding Box Regression"
+        https://arxiv.org/abs/1911.08287
+
+    Parameters
+    ----------
+    b1: tensor, shape=(batch, feat_w, feat_h, anchor_num, 4), xywh
+    b2: tensor, shape=(batch, feat_w, feat_h, anchor_num, 4), xywh
+
+    Returns
+    -------
+    diou: tensor, shape=(batch, feat_w, feat_h, anchor_num, 1)
+    """
+    b1_xy = b1[..., :2]
+    b1_wh = b1[..., 2:4]
+    b1_wh_half = b1_wh/2.
+    b1_mins = b1_xy - b1_wh_half
+    b1_maxes = b1_xy + b1_wh_half
+
+    b2_xy = b2[..., :2]
+    b2_wh = b2[..., 2:4]
+    b2_wh_half = b2_wh/2.
+    b2_mins = b2_xy - b2_wh_half
+    b2_maxes = b2_xy + b2_wh_half
+
+    intersect_mins = K.maximum(b1_mins, b2_mins)
+    intersect_maxes = K.minimum(b1_maxes, b2_maxes)
+    intersect_wh = K.maximum(intersect_maxes - intersect_mins, 0.)
+    intersect_area = intersect_wh[..., 0] * intersect_wh[..., 1]
+    b1_area = b1_wh[..., 0] * b1_wh[..., 1]
+    b2_area = b2_wh[..., 0] * b2_wh[..., 1]
+    union_area = b1_area + b2_area - intersect_area
+    iou = intersect_area / union_area
+
+    # box center distance
+    center_distance = K.sum(K.square(b1_xy - b2_xy), axis=-1)
+    # get enclosed area
+    enclose_mins = K.minimum(b1_mins, b2_mins)
+    enclose_maxes = K.maximum(b1_maxes, b2_maxes)
+    enclose_wh = K.maximum(enclose_maxes - enclose_mins, 0.0)
+    # get enclosed diagonal distance
+    enclose_diagonal = K.sum(K.square(enclose_wh), axis=-1)
+    # calculate DIoU, add epsilon in denominator to avoid dividing by 0
+    diou = iou - 1.0 * (center_distance) / (enclose_diagonal + K.epsilon())
+
+    # calculate param v and alpha to extend to CIoU
+    #v = 4*K.square(tf.math.atan2(b1_wh[..., 0], b1_wh[..., 1]) - tf.math.atan2(b2_wh[..., 0], b2_wh[..., 1])) / (math.pi * math.pi)
+    #alpha = v / (1.0 - iou + v)
+    #diou = diou - alpha*v
+
+    diou = K.expand_dims(diou, -1)
+    return diou
+
+
 def _smooth_labels(y_true, label_smoothing):
     label_smoothing = K.constant(label_smoothing, dtype=K.floatx())
     return y_true * (1.0 - label_smoothing) + 0.5 * label_smoothing
 
 
-def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, use_focal_loss=False, use_focal_obj_loss=False, use_softmax_loss=False, use_giou_loss=False):
+def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, use_focal_loss=False, use_focal_obj_loss=False, use_softmax_loss=False, use_giou_loss=False, use_diou_loss=False):
     '''Return yolo_loss tensor
 
     Parameters
@@ -227,15 +283,6 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
         ignore_mask = ignore_mask.stack()
         ignore_mask = K.expand_dims(ignore_mask, -1)
 
-        # Calculate GIoU loss between prediction and groundtruth box
-        raw_true_box = y_true[l][...,0:4]
-        giou = box_giou(pred_box, raw_true_box)
-        giou_loss = object_mask * box_loss_scale * (1 - giou)
-
-        # K.binary_crossentropy is helpful to avoid exp overflow.
-        xy_loss = object_mask * box_loss_scale * K.binary_crossentropy(raw_true_xy, raw_pred[...,0:2], from_logits=True)
-        wh_loss = object_mask * box_loss_scale * 0.5 * K.square(raw_true_wh-raw_pred[...,2:4])
-
         if use_focal_obj_loss:
             # Focal loss for objectness confidence
             confidence_loss = sigmoid_focal_loss(object_mask, raw_pred[...,4:5])
@@ -243,8 +290,8 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
             confidence_loss = object_mask * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True)+ \
                 (1-object_mask) * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True) * ignore_mask
 
-
         if use_focal_loss:
+            # Focal loss for classification score
             if use_softmax_loss:
                 class_loss = softmax_focal_loss(true_class_probs, raw_pred[...,5:])
             else:
@@ -257,13 +304,28 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
                 # use sigmoid style classification output
                 class_loss = object_mask * K.binary_crossentropy(true_class_probs, raw_pred[...,5:], from_logits=True)
 
-        xy_loss = K.sum(xy_loss) / mf
-        wh_loss = K.sum(wh_loss) / mf
-        giou_loss = K.sum(giou_loss) / mf
+
         if use_giou_loss:
-            # Use GIoU loss as location loss
+            # Calculate GIoU loss as location loss
+            raw_true_box = y_true[l][...,0:4]
+            giou = box_giou(pred_box, raw_true_box)
+            giou_loss = object_mask * box_loss_scale * (1 - giou)
+            giou_loss = K.sum(giou_loss) / mf
             location_loss = giou_loss
+        elif use_diou_loss:
+            # Calculate DIoU loss as location loss
+            raw_true_box = y_true[l][...,0:4]
+            diou = box_diou(pred_box, raw_true_box)
+            diou_loss = object_mask * box_loss_scale * (1 - diou)
+            diou_loss = K.sum(diou_loss) / mf
+            location_loss = diou_loss
         else:
+            # Standard YOLOv3 location loss
+            # K.binary_crossentropy is helpful to avoid exp overflow.
+            xy_loss = object_mask * box_loss_scale * K.binary_crossentropy(raw_true_xy, raw_pred[...,0:2], from_logits=True)
+            wh_loss = object_mask * box_loss_scale * 0.5 * K.square(raw_true_wh-raw_pred[...,2:4])
+            xy_loss = K.sum(xy_loss) / mf
+            wh_loss = K.sum(wh_loss) / mf
             location_loss = xy_loss + wh_loss
 
         confidence_loss = K.sum(confidence_loss) / mf
