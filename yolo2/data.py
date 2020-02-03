@@ -9,6 +9,22 @@ from common.data_utils import normalize_image, letterbox_resize, random_resize_c
 from common.utils import get_multiscale_list
 
 
+def transform_box_info(boxes, image_size):
+    """
+    Transform box info to (x_center, y_center, box_width, box_height, cls_id)
+    and image relative coordinate. This is for YOLOv2 y_true data
+    """
+    # center-lized box coordinate
+    boxes_xy = 0.5 * (boxes[..., 0:2] + boxes[..., 2:4])
+    boxes_wh = boxes[..., 2:4] - boxes[..., 0:2]
+    # transform to relative coordinate
+    boxes_xy = boxes_xy / image_size
+    boxes_wh = boxes_wh / image_size
+    boxes = np.concatenate((boxes_xy, boxes_wh, boxes[..., 4:5]), axis=-1)
+
+    return boxes
+
+
 def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=20):
     '''random preprocessing for real-time data augmentation'''
     line = annotation_line.split()
@@ -223,6 +239,7 @@ class Yolo2DataGenerator(Sequence):
         image_data = np.array(image_data)
         box_data = np.array(box_data)
         y_true_data = get_y_true_data(box_data, self.anchors, self.input_shape, self.num_classes)
+        box_data = transform_box_info(box_data, tuple(reversed(self.input_shape)))
 
         return [image_data, box_data, y_true_data], np.zeros(self.batch_size)
 
@@ -258,6 +275,7 @@ def yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num
         image_data = np.array(image_data)
         box_data = np.array(box_data)
         y_true_data = get_y_true_data(box_data, anchors, input_shape, num_classes)
+        box_data = transform_box_info(box_data, tuple(reversed(input_shape)))
 
         yield [image_data, box_data, y_true_data], np.zeros(batch_size)
 

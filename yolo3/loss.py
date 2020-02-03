@@ -149,7 +149,8 @@ def box_giou(b1, b2):
     b1_area = b1_wh[..., 0] * b1_wh[..., 1]
     b2_area = b2_wh[..., 0] * b2_wh[..., 1]
     union_area = b1_area + b2_area - intersect_area
-    iou = intersect_area / union_area
+    # calculate IoU, add epsilon in denominator to avoid dividing by 0
+    iou = intersect_area / (union_area + K.epsilon())
 
     # get enclosed area
     enclose_mins = K.minimum(b1_mins, b2_mins)
@@ -198,7 +199,8 @@ def box_diou(b1, b2):
     b1_area = b1_wh[..., 0] * b1_wh[..., 1]
     b2_area = b2_wh[..., 0] * b2_wh[..., 1]
     union_area = b1_area + b2_area - intersect_area
-    iou = intersect_area / union_area
+    # calculate IoU, add epsilon in denominator to avoid dividing by 0
+    iou = intersect_area / (union_area + K.epsilon())
 
     # box center distance
     center_distance = K.sum(K.square(b1_xy - b2_xy), axis=-1)
