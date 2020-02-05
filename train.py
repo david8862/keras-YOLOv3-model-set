@@ -3,7 +3,7 @@
 """
 Retrain the YOLO model for your own dataset.
 """
-import os, random, argparse
+import os, time, random, argparse
 import numpy as np
 import tensorflow.keras.backend as K
 from tensorflow.keras.utils import multi_gpu_model
@@ -138,6 +138,9 @@ def main(args):
             use_multiprocessing=False,
             max_queue_size=10,
             callbacks=callbacks)
+
+    # Wait 2 seconds for next stage
+    time.sleep(2)
 
     if args.decay_type:
         # rebuild optimizer to apply learning rate decay, only after

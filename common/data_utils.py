@@ -3,8 +3,8 @@
 """Data process utility functions."""
 import numpy as np
 from PIL import Image, ImageEnhance
-#import cv2
-from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
+import cv2
+#from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 
 
 def rand(a=0, b=1):
@@ -184,19 +184,23 @@ def random_hsv_distort(image, hue=.1, sat=1.5, val=1.5):
     val = rand(1, val) if rand()<.5 else 1/rand(1, val)
 
     # transform color space from RGB to HSV
-    x = rgb_to_hsv(np.array(image)/255.)
+    x = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2HSV)
+
     # distort image
-    x[..., 0] += hue
-    x[..., 0][x[..., 0]>1] -= 1
-    x[..., 0][x[..., 0]<0] += 1
-    x[..., 1] *= sat
-    x[..., 2] *= val
-    x[x>1] = 1
-    x[x<0] = 0
+    # cv2 HSV value range:
+    #     H: [0, 179]
+    #     S: [0, 255]
+    #     V: [0, 255]
+    x = x.astype(np.float64)
+    x[..., 0] = (x[..., 0] * (1 + hue)) % 180
+    x[..., 1] = x[..., 1] * sat
+    x[..., 2] = x[..., 2] * val
+    x[..., 1:3][x[..., 1:3]>255] = 255
+    x[..., 1:3][x[..., 1:3]<0] = 0
+    x = x.astype(np.uint8)
 
     # back to PIL RGB distort image
-    x = hsv_to_rgb(x) * 255. # numpy array, 0 to 255.
-    x = x.astype(np.uint8)
+    x = cv2.cvtColor(x, cv2.COLOR_HSV2RGB)
     new_image = Image.fromarray(x)
 
     return new_image

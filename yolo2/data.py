@@ -76,7 +76,9 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
     image, vertical_flip = random_vertical_flip(image)
 
     # random distort image in HSV color space
-    image = random_hsv_distort(image)
+    # NOTE: will cost more time for preprocess
+    #       and slow down training speed
+    #image = random_hsv_distort(image)
 
     # reshape boxes based on augment
     boxes = reshape_boxes(boxes, src_shape=image_size, target_shape=model_input_size, padding_shape=padding_size, offset=padding_offset, horizontal_flip=horizontal_flip, vertical_flip=vertical_flip)
