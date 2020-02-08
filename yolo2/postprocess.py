@@ -33,7 +33,7 @@ def yolo2_filter_boxes(boxes, box_confidence, box_class_probs, threshold=.6):
     return boxes, scores, classes
 
 
-def yolo2_head(feats, anchors, num_classes, input_shape):
+def yolo2_head(feats, anchors, num_classes, input_shape, calc_loss=False):
     """Convert final layer features to bounding box parameters."""
     num_anchors = len(anchors)
     # Reshape to batch, height, width, num_anchors, box_params.
@@ -57,6 +57,8 @@ def yolo2_head(feats, anchors, num_classes, input_shape):
     box_confidence = K.sigmoid(feats[..., 4:5])
     box_class_probs = K.softmax(feats[..., 5:])
 
+    if calc_loss == True:
+        return grid, feats, box_xy, box_wh
     return box_xy, box_wh, box_confidence, box_class_probs
 
 

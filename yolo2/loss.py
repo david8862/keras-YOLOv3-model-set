@@ -46,6 +46,56 @@ def box_iou(b1, b2):
     return iou
 
 
+def box_giou(b1, b2):
+    """
+    Calculate GIoU loss on anchor boxes
+    Reference Paper:
+        "Generalized Intersection over Union: A Metric and A Loss for Bounding Box Regression"
+        https://arxiv.org/abs/1902.09630
+
+    Parameters
+    ----------
+    b1: tensor, shape=(batch, feat_w, feat_h, anchor_num, 4), xywh
+    b2: tensor, shape=(batch, feat_w, feat_h, anchor_num, 4), xywh
+
+    Returns
+    -------
+    giou: tensor, shape=(batch, feat_w, feat_h, anchor_num, 1)
+    """
+    b1_xy = b1[..., :2]
+    b1_wh = b1[..., 2:4]
+    b1_wh_half = b1_wh/2.
+    b1_mins = b1_xy - b1_wh_half
+    b1_maxes = b1_xy + b1_wh_half
+
+    b2_xy = b2[..., :2]
+    b2_wh = b2[..., 2:4]
+    b2_wh_half = b2_wh/2.
+    b2_mins = b2_xy - b2_wh_half
+    b2_maxes = b2_xy + b2_wh_half
+
+    intersect_mins = K.maximum(b1_mins, b2_mins)
+    intersect_maxes = K.minimum(b1_maxes, b2_maxes)
+    intersect_wh = K.maximum(intersect_maxes - intersect_mins, 0.)
+    intersect_area = intersect_wh[..., 0] * intersect_wh[..., 1]
+    b1_area = b1_wh[..., 0] * b1_wh[..., 1]
+    b2_area = b2_wh[..., 0] * b2_wh[..., 1]
+    union_area = b1_area + b2_area - intersect_area
+    # calculate IoU, add epsilon in denominator to avoid dividing by 0
+    iou = intersect_area / (union_area + K.epsilon())
+
+    # get enclosed area
+    enclose_mins = K.minimum(b1_mins, b2_mins)
+    enclose_maxes = K.maximum(b1_maxes, b2_maxes)
+    enclose_wh = K.maximum(enclose_maxes - enclose_mins, 0.0)
+    enclose_area = enclose_wh[..., 0] * enclose_wh[..., 1]
+    # calculate GIoU, add epsilon in denominator to avoid dividing by 0
+    giou = iou - 1.0 * (enclose_area - union_area) / (enclose_area + K.epsilon())
+    giou = K.expand_dims(giou, -1)
+
+    return giou
+
+
 def box_diou(b1, b2):
     """
     Calculate DIoU loss on anchor boxes
@@ -109,17 +159,13 @@ def _smooth_labels(y_true, label_smoothing):
     return y_true * (1.0 - label_smoothing) + 0.5 * label_smoothing
 
 
-def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_loss=False, use_crossentropy_obj_loss=False, rescore_confidence=False, use_diou_loss=False):
+def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_loss=False, use_crossentropy_obj_loss=False, rescore_confidence=False, use_giou_loss=False, use_diou_loss=False):
     """YOLOv2 loss function.
 
     Parameters
     ----------
     yolo_output : tensor
         Final convolutional layer features.
-
-    true_boxes : tensor
-        Ground truth boxes tensor with shape [batch, num_true_boxes, 5]
-        containing box x_center, y_center, width, height, and class.
 
     y_true : array
         output of preprocess_true_boxes, with shape [conv_height, conv_width, num_anchors, 6]
@@ -140,18 +186,21 @@ def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_l
     total_loss : float
         total mean YOLOv2 loss across minibatch
     """
-    (yolo_output, true_boxes, y_true) = args
+    (yolo_output, y_true) = args
     num_anchors = len(anchors)
     yolo_output_shape = K.shape(yolo_output)
-    input_shape = yolo_output_shape[1:3] * 32
+    input_shape = K.cast(yolo_output_shape[1:3] * 32, K.dtype(y_true))
+    grid_shape = K.cast(yolo_output_shape[1:3], K.dtype(y_true)) # height, width
     batch_size_f = K.cast(yolo_output_shape[0], K.dtype(yolo_output)) # batch size, float tensor
     object_scale = 5
     no_object_scale = 1
     class_scale = 1
     location_scale = 1
 
-    pred_xy, pred_wh, pred_confidence, pred_class_prob = yolo2_head(
-        yolo_output, anchors, num_classes, input_shape)
+    grid, raw_pred, pred_xy, pred_wh = yolo2_head(
+        yolo_output, anchors, num_classes, input_shape, calc_loss=True)
+    pred_confidence = K.sigmoid(raw_pred[..., 4:5])
+    pred_class_prob = K.softmax(raw_pred[..., 5:])
 
     object_mask = y_true[..., 4:5]
 
@@ -160,14 +209,10 @@ def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_l
     pred_boxes = K.concatenate([pred_xy, pred_wh])
     pred_boxes = K.expand_dims(pred_boxes, 4)
 
-    # reshape true_boxes to:
-    # batch, conv_height, conv_width, num_anchors, num_true_boxes, box_params
-    true_boxes_shape = K.shape(true_boxes)
-    true_boxes = K.reshape(true_boxes, [
-        true_boxes_shape[0], 1, 1, 1, true_boxes_shape[1], true_boxes_shape[2]
-    ])
+    raw_true_boxes = y_true[...,0:4]
+    raw_true_boxes = K.expand_dims(raw_true_boxes, 4)
 
-    iou_scores = box_iou(pred_boxes, true_boxes)
+    iou_scores = box_iou(pred_boxes, raw_true_boxes)
     iou_scores = K.squeeze(iou_scores, axis=0)
 
     # Best IOUs for each location.
@@ -217,27 +262,32 @@ def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_l
         classification_loss = (class_scale * object_mask *
                            K.square(matching_classes - pred_class_prob))
 
-    if use_diou_loss:
+    if use_giou_loss:
+        # Calculate GIoU loss as location loss
+        giou = box_giou(pred_boxes, raw_true_boxes)
+        giou = K.squeeze(giou, axis=-1)
+        giou_loss = location_scale * object_mask * (1 - giou)
+        location_loss = giou_loss
+    elif use_diou_loss:
         # Calculate DIoU loss as location loss
-        diou = box_diou(pred_boxes, true_boxes)
+        diou = box_diou(pred_boxes, raw_true_boxes)
         diou = K.squeeze(diou, axis=-1)
         diou_loss = location_scale * object_mask * (1 - diou)
         location_loss = diou_loss
     else:
         # YOLOv2 location loss for matching detection boxes.
-        matching_boxes = y_true[..., 0:4]
+        # Darknet trans box to calculate loss.
+        trans_true_xy = y_true[..., :2]*grid_shape[::-1] - grid
+        trans_true_wh = K.log(y_true[..., 2:4] / anchors * input_shape[::-1])
+        trans_true_wh = K.switch(object_mask, trans_true_wh, K.zeros_like(trans_true_wh)) # avoid log(0)=-inf
+        trans_true_boxes = K.concatenate([trans_true_xy, trans_true_wh])
 
-        feats = K.reshape(yolo_output, [
-            -1, yolo_output_shape[1], yolo_output_shape[2], num_anchors,
-            num_classes + 5
-        ])
         # Unadjusted box predictions for loss.
-        # TODO: Remove extra computation shared with yolo2_head.
-        raw_pred_boxes = K.concatenate(
-            (K.sigmoid(feats[..., 0:2]), feats[..., 2:4]), axis=-1)
+        trans_pred_boxes = K.concatenate(
+            (K.sigmoid(raw_pred[..., 0:2]), raw_pred[..., 2:4]), axis=-1)
 
         location_loss = (location_scale * object_mask *
-                            K.square(matching_boxes - raw_pred_boxes))
+                            K.square(trans_true_boxes - trans_pred_boxes))
 
 
     confidence_loss_sum = K.sum(confidence_loss) / batch_size_f

@@ -145,17 +145,17 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
         dtype=np.float32)
 
     for box in true_boxes:
-        # scale box to convolutional feature spatial dimensions
+        # bypass invalid true_box, if w,h is 0
+        if box[2]==0 and box[3]==0: continue
+
         box_class = box[4:5]
-        box = box[0:4] * np.array(
-            [conv_width, conv_height, conv_width, conv_height])
-        i = np.floor(box[1]).astype('int')
-        j = np.floor(box[0]).astype('int')
+        i = np.floor(box[1]*conv_height).astype('int')
+        j = np.floor(box[0]*conv_width).astype('int')
         best_iou = 0
         best_anchor = 0
         for k, anchor in enumerate(anchors):
             # Find IOU between box shifted to origin and anchor box.
-            box_maxes = box[2:4] / 2.
+            box_maxes = box[2:4]*input_shape[::-1] / 2.
             box_mins = -box_maxes
             anchor_maxes = (anchor / 2.)
             anchor_mins = -anchor_maxes
@@ -164,7 +164,7 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
             intersect_maxes = np.minimum(box_maxes, anchor_maxes)
             intersect_wh = np.maximum(intersect_maxes - intersect_mins, 0.)
             intersect_area = intersect_wh[0] * intersect_wh[1]
-            box_area = box[2] * box[3]
+            box_area = (box[2]*input_shape[1]) * (box[3]*input_shape[0])
             anchor_area = anchor[0] * anchor[1]
             iou = intersect_area / (box_area + anchor_area - intersect_area)
             if iou > best_iou:
@@ -175,9 +175,9 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
         if best_iou > 0:
             adjusted_box = np.array(
                 [
-                    box[0] - j, box[1] - i,
-                    np.log(box[2] / (anchors[best_anchor][0] / 32)),
-                    np.log(box[3] / (anchors[best_anchor][1] / 32)),
+                    box[0], box[1],
+                    box[2],
+                    box[3],
                     1,
                     box_class
                 ],
@@ -241,9 +241,8 @@ class Yolo2DataGenerator(Sequence):
         image_data = np.array(image_data)
         box_data = np.array(box_data)
         y_true_data = get_y_true_data(box_data, self.anchors, self.input_shape, self.num_classes)
-        box_data = transform_box_info(box_data, tuple(reversed(self.input_shape)))
 
-        return [image_data, box_data, y_true_data], np.zeros(self.batch_size)
+        return [image_data, y_true_data], np.zeros(self.batch_size)
 
     def on_epoch_end(self):
         # shuffle annotation data on epoch end
@@ -277,9 +276,8 @@ def yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num
         image_data = np.array(image_data)
         box_data = np.array(box_data)
         y_true_data = get_y_true_data(box_data, anchors, input_shape, num_classes)
-        box_data = transform_box_info(box_data, tuple(reversed(input_shape)))
 
-        yield [image_data, box_data, y_true_data], np.zeros(batch_size)
+        yield [image_data, y_true_data], np.zeros(batch_size)
 
 
 def yolo2_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval=-1):

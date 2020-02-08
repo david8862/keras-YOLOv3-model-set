@@ -34,6 +34,7 @@ A general YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobile
 - [x] Binary focal classification loss
 - [x] Softmax focal classification loss
 - [x] GIoU localization loss
+- [x] DIoU localization loss ([Distance-IoU Loss](https://arxiv.org/abs/1911.08287))
 - [x] Binary focal loss for objectness (experimental)
 - [x] Label smoothing for classification loss
 
@@ -42,6 +43,8 @@ A general YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobile
 - [x] TFLite/MNN C++ YOLOv3/v2 postprocess implementation
 - [x] TF YOLOv3/v2 postprocess model
 - [x] tf.keras batch-wise YOLOv3/v2 postprocess Lambda layer
+- [x] SoftNMS bounding box postprocess (numpy)
+- [x] DIoU-NMS bounding box postprocess (numpy)
 
 #### Train tech
 - [x] Transfer training from imagenet
@@ -274,6 +277,8 @@ MultiGPU usage: use `--gpu_num N` to use N GPUs. It is passed to the [Keras mult
 
 Loss type couldn't be changed from CLI options. You can try them by changing params in [loss.py(v3)](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo3/loss.py) or [loss.py(v2)](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo2/loss.py)
 
+Postprocess type (SoftNMS, DIoU-NMS) could be configured in [postprocess_np.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo3/postprocess_np.py)
+
 ### Model dump
 We need to dump out inference model from training checkpoint for eval or demo. Following script cmd work for that.
 
@@ -359,7 +364,6 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 
 ### TODO
-- [ ] add support for DIoU Loss ([Distance-IoU Loss](https://arxiv.org/abs/1911.08287))
 - [ ] enhance data augmentation ([Mixup](https://arxiv.org/abs/1710.09412)/[AutoAugment](https://arxiv.org/abs/1805.09501))
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones/imagenet_training)
 

@@ -86,8 +86,6 @@ def get_yolo2_train_model(model_type, anchors, num_classes, weights_path=None, f
     #K.clear_session() # get a new session
     num_anchors = len(anchors)
 
-    # input boxes in form of relative x, y, w, h, class
-    boxes_input = Input(shape=(None, 5))
     # y_true in form of relative x, y, w, h, objectness, class
     y_true_input = Input(shape=(None, None, num_anchors, 6))
 
@@ -112,9 +110,9 @@ def get_yolo2_train_model(model_type, anchors, num_classes, weights_path=None, f
 
     model_loss, location_loss, confidence_loss, class_loss = Lambda(yolo2_loss, name='yolo_loss',
             arguments={'anchors': anchors, 'num_classes': num_classes, 'label_smoothing': label_smoothing})(
-            [model_body.output, boxes_input, y_true_input])
+            [model_body.output, y_true_input])
 
-    model = Model([model_body.input, boxes_input, y_true_input], model_loss)
+    model = Model([model_body.input, y_true_input], model_loss)
 
     model.compile(optimizer=optimizer, loss={
         # use custom yolo_loss Lambda layer.

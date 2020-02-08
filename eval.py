@@ -129,8 +129,6 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
 
 
 def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_threshold):
-    from functools import reduce
-    from operator import mul
     # TODO: currently MNN python API only support getting input/output tensor by default or
     # by name. so we need to hardcode the output tensor names here to get them from model
     if len(anchors) == 6:
@@ -162,11 +160,8 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
     image_shape = image.size
 
     # use a temp tensor to copy data
-    # TODO: currently MNN python binding have mem leak when creating MNN.Tensor
-    # from numpy array, only from tuple is good. So we convert input image to tuple
-    input_elementsize = reduce(mul, input_shape)
     tmp_input = MNN.Tensor(input_shape, input_tensor.getDataType(),\
-                    tuple(image_data.reshape(input_elementsize, -1)), input_tensor.getDimensionType())
+                    image_data, input_tensor.getDimensionType())
 
     input_tensor.copyFrom(tmp_input)
     interpreter.runSession(session)
@@ -179,9 +174,8 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
         assert output_tensor.getDataType() == MNN.Halide_Type_Float
 
         # copy output tensor to host, for further postprocess
-        output_elementsize = reduce(mul, output_shape)
         tmp_output = MNN.Tensor(output_shape, output_tensor.getDataType(),\
-                    tuple(np.zeros(output_shape, dtype=float).reshape(output_elementsize, -1)), output_tensor.getDimensionType())
+                    np.zeros(output_shape, dtype=float), output_tensor.getDimensionType())
 
         output_tensor.copyToHostTensor(tmp_output)
         #tmp_output.printTensorData()
