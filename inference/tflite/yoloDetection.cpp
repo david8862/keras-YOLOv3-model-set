@@ -6,6 +6,7 @@
 //
 
 #include <fcntl.h>
+#include <math.h>
 #include <getopt.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -351,6 +352,43 @@ float get_iou(t_prediction pred1, t_prediction pred2)
 
     // return IoU
     return area_inter / (area1 + area2 - area_inter);
+}
+
+
+//calculate DIoU for 2 prediction boxes
+float get_diou(t_prediction pred1, t_prediction pred2)
+{
+    // get bbox IoU
+    float iou = get_iou(pred1, pred2);
+    // coordinates for box 1
+    float x1min = pred1.x;
+    float x1max = pred1.x + pred1.width;
+    float x1center = pred1.x + 0.5*pred1.width;
+    float y1min = pred1.y;
+    float y1max = pred1.y + pred1.height;
+    float y1center = pred1.y + 0.5*pred1.height;
+
+    // coordinates for box 2
+    float x2min = pred2.x;
+    float x2max = pred2.x + pred2.width;
+    float x2center = pred2.x + 0.5*pred2.width;
+    float y2min = pred2.y;
+    float y2max = pred2.y + pred2.height;
+    float y2center = pred2.y + 0.5*pred2.height;
+
+    // box center distance
+    float center_distance = pow(x1center - x2center, 2) + pow(y1center - y2center, 2);
+
+    // get enclosed box
+    float x_enclose_min = std::min(x1min, x2min);
+    float x_enclose_max = std::max(x1max, x2max);
+    float y_enclose_min = std::min(y1min, y2min);
+    float y_enclose_max = std::max(y1max, y2max);
+    // get enclosed diagonal distance
+    float enclose_diagonal = pow(x_enclose_max - x_enclose_min, 2) + pow(y_enclose_max - y_enclose_min, 2);
+    // calculate DIoU
+    float diou = iou - 1.0 * center_distance / enclose_diagonal;
+    return diou;
 }
 
 //ascend order sort for prediction records
