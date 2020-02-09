@@ -1,10 +1,11 @@
-MAINTAINER Xiaobin Zhang <david8862@gmail.com>
-
 ARG UBUNTU_VERSION=18.04
 
 ARG ARCH=
 ARG CUDA=10.0
 FROM nvidia/cuda${ARCH:+-$ARCH}:${CUDA}-base-ubuntu${UBUNTU_VERSION} as base
+
+LABEL maintainer="Xiaobin Zhang <david8862@gmail.com>"
+
 # ARCH and CUDA are specified again because the FROM directive resets ARGs
 # (but their default value is retained if set previously)
 ARG ARCH
