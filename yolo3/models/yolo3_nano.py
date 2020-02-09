@@ -5,7 +5,7 @@
 import os
 from keras_applications.imagenet_utils import _obtain_input_shape
 from tensorflow.keras.utils import get_source_inputs, get_file
-from tensorflow.keras.layers import UpSampling2D, Concatenate, Dense, Multiply, Add, Lambda, Input
+from tensorflow.keras.layers import UpSampling2D, Concatenate, Dense, Multiply, Add, Lambda, Input, Reshape
 from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Concatenate, BatchNormalization, ReLU, ZeroPadding2D, GlobalAveragePooling2D, GlobalMaxPooling2D, Softmax
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
@@ -135,15 +135,15 @@ def _pep_block(inputs, proj_filters, filters, stride, expansion, block_id):
     #return x
 
 
-def expand_upsampling2d(args):
-    import tensorflow as tf
-    x = args[0]
-    inputs = args[1]
-    in_shapes = K.shape(inputs)[1:3]
-    x = K.expand_dims(x, axis=1)
-    x = K.expand_dims(x, axis=2)
-    x = tf.image.resize(x, in_shapes)
-    return x
+#def expand_upsampling2d(args):
+    #import tensorflow as tf
+    #x = args[0]
+    #inputs = args[1]
+    #in_shapes = K.shape(inputs)[1:3]
+    #x = K.expand_dims(x, axis=1)
+    #x = K.expand_dims(x, axis=2)
+    #x = tf.image.resize(x, in_shapes)
+    #return x
 
 
 def _fca_block(inputs, reduct_ratio, block_id):
@@ -151,13 +151,11 @@ def _fca_block(inputs, reduct_ratio, block_id):
     #in_shapes = inputs.shape.as_list()[1:3]
     reduct_channels = int(in_channels // reduct_ratio)
     prefix = 'fca_block_{}_'.format(block_id)
-
     x = GlobalAveragePooling2D(name=prefix + 'average_pooling')(inputs)
     x = Dense(reduct_channels, activation='relu', name=prefix + 'fc1')(x)
     x = Dense(in_channels, activation='sigmoid', name=prefix + 'fc2')(x)
-    #x = Lambda(expand_dims2d, name=prefix + 'expand_dims2d')(x)
-    #x = UpSampling2D(in_shapes, name=prefix + 'upsample')(x)
-    x = Lambda(expand_upsampling2d, name=prefix + 'expand_upsample')([x, inputs])
+
+    x = Reshape((1,1,in_channels),name='reshape')(x)
     x = Multiply(name=prefix + 'multiply')([x, inputs])
     return x
 
