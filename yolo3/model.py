@@ -93,7 +93,7 @@ def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, in
         input_tensor = Input(shape=input_shape, name='image_input')
 
     if input_tensor is None:
-        input_tensor = Input(shape=(416, 416, 3), name='image_input')
+        input_tensor = Input(shape=(None, None, 3), name='image_input')
 
     #Tiny YOLOv3 model has 6 anchors and 2 feature layers
     if num_feature_layers == 2:

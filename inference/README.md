@@ -3,7 +3,7 @@
 Here are some C++ implementation of the on-device inference for trained YOLOv3/v2 inference model, including forward propagation of the model, YOLO postprocess and bounding box NMS. Generally it should support YOLOv3/Tiny YOLOv3/YOLOv2 arch and all kinds of backbones & head. Now we have 2 approaches with different inference engine for that:
 
 * Tensorflow-Lite (verified on commit id: 1b8f5bc8011a1e85d7a110125c852a4f431d0f59)
-* [MNN](https://github.com/alibaba/MNN) from Alibaba (verified on release: [0.2.1.0](https://github.com/alibaba/MNN/releases/tag/0.2.1.0))
+* [MNN](https://github.com/alibaba/MNN) from Alibaba (verified on release: [0.2.1.9](https://github.com/alibaba/MNN/releases/tag/0.2.1.9))
 
 
 ### MNN
@@ -25,13 +25,13 @@ Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux), we need to
 # ./schema/generate.sh
 # ./tools/script/get_model.sh  # optional
 # mkdir build && cd build
-# cmake [-DCMAKE_TOOLCHAIN_FILE=<cross-compile toolchain file>] .. && make -j4
-
-# cd ../tools/converter
-# ./generate_schema.sh
-# mkdir build && cd build && cmake .. && make -j4
+# cmake [-DCMAKE_TOOLCHAIN_FILE=<cross-compile toolchain file>]
+        [-DMNN_BUILD_QUANTOOLS=ON -DMNN_BUILD_CONVERTER=ON -DMNN_BUILD_TRAIN=ON -MNN_BUILD_TRAIN_MINI=ON -MNN_USE_OPENCV=OFF] ..
+        && make -j4
 ```
 If you want to do cross compile for ARM platform, "CMAKE_TOOLCHAIN_FILE" should be specified
+"MNN_BUILD_QUANTOOLS" and "MNN_BUILD_CONVERTER" are for enabling MNN Quantization tool and MNN model converter
+"MNN_BUILD_TRAIN" related are for enabling MNN training tools
 
 
 2. Build demo inference application
@@ -63,12 +63,24 @@ Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-
 * convert TF pb model to MNN model:
 
     ```
-    # mnnconvert -f TF --modelFile model.pb --MNNModel model.pb.mnn --bizCode biz
+    # cd <Path_to_MNN>/build/
+    # ./MNNConvert -f TF --modelFile model.pb --MNNModel model.pb.mnn --bizCode MNN
+    ```
+    or
+
+    ```
+    # mnnconvert -f TF --modelFile model.pb --MNNModel model.pb.mnn --bizCode MNN
     ```
 
 MNN support Post Training Integer quantization, so we can use its python CLI interface to do quantization on the generated .mnn model to get quantized .mnn model for ARM acceleration . A json config file [quantizeConfig.json](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/inference/MNN/configs/quantizeConfig.json) is needed to describe the feeding data:
 
 * Quantized MNN model:
+
+    ```
+    # cd <Path_to_MNN>/build/
+    # ./quantized.out model.pb.mnn model_quant.pb.mnn quantizeConfig.json
+    ```
+    or
 
     ```
     # mnnquant model.pb.mnn model_quant.pb.mnn quantizeConfig.json

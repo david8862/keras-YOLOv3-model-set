@@ -422,10 +422,15 @@ Please cite keras-YOLOv3-model-set in your publications if it helps your researc
      year={2017}
 }
 @article{GIoU,
-     title={Generalized Intersection over Union: A Metric and A Loss for Bounding Box
-Regression},
+     title={Generalized Intersection over Union: A Metric and A Loss for Bounding Box Regression},
      author={Hamid Rezatofighi, Nathan Tsoi1, JunYoung Gwak1, Amir Sadeghian, Ian Reid, Silvio Savarese},
      journal = {arXiv},
      year={2019}
+}
+@article{DIoU Loss,
+     title={Distance-IoU Loss: Faster and Better Learning for Bounding Box Regression},
+     author={Zhaohui Zheng, Ping Wang, Wei Liu, Jinze Li, Rongguang Ye, Dongwei Ren},
+     journal = {arXiv},
+     year={2020}
 }
 ```
