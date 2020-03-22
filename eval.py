@@ -742,6 +742,40 @@ def plot_Pascal_AP_result(count_images, count_true_positives, num_classes,
     draw_plot_func(recall_dict, len(recall_dict), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 
 
+def get_mean_metric(metric_records, gt_classes_records):
+    '''
+    Calculate mean metric, but only count classes which have ground truth object
+
+    Param
+        metric_records: metric dict like:
+            metric_records = {
+                'aeroplane': 0.79,
+                'bicycle': 0.79,
+                    ...
+                'tvmonitor': 0.71,
+            }
+        gt_classes_records: ground truth class dict like:
+            gt_classes_records = {
+                'car': [
+                    ['00001.jpg','100,120,200,235'],
+                    ['00002.jpg','85,63,156,128'],
+                    ...
+                    ],
+                ...
+            }
+    Return
+         mean_metric: float value of mean metric
+    '''
+    mean_metric = 0.0
+    count = 0
+    for (class_name, metric) in metric_records.items():
+        if len(gt_classes_records[class_name]) != 0:
+            mean_metric += metric
+            count += 1
+    mean_metric = (mean_metric/count)*100 if count != 0 else 0.0
+    return mean_metric
+
+
 def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold, show_result=True):
     '''
     Compute PascalVOC style mAP
@@ -765,7 +799,8 @@ def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_r
         count_true_positives[class_name] = true_positive_count
 
     #get mAP percentage value
-    mAP = np.mean(list(APs.values()))*100
+    #mAP = np.mean(list(APs.values()))*100
+    mAP = get_mean_metric(APs, gt_classes_records)
 
     #get GroundTruth count per class
     gt_counter_per_class = {}
@@ -793,8 +828,10 @@ def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_r
             recall_dict[class_name] = float(count_true_positives[class_name]) / gt_count
 
     #get mPrec, mRec
-    mPrec = np.mean(list(precision_dict.values()))*100
-    mRec = np.mean(list(recall_dict.values()))*100
+    #mPrec = np.mean(list(precision_dict.values()))*100
+    #mRec = np.mean(list(recall_dict.values()))*100
+    mPrec = get_mean_metric(precision_dict, gt_classes_records)
+    mRec = get_mean_metric(recall_dict, gt_classes_records)
 
 
     if show_result:

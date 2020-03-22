@@ -4,7 +4,7 @@
 
 ## Introduction
 
-A general YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) and [YAD2K](https://github.com/allanzelener/YAD2K). Implement with tf.keras, including data collection/annotation, model training/tuning, model evaluation and on device deployment. Support different architecture and different technologies:
+A general YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet)/[keras-yolo3](https://github.com/qqwweee/keras-yolo3) and [YAD2K](https://github.com/allanzelener/YAD2K). Implement with tf.keras, including data collection/annotation, model training/tuning, model evaluation and on device deployment. Support different architecture and different technologies:
 
 #### Backbone
 - [x] Darknet53/Tiny Darknet
@@ -12,8 +12,8 @@ A general YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobile
 - [x] MobilenetV1
 - [x] MobilenetV2
 - [x] EfficientNet
-- [x] VGG16
 - [x] Xception
+- [x] VGG16
 
 #### Head
 - [x] YOLOv3
@@ -100,7 +100,7 @@ Image detection sample:
 
 <p align="center">
   <img src="assets/dog_inference.jpg">
-  <img src="assets/person_inference.jpg">
+  <img src="assets/kite_inference.jpg">
 </p>
 
 ## Guide of train/evaluate/demo
@@ -309,6 +309,17 @@ Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalV
   <img src="assets/COCO_AP.jpg">
 </p>
 
+Some experiment on MSCOCO dataset and comparison:
+
+| Model name | InputSize | TrainSet | TestSet | COCO AP | Size | Speed | Ps |
+| ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- |
+| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 24.43 | 32MB | 17ms | Keras on Titan XP |
+| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_416_coco.tar.gz) | 416x416 | train2017 | val2017 | 27.93 | 32MB| 20ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/tiny_yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 21.29 | 21MB | 9ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/tiny_yolo3_mobilenet_lite_416_coco.tar.gz) | 416x416 | train2017 | val2017 | 24.29 | 21MB | 11ms | Keras on Titan XP |
+| [ssd_mobilenet_v1_coco](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md) | 600x600 | COCO train | COCO val | 21 | 28MB | 30ms | TF on Titan X |
+| [ssdlite_mobilenet_v2_coco](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md) | 600x600 | COCO train | COCO val | 22 | 19MB | 27ms | TF on Titan X |
+
 Some experiment on PascalVOC dataset and comparison:
 
 | Model name | InputSize | TrainSet | TestSet | mAP | Size | Speed | Ps |
@@ -329,11 +340,6 @@ Some experiment on PascalVOC dataset and comparison:
 | [Faster RCNN, VGG-16](https://github.com/ShaoqingRen/faster_rcnn) | ~1000x600 | VOC07+12 | VOC07 | 73.2% || 151ms | Caffe on Titan X |
 |[SSD,VGG-16](https://github.com/pierluigiferrari/ssd_keras) | 300x300 | VOC07+12 | VOC07	| 77.5% | 201MB | 39fps | Keras on Titan X |
 
-And some unsuccessful experiment...
-
-| Model name | InputSize | TrainSet | TestSet | mAP | Size | Speed | Ps |
-| ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- |
-| YOLOv3-VGG16 | 416x416 | VOC07+12 | VOC07 | 68.03% | 172MB |||
 
 ### Demo
 1. [yolo.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo.py)

@@ -27,9 +27,12 @@ def get_classes(classes_path):
 # update class names
 classes = get_classes(args.classes_path)
 
+# get real path for dataset
+dataset_realpath = os.path.realpath(args.dataset_path)
+
 for dataset, datatype in sets:
     image_annotation_dict = defaultdict(list)
-    coco_annotation_file = open("%s/annotations/%s.json"%(args.dataset_path, dataset),
+    coco_annotation_file = open("%s/annotations/%s.json"%(dataset_realpath, dataset),
                            encoding='utf-8')
     # annotation_data format:
     # {
@@ -62,7 +65,7 @@ for dataset, datatype in sets:
             #  "id": int
             # }
             image_id = image['id']
-            image_file = '%s/%s/%012d.jpg' % (args.dataset_path, datatype, image_id)
+            image_file = '%s/%s/%012d.jpg' % (dataset_realpath, datatype, image_id)
             image_annotation_dict[image_file] = []
 
     for annotation in annotations:
@@ -77,7 +80,7 @@ for dataset, datatype in sets:
         #  "iscrowd": 0 or 1
         # }
         image_id = annotation['image_id']
-        image_file = '%s/%s/%012d.jpg' % (args.dataset_path, datatype, image_id)
+        image_file = '%s/%s/%012d.jpg' % (dataset_realpath, datatype, image_id)
         category_id = annotation['category_id']
 
         # since original 80 COCO category_ids is discontinuous,

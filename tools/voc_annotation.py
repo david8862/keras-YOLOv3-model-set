@@ -78,20 +78,23 @@ args = parser.parse_args()
 if args.classes_path:
     classes = get_classes(args.classes_path)
 
+# get real path for dataset
+dataset_realpath = os.path.realpath(args.dataset_path)
+
 for year, image_set in sets:
     # count class item number in each set
     class_count = {itm: 0 for itm in classes}
 
-    image_ids = open('%s/VOC%s/ImageSets/Main/%s.txt'%(args.dataset_path, year, image_set)).read().strip().split()
+    image_ids = open('%s/VOC%s/ImageSets/Main/%s.txt'%(dataset_realpath, year, image_set)).read().strip().split()
     list_file = open('%s/%s_%s.txt'%(args.output_path, year, image_set), 'w')
     for image_id in image_ids:
-        if has_object(args.dataset_path, year, image_id, args.include_difficult):
-            list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(args.dataset_path, year, image_id))
-            convert_annotation(args.dataset_path, year, image_id, list_file, args.include_difficult)
+        if has_object(dataset_realpath, year, image_id, args.include_difficult):
+            list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(dataset_realpath, year, image_id))
+            convert_annotation(dataset_realpath, year, image_id, list_file, args.include_difficult)
             list_file.write('\n')
         elif args.include_no_obj:
             # include no object image. just write file path
-            list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(args.dataset_path, year, image_id))
+            list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(dataset_realpath, year, image_id))
             list_file.write('\n')
     list_file.close()
     # print out item number statistic
