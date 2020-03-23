@@ -63,6 +63,7 @@ A general YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobile
 1. Install requirements on Ubuntu 16.04/18.04:
 
 ```
+# apt install python3-opencv
 # pip install -r requirements.txt
 ```
 
@@ -379,7 +380,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 1. The test environment is
     - Ubuntu 16.04/18.04
     - Python 3.6.8
-    - tensorflow 2.0.0/tensorflow 1.14.0
+    - tensorflow 2.0.0/tensorflow 1.15.0
     - tf.keras 2.2.4-tf
 
 2. Default YOLOv3/v2 anchors are used. If you want to use your own anchors, probably some changes are needed. [kmeans.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/kmeans.py) could be used to do K-Means anchor clustering on your dataset

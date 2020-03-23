@@ -272,6 +272,14 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
         #MNN inference engine need create session
         session = model.createSession()
 
+    # create txt file to save prediction result, with
+    # save format as annotation file but adding score, like:
+    #
+    # path/to/img1.jpg 50,100,150,200,0,0.86 30,50,200,120,3,0.95
+    #
+    touchdir('result')
+    result_file = open(os.path.join('result','detection_result.txt'), 'w')
+
     pred_classes_records = {}
     pbar = tqdm(total=len(annotation_records), desc='Eval model')
     for (image_name, gt_records) in annotation_records.items():
@@ -295,6 +303,15 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
 
         #print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
         pbar.update(1)
+
+        # save prediction result to txt
+        result_file.write(image_name)
+        for box, cls, score in zip(pred_boxes, pred_classes, pred_scores):
+            xmin, ymin, xmax, ymax = box
+            box_annotation = " %d,%d,%d,%d,%d,%f" % (
+                xmin, ymin, xmax, ymax, cls, score)
+            result_file.write(box_annotation)
+        result_file.write('\n')
 
         if save_result:
 
@@ -332,6 +349,7 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
         pred_class_list.sort(key=lambda ele: ele[2], reverse=True)
 
     pbar.close()
+    result_file.close()
     return pred_classes_records
 
 
@@ -1148,7 +1166,7 @@ def main():
     height, width = args.model_image_size.split('x')
     model_image_size = (int(height), int(width))
 
-    annotation_lines = get_dataset(args.annotation_file)
+    annotation_lines = get_dataset(args.annotation_file, shuffle=False)
     model, model_format = load_eval_model(args.model_path, args.custom_objects)
 
     eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, args.eval_type, args.iou_threshold, args.conf_threshold, args.save_result)
