@@ -335,7 +335,7 @@ Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalV
 Some experiment on MSCOCO dataset and comparison:
 
 | Model name | InputSize | TrainSet | TestSet | COCO AP | Simple COCO AP | Size | Speed | Ps |
-| ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- |
+| ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- | ----- |
 | [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 18.5 | 24.43 | 32MB | 17ms | Keras on Titan XP |
 | [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_416_coco.tar.gz) | 416x416 | train2017 | val2017 | 21.5 | 27.93 | 32MB| 20ms | Keras on Titan XP |
 | [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/tiny_yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 15.7 | 21.29 | 21MB | 9ms | Keras on Titan XP |
