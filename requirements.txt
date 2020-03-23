@@ -7,3 +7,4 @@ matplotlib
 tqdm
 pillow
 mnn
+pycocotools

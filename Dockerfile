@@ -118,6 +118,7 @@ RUN ${PIP} --no-cache-dir install \
     tensorflow-model-optimization \
     keras \
     mnn \
+    pycocotools \
     enum34
 
 # Change workdir
