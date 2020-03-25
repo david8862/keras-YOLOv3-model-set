@@ -9,7 +9,7 @@ from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 
 
-def convert_coordinate(box):
+def convert_coco_coordinate(box):
     '''
     convert box coordinate from
     [xmin, ymin, xmax, ymax] to
@@ -24,7 +24,7 @@ def convert_coordinate(box):
     return [x_min, y_min, width, height]
 
 
-def convert_category(category_id):
+def convert_coco_category(category_id):
     '''
     convert continuous coco class id (0~79) to discontinuous coco category id
     '''
@@ -51,7 +51,7 @@ def convert_category(category_id):
     return category_id
 
 
-def coco_result_generate(result_txt, coco_result_json):
+def coco_result_generate(result_txt, coco_result_json, customize_coco):
     with open(result_txt) as f:
         result_lines = f.readlines()
 
@@ -81,8 +81,8 @@ def coco_result_generate(result_txt, coco_result_json):
             box_coordinate = [int(x) for x in box[:4]]
             box_class = int(box[4])
             box_score = float(box[5])
-            box_coordinate = convert_coordinate(box_coordinate)
-            box_category = convert_category(box_class)
+            box_coordinate = convert_coco_coordinate(box_coordinate)
+            box_category = box_class+1 if customize_coco else convert_coco_category(box_class)
 
             # fullfil coco result dict item
             # coco detection result is a list of following format dict:
@@ -130,9 +130,10 @@ def main():
     parser.add_argument('--result_txt', required=True, type=str, help='txt detection result file')
     parser.add_argument('--coco_annotation_json', required=True, type=str, help='coco json annotation file')
     parser.add_argument('--coco_result_json', required=False, type=str, help='output coco json result file, default is ./coco_result.json', default='coco_result.json')
+    parser.add_argument('--customize_coco', default=False, action="store_true", help='It is a user customize coco dataset. Will not follow standard coco class label')
     args = parser.parse_args()
 
-    coco_result_generate(args.result_txt, args.coco_result_json)
+    coco_result_generate(args.result_txt, args.coco_result_json, args.customize_coco)
     pycoco_eval(args.coco_annotation_json, args.coco_result_json)
 
 

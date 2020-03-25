@@ -292,7 +292,7 @@ Change model_type, anchors file & class file for different training mode. If "--
 ### Evaluation
 Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/eval.py) to do evaluation on the inference model with your test data. It support following metrics:
 
-1. Pascal VOC mAP: will generate txt detection result, draw rec/pre curve for each class and AP/mAP result chart in "result" dir with default 0.5 IOU or specified IOU, and optionally save all the detection result on evaluation dataset as images
+1. Pascal VOC mAP: will generate txt detection result `result/detection_result.txt`, draw rec/pre curve for each class and AP/mAP result chart in "result" dir with default 0.5 IOU or specified IOU, and optionally save all the detection result on evaluation dataset as images
 
 2. MS COCO AP. This is a simplified COCO AP evaluation (comparing with [cocoapi](https://github.com/cocodataset/cocoapi)) without any additional COCO annotation. Will generate txt detection result, draw overall AP chart and AP on different scale (small, medium, large) as COCO standard. It can also optionally save all the detection result
 
@@ -300,13 +300,13 @@ Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/ev
 # python eval.py --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.001 --annotation_file=2007_test.txt --save_result
 ```
 
-If you're evaluating with MSCOCO dataset, you can use [pycoco_eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/pycoco_eval.py) with the generated txt detection result and COCO GT annotation to get official COCO AP with pycocotools:
+If you're evaluating with MSCOCO dataset, you can use [pycoco_eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/pycoco_eval.py) with the generated txt detection result and COCO GT annotation to get official COCO AP with [pycocotools](https://github.com/cocodataset/cocoapi/tree/master/PythonAPI/pycocotools):
 
 ```
 # cd tools && python pycoco_eval.py -h
 usage: pycoco_eval.py [-h] --result_txt RESULT_TXT --coco_annotation_json
                       COCO_ANNOTATION_JSON
-                      [--coco_result_json COCO_RESULT_JSON]
+                      [--coco_result_json COCO_RESULT_JSON] [--customize_coco]
 
 generate coco result json and evaluate COCO AP with pycocotools
 
@@ -319,9 +319,13 @@ optional arguments:
   --coco_result_json COCO_RESULT_JSON
                         output coco json result file, default is
                         ./coco_result.json
+  --customize_coco      It is a user customize coco dataset. Will not follow
+                        standard coco class label
 
 # python pycoco_eval.py --result_txt=../result/detection_result.txt --coco_annotation_json=./instances_val2017.json --coco_result_json=coco_result.json
 ```
+
+P.S. for VOC style dataset, we provide [pascal_voc_to_coco.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/pascal_voc_to_coco.py) to generate COCO GT annotation.
 
 If you enable "--eval_online" option in train.py, a default Pascal VOC mAP evaluation on validation dataset will be executed during training. But that may cost more time for train process.
 

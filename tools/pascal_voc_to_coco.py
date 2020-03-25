@@ -4,12 +4,12 @@
 import sys
 import os, argparse
 import json
+from tqdm import tqdm
 import xml.etree.ElementTree as ET
 
-# 检测框的ID起始值
+# start id of bbox in coco annotation
 START_BOUNDING_BOX_ID = 1
-# 类别列表无必要预先创建，程序中会根据所有图像中包含的ID来创建并更新
-#PRE_DEFINE_CATEGORIES = {}
+
 # If necessary, pre-define category and its id
 #PRE_DEFINE_CATEGORIES = {"aeroplane": 1, "bicycle": 2, "bird": 3, "boat": 4,
                           #"bottle":5, "bus": 6, "car": 7, "cat": 8, "chair": 9,
@@ -29,7 +29,7 @@ def get_and_check(root, name, length):
     return vars
 
 
-# 得到图片唯一标识号
+# get image_id from image file name
 def get_filename_as_int(filename):
     try:
         filename = os.path.splitext(filename)[0]
@@ -46,17 +46,17 @@ def get_category(category_file):
     with open(category_file) as f:
         categories_names = f.readlines()
     for index, category_name in enumerate(categories_names):
-        # handle underline in roborock class name
+        # handle underline in class name
         category_dict[category_name.strip().replace('_', ' ')] = index + 1
     return category_dict
 
 
 def convert(xml_list, xml_dir, categories, json_file, merge_category=False):
     '''
-    :param xml_list: 需要转换的XML文件列表
-    :param xml_dir: XML的存储文件夹
-    :param categories: XML的存储文件夹
-    :param json_file: 导出json文件的路径
+    :param xml_list: list of PascalVOC annotation XMLs
+    :param xml_dir: path of PascalVOC annotation XMLs
+    :param categories: dict of object category name to id
+    :param json_file: output coco json file
     :return: None
     '''
     # COCO instances data struct
@@ -64,9 +64,11 @@ def convert(xml_list, xml_dir, categories, json_file, merge_category=False):
     #categories = PRE_DEFINE_CATEGORIES
     bnd_id = START_BOUNDING_BOX_ID
 
+    pbar = tqdm(total=len(xml_list), desc='convert PascalVOC XML')
     for line in xml_list:
         line = line.strip()
-        print("Processing {}".format(line))
+        #print("Processing {}".format(line))
+        pbar.update(1)
 
         # parse XML
         xml_f = os.path.join(xml_dir, line)
@@ -122,7 +124,7 @@ def convert(xml_list, xml_dir, categories, json_file, merge_category=False):
             o_height = abs(ymax - ymin)
 
             annotation = dict()
-            # 设置分割数据，点的顺序为逆时针方向
+            # set segmentation info. points in anti-clockwise direction
             annotation['segmentation'] = [[xmin,ymin,xmin,ymax,xmax,ymax,xmax,ymin]]
             annotation['area'] = o_width*o_height
             annotation['iscrowd'] = 0
@@ -134,6 +136,7 @@ def convert(xml_list, xml_dir, categories, json_file, merge_category=False):
 
             json_dict['annotations'].append(annotation)
             bnd_id = bnd_id + 1
+    pbar.close()
 
     # create category ID dict
     for cate, cid in categories.items():
@@ -158,13 +161,12 @@ def pascalvoc_to_coco(voc_root_path, dataset_file, category_file, json_file, mer
     # get category info
     categories = get_category(category_file)
 
-    # convert the xml list to COCO JSON file
+    # convert the xml list to coco json file
     convert(xml_list, xml_dir, categories, json_file, merge_category)
 
 
-
 def main():
-    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
+    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='convert PascalVOC XML annotation to MSCOCO JSON annotation')
 
     parser.add_argument('--voc_root_path', required=True, type=str, help='VOCdevkit root path, e.g VOCdevkit/VOC2007')
     parser.add_argument('--dataset_file', required=True, type=str, help='PascalVOC dataset file path')

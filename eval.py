@@ -312,6 +312,7 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
                 xmin, ymin, xmax, ymax, cls, score)
             result_file.write(box_annotation)
         result_file.write('\n')
+        result_file.flush()
 
         if save_result:
 
