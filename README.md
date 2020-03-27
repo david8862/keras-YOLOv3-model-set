@@ -158,7 +158,9 @@ Image detection sample:
        ```
        # cd tools && python coco_annotation.py -h
        usage: coco_annotation.py [-h] [--dataset_path DATASET_PATH]
-                                 [--output_path OUTPUT_PATH] [--include_no_obj]
+                                 [--output_path OUTPUT_PATH]
+                                 [--classes_path CLASSES_PATH] [--include_no_obj]
+                                 [--customize_coco]
 
        convert COCO dataset annotation to txt annotation file
 
@@ -169,7 +171,12 @@ Image detection sample:
          --output_path OUTPUT_PATH
                                output path for generated annotation txt files,
                                default is ./
+         --classes_path CLASSES_PATH
+                               path to class definitions, default is
+                               ../configs/coco_classes.txt
          --include_no_obj      to include no object image
+         --customize_coco      It is a user customize coco dataset. Will not follow
+                               standard coco class label
        ```
        This script will try to convert COCO instances_train2017 and instances_val2017 under dataset_path. You can change the code for your dataset
 

@@ -3,13 +3,8 @@
 """
 Calculate mAP for YOLO model on some annotation dataset
 """
+import os, argparse, time
 import numpy as np
-import random
-import os, argparse
-from yolo3.postprocess_np import yolo3_postprocess_np
-from yolo2.postprocess_np import yolo2_postprocess_np
-from common.data_utils import preprocess_image
-from common.utils import get_dataset, get_classes, get_anchors, get_colors, draw_boxes, touchdir, optimize_tf_gpu, get_custom_objects
 from PIL import Image
 import operator
 import matplotlib.pyplot as plt
@@ -17,9 +12,14 @@ from tqdm import tqdm
 
 from tensorflow.keras.models import load_model
 import tensorflow.keras.backend as K
-
 import tensorflow as tf
 import MNN
+
+from yolo3.postprocess_np import yolo3_postprocess_np
+from yolo2.postprocess_np import yolo2_postprocess_np
+from common.data_utils import preprocess_image
+from common.utils import get_dataset, get_classes, get_anchors, get_colors, draw_boxes, touchdir, optimize_tf_gpu, get_custom_objects
+
 
 optimize_tf_gpu(tf, K)
 
@@ -30,15 +30,15 @@ def annotation_parse(annotation_lines, class_names):
 
     image dict would be like:
     annotation_records = {
-        '000001.jpg': {'100,120,200,235':'dog', '85,63,156,128':'car', ...},
+        '/path/to/000001.jpg': {'100,120,200,235':'dog', '85,63,156,128':'car', ...},
         ...
     }
 
     ground truth class dict would be like:
     classes_records = {
         'car': [
-                ['00001.jpg','100,120,200,235'],
-                ['00002.jpg','85,63,156,128'],
+                ['000001.jpg','100,120,200,235'],
+                ['000002.jpg','85,63,156,128'],
                 ...
                ],
         ...
@@ -57,10 +57,11 @@ def annotation_parse(annotation_lines, class_names):
             coordinate = ','.join(box.split(',')[:-1])
             box_records[coordinate] = class_name
             #append or add ground truth class item
+            record = [os.path.basename(image_name), coordinate]
             if class_name in classes_records:
-                classes_records[class_name].append([image_name, coordinate])
+                classes_records[class_name].append(record)
             else:
-                classes_records[class_name] = list([[image_name, coordinate]])
+                classes_records[class_name] = list([record])
         annotation_records[image_name] = box_records
 
     return annotation_records, classes_records
@@ -261,8 +262,8 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
     sorted by score:
     pred_classes_records = {
         'car': [
-                ['00001.jpg','94,115,203,232',0.98],
-                ['00002.jpg','82,64,154,128',0.93],
+                ['000001.jpg','94,115,203,232',0.98],
+                ['000002.jpg','82,64,154,128',0.93],
                 ...
                ],
         ...
@@ -340,10 +341,11 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
             coordinate = "{},{},{},{}".format(xmin, ymin, xmax, ymax)
 
             #append or add predict class item
+            record = [os.path.basename(image_name), coordinate, score]
             if pred_class_name in pred_classes_records:
-                pred_classes_records[pred_class_name].append([image_name, coordinate, score])
+                pred_classes_records[pred_class_name].append(record)
             else:
-                pred_classes_records[pred_class_name] = list([[image_name, coordinate, score]])
+                pred_classes_records[pred_class_name] = list([record])
 
     # sort pred_classes_records for each class according to score
     for pred_class_list in pred_classes_records.values():
@@ -776,8 +778,8 @@ def get_mean_metric(metric_records, gt_classes_records):
         gt_classes_records: ground truth class dict like:
             gt_classes_records = {
                 'car': [
-                    ['00001.jpg','100,120,200,235'],
-                    ['00002.jpg','85,63,156,128'],
+                    ['000001.jpg','100,120,200,235'],
+                    ['000002.jpg','85,63,156,128'],
                     ...
                     ],
                 ...
@@ -788,7 +790,7 @@ def get_mean_metric(metric_records, gt_classes_records):
     mean_metric = 0.0
     count = 0
     for (class_name, metric) in metric_records.items():
-        if len(gt_classes_records[class_name]) != 0:
+        if (class_name in gt_classes_records) and (len(gt_classes_records[class_name]) != 0):
             mean_metric += metric
             count += 1
     mean_metric = (mean_metric/count)*100 if count != 0 else 0.0
@@ -973,8 +975,8 @@ def get_scale_gt_dict(gt_classes_records, class_names):
     input gt_classes_records would be like:
     gt_classes_records = {
         'car': [
-                ['00001.jpg','100,120,200,235'],
-                ['00002.jpg','85,63,156,128'],
+                ['000001.jpg','100,120,200,235'],
+                ['000002.jpg','85,63,156,128'],
                 ...
                ],
         ...
@@ -983,8 +985,8 @@ def get_scale_gt_dict(gt_classes_records, class_names):
         scale_gt_classes_records = {
             'small': {
                 'car': [
-                        ['00001.jpg','100,120,200,235'],
-                        ['00002.jpg','85,63,156,128'],
+                        ['000001.jpg','100,120,200,235'],
+                        ['000002.jpg','85,63,156,128'],
                         ...
                        ],
                 ...
@@ -992,8 +994,8 @@ def get_scale_gt_dict(gt_classes_records, class_names):
 
             'medium': {
                 'car': [
-                        ['00003.jpg','100,120,200,235'],
-                        ['00004.jpg','85,63,156,128'],
+                        ['000003.jpg','100,120,200,235'],
+                        ['000004.jpg','85,63,156,128'],
                         ...
                        ],
                 ...
@@ -1001,8 +1003,8 @@ def get_scale_gt_dict(gt_classes_records, class_names):
 
             'large': {
                 'car': [
-                        ['00005.jpg','100,120,200,235'],
-                        ['00006.jpg','85,63,156,128'],
+                        ['000005.jpg','100,120,200,235'],
+                        ['000006.jpg','85,63,156,128'],
                         ...
                        ],
                 ...
@@ -1170,7 +1172,10 @@ def main():
     annotation_lines = get_dataset(args.annotation_file, shuffle=False)
     model, model_format = load_eval_model(args.model_path, args.custom_objects)
 
+    start = time.time()
     eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, args.eval_type, args.iou_threshold, args.conf_threshold, args.save_result)
+    end = time.time()
+    print("Evaluation time cost: {:.6f}s".format(end - start))
 
 
 if __name__ == '__main__':

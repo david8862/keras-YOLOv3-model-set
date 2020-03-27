@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import json, argparse
+import os, json, argparse
 from collections import defaultdict
 from os import getcwd
 import numpy as np
@@ -14,6 +14,7 @@ parser.add_argument('--dataset_path', type=str, required=False, help='path to MS
 parser.add_argument('--output_path', type=str, required=False,  help='output path for generated annotation txt files, default is ./', default='./')
 parser.add_argument('--classes_path', type=str, required=False, help='path to class definitions, default is ../configs/coco_classes.txt', default=getcwd()+'/../configs/coco_classes.txt')
 parser.add_argument('--include_no_obj', action="store_true", help='to include no object image', default=False)
+parser.add_argument('--customize_coco', default=False, action="store_true", help='It is a user customize coco dataset. Will not follow standard coco class label')
 args = parser.parse_args()
 
 
@@ -23,6 +24,31 @@ def get_classes(classes_path):
         classes = f.readlines()
     classes = [c.strip() for c in classes]
     return classes
+
+def convert_coco_category(category_id):
+    # since original 80 COCO category_ids is discontinuous,
+    # we need to align them to continuous id (0~79) for further process
+    if category_id >= 1 and category_id <= 11:
+        category_id = category_id - 1
+    elif category_id >= 13 and category_id <= 25:
+        category_id = category_id - 2
+    elif category_id >= 27 and category_id <= 28:
+        category_id = category_id - 3
+    elif category_id >= 31 and category_id <= 44:
+        category_id = category_id - 5
+    elif category_id >= 46 and category_id <= 65:
+        category_id = category_id - 6
+    elif category_id == 67:
+        category_id = category_id - 7
+    elif category_id == 70:
+        category_id = category_id - 9
+    elif category_id >= 72 and category_id <= 82:
+        category_id = category_id - 10
+    elif category_id >= 84 and category_id <= 90:
+        category_id = category_id - 11
+
+    return category_id
+
 
 # update class names
 classes = get_classes(args.classes_path)
@@ -81,28 +107,10 @@ for dataset, datatype in sets:
         # }
         image_id = annotation['image_id']
         image_file = '%s/%s/%012d.jpg' % (dataset_realpath, datatype, image_id)
-        category_id = annotation['category_id']
 
-        # since original 80 COCO category_ids is discontinuous,
-        # we need to align them to continuous id (0~79) for further process
-        if category_id >= 1 and category_id <= 11:
-            category_id = category_id - 1
-        elif category_id >= 13 and category_id <= 25:
-            category_id = category_id - 2
-        elif category_id >= 27 and category_id <= 28:
-            category_id = category_id - 3
-        elif category_id >= 31 and category_id <= 44:
-            category_id = category_id - 5
-        elif category_id >= 46 and category_id <= 65:
-            category_id = category_id - 6
-        elif category_id == 67:
-            category_id = category_id - 7
-        elif category_id == 70:
-            category_id = category_id - 9
-        elif category_id >= 72 and category_id <= 82:
-            category_id = category_id - 10
-        elif category_id >= 84 and category_id <= 90:
-            category_id = category_id - 11
+        # convert coco category id if need
+        category_id = annotation['category_id']
+        category_id = category_id-1 if args.customize_coco else convert_coco_category(category_id)
 
         # merge to image bbox annotations
         image_annotation_dict[image_file].append([annotation['bbox'], category_id])

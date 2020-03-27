@@ -16,10 +16,13 @@ def convert_coco_coordinate(box):
     [xmin, ymin, width, height]
     '''
     xmin, ymin, xmax, ymax = box
+    assert(xmax > xmin)
+    assert(ymax > ymin)
+
     x_min = float(xmin)
     y_min = float(ymin)
-    width = float(xmax - xmin)
-    height = float(ymax - ymin)
+    width = float(abs(xmax - xmin))
+    height = float(abs(ymax - ymin))
 
     return [x_min, y_min, width, height]
 
@@ -120,6 +123,7 @@ def pycoco_eval(annotation_file, result_file):
     # running evaluation
     cocoEval = COCOeval(cocoGt, cocoDt, iouType='bbox')
     cocoEval.params.imgIds = imgIds
+    # cocoEval.params.catIds = [1] # we can specify some category ids to eval, e.g person=1
     cocoEval.evaluate()
     cocoEval.accumulate()
     cocoEval.summarize()
