@@ -1,6 +1,7 @@
 numpy
 scipy
 opencv-python
+opencv-contrib-python
 tensorflow-gpu
 tensorflow-model-optimization
 matplotlib

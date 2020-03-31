@@ -719,7 +719,7 @@ def plot_Pascal_AP_result(count_images, count_true_positives, num_classes,
     window_title = "Ground-Truth Info"
     plot_title = "Ground-Truth\n" + "(" + str(count_images) + " files and " + str(num_classes) + " classes)"
     x_label = "Number of objects per class"
-    output_path = os.path.join('result','Ground-Truth_Info.jpg')
+    output_path = os.path.join('result','Ground-Truth_Info.png')
     draw_plot_func(gt_counter_per_class, num_classes, window_title, plot_title, x_label, output_path, to_show=False, plot_color='forestgreen', true_p_bar='')
 
     '''
@@ -732,7 +732,7 @@ def plot_Pascal_AP_result(count_images, count_true_positives, num_classes,
     plot_title += str(count_non_zero_values_in_dictionary) + " detected classes)"
     # end Plot title
     x_label = "Number of objects per class"
-    output_path = os.path.join('result','Predicted_Objects_Info.jpg')
+    output_path = os.path.join('result','Predicted_Objects_Info.png')
     draw_plot_func(pred_counter_per_class, len(pred_counter_per_class), window_title, plot_title, x_label, output_path, to_show=False, plot_color='forestgreen', true_p_bar=count_true_positives)
 
     '''
@@ -741,7 +741,7 @@ def plot_Pascal_AP_result(count_images, count_true_positives, num_classes,
     window_title = "mAP"
     plot_title = "mAP@IoU={0}: {1:.2f}%".format(iou_threshold, mAP)
     x_label = "Average Precision"
-    output_path = os.path.join('result','mAP.jpg')
+    output_path = os.path.join('result','mAP.png')
     draw_plot_func(APs, num_classes, window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 
     '''
@@ -750,7 +750,7 @@ def plot_Pascal_AP_result(count_images, count_true_positives, num_classes,
     window_title = "Precision"
     plot_title = "mPrec@IoU={0}: {1:.2f}%".format(iou_threshold, mPrec)
     x_label = "Precision rate"
-    output_path = os.path.join('result','Precision.jpg')
+    output_path = os.path.join('result','Precision.png')
     draw_plot_func(precision_dict, len(precision_dict), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 
     '''
@@ -759,7 +759,7 @@ def plot_Pascal_AP_result(count_images, count_true_positives, num_classes,
     window_title = "Recall"
     plot_title = "mRec@IoU={0}: {1:.2f}%".format(iou_threshold, mRec)
     x_label = "Recall rate"
-    output_path = os.path.join('result','Recall.jpg')
+    output_path = os.path.join('result','Recall.png')
     draw_plot_func(recall_dict, len(recall_dict), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 
 
@@ -895,7 +895,7 @@ def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records
         window_title = "MSCOCO AP on different IOU"
         plot_title = "COCO AP = {0:.2f}%".format(AP)
         x_label = "Average Precision"
-        output_path = os.path.join('result','COCO_AP.jpg')
+        output_path = os.path.join('result','COCO_AP.png')
         draw_plot_func(APs, len(APs), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 
         print('\nMS COCO AP evaluation')
@@ -927,7 +927,7 @@ def compute_AP_COCO_Scale(annotation_records, scale_gt_classes_records, pred_cla
     window_title = "MSCOCO AP on different scale"
     plot_title = "scale mAP = {0:.2f}%".format(scale_mAP)
     x_label = "Average Precision"
-    output_path = os.path.join('result','COCO_scale_AP.jpg')
+    output_path = os.path.join('result','COCO_scale_AP.png')
     draw_plot_func(scale_APs, len(scale_APs), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 
     '''
@@ -946,7 +946,7 @@ def compute_AP_COCO_Scale(annotation_records, scale_gt_classes_records, pred_cla
         window_title = "{} object number".format(scale_key)
         plot_title = "total {} object number = {}".format(scale_key, total_sum)
         x_label = "Object Number"
-        output_path = os.path.join('result','{}_object_number.jpg'.format(scale_key))
+        output_path = os.path.join('result','{}_object_number.png'.format(scale_key))
         draw_plot_func(gt_classes_sum, len(gt_classes_sum), window_title, plot_title, x_label, output_path, to_show=False, plot_color='royalblue', true_p_bar='')
 
     print('\nMS COCO AP evaluation on different scale')

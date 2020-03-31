@@ -301,7 +301,7 @@ Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/ev
 
 1. Pascal VOC mAP: will generate txt detection result `result/detection_result.txt`, draw rec/pre curve for each class and AP/mAP result chart in "result" dir with default 0.5 IOU or specified IOU, and optionally save all the detection result on evaluation dataset as images
 
-2. MS COCO AP. This is a simplified COCO AP evaluation (comparing with [cocoapi](https://github.com/cocodataset/cocoapi)) without any additional COCO annotation. Will generate txt detection result, draw overall AP chart and AP on different scale (small, medium, large) as COCO standard. It can also optionally save all the detection result
+2. MS COCO AP. This is a simplified COCO AP evaluation (comparing with [pycocotools](https://github.com/cocodataset/cocoapi/tree/master/PythonAPI/pycocotools)) without any additional COCO annotation. Will generate txt detection result, draw overall AP chart and AP on different scale (small, medium, large) as COCO standard. It can also optionally save all the detection result
 
 ```
 # python eval.py --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.001 --annotation_file=2007_test.txt --save_result
