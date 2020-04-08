@@ -14,10 +14,6 @@ classes = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat"
 
 class_count = {}
 
-def touchdir(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
-
 
 def get_classes(classes_path):
     '''loads the classes'''
@@ -34,7 +30,7 @@ def crop_bbox_image(image_name, bbox, count, class_name, output_path):
     cropImg = image[ymin:ymax, xmin:xmax]
 
     output_class_path = os.path.join(output_path, class_name)
-    touchdir(output_class_path)
+    os.makedirs(output_class_path, exist_ok=True)
     output_image_name = os.path.join(output_class_path, os.path.basename(image_name).split('.')[0] + '_' + class_name + '_' + str(count) + '.jpg')
     cv2.imwrite(output_image_name, cropImg)
 

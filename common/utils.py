@@ -60,11 +60,6 @@ def get_multiscale_list():
     return input_shape_list
 
 
-def touchdir(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-
 def resize_anchors(base_anchors, target_shape, base_shape=(416,416)):
     '''
     original anchor size is clustered from COCO dataset

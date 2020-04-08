@@ -18,7 +18,7 @@ import MNN
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo2.postprocess_np import yolo2_postprocess_np
 from common.data_utils import preprocess_image
-from common.utils import get_dataset, get_classes, get_anchors, get_colors, draw_boxes, touchdir, optimize_tf_gpu, get_custom_objects
+from common.utils import get_dataset, get_classes, get_anchors, get_colors, draw_boxes, optimize_tf_gpu, get_custom_objects
 
 
 optimize_tf_gpu(tf, K)
@@ -278,7 +278,7 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
     #
     # path/to/img1.jpg 50,100,150,200,0,0.86 30,50,200,120,3,0.95
     #
-    touchdir('result')
+    os.makedirs('result', exist_ok=True)
     result_file = open(os.path.join('result','detection_result.txt'), 'w')
 
     pred_classes_records = {}
@@ -320,7 +320,7 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
             gt_boxes, gt_classes, gt_scores = transform_gt_record(gt_records, class_names)
 
             result_dir=os.path.join('result','detection')
-            touchdir(result_dir)
+            os.makedirs(result_dir, exist_ok=True)
             colors = get_colors(class_names)
             image_array = draw_boxes(image_array, gt_boxes, gt_classes, gt_scores, class_names, colors=None, show_score=False)
             image_array = draw_boxes(image_array, pred_boxes, pred_classes, pred_scores, class_names, colors)
@@ -543,8 +543,8 @@ def draw_rec_prec(rec, prec, mrec, mprec, class_name, ap):
     #plt.show()
     # save the plot
     rec_prec_plot_path = os.path.join('result','classes')
-    touchdir(rec_prec_plot_path)
-    fig.savefig(os.path.join(rec_prec_plot_path, class_name + ".jpg"))
+    os.makedirs(rec_prec_plot_path, exist_ok=True)
+    fig.savefig(os.path.join(rec_prec_plot_path, class_name + ".png"))
     plt.cla() # clear axes for next plot
 
 
@@ -894,7 +894,7 @@ def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records
         '''
          Draw MS COCO AP plot
         '''
-        touchdir('result')
+        os.makedirs('result', exist_ok=True)
         window_title = "MSCOCO AP on different IOU"
         plot_title = "COCO AP = {0:.2f}%".format(AP)
         x_label = "Average Precision"
@@ -926,7 +926,7 @@ def compute_AP_COCO_Scale(annotation_records, scale_gt_classes_records, pred_cla
     '''
      Draw Scale AP plot
     '''
-    touchdir('result')
+    os.makedirs('result', exist_ok=True)
     window_title = "MSCOCO AP on different scale"
     plot_title = "scale mAP = {0:.2f}%".format(scale_mAP)
     x_label = "Average Precision"

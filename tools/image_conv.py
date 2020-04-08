@@ -11,11 +11,6 @@ import csv
 import argparse
 
 
-def touchdir(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-
 def RGB_convert(path, dst):
     '''
     Solution1：use PIL image.convert()
@@ -34,7 +29,7 @@ def RGB_convert(path, dst):
     file_name = path.split(os.path.sep)[-1]
 
     # Touch output class path
-    touchdir(dst)
+    os.makedirs(dst, exist_ok=True)
 
     # Store fakeRGB image to output path
     output_full_path = os.path.join(dst, file_name)
