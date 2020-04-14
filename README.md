@@ -307,7 +307,7 @@ Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/ev
 # python eval.py --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.001 --annotation_file=2007_test.txt --save_result
 ```
 
-If you're evaluating with MSCOCO dataset, you can use [pycoco_eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/pycoco_eval.py) with the generated txt detection result and COCO GT annotation to get official COCO AP with [pycocotools](https://github.com/cocodataset/cocoapi/tree/master/PythonAPI/pycocotools):
+If you're evaluating with MSCOCO dataset, you can further use [pycoco_eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/pycoco_eval.py) with the generated txt detection result and COCO GT annotation to get official COCO AP with [pycocotools](https://github.com/cocodataset/cocoapi/tree/master/PythonAPI/pycocotools):
 
 ```
 # cd tools && python pycoco_eval.py -h

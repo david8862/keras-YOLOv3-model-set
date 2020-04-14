@@ -1,4 +1,5 @@
-#! /usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Reads Darknet config and weights and creates Keras model with TF backend.
 

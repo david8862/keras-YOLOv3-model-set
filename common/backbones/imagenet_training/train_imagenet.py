@@ -23,6 +23,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..
 from yolo3.models.yolo3_nano import NanoNet
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 #import tensorflow as tf
 #config = tf.ConfigProto()

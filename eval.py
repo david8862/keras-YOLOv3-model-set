@@ -20,6 +20,7 @@ from yolo2.postprocess_np import yolo2_postprocess_np
 from common.data_utils import preprocess_image
 from common.utils import get_dataset, get_classes, get_anchors, get_colors, draw_boxes, optimize_tf_gpu, get_custom_objects
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 optimize_tf_gpu(tf, K)
 

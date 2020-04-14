@@ -15,6 +15,8 @@ from yolo2.postprocess_np import yolo2_postprocess_np
 from common.data_utils import preprocess_image
 from common.utils import get_classes, get_anchors, get_colors, draw_boxes, get_custom_objects
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 
 def validate_yolo_model(model_path, custom_objects_string, image_file, anchors, class_names, model_image_size, loop_count):
 

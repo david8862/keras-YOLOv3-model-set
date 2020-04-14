@@ -4,11 +4,12 @@
 Script to calculate FLOPs of a tf.keras model.
 Only valid for TF 1.x
 """
-import argparse
+import os, argparse
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras import backend as K
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 def get_flops(model):
     run_meta = tf.RunMetadata()

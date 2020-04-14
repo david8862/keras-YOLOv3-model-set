@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Copyright (c) 2019, by the Authors: Amir H. Abdi
 This script is freely available under the MIT Public License.
