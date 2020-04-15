@@ -20,13 +20,6 @@ from __future__ import print_function
 import os
 import math
 
-#from . import correct_pad
-#from . import get_submodules_from_kwargs
-#from . import imagenet_utils
-#from .imagenet_utils import decode_predictions
-#from .imagenet_utils import _obtain_input_shape
-
-
 import keras_applications.imagenet_utils as keras_utils
 from keras_applications.imagenet_utils import _obtain_input_shape
 from keras_applications.imagenet_utils import preprocess_input as _preprocess_input

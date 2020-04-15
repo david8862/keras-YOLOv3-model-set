@@ -18,6 +18,7 @@ from tensorflow.keras.utils import multi_gpu_model
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from shufflenet import ShuffleNet
 from shufflenet_v2 import ShuffleNetV2
+from mobilenet_v3 import MobileNetV3_Large, MobileNetV3_Small
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../..'))
 from yolo3.models.yolo3_nano import NanoNet
@@ -68,6 +69,12 @@ def get_model(model_type, include_top=True):
     elif model_type == 'nanonet':
         input_shape = (224, 224, 3)
         model = NanoNet(weights=None, include_top=include_top)
+    elif model_type == 'mobilenet_v3_large':
+        input_shape = (224, 224, 3)
+        model = MobileNetV3_Large(weights=None, include_top=include_top)
+    elif model_type == 'mobilenet_v3_small':
+        input_shape = (224, 224, 3)
+        model = MobileNetV3_Small(weights=None, include_top=include_top)
     else:
         raise ValueError('Unsupported model type')
     return model, input_shape[:2]
@@ -197,7 +204,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_type', type=str, required=False, default='shufflenet_v2',
-        help='backbone model type: shufflenet/shufflenet_v2/nanonet, default=shufflenet_v2')
+        help='backbone model type: mobilenet_v3_large/mobilenet_v3_small/shufflenet/shufflenet_v2/nanonet, default=shufflenet_v2')
     parser.add_argument('--train_data_path', type=str,# required=True,
         help='path to Imagenet train data')
     parser.add_argument('--val_data_path', type=str,# required=True,
