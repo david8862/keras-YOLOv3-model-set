@@ -301,7 +301,7 @@ Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/ev
 
 1. Pascal VOC mAP: will generate txt detection result `result/detection_result.txt`, draw rec/pre curve for each class and AP/mAP result chart in "result" dir with default 0.5 IOU or specified IOU, and optionally save all the detection result on evaluation dataset as images
 
-2. MS COCO AP. This is a simplified COCO AP evaluation (comparing with [pycocotools](https://github.com/cocodataset/cocoapi/tree/master/PythonAPI/pycocotools)) without any additional COCO annotation. Will generate txt detection result, draw overall AP chart and AP on different scale (small, medium, large) as COCO standard. It can also optionally save all the detection result
+2. MS COCO AP. will generate txt detection result, draw overall AP chart and AP on different scale (small, medium, large) as COCO standard. It can also optionally save all the detection result
 
 ```
 # python eval.py --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.001 --annotation_file=2007_test.txt --save_result
@@ -332,7 +332,7 @@ optional arguments:
 # python pycoco_eval.py --result_txt=../result/detection_result.txt --coco_annotation_json=./instances_val2017.json --coco_result_json=coco_result.json
 ```
 
-P.S. for VOC style dataset, we provide [pascal_voc_to_coco.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/pascal_voc_to_coco.py) to generate COCO GT annotation.
+P.S. for VOC style dataset, we also provide [pascal_voc_to_coco.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/pascal_voc_to_coco.py) to generate COCO GT annotation.
 
 If you enable "--eval_online" option in train.py, a default Pascal VOC mAP evaluation on validation dataset will be executed during training. But that may cost more time for train process.
 
@@ -345,12 +345,13 @@ Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalV
 
 Some experiment on MSCOCO dataset and comparison:
 
-| Model name | InputSize | TrainSet | TestSet | COCO AP | Simple COCO AP | Size | Speed | Ps |
+| Model name | InputSize | TrainSet | TestSet | COCO AP | Pascal mAP@.5 | Size | Speed | Ps |
 | ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- | ----- |
-| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 18.5 | 20.75 | 32MB | 17ms | Keras on Titan XP |
-| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_416_coco.tar.gz) | 416x416 | train2017 | val2017 | 21.5 | 24.28 | 32MB| 20ms | Keras on Titan XP |
-| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/tiny_yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 15.7 | 17.44 | 21MB | 9ms | Keras on Titan XP |
-| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/tiny_yolo3_mobilenet_lite_416_coco.tar.gz) | 416x416 | train2017 | val2017 | 18.3 | 20.43 | 21MB | 11ms | Keras on Titan XP |
+| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 18.5 | 37.64 | 32MB | 14.6ms | Keras on Titan XP |
+| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_416_coco.tar.gz) | 416x416 | train2017 | val2017 | 21.5 | 42.58 | 32MB| 16.9ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/tiny_yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 15.7 | 33.40 | 21MB | 9.3ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/tiny_yolo3_mobilenet_lite_416_coco.tar.gz) | 416x416 | train2017 | val2017 | 18.3 | 38.59 | 21MB | 8.7ms | Keras on Titan XP |
+| [YOLOv3-Xception](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_xception_608_coco.tar.gz) | 608x608 | train2017 | val2017 | 26.0 | 51.16 | 403MB | 56ms | Keras on Titan XP |
 | [ssd_mobilenet_v1_coco](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md) | 600x600 | COCO train | COCO val | 21 || 28MB | 30ms | TF on Titan X |
 | [ssdlite_mobilenet_v2_coco](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md) | 600x600 | COCO train | COCO val | 22 || 19MB | 27ms | TF on Titan X |
 

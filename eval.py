@@ -881,13 +881,16 @@ def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records
     '''
     Compute MSCOCO AP list on AP 0.5:0.05:0.95
     '''
-    iou_threshold_list = np.arange(0.50,0.95,0.05)
+    iou_threshold_list = np.arange(0.50, 1.00, 0.05)
     APs = {}
+    pbar = tqdm(total=len(iou_threshold_list), desc='Eval COCO')
     for iou_threshold in iou_threshold_list:
         iou_threshold = round(iou_threshold, 2)
         mAP = compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold, show_result=False)
         APs[iou_threshold] = round(mAP, 6)
+        pbar.update(1)
 
+    pbar.close()
     #get overall AP percentage value
     AP = np.mean(list(APs.values()))
 
