@@ -47,8 +47,7 @@ usage: train_imagenet.py [-h] [--model_type MODEL_TYPE]
 optional arguments:
   -h, --help            show this help message and exit
   --model_type MODEL_TYPE
-                        backbone model type: mobilenet_v3_large/mobilenet_v3_s
-                        mall/shufflenet/shufflenet_v2/nanonet,
+                        backbone model type: shufflenet/shufflenet_v2/nanonet,
                         default=shufflenet_v2
   --train_data_path TRAIN_DATA_PATH
                         path to Imagenet train data
@@ -81,7 +80,7 @@ For example, following cmd will start training shufflenet_v2 with the Imagenet t
 # python train_imagenet.py --model_type=shufflenet_v2 --train_data_path=data/ILSVRC2012_img_train/ --val_data_path=data/ILSVRC2012_img_val/ --batch_size=64
 ```
 
-Currently it support mobilenet_v3_large/mobilenet_v3_small/shufflenet/shufflenet_v2/nanonet which is implement under [backbones](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones) with fixed hyperparam.
+Currently it support shufflenet/shufflenet_v2/nanonet which is implement under [backbones](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones) with fixed hyperparam.
 
 Checkpoints during training could be found at logs/. Choose a best one as result
 
