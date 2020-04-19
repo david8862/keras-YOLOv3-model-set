@@ -17,6 +17,8 @@ from yolo3.models.yolo3_vgg16 import yolo3_vgg16_body, tiny_yolo3_vgg16_body
 from yolo3.models.yolo3_xception import yolo3_xception_body, yolo3lite_xception_body, tiny_yolo3_xception_body, tiny_yolo3lite_xception_body, yolo3_spp_xception_body
 from yolo3.models.yolo3_nano import yolo3_nano_body
 from yolo3.models.yolo3_efficientnet import yolo3_efficientnet_body, tiny_yolo3_efficientnet_body, yolo3lite_efficientnet_body, yolo3lite_spp_efficientnet_body, tiny_yolo3lite_efficientnet_body
+from yolo3.models.yolo3_mobilenetv3_large import yolo3_mobilenetv3large_body, yolo3lite_mobilenetv3large_body, tiny_yolo3_mobilenetv3large_body, tiny_yolo3lite_mobilenetv3large_body
+from yolo3.models.yolo3_mobilenetv3_small import yolo3_mobilenetv3small_body, yolo3lite_mobilenetv3small_body, tiny_yolo3_mobilenetv3small_body, tiny_yolo3lite_mobilenetv3small_body
 from yolo3.loss import yolo3_loss
 from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Yolo3PostProcessLayer
 
@@ -35,6 +37,11 @@ yolo3_model_map = {
     'yolo3_mobilenetv2': [yolo3_mobilenetv2_body, 155, None],
     'yolo3_mobilenetv2_lite': [yolo3lite_mobilenetv2_body, 155, None],
     'yolo3_mobilenetv2_lite_spp': [yolo3lite_spp_mobilenetv2_body, 155, None],
+
+    'yolo3_mobilenetv3large': [yolo3_mobilenetv3large_body, 195, None],
+    'yolo3_mobilenetv3large_lite': [yolo3lite_mobilenetv3large_body, 195, None],
+    'yolo3_mobilenetv3small': [yolo3_mobilenetv3small_body, 166, None],
+    'yolo3_mobilenetv3small_lite': [yolo3lite_mobilenetv3small_body, 166, None],
 
     'yolo3_shufflenetv2': [yolo3_shufflenetv2_body, 205, None],
     'yolo3_shufflenetv2_lite': [yolo3lite_shufflenetv2_body, 205, None],
@@ -69,6 +76,11 @@ yolo3_tiny_model_map = {
     'tiny_yolo3_mobilenet_lite': [tiny_yolo3lite_mobilenet_body, 87, None],
     'tiny_yolo3_mobilenetv2': [tiny_yolo3_mobilenetv2_body, 155, None],
     'tiny_yolo3_mobilenetv2_lite': [tiny_yolo3lite_mobilenetv2_body, 155, None],
+
+    'tiny_yolo3_mobilenetv3large': [tiny_yolo3_mobilenetv3large_body, 195, None],
+    'tiny_yolo3_mobilenetv3large_lite': [tiny_yolo3lite_mobilenetv3large_body, 195, None],
+    'tiny_yolo3_mobilenetv3small': [tiny_yolo3_mobilenetv3small_body, 166, None],
+    'tiny_yolo3_mobilenetv3small_lite': [tiny_yolo3lite_mobilenetv3small_body, 166, None],
 
     'tiny_yolo3_shufflenetv2': [tiny_yolo3_shufflenetv2_body, 205, None],
     'tiny_yolo3_shufflenetv2_lite': [tiny_yolo3lite_shufflenetv2_body, 205, None],
@@ -178,7 +190,7 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
         'yolo_loss': lambda y_true, y_pred: y_pred})
 
     loss_dict = {'location_loss':location_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
-    add_metrics(model, loss_dict)
+    #add_metrics(model, loss_dict)
 
     return model
 
