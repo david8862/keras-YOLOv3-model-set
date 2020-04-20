@@ -14,16 +14,18 @@ def yolo3_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0):
     mobilenetv3small = MobileNetV3Small(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
     # input: 416 x 416 x 3
-    # activation_31(final feature map): 13 x 13 x (576*alpha)
-    # expanded_conv_10/Add(end of block10): 13 x 13 x (96*alpha)
+    # activation_31(layer 165, final feature map): 13 x 13 x (576*alpha)
+    # expanded_conv_10/Add(layer 162, end of block10): 13 x 13 x (96*alpha)
 
-    # activation_22(middle in block8) : 26 x 26 x (288*alpha)
-    # expanded_conv_7/Add(end of block7) : 26 x 26 x (48*alpha)
+    # activation_22(layer 117, middle in block8) : 26 x 26 x (288*alpha)
+    # expanded_conv_7/Add(layer 114, end of block7) : 26 x 26 x (48*alpha)
 
-    # activation_7(middle in block3) : 52 x 52 x (96*alpha)
-    # expanded_conv_2/Add(end of block2): 52 x 52 x (24*alpha)
+    # activation_7(layer 38, middle in block3) : 52 x 52 x (96*alpha)
+    # expanded_conv_2/Add(layer 35, end of block2): 52 x 52 x (24*alpha)
 
-    f1 = mobilenetv3small.get_layer('activation_31').output
+    # NOTE: activation layer name may different for TF1.x/2.x, so we
+    # use index to fetch layer
+    f1 = mobilenetv3small.layers[165].output
     # f1 :13 x 13 x (576*alpha)
     x, y1 = make_last_layers(f1, int(288*alpha), num_anchors * (num_classes + 5))
     #x, y1 = make_last_layers(f1, int(288*alpha), num_anchors * (num_classes + 5), predict_filters=int(1024*alpha))
@@ -32,7 +34,7 @@ def yolo3_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0):
             DarknetConv2D_BN_Leaky(int(144*alpha), (1,1)),
             UpSampling2D(2))(x)
 
-    f2 = mobilenetv3small.get_layer('activation_22').output
+    f2 = mobilenetv3small.layers[117].output
     # f2: 26 x 26 x (288*alpha)
     x = Concatenate()([x,f2])
 
@@ -43,7 +45,7 @@ def yolo3_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0):
             DarknetConv2D_BN_Leaky(int(48*alpha), (1,1)),
             UpSampling2D(2))(x)
 
-    f3 = mobilenetv3small.get_layer('activation_7').output
+    f3 = mobilenetv3small.layers[38].output
     # f3 : 52 x 52 x (96*alpha)
     x = Concatenate()([x, f3])
     x, y3 = make_last_layers(x, int(48*alpha), num_anchors*(num_classes+5))
@@ -57,16 +59,18 @@ def yolo3lite_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0)
     mobilenetv3small = MobileNetV3Small(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
     # input: 416 x 416 x 3
-    # activation_31(final feature map): 13 x 13 x (576*alpha)
-    # expanded_conv_10/Add(end of block10): 13 x 13 x (96*alpha)
+    # activation_31(layer 165, final feature map): 13 x 13 x (576*alpha)
+    # expanded_conv_10/Add(layer 162, end of block10): 13 x 13 x (96*alpha)
 
-    # activation_22(middle in block8) : 26 x 26 x (288*alpha)
-    # expanded_conv_7/Add(end of block7) : 26 x 26 x (48*alpha)
+    # activation_22(layer 117, middle in block8) : 26 x 26 x (288*alpha)
+    # expanded_conv_7/Add(layer 114, end of block7) : 26 x 26 x (48*alpha)
 
-    # activation_7(middle in block3) : 52 x 52 x (96*alpha)
-    # expanded_conv_2/Add(end of block2): 52 x 52 x (24*alpha)
+    # activation_7(layer 38, middle in block3) : 52 x 52 x (96*alpha)
+    # expanded_conv_2/Add(layer 35, end of block2): 52 x 52 x (24*alpha)
 
-    f1 = mobilenetv3small.get_layer('activation_31').output
+    # NOTE: activation layer name may different for TF1.x/2.x, so we
+    # use index to fetch layer
+    f1 = mobilenetv3small.layers[165].output
     # f1 :13 x 13 x (576*alpha)
     x, y1 = make_depthwise_separable_last_layers(f1, int(288*alpha), num_anchors * (num_classes + 5))
     #x, y1 = make_depthwise_separable_last_layers(f1, int(288*alpha), num_anchors * (num_classes + 5), predict_filters=int(1024*alpha))
@@ -75,7 +79,7 @@ def yolo3lite_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0)
             DarknetConv2D_BN_Leaky(int(144*alpha), (1,1)),
             UpSampling2D(2))(x)
 
-    f2 = mobilenetv3small.get_layer('activation_22').output
+    f2 = mobilenetv3small.layers[117].output
     # f2: 26 x 26 x (288*alpha)
     x = Concatenate()([x,f2])
 
@@ -86,7 +90,7 @@ def yolo3lite_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0)
             DarknetConv2D_BN_Leaky(int(48*alpha), (1,1)),
             UpSampling2D(2))(x)
 
-    f3 = mobilenetv3small.get_layer('activation_7').output
+    f3 = mobilenetv3small.layers[38].output
     # f3 : 52 x 52 x (96*alpha)
     x = Concatenate()([x, f3])
     x, y3 = make_depthwise_separable_last_layers(x, int(48*alpha), num_anchors*(num_classes+5))
@@ -100,18 +104,20 @@ def tiny_yolo3_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0
     mobilenetv3small = MobileNetV3Small(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
     # input: 416 x 416 x 3
-    # activation_31(final feature map): 13 x 13 x (576*alpha)
-    # expanded_conv_10/Add(end of block10): 13 x 13 x (96*alpha)
+    # activation_31(layer 165, final feature map): 13 x 13 x (576*alpha)
+    # expanded_conv_10/Add(layer 162, end of block10): 13 x 13 x (96*alpha)
 
-    # activation_22(middle in block8) : 26 x 26 x (288*alpha)
-    # expanded_conv_7/Add(end of block7) : 26 x 26 x (48*alpha)
+    # activation_22(layer 117, middle in block8) : 26 x 26 x (288*alpha)
+    # expanded_conv_7/Add(layer 114, end of block7) : 26 x 26 x (48*alpha)
 
-    # activation_7(middle in block3) : 52 x 52 x (96*alpha)
-    # expanded_conv_2/Add(end of block2): 52 x 52 x (24*alpha)
+    # activation_7(layer 38, middle in block3) : 52 x 52 x (96*alpha)
+    # expanded_conv_2/Add(layer 35, end of block2): 52 x 52 x (24*alpha)
 
-    x1 = mobilenetv3small.get_layer('activation_22').output
+    # NOTE: activation layer name may different for TF1.x/2.x, so we
+    # use index to fetch layer
+    x1 = mobilenetv3small.layers[117].output
 
-    x2 = mobilenetv3small.get_layer('activation_31').output
+    x2 = mobilenetv3small.layers[165].output
     x2 = DarknetConv2D_BN_Leaky(int(288*alpha), (1,1))(x2)
 
     y1 = compose(
@@ -136,18 +142,21 @@ def tiny_yolo3lite_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha
     mobilenetv3small = MobileNetV3Small(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
     # input: 416 x 416 x 3
-    # activation_31(final feature map): 13 x 13 x (576*alpha)
-    # expanded_conv_10/Add(end of block10): 13 x 13 x (96*alpha)
+    # activation_31(layer 165, final feature map): 13 x 13 x (576*alpha)
+    # expanded_conv_10/Add(layer 162, end of block10): 13 x 13 x (96*alpha)
 
-    # activation_22(middle in block8) : 26 x 26 x (288*alpha)
-    # expanded_conv_7/Add(end of block7) : 26 x 26 x (48*alpha)
+    # activation_22(layer 117, middle in block8) : 26 x 26 x (288*alpha)
+    # expanded_conv_7/Add(layer 114, end of block7) : 26 x 26 x (48*alpha)
 
-    # activation_7(middle in block3) : 52 x 52 x (96*alpha)
-    # expanded_conv_2/Add(end of block2): 52 x 52 x (24*alpha)
+    # activation_7(layer 38, middle in block3) : 52 x 52 x (96*alpha)
+    # expanded_conv_2/Add(layer 35, end of block2): 52 x 52 x (24*alpha)
 
-    x1 = mobilenetv3small.get_layer('activation_22').output
 
-    x2 = mobilenetv3small.get_layer('activation_31').output
+    # NOTE: activation layer name may different for TF1.x/2.x, so we
+    # use index to fetch layer
+    x1 = mobilenetv3small.layers[117].output
+
+    x2 = mobilenetv3small.layers[165].output
     x2 = DarknetConv2D_BN_Leaky(int(288*alpha), (1,1))(x2)
 
     y1 = compose(
