@@ -211,7 +211,7 @@ def _inverted_res_block(x, expansion, filters, kernel_size, stride,
                                strides=stride,
                                padding='same' if stride == 1 else 'valid',
                                use_bias=False,
-                               name=prefix + 'depthwise')(x)
+                               name=prefix + 'depthwise/Conv')(x)
     x = BatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
                                   momentum=0.999,
