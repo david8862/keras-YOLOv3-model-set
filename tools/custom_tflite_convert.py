@@ -106,7 +106,7 @@ def _get_toco_converter(flags):
   elif flags.keras_model_file:
     converter_fn = lite.TFLiteConverter.from_keras_model_file
     converter_kwargs["model_file"] = flags.keras_model_file
-    custom_object_dict = get_custom_objects(flags.custom_objects)
+    custom_object_dict = get_custom_objects()
     converter_kwargs["custom_objects"] = custom_object_dict
   else:
     raise ValueError("--graph_def_file, --saved_model_dir, or "
@@ -218,7 +218,7 @@ def _convert_tf2_model(flags):
   if flags.saved_model_dir:
     converter = lite.TFLiteConverterV2.from_saved_model(flags.saved_model_dir)
   elif flags.keras_model_file:
-    custom_object_dict = get_custom_objects(flags.custom_objects)
+    custom_object_dict = get_custom_objects()
     model = keras.models.load_model(flags.keras_model_file, custom_objects = custom_object_dict)
     converter = lite.TFLiteConverterV2.from_keras_model(model)
 
@@ -317,10 +317,7 @@ def _get_tf1_parser():
       "--keras_model_file",
       type=str,
       help="Full filepath of HDF5 file containing tf.Keras model.")
-  parser.add_argument(
-      "--custom_objects",
-      type=str,
-      help="Custom objects in keras model (swish/tf). Separated with comma if more than one.")
+
 
   # Model format flags.
   parser.add_argument(
@@ -495,10 +492,6 @@ def _get_tf2_parser():
       "--keras_model_file",
       type=str,
       help="Full filepath of HDF5 file containing tf.Keras model.")
-  parser.add_argument(
-      "--custom_objects",
-      type=str,
-      help="Custom objects in keras model (swish/tf). Separated with comma if more than one.")
   return parser
 
 

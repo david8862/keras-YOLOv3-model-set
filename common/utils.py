@@ -7,6 +7,7 @@ import numpy as np
 import os, cv2, colorsys
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 from common.backbones.efficientnet import swish
+from common.backbones.mobilenet_v3 import hard_sigmoid, hard_swish
 import tensorflow as tf
 
 
@@ -32,24 +33,18 @@ def optimize_tf_gpu(tf, K):
         K.set_session(session)
 
 
-def get_custom_objects(custom_objects_string):
+def get_custom_objects():
     '''
     form up a custom_objects dict so that the customized
     layer/function call could be correctly parsed when keras
     .h5 model is loading or converting
     '''
-    custom_objects_dict = {}
-    if custom_objects_string:
-        custom_object_names = custom_objects_string.split(',')
-        for custom_object_name in custom_object_names:
-            if custom_object_name == 'swish':
-                custom_objects_dict['swish'] = swish
-            elif custom_object_name == 'tf':
-                custom_objects_dict['tf'] = tf
-            else:
-                raise ValueError('unsupported custom objects: ', custom_object_name)
-    else:
-        custom_objects_dict = None
+    custom_objects_dict = {
+        'tf': tf,
+        'swish': swish,
+        'hard_sigmoid': hard_sigmoid,
+        'hard_swish': hard_swish
+    }
 
     return custom_objects_dict
 

@@ -34,8 +34,6 @@ flags.DEFINE_string('input_model_yaml', None, 'Path to the input model '
                                               'architecture in yaml format.')
 flags.DEFINE_string('output_model', None, 'Path where the converted model will '
                                           'be stored.')
-flags.DEFINE_string('custom_objects', None, 'Custom objects in keras model (swish/tf). '
-                                          'Separated with comma if more than one.')
 flags.DEFINE_boolean('save_graph_def', False,
                      'Whether to save the graphdef.pbtxt file which contains '
                      'the graph definition in ASCII format.')
@@ -131,7 +129,7 @@ def main(args):
     else:
         K.set_image_data_format('channels_last')
 
-    custom_object_dict = get_custom_objects(FLAGS.custom_objects)
+    custom_object_dict = get_custom_objects()
 
     model = load_input_model(FLAGS.input_model, FLAGS.input_model_json, FLAGS.input_model_yaml, custom_objects=custom_object_dict)
 

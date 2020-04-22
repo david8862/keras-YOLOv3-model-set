@@ -18,9 +18,9 @@ from common.utils import get_classes, get_anchors, get_colors, draw_boxes, get_c
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
-def validate_yolo_model(model_path, custom_objects_string, image_file, anchors, class_names, model_image_size, loop_count):
+def validate_yolo_model(model_path, image_file, anchors, class_names, model_image_size, loop_count):
 
-    custom_object_dict = get_custom_objects(custom_objects_string)
+    custom_object_dict = get_custom_objects()
     model = load_model(model_path, compile=False, custom_objects=custom_object_dict)
 
     img = Image.open(image_file)
@@ -272,7 +272,6 @@ def main():
     parser.add_argument('--classes_path', help='path to class definitions, default ../configs/voc_classes.txt', type=str, default='../configs/voc_classes.txt')
     parser.add_argument('--model_image_size', help='model image input size as <num>x<num>, default 416x416', type=str, default='416x416')
     parser.add_argument('--loop_count', help='loop inference for certain times', type=int, default=1)
-    parser.add_argument('--custom_objects', required=False, type=str, help="Custom objects in keras model (swish/tf). Separated with comma if more than one.", default=None)
 
     args = parser.parse_args()
 
@@ -293,7 +292,7 @@ def main():
         validate_yolo_model_pb(args.model_path, args.image_file, anchors, class_names, model_image_size, args.loop_count)
     # normal keras h5 model
     elif args.model_path.endswith('.h5'):
-        validate_yolo_model(args.model_path, args.custom_objects, args.image_file, anchors, class_names, model_image_size, args.loop_count)
+        validate_yolo_model(args.model_path, args.image_file, anchors, class_names, model_image_size, args.loop_count)
     else:
         raise ValueError('invalid model file')
 

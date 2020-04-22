@@ -1089,7 +1089,7 @@ def load_graph(model_path):
     return graph
 
 
-def load_eval_model(model_path, custom_objects_string):
+def load_eval_model(model_path):
 
     # support of tflite model
     if model_path.endswith('.tflite'):
@@ -1110,7 +1110,7 @@ def load_eval_model(model_path, custom_objects_string):
 
     # normal keras h5 model
     elif model_path.endswith('.h5'):
-        custom_object_dict = get_custom_objects(custom_objects_string)
+        custom_object_dict = get_custom_objects()
 
         model = load_model(model_path, compile=False, custom_objects=custom_object_dict)
         model_format = 'H5'
@@ -1130,10 +1130,6 @@ def main():
     parser.add_argument(
         '--model_path', type=str, required=True,
         help='path to model file')
-
-    parser.add_argument(
-        '--custom_objects', type=str, required=False, default=None,
-        help="Custom objects in keras model (swish/tf). Separated with comma if more than one.")
 
     parser.add_argument(
         '--anchors_path', type=str, required=True,
@@ -1177,7 +1173,7 @@ def main():
     model_image_size = (int(height), int(width))
 
     annotation_lines = get_dataset(args.annotation_file, shuffle=False)
-    model, model_format = load_eval_model(args.model_path, args.custom_objects)
+    model, model_format = load_eval_model(args.model_path)
 
     start = time.time()
     eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, args.eval_type, args.iou_threshold, args.conf_threshold, args.save_result)

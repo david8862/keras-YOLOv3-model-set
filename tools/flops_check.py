@@ -4,10 +4,12 @@
 Script to calculate FLOPs of a tf.keras model.
 Only valid for TF 1.x
 """
-import os, argparse
+import os, sys, argparse
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras import backend as K
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+from common.utils import get_custom_objects
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
@@ -25,7 +27,9 @@ def main():
     parser.add_argument('--model_path', help='model file to evaluate', type=str, required=True)
     args = parser.parse_args()
 
-    model = load_model(args.model_path, compile=False)
+    custom_object_dict = get_custom_objects()
+    model = load_model(args.model_path, compile=False, custom_objects=custom_object_dict)
+
     get_flops(model)
 
 
