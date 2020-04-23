@@ -17,7 +17,6 @@ from pathlib import Path
 from absl import app
 from absl import flags
 from absl import logging
-#import tensorflow.keras as keras
 from tensorflow.keras import backend as K
 from tensorflow.keras.models import model_from_json, model_from_yaml, load_model
 

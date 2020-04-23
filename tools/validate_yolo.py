@@ -92,12 +92,12 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, loop_c
     # TODO: currently MNN python API only support getting input/output tensor by default or
     # by name. so we need to hardcode the output tensor names here to get them from model
     if len(anchors) == 6:
-        output_tensor_names = ['conv2d_1/Conv2D', 'conv2d_3/Conv2D']
+        output_tensor_names = ['conv2d_1/BiasAdd', 'conv2d_3/BiasAdd']
     elif len(anchors) == 9:
-        output_tensor_names = ['conv2d_3/Conv2D', 'conv2d_8/Conv2D', 'conv2d_13/Conv2D']
+        output_tensor_names = ['conv2d_3/BiasAdd', 'conv2d_8/BiasAdd', 'conv2d_13/BiasAdd']
     elif len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
-        output_tensor_names = ['predict_conv/Conv2D']
+        output_tensor_names = ['predict_conv/BiasAdd']
     else:
         raise ValueError('invalid anchor number')
 
@@ -165,6 +165,12 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, loop_c
 
 
 def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_image_size, loop_count):
+    # check tf version to be compatible with TF 2.x
+    global tf
+    if tf.__version__.startswith('2'):
+        import tensorflow.compat.v1 as tf
+        tf.disable_eager_execution()
+
     # NOTE: TF 1.x frozen pb graph need to specify input/output tensor name
     # so we need to hardcode the input/output tensor names here to get them from model
     if len(anchors) == 6:

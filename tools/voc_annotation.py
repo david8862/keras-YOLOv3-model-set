@@ -88,13 +88,20 @@ for year, image_set in sets:
     image_ids = open('%s/VOC%s/ImageSets/Main/%s.txt'%(dataset_realpath, year, image_set)).read().strip().split()
     list_file = open('%s/%s_%s.txt'%(args.output_path, year, image_set), 'w')
     for image_id in image_ids:
+        file_string = '%s/VOC%s/JPEGImages/%s.jpg'%(dataset_realpath, year, image_id)
+        # check if the image file exists
+        if not os.path.exists(file_string):
+            file_string = '%s/VOC%s/JPEGImages/%s.jpeg'%(dataset_realpath, year, image_id)
+        if not os.path.exists(file_string):
+            raise ValueError('image file not exists')
+
         if has_object(dataset_realpath, year, image_id, args.include_difficult):
-            list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(dataset_realpath, year, image_id))
+            list_file.write(file_string)
             convert_annotation(dataset_realpath, year, image_id, list_file, args.include_difficult)
             list_file.write('\n')
         elif args.include_no_obj:
             # include no object image. just write file path
-            list_file.write('%s/VOC%s/JPEGImages/%s.jpg'%(dataset_realpath, year, image_id))
+            list_file.write(file_string)
             list_file.write('\n')
     list_file.close()
     # print out item number statistic
