@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""YOLO_v4 Model Defined in Keras."""
+
+from tensorflow.keras.layers import Add, ZeroPadding2D, UpSampling2D, Concatenate
+from tensorflow.keras.models import Model
+from tensorflow.keras import backend as K
+
+from yolo4.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, DarknetConv2D_BN_Mish
+from yolo4.models.layers import make_yolo_head, make_yolo_spp_head
+#from yolo3.models.layers import make_last_layers, make_spp_last_layers
+
+
+def resblock_body(x, num_filters, num_blocks, all_narrow=True):
+    '''A series of resblocks starting with a downsampling Convolution2D'''
+    # Darknet uses left and top padding instead of 'same' mode
+    x = ZeroPadding2D(((1,0),(1,0)))(x)
+    x = DarknetConv2D_BN_Mish(num_filters, (3,3), strides=(2,2))(x)
+
+    res_connection = DarknetConv2D_BN_Mish(num_filters//2 if all_narrow else num_filters, (1,1))(x)
+    x = DarknetConv2D_BN_Mish(num_filters//2 if all_narrow else num_filters, (1,1))(x)
+
+    for i in range(num_blocks):
+        y = compose(
+                DarknetConv2D_BN_Mish(num_filters//2, (1,1)),
+                DarknetConv2D_BN_Mish(num_filters//2 if all_narrow else num_filters, (3,3)))(x)
+        x = Add()([x,y])
+
+    x = DarknetConv2D_BN_Mish(num_filters//2 if all_narrow else num_filters, (1,1))(x)
+    x = Concatenate()([x , res_connection])
+
+    return DarknetConv2D_BN_Mish(num_filters, (1,1))(x)
+
+
+def csp_darknet53_body(x):
+    '''CSPDarknet53 body having 52 Convolution2D layers'''
+    x = DarknetConv2D_BN_Mish(32, (3,3))(x)
+    x = resblock_body(x, 64, 1, False)
+    x = resblock_body(x, 128, 2)
+    x = resblock_body(x, 256, 8)
+    x = resblock_body(x, 512, 8)
+    x = resblock_body(x, 1024, 4)
+    return x
+
+
+def yolo4_body(inputs, num_anchors, num_classes, weights_path=None):
+    """Create YOLO_V4 model CNN body in Keras."""
+    darknet = Model(inputs, csp_darknet53_body(inputs))
+    if weights_path is not None:
+        darknet.load_weights(weights_path, by_name=True)
+        print('Load weights {}.'.format(weights_path))
+
+    #feature map 1 head (19x19 for 608 input)
+    x1 = make_yolo_spp_head(darknet.output, 512)
+
+    #upsample fpn merge for feature map 1 & 2
+    x1_upsample = compose(
+            DarknetConv2D_BN_Leaky(256, (1,1)),
+            UpSampling2D(2))(x1)
+
+    x2 = DarknetConv2D_BN_Leaky(256, (1,1))(darknet.layers[204].output)
+    x2 = Concatenate()([x2, x1_upsample])
+
+    #feature map 2 head (38x38 for 608 input)
+    x2 = make_yolo_head(x2, 256)
+
+    #upsample fpn merge for feature map 2 & 3
+    x2_upsample = compose(
+            DarknetConv2D_BN_Leaky(128, (1,1)),
+            UpSampling2D(2))(x2)
+
+    x3 = DarknetConv2D_BN_Leaky(128, (1,1))(darknet.layers[131].output)
+    x3 = Concatenate()([x3, x2_upsample])
+
+    #feature map 3 head & output (76x76 for 608 input)
+    #x3, y3 = make_last_layers(x3, 128, num_anchors*(num_classes+5))
+    x3 = make_yolo_head(x3, 128)
+    y3 = compose(
+            DarknetConv2D_BN_Leaky(256, (3,3)),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x3)
+
+    #downsample fpn merge for feature map 3 & 2
+    x3_downsample = compose(
+            ZeroPadding2D(((1,0),(1,0))),
+            DarknetConv2D_BN_Leaky(256, (3,3), strides=(2,2)))(x3)
+
+    x2 = Concatenate()([x3_downsample, x2])
+
+    #feature map 2 output (38x38 for 608 input)
+    #x2, y2 = make_last_layers(x2, 256, num_anchors*(num_classes+5))
+    x2 = make_yolo_head(x2, 256)
+    y2 = compose(
+            DarknetConv2D_BN_Leaky(512, (3,3)),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
+
+    #downsample fpn merge for feature map 2 & 1
+    x2_downsample = compose(
+            ZeroPadding2D(((1,0),(1,0))),
+            DarknetConv2D_BN_Leaky(512, (3,3), strides=(2,2)))(x2)
+
+    x1 = Concatenate()([x2_downsample, x1])
+
+    #feature map 1 output (19x19 for 608 input)
+    #x1, y1 = make_last_layers(x1, 512, num_anchors*(num_classes+5))
+    x1 = make_yolo_head(x1, 512)
+    y1 = compose(
+            DarknetConv2D_BN_Leaky(1024, (3,3)),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x1)
+
+    return Model(inputs, [y1, y2, y3])

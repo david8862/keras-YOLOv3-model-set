@@ -19,6 +19,9 @@ from yolo3.models.yolo3_nano import yolo3_nano_body
 from yolo3.models.yolo3_efficientnet import yolo3_efficientnet_body, tiny_yolo3_efficientnet_body, yolo3lite_efficientnet_body, yolo3lite_spp_efficientnet_body, tiny_yolo3lite_efficientnet_body
 from yolo3.models.yolo3_mobilenetv3_large import yolo3_mobilenetv3large_body, yolo3lite_mobilenetv3large_body, tiny_yolo3_mobilenetv3large_body, tiny_yolo3lite_mobilenetv3large_body
 from yolo3.models.yolo3_mobilenetv3_small import yolo3_mobilenetv3small_body, yolo3lite_mobilenetv3small_body, tiny_yolo3_mobilenetv3small_body, tiny_yolo3lite_mobilenetv3small_body
+
+from yolo4.models.yolo4_darknet import yolo4_body
+
 from yolo3.loss import yolo3_loss
 from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Yolo3PostProcessLayer
 
@@ -63,6 +66,8 @@ yolo3_model_map = {
     'yolo3_xception_spp': [yolo3_spp_xception_body, 132, None],
 
     'yolo3_nano': [yolo3_nano_body, 268, None],
+
+    'yolo4_darknet': [yolo4_body, 250, None],
 }
 
 

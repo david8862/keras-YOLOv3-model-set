@@ -8,6 +8,7 @@ import os, cv2, colorsys
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 from common.backbones.efficientnet import swish
 from common.backbones.mobilenet_v3 import hard_sigmoid, hard_swish
+from yolo4.models.layers import mish
 import tensorflow as tf
 
 
@@ -43,7 +44,8 @@ def get_custom_objects():
         'tf': tf,
         'swish': swish,
         'hard_sigmoid': hard_sigmoid,
-        'hard_swish': hard_swish
+        'hard_swish': hard_swish,
+        'mish': mish
     }
 
     return custom_objects_dict

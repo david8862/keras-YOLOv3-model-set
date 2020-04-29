@@ -1,22 +1,24 @@
-# TF Keras YOLOv3/v2 Modelset
+# TF Keras YOLOv4/v3/v2 Modelset
 
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](LICENSE)
 
 ## Introduction
 
-A general YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet)/[keras-yolo3](https://github.com/qqwweee/keras-yolo3) and [YAD2K](https://github.com/allanzelener/YAD2K). Implement with tf.keras, including data collection/annotation, model training/tuning, model evaluation and on device deployment. Support different architecture and different technologies:
+A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet)/[keras-yolo3](https://github.com/qqwweee/keras-yolo3) and [YAD2K](https://github.com/allanzelener/YAD2K). Implement with tf.keras, including data collection/annotation, model training/tuning, model evaluation and on device deployment. Support different architecture and different technologies:
 
 #### Backbone
+- [x] CSPDarknet53
 - [x] Darknet53/Tiny Darknet
 - [x] Darknet19
 - [x] MobilenetV1
 - [x] MobilenetV2
 - [x] MobilenetV3(Large/Small)
-- [x] EfficientNet
+- [x] EfficientNet(default B0)
 - [x] Xception
 - [x] VGG16
 
 #### Head
+- [x] YOLOv4
 - [x] YOLOv3
 - [x] YOLOv3 Lite
 - [x] YOLOv3 spp
@@ -68,7 +70,7 @@ A general YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobile
 # pip install -r requirements.txt
 ```
 
-2. Download Related Darknet/YOLOv2/YOLOv3 weights from [YOLO website](http://pjreddie.com/darknet/yolo/).
+2. Download Related Darknet/YOLOv2/YOLOv3/YOLOv4 weights from [YOLO website](http://pjreddie.com/darknet/yolo/) and [AlexeyAB/darknet](https://github.com/AlexeyAB/darknet).
 3. Convert the Darknet YOLO model to a Keras model.
 4. Run YOLO detection on your image or video, default using Tiny YOLOv3 model.
 
@@ -83,6 +85,9 @@ A general YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobile
 # wget -O weights/yolov2-tiny.weights https://pjreddie.com/media/files/yolov2-tiny.weights
 # wget -O weights/yolov2-tiny-voc.weights https://pjreddie.com/media/files/yolov2-tiny-voc.weights
 
+# wget -O weights/yolov4.weights https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights
+# wget -O weights/yolov4.conv.137.weights https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.conv.137
+
 # python tools/convert.py cfg/yolov3.cfg weights/yolov3.weights weights/yolov3.h5
 # python tools/convert.py cfg/yolov3-tiny.cfg weights/yolov3-tiny.weights weights/yolov3-tiny.h5
 # python tools/convert.py cfg/yolov3-spp.cfg weights/yolov3-spp.weights weights/yolov3-spp.h5
@@ -92,6 +97,9 @@ A general YOLOv3/v2 object detection pipeline inherited from [keras-yolo3-Mobile
 # python tools/convert.py cfg/yolov2-tiny-voc.cfg weights/yolov2-tiny-voc.weights weights/yolov2-tiny-voc.h5
 # python tools/convert.py cfg/darknet53.cfg weights/darknet53.conv.74.weights weights/darknet53.h5
 # python tools/convert.py cfg/darknet19_448_body.cfg weights/darknet19_448.conv.23.weights weights/darknet19.h5
+
+### make sure to reorder output tensors for YOLOv4 cfg and weights file
+# python tools/convert.py --yolo4_reorder cfg/yolov4.cfg weights/yolov4.weights weights/yolov4.h5
 
 # python yolo.py --image
 # python yolo.py --input=<your video file>
@@ -185,7 +193,7 @@ Image detection sample:
 
    For class names file format, refer to  [coco_classes.txt](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/configs/coco_classes.txt)
 
-2. If you're training Darknet YOLOv3/Tiny YOLOv3/Darknet YOLOv2, make sure you have converted pretrain model weights as in [Quick Start](https://github.com/david8862/keras-YOLOv3-model-set#quick-start)
+2. If you're training YOLOv4/v3/v2 models with Darknet based backbones, make sure you have converted pretrain model weights as in [Quick Start](https://github.com/david8862/keras-YOLOv3-model-set#quick-start) part
 
 3. [train.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/train.py)
 ```
@@ -418,7 +426,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
     - tensorflow 2.0.0/tensorflow 1.15.0
     - tf.keras 2.2.4-tf
 
-2. Default YOLOv3/v2 anchors are used. If you want to use your own anchors, probably some changes are needed. [kmeans.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/kmeans.py) could be used to do K-Means anchor clustering on your dataset
+2. Default YOLOv4/v3/v2 anchors are used. If you want to use your own anchors, probably some changes are needed. [kmeans.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/kmeans.py) could be used to do K-Means anchor clustering on your dataset
 
 3. Always load pretrained weights and freeze layers in the first stage of training.
 
@@ -444,6 +452,12 @@ Please cite keras-YOLOv3-model-set in your publications if it helps your researc
      title={YAD2K: Yet Another Darknet 2 Keras},
      Author = {allanzelener},
      Year = {2017}
+}
+@article{yolov4,
+     title={YOLOv4: Optimal Speed and Accuracy of Object Detection},
+     author={Alexey Bochkovskiy, Chien-Yao Wang, Hong-Yuan Mark Liao},
+     journal = {arXiv},
+     year={2020}
 }
 @article{yolov3,
      title={YOLOv3: An Incremental Improvement},

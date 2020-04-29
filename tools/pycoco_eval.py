@@ -16,8 +16,8 @@ def convert_coco_coordinate(box):
     [xmin, ymin, width, height]
     '''
     xmin, ymin, xmax, ymax = box
-    assert(xmax > xmin)
-    assert(ymax > ymin)
+    #assert(xmax > xmin)
+    #assert(ymax > ymin)
 
     x_min = float(xmin)
     y_min = float(ymin)
