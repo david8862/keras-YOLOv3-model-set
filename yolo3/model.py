@@ -21,6 +21,8 @@ from yolo3.models.yolo3_mobilenetv3_large import yolo3_mobilenetv3large_body, yo
 from yolo3.models.yolo3_mobilenetv3_small import yolo3_mobilenetv3small_body, yolo3lite_mobilenetv3small_body, tiny_yolo3_mobilenetv3small_body, tiny_yolo3lite_mobilenetv3small_body
 
 from yolo4.models.yolo4_darknet import yolo4_body
+from yolo4.models.yolo4_mobilenet import yolo4_mobilenet_body, yolo4lite_mobilenet_body, tiny_yolo4_mobilenet_body, tiny_yolo4lite_mobilenet_body
+from yolo4.models.yolo4_mobilenetv3_large import yolo4_mobilenetv3large_body, yolo4lite_mobilenetv3large_body
 
 from yolo3.loss import yolo3_loss
 from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Yolo3PostProcessLayer
@@ -68,6 +70,10 @@ yolo3_model_map = {
     'yolo3_nano': [yolo3_nano_body, 268, None],
 
     'yolo4_darknet': [yolo4_body, 250, None],
+    'yolo4_mobilenet': [yolo4_mobilenet_body, 87, None],
+    'yolo4_mobilenet_lite': [yolo4lite_mobilenet_body, 87, None],
+    'yolo4_mobilenetv3large': [yolo4_mobilenetv3large_body, 195, None],
+    'yolo4_mobilenetv3large_lite': [yolo4lite_mobilenetv3large_body, 195, None],
 }
 
 
@@ -101,6 +107,9 @@ yolo3_tiny_model_map = {
     'tiny_yolo3_vgg16': [tiny_yolo3_vgg16_body, 19, None],
     'tiny_yolo3_xception': [tiny_yolo3_xception_body, 132, None],
     'tiny_yolo3_xception_lite': [tiny_yolo3lite_xception_body, 132, None],
+
+    'tiny_yolo4_mobilenet': [tiny_yolo4_mobilenet_body, 87, None],
+    'tiny_yolo4_mobilenet_lite': [tiny_yolo4lite_mobilenet_body, 87, None],
 }
 
 

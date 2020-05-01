@@ -15,7 +15,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import (Conv2D, Input, ZeroPadding2D, Add, Lambda,
-                          UpSampling2D, MaxPooling2D, Concatenate, Activation)
+                          UpSampling2D, MaxPooling2D, AveragePooling2D, Concatenate, Activation)
 from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.models import Model
@@ -223,6 +223,11 @@ def _main(args):
                     pool_size=(size, size),
                     strides=(stride, stride),
                     padding='same')(prev_layer))
+            prev_layer = all_layers[-1]
+
+        elif section.startswith('avgpool'):
+            all_layers.append(
+                AveragePooling2D()(prev_layer))
             prev_layer = all_layers[-1]
 
         elif section.startswith('shortcut'):
