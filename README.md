@@ -54,6 +54,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] Singlescale image input training
 - [x] Multiscale image input training
 - [x] Dynamic learning rate decay (Cosine/Exponential/Polynomial)
+- [x] Mosaic data augmentation
 - [x] Pruned model training (only valid for TF 1.x)
 
 #### On-device deployment
@@ -414,7 +415,6 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 
 ### TODO
-- [ ] enhance data augmentation ([Mixup](https://arxiv.org/abs/1710.09412)/[AutoAugment](https://arxiv.org/abs/1805.09501))
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones/imagenet_training)
 
 

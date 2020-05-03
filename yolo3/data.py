@@ -5,11 +5,11 @@ import numpy as np
 import random, math
 from PIL import Image
 from tensorflow.keras.utils import Sequence
-from common.data_utils import normalize_image, letterbox_resize, random_resize_crop_pad, reshape_boxes, random_hsv_distort, random_horizontal_flip, random_vertical_flip, random_grayscale, random_brightness, random_chroma, random_contrast, random_sharpness
+from common.data_utils import normalize_image, letterbox_resize, random_resize_crop_pad, reshape_boxes, random_hsv_distort, random_horizontal_flip, random_vertical_flip, random_grayscale, random_brightness, random_chroma, random_contrast, random_sharpness, random_mosaic_augment
 from common.utils import get_multiscale_list
 
 
-def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=20):
+def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=100):
     '''random preprocessing for real-time data augmentation'''
     line = annotation_line.split()
     image = Image.open(line[0])
@@ -193,6 +193,9 @@ class Yolo3DataGenerator(Sequence):
             box_data.append(box)
         image_data = np.array(image_data)
         box_data = np.array(box_data)
+        # add random mosaic augment on batch ground truth data
+        image_data, box_data = random_mosaic_augment(image_data, box_data, jitter=0.1)
+
         y_true = preprocess_true_boxes(box_data, self.input_shape, self.anchors, self.num_classes)
 
         return [image_data, *y_true], np.zeros(self.batch_size)
@@ -229,6 +232,9 @@ def yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num
             i = (i+1) % n
         image_data = np.array(image_data)
         box_data = np.array(box_data)
+        # add random mosaic augment on batch ground truth data
+        image_data, box_data = random_mosaic_augment(image_data, box_data, jitter=0.1)
+
         y_true = preprocess_true_boxes(box_data, input_shape, anchors, num_classes)
         yield [image_data, *y_true], np.zeros(batch_size)
 

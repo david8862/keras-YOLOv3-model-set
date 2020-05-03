@@ -6,7 +6,7 @@ from tensorflow.keras.layers import ZeroPadding2D, UpSampling2D, Concatenate
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications.mobilenet import MobileNet
 
-from yolo4.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, Darknet_Depthwise_Separable_Conv2D_BN_Leaky, make_yolo_head, make_yolo_spp_head, make_yolo_depthwise_separable_head, make_yolo_spp_depthwise_separable_head
+from yolo4.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Spp_Conv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, Darknet_Depthwise_Separable_Conv2D_BN_Leaky, make_yolo_head, make_yolo_spp_head, make_yolo_depthwise_separable_head, make_yolo_spp_depthwise_separable_head
 
 
 def yolo4_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
@@ -159,7 +159,7 @@ def yolo4lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     return Model(inputs, [y1, y2, y3])
 
 
-def tiny_yolo4_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
+def tiny_yolo4_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0, spp=True):
     '''Create Tiny YOLO_v4 MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
@@ -175,6 +175,8 @@ def tiny_yolo4_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
 
     #feature map 1 head (13 x 13 x (512*alpha) for 416 input)
     x1 = DarknetConv2D_BN_Leaky(int(512*alpha), (1,1))(f1)
+    if spp:
+        x1 = Spp_Conv2D_BN_Leaky(x1, int(512*alpha))
 
     #upsample fpn merge for feature map 1 & 2
     x1_upsample = compose(
@@ -204,7 +206,7 @@ def tiny_yolo4_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     return Model(inputs, [y1,y2])
 
 
-def tiny_yolo4lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
+def tiny_yolo4lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0, spp=True):
     '''Create Tiny YOLO_v3 Lite MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
@@ -220,6 +222,8 @@ def tiny_yolo4lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
 
     #feature map 1 head (13 x 13 x (512*alpha) for 416 input)
     x1 = DarknetConv2D_BN_Leaky(int(512*alpha), (1,1))(f1)
+    if spp:
+        x1 = Spp_Conv2D_BN_Leaky(x1, int(512*alpha))
 
     #upsample fpn merge for feature map 1 & 2
     x1_upsample = compose(

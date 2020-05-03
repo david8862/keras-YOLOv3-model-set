@@ -2,6 +2,7 @@
 # -*- coding=utf-8 -*-
 """Data process utility functions."""
 import numpy as np
+import random
 from PIL import Image, ImageEnhance
 import cv2
 #from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
@@ -349,6 +350,150 @@ def random_grayscale(image, jitter=.2):
         image = image.convert('RGB')
 
     return image
+
+
+def merge_mosaic_bboxes(bboxes, crop_x, crop_y, image_size):
+    # adjust & merge mosaic samples bboxes as following area order:
+    # -----------
+    # |     |   |
+    # |  0  | 3 |
+    # |     |   |
+    # -----------
+    # |  1  | 2 |
+    # -----------
+    assert bboxes.shape[0] == 4, 'mosaic sample number should be 4'
+    max_boxes = bboxes.shape[1]
+    height, width = image_size
+    merge_bbox = []
+    for i in range(bboxes.shape[0]):
+        for box in bboxes[i]:
+            x_min, y_min, x_max, y_max = box[0], box[1], box[2], box[3]
+
+            if i == 0: # bboxes[0] is for top-left area
+                if y_min > crop_y or x_min > crop_x:
+                    continue
+                if y_max > crop_y and y_min < crop_y:
+                    y_max = crop_y
+                if x_max > crop_x and x_min < crop_x:
+                    x_max = crop_x
+
+            if i == 1: # bboxes[1] is for bottom-left area
+                if y_max < crop_y or x_min > crop_x:
+                    continue
+                if y_max > crop_y and y_min < crop_y:
+                    y_min = crop_y
+                if x_max > crop_x and x_min < crop_x:
+                    x_max = crop_x
+
+            if i == 2: # bboxes[2] is for bottom-right area
+                if y_max < crop_y or x_max < crop_x:
+                    continue
+                if y_max > crop_y and y_min < crop_y:
+                    y_min = crop_y
+                if x_max > crop_x and x_min < crop_x:
+                    x_min = crop_x
+
+            if i == 3: # bboxes[3] is for top-right area
+                if y_min > crop_y or x_max < crop_x:
+                    continue
+                if y_max > crop_y and y_min < crop_y:
+                    y_max = crop_y
+                if x_max > crop_x and x_min < crop_x:
+                    x_min = crop_x
+
+            if abs(x_max-x_min) < max(10, width*0.01) or abs(y_max-y_min) < max(10, height*0.01):
+                #if the adjusted bbox is too small, bypass it
+                continue
+
+            merge_bbox.append([x_min, y_min, x_max, y_max, box[4]])
+
+    if len(merge_bbox) > max_boxes:
+        merge_bbox = merge_bbox[:max_boxes]
+
+    box_data = np.zeros((max_boxes,5))
+    if len(merge_bbox) > 0:
+        box_data[:len(merge_bbox)] = merge_bbox
+    return box_data
+
+
+def random_mosaic_augment(image_data, boxes_data, jitter=.1):
+    """
+    Random add mosaic augment on batch images and boxes
+
+    # Arguments
+        image_data: origin images for mosaic augment
+            numpy array for normalized batch image data
+        boxes_data: origin bboxes for mosaic augment
+            numpy array for batch bboxes
+        jitter: jitter range for augment probability,
+            scalar to control the augment probability.
+
+    # Returns
+        image_data: augmented batch image data.
+        boxes_data: augmented batch bboxes data.
+    """
+    do_augment = rand() < jitter
+    if not do_augment:
+        return image_data, boxes_data
+    else:
+        batch_size = len(image_data)
+        assert batch_size >= 4, 'mosaic augment need batch size >= 4'
+
+        def get_mosaic_samples():
+            # random select 4 images from batch as mosaic samples
+            random_index = random.sample(list(range(batch_size)), 4)
+
+            random_images = []
+            random_bboxes = []
+            for idx in random_index:
+                random_images.append(image_data[idx])
+                random_bboxes.append(boxes_data[idx])
+            return random_images, np.array(random_bboxes)
+
+        min_offset = 0.2
+        new_images = []
+        new_boxes = []
+        height, width = image_data[0].shape[:2]
+        #each batch has batch_size images, so we also need to
+        #generate batch_size mosaic images
+        for i in range(batch_size):
+            images, bboxes = get_mosaic_samples()
+
+            #crop_x = np.random.randint(int(width*min_offset), int(width*(1 - min_offset)))
+            #crop_y = np.random.randint(int(height*min_offset), int(height*(1 - min_offset)))
+            crop_x = int(random.uniform(int(width*min_offset), int(width*(1-min_offset))))
+            crop_y = int(random.uniform(int(height*min_offset), int(height*(1 - min_offset))))
+
+            merged_boxes = merge_mosaic_bboxes(bboxes, crop_x, crop_y, image_size=(height, width))
+            #no valid bboxes, drop this loop
+            #if merged_boxes is None:
+                #i = i - 1
+                #continue
+
+            # crop out selected area as following mosaic sample images order:
+            # -----------
+            # |     |   |
+            # |  0  | 3 |
+            # |     |   |
+            # -----------
+            # |  1  | 2 |
+            # -----------
+            area_0 = images[0][:crop_y, :crop_x, :]
+            area_1 = images[1][crop_y:, :crop_x, :]
+            area_2 = images[2][crop_y:, crop_x:, :]
+            area_3 = images[3][:crop_y, crop_x:, :]
+
+            #merge selected area to new image
+            area_left = np.concatenate([area_0, area_1], axis=0)
+            area_right = np.concatenate([area_3, area_2], axis=0)
+            merged_image = np.concatenate([area_left, area_right], axis=1)
+
+            new_images.append(merged_image)
+            new_boxes.append(merged_boxes)
+
+        new_images = np.stack(new_images)
+        new_boxes = np.array(new_boxes)
+        return new_images, new_boxes
 
 
 def normalize_image(image):
