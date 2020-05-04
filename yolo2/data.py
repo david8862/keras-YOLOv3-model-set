@@ -291,7 +291,7 @@ def yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num
         yield [image_data, y_true_data], np.zeros(batch_size)
 
 
-def yolo2_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval=-1):
+def yolo2_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment=None, rescale_interval=-1):
     n = len(annotation_lines)
     if n==0 or batch_size<=0: return None
     return yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval)

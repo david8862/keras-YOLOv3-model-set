@@ -131,7 +131,7 @@ def main(args):
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, args.batch_size, input_shape))
     model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment),
             steps_per_epoch=max(1, num_train//args.batch_size),
-            validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment),
+            validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//args.batch_size),
             epochs=epochs,
             initial_epoch=initial_epoch,
@@ -165,7 +165,7 @@ def main(args):
         rescale_interval = -1  #Doesn't rescale
 
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, args.batch_size, input_shape))
-    model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, rescale_interval),
+    model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval),
         steps_per_epoch=max(1, num_train//args.batch_size),
         validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes),
         validation_steps=max(1, num_val//args.batch_size),

@@ -243,7 +243,7 @@ def yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num
         y_true = preprocess_true_boxes(box_data, input_shape, anchors, num_classes)
         yield [image_data, *y_true], np.zeros(batch_size)
 
-def yolo3_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval=-1):
+def yolo3_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment=None, rescale_interval=-1):
     n = len(annotation_lines)
     if n==0 or batch_size<=0: return None
     return yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval)
