@@ -112,7 +112,7 @@ def yolo4lite_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0)
     # use index to fetch layer
     f1 = mobilenetv3large.layers[194].output
     #feature map 1 head (13 x 13 x (480*alpha) for 416 input)
-    x1 = make_yolo_spp_depthwise_separable_head(f1, int(480*alpha))
+    x1 = make_yolo_spp_depthwise_separable_head(f1, int(480*alpha), block_id_str='15')
 
     #upsample fpn merge for feature map 1 & 2
     x1_upsample = compose(
@@ -125,7 +125,7 @@ def yolo4lite_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0)
     x2 = Concatenate()([x2, x1_upsample])
 
     #feature map 2 head (26 x 26 x (336*alpha) for 416 input)
-    x2 = make_yolo_depthwise_separable_head(x2, int(336*alpha))
+    x2 = make_yolo_depthwise_separable_head(x2, int(336*alpha), block_id_str='16')
 
     #upsample fpn merge for feature map 2 & 3
     x2_upsample = compose(
@@ -138,44 +138,44 @@ def yolo4lite_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0)
     x3 = Concatenate()([x3, x2_upsample])
 
     #feature map 3 head & output (52 x 52 x (240*alpha) for 416 input)
-    #x3, y3 = make_depthwise_separable_last_layers(x3, int(120*alpha), num_anchors*(num_classes+5))
-    x3 = make_yolo_depthwise_separable_head(x3, int(120*alpha))
+    #x3, y3 = make_depthwise_separable_last_layers(x3, int(120*alpha), num_anchors*(num_classes+5), block_id_str='17')
+    x3 = make_yolo_depthwise_separable_head(x3, int(120*alpha), block_id_str='17')
     y3 = compose(
-            Depthwise_Separable_Conv2D_BN_Leaky(int(240*alpha), (3,3)),
+            Depthwise_Separable_Conv2D_BN_Leaky(int(240*alpha), (3,3), block_id_str='17_3'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x3)
 
     #downsample fpn merge for feature map 3 & 2
     x3_downsample = compose(
             ZeroPadding2D(((1,0),(1,0))),
-            Darknet_Depthwise_Separable_Conv2D_BN_Leaky(int(336*alpha), (3,3), strides=(2,2)))(x3)
+            Darknet_Depthwise_Separable_Conv2D_BN_Leaky(int(336*alpha), (3,3), strides=(2,2), block_id_str='17_4'))(x3)
 
     x2 = Concatenate()([x3_downsample, x2])
 
     #feature map 2 output (26 x 26 x (672*alpha) for 416 input)
-    #x2, y2 = make_depthwise_separable_last_layers(x2, int(336*alpha), num_anchors*(num_classes+5))
-    x2 = make_yolo_depthwise_separable_head(x2, int(336*alpha))
+    #x2, y2 = make_depthwise_separable_last_layers(x2, int(336*alpha), num_anchors*(num_classes+5), block_id_str='18')
+    x2 = make_yolo_depthwise_separable_head(x2, int(336*alpha), block_id_str='18')
     y2 = compose(
-            Depthwise_Separable_Conv2D_BN_Leaky(int(672*alpha), (3,3)),
+            Depthwise_Separable_Conv2D_BN_Leaky(int(672*alpha), (3,3), block_id_str='18_3'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
     #downsample fpn merge for feature map 2 & 1
     x2_downsample = compose(
             ZeroPadding2D(((1,0),(1,0))),
-            Darknet_Depthwise_Separable_Conv2D_BN_Leaky(int(480*alpha), (3,3), strides=(2,2)))(x2)
+            Darknet_Depthwise_Separable_Conv2D_BN_Leaky(int(480*alpha), (3,3), strides=(2,2), block_id_str='18_4'))(x2)
 
     x1 = Concatenate()([x2_downsample, x1])
 
     #feature map 1 output (13 x 13 x (960*alpha) for 416 input)
     #x1, y1 = make_depthwise_separable_last_layers(x1, int(480*alpha), num_anchors*(num_classes+5))
-    x1 = make_yolo_depthwise_separable_head(x1, int(480*alpha))
+    x1 = make_yolo_depthwise_separable_head(x1, int(480*alpha), block_id_str='19')
     y1 = compose(
-            Depthwise_Separable_Conv2D_BN_Leaky(int(960*alpha), (3,3)),
+            Depthwise_Separable_Conv2D_BN_Leaky(int(960*alpha), (3,3), block_id_str='19_3'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x1)
 
     return Model(inputs, [y1, y2, y3])
 
 
-def tiny_yolo4_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0, spp=True):
+def tiny_yolo4_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0, use_spp=True):
     '''Create Tiny YOLO_v4 MobileNetV3Large model CNN body in keras.'''
     mobilenetv3large = MobileNetV3Large(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
@@ -198,7 +198,7 @@ def tiny_yolo4_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0
 
     #feature map 1 head (13 x 13 x (480*alpha) for 416 input)
     x1 = DarknetConv2D_BN_Leaky(int(480*alpha), (1,1))(f1)
-    if spp:
+    if use_spp:
         x1 = Spp_Conv2D_BN_Leaky(x1, int(480*alpha))
 
     #upsample fpn merge for feature map 1 & 2
@@ -229,7 +229,7 @@ def tiny_yolo4_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0
     return Model(inputs, [y1,y2])
 
 
-def tiny_yolo4lite_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0, spp=True):
+def tiny_yolo4lite_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0, use_spp=True):
     '''Create Tiny YOLO_v4 Lite MobileNetV3Large model CNN body in keras.'''
     mobilenetv3large = MobileNetV3Large(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
@@ -252,7 +252,7 @@ def tiny_yolo4lite_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha
 
     #feature map 1 head (13 x 13 x (480*alpha) for 416 input)
     x1 = DarknetConv2D_BN_Leaky(int(480*alpha), (1,1))(f1)
-    if spp:
+    if use_spp:
         x1 = Spp_Conv2D_BN_Leaky(x1, int(480*alpha))
 
     #upsample fpn merge for feature map 1 & 2

@@ -6,7 +6,6 @@ from PIL import Image
 
 
 class YOLO_Kmeans:
-
     def __init__(self, cluster_number, filename, anchors_file, model_image_size):
         self.cluster_number = cluster_number
         self.filename = filename
@@ -49,7 +48,6 @@ class YOLO_Kmeans:
         clusters = boxes[np.random.choice(
             box_number, k, replace=False)]  # init k clusters
         while True:
-
             distances = 1 - self.iou(boxes, clusters)
 
             current_nearest = np.argmin(distances, axis=1)

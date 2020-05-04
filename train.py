@@ -129,9 +129,9 @@ def main(args):
     epochs = initial_epoch + args.transfer_epoch
     print("Transfer training stage")
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, args.batch_size, input_shape))
-    model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes),
+    model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment),
             steps_per_epoch=max(1, num_train//args.batch_size),
-            validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes),
+            validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment),
             validation_steps=max(1, num_val//args.batch_size),
             epochs=epochs,
             initial_epoch=initial_epoch,
@@ -232,14 +232,16 @@ if __name__ == '__main__':
         help='Whether to use multiscale training')
     parser.add_argument('--rescale_interval', type=int, required=False, default=10,
         help = "Number of iteration(batches) interval to rescale input size, default=10")
-    parser.add_argument('--model_pruning', default=False, action="store_true",
-        help='Use model pruning for optimization, only for TF 1.x')
+    parser.add_argument('--enhance_augment', type=str, required=False, default=None,
+        help = "enhance data augmentation type (None/mosaic), default=None")
     parser.add_argument('--label_smoothing', type=float, required=False, default=0,
         help = "Label smoothing factor (between 0 and 1) for classification loss, default=0")
     parser.add_argument('--data_shuffle', default=False, action="store_true",
         help='Whether to shuffle train/val data for cross-validation')
     parser.add_argument('--gpu_num', type=int, required=False, default=1,
         help='Number of GPU to use, default=1')
+    parser.add_argument('--model_pruning', default=False, action="store_true",
+        help='Use model pruning for optimization, only for TF 1.x')
 
     # Evaluation options
     parser.add_argument('--eval_online', default=False, action="store_true",

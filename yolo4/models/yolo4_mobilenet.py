@@ -159,7 +159,7 @@ def yolo4lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     return Model(inputs, [y1, y2, y3])
 
 
-def tiny_yolo4_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0, spp=True):
+def tiny_yolo4_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0, use_spp=True):
     '''Create Tiny YOLO_v4 MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
@@ -175,7 +175,7 @@ def tiny_yolo4_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0, spp=T
 
     #feature map 1 head (13 x 13 x (512*alpha) for 416 input)
     x1 = DarknetConv2D_BN_Leaky(int(512*alpha), (1,1))(f1)
-    if spp:
+    if use_spp:
         x1 = Spp_Conv2D_BN_Leaky(x1, int(512*alpha))
 
     #upsample fpn merge for feature map 1 & 2
@@ -206,7 +206,7 @@ def tiny_yolo4_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0, spp=T
     return Model(inputs, [y1,y2])
 
 
-def tiny_yolo4lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0, spp=True):
+def tiny_yolo4lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0, use_spp=True):
     '''Create Tiny YOLO_v3 Lite MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
 
@@ -222,7 +222,7 @@ def tiny_yolo4lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0, s
 
     #feature map 1 head (13 x 13 x (512*alpha) for 416 input)
     x1 = DarknetConv2D_BN_Leaky(int(512*alpha), (1,1))(f1)
-    if spp:
+    if use_spp:
         x1 = Spp_Conv2D_BN_Leaky(x1, int(512*alpha))
 
     #upsample fpn merge for feature map 1 & 2

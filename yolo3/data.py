@@ -153,12 +153,13 @@ def preprocess_true_boxes(true_boxes, input_shape, anchors, num_classes):
 
 
 class Yolo3DataGenerator(Sequence):
-    def __init__(self, annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval=-1, shuffle=True):
+    def __init__(self, annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval=-1, shuffle=True):
         self.annotation_lines = annotation_lines
         self.batch_size = batch_size
         self.input_shape = input_shape
         self.anchors = anchors
         self.num_classes = num_classes
+        self.enhance_augment = enhance_augment
         self.indexes = np.arange(len(self.annotation_lines))
         self.shuffle = shuffle
         # prepare multiscale config
@@ -193,8 +194,10 @@ class Yolo3DataGenerator(Sequence):
             box_data.append(box)
         image_data = np.array(image_data)
         box_data = np.array(box_data)
-        # add random mosaic augment on batch ground truth data
-        image_data, box_data = random_mosaic_augment(image_data, box_data, jitter=0.1)
+
+        if self.enhance_augment == 'mosaic':
+            # add random mosaic augment on batch ground truth data
+            image_data, box_data = random_mosaic_augment(image_data, box_data, jitter=0.1)
 
         y_true = preprocess_true_boxes(box_data, self.input_shape, self.anchors, self.num_classes)
 
@@ -207,7 +210,7 @@ class Yolo3DataGenerator(Sequence):
 
 
 
-def yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval):
+def yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval):
     '''data generator for fit_generator'''
     n = len(annotation_lines)
     i = 0
@@ -232,15 +235,16 @@ def yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num
             i = (i+1) % n
         image_data = np.array(image_data)
         box_data = np.array(box_data)
-        # add random mosaic augment on batch ground truth data
-        image_data, box_data = random_mosaic_augment(image_data, box_data, jitter=0.1)
+
+        if enhance_augment == 'mosaic':
+            # add random mosaic augment on batch ground truth data
+            image_data, box_data = random_mosaic_augment(image_data, box_data, jitter=0.1)
 
         y_true = preprocess_true_boxes(box_data, input_shape, anchors, num_classes)
         yield [image_data, *y_true], np.zeros(batch_size)
 
-def yolo3_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval=-1):
+def yolo3_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval=-1):
     n = len(annotation_lines)
     if n==0 or batch_size<=0: return None
-    return yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, rescale_interval)
-
+    return yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval)
 

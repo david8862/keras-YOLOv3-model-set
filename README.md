@@ -18,22 +18,17 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] VGG16
 
 #### Head
-- [x] YOLOv4
-- [x] YOLOv3
-- [x] YOLOv3 Lite
-- [x] YOLOv3 spp
-- [x] YOLOv3 Lite spp
+- [x] YOLOv4 (Lite)
+- [x] Tiny YOLOv4 (Lite, no-SPP)
+- [x] YOLOv3 (Lite, SPP)
 - [x] YOLOv3 Nano ([YOLO nano](https://arxiv.org/abs/1910.01271)) (unofficially)
-- [x] Tiny YOLOv3
-- [x] Tiny YOLOv3 Lite
-- [x] YOLOv2
-- [x] YOLOv2 Lite
-- [x] Tiny YOLOv2
-- [x] Tiny YOLOv2 Lite
+- [x] Tiny YOLOv3 (Lite)
+- [x] YOLOv2 (Lite)
+- [x] Tiny YOLOv2 (Lite)
 
 #### Loss
-- [x] Standard YOLOv3 loss
-- [x] Standard YOLOv2 loss
+- [x] YOLOv3 loss
+- [x] YOLOv2 loss
 - [x] Binary focal classification loss
 - [x] Softmax focal classification loss
 - [x] GIoU localization loss
@@ -210,9 +205,10 @@ usage: train.py [-h] [--model_type MODEL_TYPE] [--anchors_path ANCHORS_PATH]
                 [--transfer_epoch TRANSFER_EPOCH]
                 [--freeze_level FREEZE_LEVEL] [--init_epoch INIT_EPOCH]
                 [--total_epoch TOTAL_EPOCH] [--multiscale]
-                [--rescale_interval RESCALE_INTERVAL] [--model_pruning]
+                [--rescale_interval RESCALE_INTERVAL]
+                [--enhance_augment ENHANCE_AUGMENT]
                 [--label_smoothing LABEL_SMOOTHING] [--data_shuffle]
-                [--gpu_num GPU_NUM] [--eval_online]
+                [--gpu_num GPU_NUM] [--model_pruning] [--eval_online]
                 [--eval_epoch_interval EVAL_EPOCH_INTERVAL]
                 [--save_eval_checkpoint]
 
@@ -248,7 +244,7 @@ optional arguments:
                         Initial learning rate, default=0.001
   --decay_type DECAY_TYPE
                         Learning rate decay type
-                        (None/Cosine/Exponential/Polynomial), default=None
+                        (None/cosine/exponential/polynomial), default=None
   --transfer_epoch TRANSFER_EPOCH
                         Transfer training (from Imagenet) stage epochs,
                         default=20
@@ -264,12 +260,15 @@ optional arguments:
   --rescale_interval RESCALE_INTERVAL
                         Number of iteration(batches) interval to rescale input
                         size, default=10
-  --model_pruning       Use model pruning for optimization, only for TF 1.x
+  --enhance_augment ENHANCE_AUGMENT
+                        enhance data augmentation type (None/mosaic),
+                        default=None
   --label_smoothing LABEL_SMOOTHING
                         Label smoothing factor (between 0 and 1) for
                         classification loss, default=0
   --data_shuffle        Whether to shuffle train/val data for cross-validation
   --gpu_num GPU_NUM     Number of GPU to use, default=1
+  --model_pruning       Use model pruning for optimization, only for TF 1.x
   --eval_online         Whether to do evaluation on validation dataset during
                         training
   --eval_epoch_interval EVAL_EPOCH_INTERVAL

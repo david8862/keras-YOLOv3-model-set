@@ -25,6 +25,7 @@ from yolo3.models.yolo3_mobilenetv3_small import yolo3_mobilenetv3small_body, yo
 from yolo4.models.yolo4_darknet import yolo4_body
 from yolo4.models.yolo4_mobilenet import yolo4_mobilenet_body, yolo4lite_mobilenet_body, tiny_yolo4_mobilenet_body, tiny_yolo4lite_mobilenet_body
 from yolo4.models.yolo4_mobilenetv3_large import yolo4_mobilenetv3large_body, yolo4lite_mobilenetv3large_body, tiny_yolo4_mobilenetv3large_body, tiny_yolo4lite_mobilenetv3large_body
+from yolo4.models.yolo4_mobilenetv3_small import yolo4_mobilenetv3small_body, yolo4lite_mobilenetv3small_body, tiny_yolo4_mobilenetv3small_body, tiny_yolo4lite_mobilenetv3small_body
 
 from yolo3.loss import yolo3_loss
 from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Yolo3PostProcessLayer
@@ -76,6 +77,8 @@ yolo3_model_map = {
     'yolo4_mobilenet_lite': [yolo4lite_mobilenet_body, 87, None],
     'yolo4_mobilenetv3large': [yolo4_mobilenetv3large_body, 195, None],
     'yolo4_mobilenetv3large_lite': [yolo4lite_mobilenetv3large_body, 195, None],
+    'yolo4_mobilenetv3small': [yolo4_mobilenetv3small_body, 166, None],
+    'yolo4_mobilenetv3small_lite': [yolo4lite_mobilenetv3small_body, 166, None],
 }
 
 
@@ -112,11 +115,16 @@ yolo3_tiny_model_map = {
 
     'tiny_yolo4_mobilenet': [tiny_yolo4_mobilenet_body, 87, None],
     'tiny_yolo4_mobilenet_lite': [tiny_yolo4lite_mobilenet_body, 87, None],
-    'tiny_yolo4_mobilenet_lite_nospp': [partial(tiny_yolo4lite_mobilenet_body, spp=False), 87, None],
+    'tiny_yolo4_mobilenet_lite_nospp': [partial(tiny_yolo4lite_mobilenet_body, use_spp=False), 87, None],
 
     'tiny_yolo4_mobilenetv3large': [tiny_yolo4_mobilenetv3large_body, 195, None],
     'tiny_yolo4_mobilenetv3large_lite': [tiny_yolo4lite_mobilenetv3large_body, 195, None],
-    'tiny_yolo4_mobilenetv3large_lite_nospp': [partial(tiny_yolo4lite_mobilenetv3large_body, spp=False), 195, None],
+    'tiny_yolo4_mobilenetv3large_lite_nospp': [partial(tiny_yolo4lite_mobilenetv3large_body, use_spp=False), 195, None],
+
+    'tiny_yolo4_mobilenetv3small': [tiny_yolo4_mobilenetv3small_body, 166, None],
+    'tiny_yolo4_mobilenetv3small_lite': [tiny_yolo4lite_mobilenetv3small_body, 166, None],
+    'tiny_yolo4_mobilenetv3small_lite_nospp': [partial(tiny_yolo4lite_mobilenetv3small_body, use_spp=False), 166, None],
+
 }
 
 

@@ -56,6 +56,7 @@ def main():
     model_image_size = (int(height), int(width))
 
     annotation_lines = get_dataset(args.annotation_file)
+    os.makedirs(args.output_path, exist_ok=True)
 
     image_data = []
     boxes_data = []
