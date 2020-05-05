@@ -14,6 +14,7 @@ from tensorflow.keras.models import load_model
 import tensorflow.keras.backend as K
 import tensorflow as tf
 import MNN
+import onnxruntime
 
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo2.postprocess_np import yolo2_postprocess_np
@@ -241,6 +242,25 @@ def yolo_predict_pb(model, image, anchors, num_classes, model_image_size, conf_t
     return pred_boxes, pred_classes, pred_scores
 
 
+def yolo_predict_onnx(model, image, anchors, num_classes, model_image_size, conf_threshold):
+    # prepare input image
+    image_data = preprocess_image(image, model_image_size)
+    image_shape = image.size
+
+    image_data = image_data if isinstance(image_data, list) else [image_data]
+    feed = dict([(input.name, image_data[i]) for i, input in enumerate(model.get_inputs())])
+    prediction = model.run(None, feed)
+
+    if len(anchors) == 5:
+        # YOLOv2 use 5 anchors and have only 1 prediction
+        assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+    else:
+        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+
+    return pred_boxes, pred_classes, pred_scores
+
+
 def yolo_predict_keras(model, image, anchors, num_classes, model_image_size, conf_threshold):
     image_data = preprocess_image(image, model_image_size)
     image_shape = image.size
@@ -297,6 +317,9 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
         # support of TF 1.x frozen pb model
         elif model_format == 'PB':
             pred_boxes, pred_classes, pred_scores = yolo_predict_pb(model, image, anchors, len(class_names), model_image_size, conf_threshold)
+        # support of ONNX model
+        elif model_format == 'ONNX':
+            pred_boxes, pred_classes, pred_scores = yolo_predict_onnx(model, image, anchors, len(class_names), model_image_size, conf_threshold)
         # normal keras h5 model
         elif model_format == 'H5':
             pred_boxes, pred_classes, pred_scores = yolo_predict_keras(model, image, anchors, len(class_names), model_image_size, conf_threshold)
@@ -1090,7 +1113,6 @@ def load_graph(model_path):
 
 
 def load_eval_model(model_path):
-
     # support of tflite model
     if model_path.endswith('.tflite'):
         from tensorflow.lite.python import interpreter as interpreter_wrapper
@@ -1108,6 +1130,11 @@ def load_eval_model(model_path):
         model = load_graph(model_path)
         model_format = 'PB'
 
+    # support of ONNX model
+    elif model_path.endswith('.onnx'):
+        model = onnxruntime.InferenceSession(model_path)
+        model_format = 'ONNX'
+
     # normal keras h5 model
     elif model_path.endswith('.h5'):
         custom_object_dict = get_custom_objects()
@@ -1123,7 +1150,7 @@ def load_eval_model(model_path):
 
 def main():
     # class YOLO defines the default value, so suppress any default here
-    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='evaluate YOLO model (h5/pb/tflite/mnn) with test dataset')
+    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='evaluate YOLO model (h5/pb/onnx/tflite/mnn) with test dataset')
     '''
     Command line options
     '''

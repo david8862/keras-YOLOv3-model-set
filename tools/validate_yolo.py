@@ -5,6 +5,7 @@ from PIL import Image
 import os, sys, argparse
 import numpy as np
 import MNN
+import onnxruntime
 from tensorflow.keras.models import load_model
 from tensorflow.lite.python import interpreter as interpreter_wrapper
 import tensorflow as tf
@@ -246,6 +247,30 @@ def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_i
     handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size)
 
 
+def validate_yolo_model_onnx(model_path, image_file, anchors, class_names, model_image_size, loop_count):
+    sess = onnxruntime.InferenceSession(model_path)
+
+    # prepare input image
+    img = Image.open(image_file)
+    image = np.array(img, dtype='uint8')
+    image_data = preprocess_image(img, model_image_size)
+    image_shape = img.size
+
+    image_data = image_data if isinstance(image_data, list) else [image_data]
+    feed = dict([(input.name, image_data[i]) for i, input in enumerate(sess.get_inputs())])
+
+    # predict once first to bypass the model building time
+    prediction = sess.run(None, feed)
+
+    start = time.time()
+    for i in range(loop_count):
+        prediction = sess.run(None, feed)
+    end = time.time()
+    print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
+
+    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size)
+
+
 def handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size):
     start = time.time()
     if len(anchors) == 5:
@@ -271,7 +296,7 @@ def handle_prediction(prediction, image_file, image, image_shape, anchors, class
 
 
 def main():
-    parser = argparse.ArgumentParser(description='validate YOLO model (h5/pb/tflite/mnn) with image')
+    parser = argparse.ArgumentParser(description='validate YOLO model (h5/pb/onnx/tflite/mnn) with image')
     parser.add_argument('--model_path', help='model file to predict', type=str, required=True)
     parser.add_argument('--image_file', help='image file to predict', type=str, required=True)
     parser.add_argument('--anchors_path',help='path to anchor definitions', type=str, required=True)
@@ -296,6 +321,9 @@ def main():
     # support of TF 1.x frozen pb model
     elif args.model_path.endswith('.pb'):
         validate_yolo_model_pb(args.model_path, args.image_file, anchors, class_names, model_image_size, args.loop_count)
+    # support of ONNX model
+    elif args.model_path.endswith('.onnx'):
+        validate_yolo_model_onnx(args.model_path, args.image_file, anchors, class_names, model_image_size, args.loop_count)
     # normal keras h5 model
     elif args.model_path.endswith('.h5'):
         validate_yolo_model(args.model_path, args.image_file, anchors, class_names, model_image_size, args.loop_count)

@@ -400,14 +400,24 @@ video detection mode
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 
 ### Tensorflow model convert
-Using [keras_to_tensorflow.py](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tools/keras_to_tensorflow.py) to convert the keras .h5 model to tensorflow frozen pb model (only for TF 1.x):
+Using [keras_to_tensorflow.py](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tools/keras_to_tensorflow.py) to convert the tf.keras .h5 model to tensorflow frozen pb model (only for TF 1.x):
 ```
 # python keras_to_tensorflow.py
     --input_model="path/to/keras/model.h5"
     --output_model="path/to/save/model.pb"
 ```
 
-You can also use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/eval.py) to do evaluation on the pb inference model
+### ONNX model convert
+Using [keras_to_onnx.py](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tools/keras_to_onnx.py) to convert the tf.keras .h5 model to ONNX model:
+```
+### need to set environment TF_KERAS=1 for tf.keras model
+# export TF_KERAS=1
+# python keras_to_onnx.py
+    --keras_model_file="path/to/keras/model.h5"
+    --output_file="path/to/save/model.onnx"
+```
+
+You can also use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/eval.py) to do evaluation on the pb & onnx inference model
 
 ### Inference model deployment
 See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/inference) for TFLite & MNN model deployment

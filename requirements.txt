@@ -9,3 +9,6 @@ tqdm
 pillow
 mnn
 pycocotools
+keras2onnx
+onnx
+onnxruntime

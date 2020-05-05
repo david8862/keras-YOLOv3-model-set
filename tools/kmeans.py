@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import argparse
+import warnings
 from PIL import Image
 
 
@@ -109,19 +110,22 @@ class YOLO_Kmeans:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Do K-means anchor clustering on selected dataset')
-    parser.add_argument('--annotation_file', required=True,
-            help='annotation txt file for ground truth anchors', type=str)
-    parser.add_argument('--cluster_number', required=True,
-            help='anchor numbers to cluster', type=int)
-    parser.add_argument('--anchors_file', required=True,
-            help='anchor file to output', type=str)
-    parser.add_argument('--model_image_size',
-            help='model image input size as <num>x<num>, default 416x416', type=str, default='416x416')
+    parser.add_argument('--annotation_file', type=str, required=True,
+            help='annotation txt file for ground truth anchors')
+    parser.add_argument('--cluster_number', type=int, required=True,
+            help='anchor numbers to cluster')
+    parser.add_argument('--anchors_file', type=str, required=True,
+            help='anchor file to output')
+    parser.add_argument('--model_image_size', type=str, required=False,
+            help='model image input size as <num>x<num>, default 608x608', default='608x608')
 
     args = parser.parse_args()
 
     height, width = args.model_image_size.split('x')
     model_image_size = (int(height), int(width))
+
+    if args.cluster_number != 9 and args.cluster_number != 6 and args.cluster_number != 5:
+        warnings.warn('You choose to generate {} anchor clusters, but default YOLO anchor number should 5, 6 or 9'.format(args.cluster_number))
 
     kmeans = YOLO_Kmeans(args.cluster_number, args.annotation_file, args.anchors_file, model_image_size)
     kmeans.txt2clusters()
