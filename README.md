@@ -21,7 +21,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] YOLOv4 (Lite)
 - [x] Tiny YOLOv4 (Lite, no-SPP)
 - [x] YOLOv3 (Lite, SPP)
-- [x] YOLOv3 Nano ([YOLO nano](https://arxiv.org/abs/1910.01271)) (unofficially)
+- [x] YOLOv3 Nano ([paper](https://arxiv.org/abs/1910.01271)) (unofficially)
 - [x] Tiny YOLOv3 (Lite)
 - [x] YOLOv2 (Lite)
 - [x] Tiny YOLOv2 (Lite)
@@ -32,7 +32,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] Binary focal classification loss
 - [x] Softmax focal classification loss
 - [x] GIoU localization loss
-- [x] DIoU localization loss ([Distance-IoU Loss](https://arxiv.org/abs/1911.08287))
+- [x] DIoU localization loss ([paper](https://arxiv.org/abs/1911.08287))
 - [x] Binary focal loss for objectness (experimental)
 - [x] Label smoothing for classification loss
 
@@ -382,7 +382,7 @@ Some experiment on PascalVOC dataset and comparison:
 | [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12+coco | VOC07 | 72.7% | 22MB |||
 | [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12 | VOC07 | 68% | 22MB |||
 | [Faster RCNN, VGG-16](https://github.com/ShaoqingRen/faster_rcnn) | ~1000x600 | VOC07+12 | VOC07 | 73.2% || 151ms | Caffe on Titan X |
-|[SSD,VGG-16](https://github.com/pierluigiferrari/ssd_keras) | 300x300 | VOC07+12 | VOC07	| 77.5% | 201MB | 39fps | Keras on Titan X |
+| [SSD,VGG-16](https://github.com/pierluigiferrari/ssd_keras) | 300x300 | VOC07+12 | VOC07	| 77.5% | 201MB | 39fps | Keras on Titan X |
 
 
 ### Demo
@@ -424,6 +424,8 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 
 ### TODO
+- [ ] DropBlock on YOLO head
+- [ ] Gaussian YOLOv3 loss
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones/imagenet_training)
 
 

@@ -418,7 +418,12 @@ def merge_mosaic_bboxes(bboxes, crop_x, crop_y, image_size):
 
 def random_mosaic_augment(image_data, boxes_data, jitter=.1):
     """
-    Random add mosaic augment on batch images and boxes
+    Random add mosaic augment on batch images and boxes, from YOLOv4
+
+    reference:
+        https://github.com/klauspa/Yolov4-tensorflow/blob/master/data.py
+        https://github.com/clovaai/CutMix-PyTorch
+        https://github.com/AlexeyAB/darknet
 
     # Arguments
         image_data: origin images for mosaic augment
@@ -487,6 +492,175 @@ def random_mosaic_augment(image_data, boxes_data, jitter=.1):
             area_left = np.concatenate([area_0, area_1], axis=0)
             area_right = np.concatenate([area_3, area_2], axis=0)
             merged_image = np.concatenate([area_left, area_right], axis=1)
+
+            new_images.append(merged_image)
+            new_boxes.append(merged_boxes)
+
+        new_images = np.stack(new_images)
+        new_boxes = np.array(new_boxes)
+        return new_images, new_boxes
+
+
+def merge_cutmix_bboxes(bboxes, cut_xmin, cut_ymin, cut_xmax, cut_ymax, image_size):
+    # adjust & merge cutmix samples bboxes as following area order:
+    # -----------------
+    # |               |
+    # |  0            |
+    # |       ____    |
+    # |      |    |   |
+    # |      |  1 |   |
+    # |      |____|   |
+    # |               |
+    # -----------------
+    assert bboxes.shape[0] == 2, 'cutmix sample number should be 2'
+    max_boxes = bboxes.shape[1]
+    height, width = image_size
+    merge_bbox = []
+    for i in range(bboxes.shape[0]):
+        for box in bboxes[i]:
+            x_min, y_min, x_max, y_max = box[0], box[1], box[2], box[3]
+
+            if i == 0: # bboxes[0] is for background area
+                if x_min > cut_xmin and x_max < cut_xmax and y_min > cut_ymin and y_max < cut_ymax:
+                    # all box in padding area, drop it
+                    continue
+                elif x_min > cut_xmax or x_max < cut_xmin or y_min > cut_ymax or y_max < cut_ymin:
+                    # all box in background area, do nothing
+                    pass
+                else:
+                    # TODO: currently it is a BAD strategy to adjust box in background area, so seems
+                    # CutMix could not be used directly in object detection data augment
+                    if x_max > cut_xmin and x_max < cut_xmax:
+                        x_max = cut_xmin
+                    elif x_min > cut_xmin and x_min < cut_xmax:
+                        x_min = cut_xmax
+                    if y_max > cut_ymin and y_max < cut_ymax:
+                        y_max = cut_ymin
+                    elif y_min > cut_ymin and y_min < cut_ymax:
+                        y_min = cut_ymax
+
+            if i == 1: # bboxes[1] is for padding area
+                if x_min > cut_xmin and x_max < cut_xmax and y_min > cut_ymin and y_max < cut_ymax :
+                    # all box in padding area, do nothing
+                    pass
+                elif x_min > cut_xmax or x_max < cut_xmin or y_min > cut_ymax or y_max < cut_ymin:
+                    # all box in background area, drop it
+                    continue
+                else:
+                    # limit box in padding area
+                    if x_max > cut_xmax:
+                        x_max = cut_xmax
+                    if x_min < cut_xmin:
+                        x_min = cut_xmin
+                    if y_max > cut_ymax:
+                        y_max = cut_ymax
+                    if y_min < cut_ymin:
+                        y_min = cut_ymin
+
+            if abs(x_max-x_min) < max(10, width*0.01) or abs(y_max-y_min) < max(10, height*0.01):
+                #if the adjusted bbox is too small, bypass it
+                continue
+
+            merge_bbox.append([x_min, y_min, x_max, y_max, box[4]])
+
+    if len(merge_bbox) > max_boxes:
+        merge_bbox = merge_bbox[:max_boxes]
+
+    box_data = np.zeros((max_boxes,5))
+    if len(merge_bbox) > 0:
+        box_data[:len(merge_bbox)] = merge_bbox
+    return box_data
+
+
+def random_cutmix_augment(image_data, boxes_data, jitter=.1):
+    """
+    Random add cutmix augment on batch images and boxes
+
+    Warning: currently it is a BAD strategy and could not be used in object detection data augment
+
+    # Arguments
+        image_data: origin images for cutmix augment
+            numpy array for normalized batch image data
+        boxes_data: origin bboxes for cutmix augment
+            numpy array for batch bboxes
+        jitter: jitter range for augment probability,
+            scalar to control the augment probability.
+
+    # Returns
+        image_data: augmented batch image data.
+        boxes_data: augmented batch bboxes data.
+    """
+    do_augment = rand() < jitter
+    if not do_augment:
+        return image_data, boxes_data
+    else:
+        batch_size = len(image_data)
+        assert batch_size >= 2, 'cutmix augment need batch size >= 2'
+
+        def get_cutmix_samples():
+            # random select 2 images from batch as cutmix samples
+            random_index = random.sample(list(range(batch_size)), 2)
+
+            random_images = []
+            random_bboxes = []
+            for idx in random_index:
+                random_images.append(image_data[idx])
+                random_bboxes.append(boxes_data[idx])
+            return random_images, np.array(random_bboxes)
+
+        def get_cutmix_box(image_size, lamda):
+            height, width = image_size
+            min_offset = 0.1
+
+            # get width and height for cut area
+            cut_rat = np.sqrt(1. - lamda)
+            cut_w = np.int(width * cut_rat)
+            cut_h = np.int(height * cut_rat)
+
+            # get center point for cut area
+            center_x = np.random.randint(width)
+            center_y = np.random.randint(height)
+
+            # limit cut area to allowed image size
+            cut_xmin = np.clip(center_x - cut_w // 2, int(width*min_offset), int(width*(1-min_offset)))
+            cut_ymin = np.clip(center_y - cut_h // 2, int(height*min_offset), int(height*(1-min_offset)))
+            cut_xmax = np.clip(center_x + cut_w // 2, int(width*min_offset), int(width*(1-min_offset)))
+            cut_ymax = np.clip(center_y + cut_h // 2, int(height*min_offset), int(height*(1-min_offset)))
+
+            return cut_xmin, cut_ymin, cut_xmax, cut_ymax
+
+        new_images = []
+        new_boxes = []
+        height, width = image_data[0].shape[:2]
+        #each batch has batch_size images, so we also need to
+        #generate batch_size mosaic images
+        for i in range(batch_size):
+            images, bboxes = get_cutmix_samples()
+            lamda = np.random.beta(5, 5)
+
+            cut_xmin, cut_ymin, cut_xmax, cut_ymax = get_cutmix_box(image_size=(height, width), lamda=lamda)
+            merged_boxes = merge_cutmix_bboxes(bboxes, cut_xmin, cut_ymin, cut_xmax, cut_ymax, image_size=(height, width))
+            #no valid bboxes, drop this loop
+            #if merged_boxes is None:
+                #i = i - 1
+                #continue
+
+            # crop and pad selected area as following cutmix sample images order:
+            # -----------------
+            # |               |
+            # |  0            |
+            # |       ____    |
+            # |      |    |   |
+            # |      |  1 |   |
+            # |      |____|   |
+            # |               |
+            # -----------------
+            bg_image = images[0].copy()
+            pad_image = images[1].copy()
+
+            #crop and pad selected area to background image
+            bg_image[cut_ymin:cut_ymax, cut_xmin:cut_xmax, :] = pad_image[cut_ymin:cut_ymax, cut_xmin:cut_xmax, :]
+            merged_image = bg_image
 
             new_images.append(merged_image)
             new_boxes.append(merged_boxes)
