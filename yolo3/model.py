@@ -26,6 +26,7 @@ from yolo4.models.yolo4_darknet import yolo4_body
 from yolo4.models.yolo4_mobilenet import yolo4_mobilenet_body, yolo4lite_mobilenet_body, tiny_yolo4_mobilenet_body, tiny_yolo4lite_mobilenet_body
 from yolo4.models.yolo4_mobilenetv3_large import yolo4_mobilenetv3large_body, yolo4lite_mobilenetv3large_body, tiny_yolo4_mobilenetv3large_body, tiny_yolo4lite_mobilenetv3large_body
 from yolo4.models.yolo4_mobilenetv3_small import yolo4_mobilenetv3small_body, yolo4lite_mobilenetv3small_body, tiny_yolo4_mobilenetv3small_body, tiny_yolo4lite_mobilenetv3small_body
+from yolo4.models.yolo4_efficientnet import yolo4_efficientnet_body, yolo4lite_efficientnet_body, tiny_yolo4_efficientnet_body, tiny_yolo4lite_efficientnet_body
 
 from yolo3.loss import yolo3_loss
 from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Yolo3PostProcessLayer
@@ -55,11 +56,11 @@ yolo3_model_map = {
     'yolo3_shufflenetv2_lite': [yolo3lite_shufflenetv2_body, 205, None],
     'yolo3_shufflenetv2_lite_spp': [yolo3lite_spp_shufflenetv2_body, 205, None],
 
-    # NOTE: backbone_length is for EfficientNetB0
+    # NOTE: backbone_length is for EfficientNetB3
     # if change to other efficientnet level, you need to modify it
-    'yolo3_efficientnet': [yolo3_efficientnet_body, 235, None],
-    'yolo3_efficientnet_lite': [yolo3lite_efficientnet_body, 235, None],
-    'yolo3_efficientnet_lite_spp': [yolo3lite_spp_efficientnet_body, 235, None],
+    'yolo3_efficientnet': [yolo3_efficientnet_body, 382, None],
+    'yolo3_efficientnet_lite': [yolo3lite_efficientnet_body, 382, None],
+    'yolo3_efficientnet_lite_spp': [yolo3lite_spp_efficientnet_body, 382, None],
 
     'yolo3_darknet': [yolo3_body, 185, 'weights/darknet53.h5'],
     'yolo3_darknet_spp': [custom_yolo3_spp_body, 185, 'weights/yolov3-spp.h5'],
@@ -79,6 +80,11 @@ yolo3_model_map = {
     'yolo4_mobilenetv3large_lite': [yolo4lite_mobilenetv3large_body, 195, None],
     'yolo4_mobilenetv3small': [yolo4_mobilenetv3small_body, 166, None],
     'yolo4_mobilenetv3small_lite': [yolo4lite_mobilenetv3small_body, 166, None],
+    # NOTE: backbone_length is for EfficientNetB1
+    # if change to other efficientnet level, you need to modify it
+    'yolo4_efficientnet': [yolo4_efficientnet_body, 337, None],
+    'yolo4_efficientnet_lite': [yolo4lite_efficientnet_body, 337, None],
+
 }
 
 
@@ -124,6 +130,11 @@ yolo3_tiny_model_map = {
     'tiny_yolo4_mobilenetv3small': [tiny_yolo4_mobilenetv3small_body, 166, None],
     'tiny_yolo4_mobilenetv3small_lite': [tiny_yolo4lite_mobilenetv3small_body, 166, None],
     'tiny_yolo4_mobilenetv3small_lite_nospp': [partial(tiny_yolo4lite_mobilenetv3small_body, use_spp=False), 166, None],
+    # NOTE: backbone_length is for EfficientNetB0
+    # if change to other efficientnet level, you need to modify it
+    'tiny_yolo4_efficientnet': [tiny_yolo4_efficientnet_body, 235, None],
+    'tiny_yolo4_efficientnet_lite': [tiny_yolo4lite_efficientnet_body, 235, None],
+    'tiny_yolo4_efficientnet_lite_nospp': [partial(tiny_yolo4lite_efficientnet_body, use_spp=False), 235, None],
 
 }
 
@@ -191,7 +202,7 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
     y_true = [Input(shape=(None, None, 3, num_classes+5), name='y_true_{}'.format(l)) for l in range(num_feature_layers)]
 
     model_body, backbone_len = get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, model_pruning=model_pruning, pruning_end_step=pruning_end_step)
-    print('Create {} YOLOv3 {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))
+    print('Create {} {} model with {} anchors and {} classes.'.format('Tiny' if num_feature_layers==2 else '', model_type, num_anchors, num_classes))
     print('model layer number:', len(model_body.layers))
 
     if weights_path:

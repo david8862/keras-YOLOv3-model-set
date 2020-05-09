@@ -156,40 +156,42 @@ def get_efficientnet_backbone_info(input_tensor, level=0):
     return efficientnet, feature_map_info
 
 
-def yolo3_efficientnet_body(inputs, num_anchors, num_classes, level=0):
+def yolo3_efficientnet_body(inputs, num_anchors, num_classes, level=3):
     '''
     Create YOLO_v3 EfficientNet model CNN body in keras.
     # Arguments
         level: EfficientNet level number.
-            by default we use basic EfficientNetB0 as backbone
+            by default we use basic EfficientNetB3 as backbone
     '''
     efficientnet, feature_map_info = get_efficientnet_backbone_info(inputs, level=level)
 
     f1 = efficientnet.get_layer('top_activation').output
+    f1_channel_num = feature_map_info['f1_channel_num']
+
+    f2 = efficientnet.get_layer('block6a_expand_activation').output
+    f2_channel_num = feature_map_info['f2_channel_num']
+
+    f3 = efficientnet.get_layer('block4a_expand_activation').output
+    f3_channel_num = feature_map_info['f3_channel_num']
 
     #x, y1 = make_last_layers(f1, 672, num_anchors * (num_classes + 5))
-    f2_channel_num = feature_map_info['f2_channel_num']
-    x, y1 = make_last_layers(f1, f2_channel_num, num_anchors * (num_classes + 5))
+    x, y1 = make_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5))
 
     x = compose(
             #DarknetConv2D_BN_Leaky(336, (1,1)),
             DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
             UpSampling2D(2))(x)
 
-    f2 = efficientnet.get_layer('block6a_expand_activation').output
-
     x = Concatenate()([x,f2])
 
     #x, y2 = make_last_layers(x, 240, num_anchors*(num_classes+5))
-    f3_channel_num = feature_map_info['f3_channel_num']
-    x, y2 = make_last_layers(x, f3_channel_num, num_anchors*(num_classes+5))
+    x, y2 = make_last_layers(x, f2_channel_num//2, num_anchors*(num_classes+5))
 
     x = compose(
             #DarknetConv2D_BN_Leaky(120, (1,1)),
             DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
             UpSampling2D(2))(x)
 
-    f3 = efficientnet.get_layer('block4a_expand_activation').output
 
     x = Concatenate()([x, f3])
     #x, y3 = make_last_layers(x, 120, num_anchors*(num_classes+5))
@@ -198,40 +200,41 @@ def yolo3_efficientnet_body(inputs, num_anchors, num_classes, level=0):
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def yolo3lite_efficientnet_body(inputs, num_anchors, num_classes, level=0):
+def yolo3lite_efficientnet_body(inputs, num_anchors, num_classes, level=3):
     '''
     Create YOLO_v3 Lite EfficientNet model CNN body in keras.
     # Arguments
         level: EfficientNet level number.
-            by default we use basic EfficientNetB0 as backbone
+            by default we use basic EfficientNetB3 as backbone
     '''
     efficientnet, feature_map_info = get_efficientnet_backbone_info(inputs, level=level)
 
     f1 = efficientnet.get_layer('top_activation').output
+    f1_channel_num = feature_map_info['f1_channel_num']
+
+    f2 = efficientnet.get_layer('block6a_expand_activation').output
+    f2_channel_num = feature_map_info['f2_channel_num']
+
+    f3 = efficientnet.get_layer('block4a_expand_activation').output
+    f3_channel_num = feature_map_info['f3_channel_num']
 
     #x, y1 = make_depthwise_separable_last_layers(f1, 672, num_anchors * (num_classes + 5), block_id_str='8')
-    f2_channel_num = feature_map_info['f2_channel_num']
-    x, y1 = make_depthwise_separable_last_layers(f1, f2_channel_num, num_anchors * (num_classes + 5), block_id_str='8')
+    x, y1 = make_depthwise_separable_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5), block_id_str='8')
 
     x = compose(
             #DarknetConv2D_BN_Leaky(336, (1,1)),
             DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
             UpSampling2D(2))(x)
 
-    f2 = efficientnet.get_layer('block6a_expand_activation').output
-
     x = Concatenate()([x,f2])
 
     #x, y2 = make_depthwise_separable_last_layers(x, 240, num_anchors*(num_classes+5), block_id_str='9')
-    f3_channel_num = feature_map_info['f3_channel_num']
-    x, y2 = make_depthwise_separable_last_layers(x, f3_channel_num, num_anchors*(num_classes+5), block_id_str='9')
+    x, y2 = make_depthwise_separable_last_layers(x, f2_channel_num//2, num_anchors*(num_classes+5), block_id_str='9')
 
     x = compose(
             #DarknetConv2D_BN_Leaky(120, (1,1)),
             DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
             UpSampling2D(2))(x)
-
-    f3 = efficientnet.get_layer('block4a_expand_activation').output
 
     x = Concatenate()([x, f3])
     #x, y3 = make_depthwise_separable_last_layers(x, 120, num_anchors*(num_classes+5), block_id_str='10')
@@ -240,40 +243,41 @@ def yolo3lite_efficientnet_body(inputs, num_anchors, num_classes, level=0):
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
 
-def yolo3lite_spp_efficientnet_body(inputs, num_anchors, num_classes, level=0):
+def yolo3lite_spp_efficientnet_body(inputs, num_anchors, num_classes, level=3):
     '''
     Create YOLO_v3 Lite SPP EfficientNet model CNN body in keras.
     # Arguments
         level: EfficientNet level number.
-            by default we use basic EfficientNetB0 as backbone
+            by default we use basic EfficientNetB3 as backbone
     '''
     efficientnet, feature_map_info = get_efficientnet_backbone_info(inputs, level=level)
 
     f1 = efficientnet.get_layer('top_activation').output
+    f1_channel_num = feature_map_info['f1_channel_num']
+
+    f2 = efficientnet.get_layer('block6a_expand_activation').output
+    f2_channel_num = feature_map_info['f2_channel_num']
+
+    f3 = efficientnet.get_layer('block4a_expand_activation').output
+    f3_channel_num = feature_map_info['f3_channel_num']
 
     #x, y1 = make_spp_depthwise_separable_last_layers(f1, 672, num_anchors * (num_classes + 5), block_id_str='8')
-    f2_channel_num = feature_map_info['f2_channel_num']
-    x, y1 = make_spp_depthwise_separable_last_layers(f1, f2_channel_num, num_anchors * (num_classes + 5), block_id_str='8')
+    x, y1 = make_spp_depthwise_separable_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5), block_id_str='8')
 
     x = compose(
             #DarknetConv2D_BN_Leaky(336, (1,1)),
             DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
             UpSampling2D(2))(x)
 
-    f2 = efficientnet.get_layer('block6a_expand_activation').output
-
     x = Concatenate()([x,f2])
 
     #x, y2 = make_depthwise_separable_last_layers(x, 240, num_anchors*(num_classes+5), block_id_str='9')
-    f3_channel_num = feature_map_info['f3_channel_num']
-    x, y2 = make_depthwise_separable_last_layers(x, f3_channel_num, num_anchors*(num_classes+5), block_id_str='9')
+    x, y2 = make_depthwise_separable_last_layers(x, f2_channel_num//2, num_anchors*(num_classes+5), block_id_str='9')
 
     x = compose(
             #DarknetConv2D_BN_Leaky(120, (1,1)),
             DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
             UpSampling2D(2))(x)
-
-    f3 = efficientnet.get_layer('block4a_expand_activation').output
 
     x = Concatenate()([x, f3])
     #x, y3 = make_depthwise_separable_last_layers(x, 120, num_anchors*(num_classes+5), block_id_str='10')
@@ -296,11 +300,11 @@ def tiny_yolo3_efficientnet_body(inputs, num_anchors, num_classes, level=0):
     f1_channel_num = feature_map_info['f1_channel_num']
     f2_channel_num = feature_map_info['f2_channel_num']
 
-    x2 = DarknetConv2D_BN_Leaky(f2_channel_num, (1,1))(x2)
+    x2 = DarknetConv2D_BN_Leaky(f1_channel_num//2, (1,1))(x2)
 
     y1 = compose(
             DarknetConv2D_BN_Leaky(f1_channel_num, (3,3)),
-            #Depthwise_Separable_Conv2D_BN_Leaky(filters=f1_channel_num, kernel_size=(3, 3), block_id_str='17'),
+            #Depthwise_Separable_Conv2D_BN_Leaky(filters=f1_channel_num, kernel_size=(3, 3), block_id_str='8'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
     x2 = compose(
@@ -309,7 +313,7 @@ def tiny_yolo3_efficientnet_body(inputs, num_anchors, num_classes, level=0):
     y2 = compose(
             Concatenate(),
             DarknetConv2D_BN_Leaky(f2_channel_num, (3,3)),
-            #Depthwise_Separable_Conv2D_BN_Leaky(filters=f2_channel_num, kernel_size=(3, 3), block_id_str='18'),
+            #Depthwise_Separable_Conv2D_BN_Leaky(filters=f2_channel_num, kernel_size=(3, 3), block_id_str='9'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
 
     return Model(inputs, [y1,y2])
@@ -329,11 +333,11 @@ def tiny_yolo3lite_efficientnet_body(inputs, num_anchors, num_classes, level=0):
     f1_channel_num = feature_map_info['f1_channel_num']
     f2_channel_num = feature_map_info['f2_channel_num']
 
-    x2 = DarknetConv2D_BN_Leaky(f2_channel_num, (1,1))(x2)
+    x2 = DarknetConv2D_BN_Leaky(f1_channel_num//2, (1,1))(x2)
 
     y1 = compose(
             #DarknetConv2D_BN_Leaky(f1_channel_num, (3,3)),
-            Depthwise_Separable_Conv2D_BN_Leaky(filters=f1_channel_num, kernel_size=(3, 3), block_id_str='17'),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=f1_channel_num, kernel_size=(3, 3), block_id_str='8'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
     x2 = compose(
@@ -342,7 +346,7 @@ def tiny_yolo3lite_efficientnet_body(inputs, num_anchors, num_classes, level=0):
     y2 = compose(
             Concatenate(),
             #DarknetConv2D_BN_Leaky(f2_channel_num, (3,3)),
-            Depthwise_Separable_Conv2D_BN_Leaky(filters=f2_channel_num, kernel_size=(3, 3), block_id_str='18'),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=f2_channel_num, kernel_size=(3, 3), block_id_str='9'),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
 
     return Model(inputs, [y1,y2])

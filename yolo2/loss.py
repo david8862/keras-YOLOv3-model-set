@@ -179,7 +179,8 @@ def _smooth_labels(y_true, label_smoothing):
 
 
 def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_loss=False, use_crossentropy_obj_loss=False, rescore_confidence=False, use_giou_loss=False, use_diou_loss=False):
-    """YOLOv2 loss function.
+    """
+    YOLOv2 loss function.
 
     Parameters
     ----------

@@ -246,7 +246,8 @@ def _smooth_labels(y_true, label_smoothing):
 
 
 def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, use_focal_loss=False, use_focal_obj_loss=False, use_softmax_loss=False, use_giou_loss=False, use_diou_loss=False):
-    '''Return yolo_loss tensor
+    '''
+    YOLOv3 loss function.
 
     Parameters
     ----------
@@ -271,8 +272,8 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
     total_location_loss = 0
     total_confidence_loss = 0
     total_class_loss = 0
-    m = K.shape(yolo_outputs[0])[0] # batch size, tensor
-    mf = K.cast(m, K.dtype(yolo_outputs[0]))
+    batch_size = K.shape(yolo_outputs[0])[0] # batch size, tensor
+    batch_size_f = K.cast(batch_size, K.dtype(yolo_outputs[0]))
 
     for l in range(num_layers):
         object_mask = y_true[l][..., 4:5]
@@ -299,7 +300,7 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
             best_iou = K.max(iou, axis=-1)
             ignore_mask = ignore_mask.write(b, K.cast(best_iou<ignore_thresh, K.dtype(true_box)))
             return b+1, ignore_mask
-        _, ignore_mask = tf.while_loop(lambda b,*args: b<m, loop_body, [0, ignore_mask])
+        _, ignore_mask = tf.while_loop(lambda b,*args: b<batch_size, loop_body, [0, ignore_mask])
         ignore_mask = ignore_mask.stack()
         ignore_mask = K.expand_dims(ignore_mask, -1)
 
@@ -330,26 +331,26 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
             raw_true_box = y_true[l][...,0:4]
             giou = box_giou(raw_true_box, pred_box)
             giou_loss = object_mask * box_loss_scale * (1 - giou)
-            giou_loss = K.sum(giou_loss) / mf
+            giou_loss = K.sum(giou_loss) / batch_size_f
             location_loss = giou_loss
         elif use_diou_loss:
             # Calculate DIoU loss as location loss
             raw_true_box = y_true[l][...,0:4]
             diou = box_diou(raw_true_box, pred_box)
             diou_loss = object_mask * box_loss_scale * (1 - diou)
-            diou_loss = K.sum(diou_loss) / mf
+            diou_loss = K.sum(diou_loss) / batch_size_f
             location_loss = diou_loss
         else:
             # Standard YOLOv3 location loss
             # K.binary_crossentropy is helpful to avoid exp overflow.
             xy_loss = object_mask * box_loss_scale * K.binary_crossentropy(raw_true_xy, raw_pred[...,0:2], from_logits=True)
             wh_loss = object_mask * box_loss_scale * 0.5 * K.square(raw_true_wh-raw_pred[...,2:4])
-            xy_loss = K.sum(xy_loss) / mf
-            wh_loss = K.sum(wh_loss) / mf
+            xy_loss = K.sum(xy_loss) / batch_size_f
+            wh_loss = K.sum(wh_loss) / batch_size_f
             location_loss = xy_loss + wh_loss
 
-        confidence_loss = K.sum(confidence_loss) / mf
-        class_loss = K.sum(class_loss) / mf
+        confidence_loss = K.sum(confidence_loss) / batch_size_f
+        class_loss = K.sum(class_loss) / batch_size_f
         loss += location_loss + confidence_loss + class_loss
         total_location_loss += location_loss
         total_confidence_loss += confidence_loss

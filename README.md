@@ -13,7 +13,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] MobilenetV1
 - [x] MobilenetV2
 - [x] MobilenetV3(Large/Small)
-- [x] EfficientNet(default B0)
+- [x] EfficientNet
 - [x] Xception
 - [x] VGG16
 
@@ -66,7 +66,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 # pip install -r requirements.txt
 ```
 
-2. Download Related Darknet/YOLOv2/YOLOv3/YOLOv4 weights from [YOLO website](http://pjreddie.com/darknet/yolo/) and [AlexeyAB/darknet](https://github.com/AlexeyAB/darknet).
+2. Download Related Darknet/YOLOv2/v3/v4 weights from [YOLO website](http://pjreddie.com/darknet/yolo/) and [AlexeyAB/darknet](https://github.com/AlexeyAB/darknet).
 3. Convert the Darknet YOLO model to a Keras model.
 4. Run YOLO detection on your image or video, default using Tiny YOLOv3 model.
 

@@ -21,6 +21,8 @@ from shufflenet_v2 import ShuffleNetV2
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../..'))
 from yolo3.models.yolo3_nano import NanoNet
+from yolo3.models.yolo3_darknet import DarkNet53
+from yolo4.models.yolo4_darknet import CSPDarkNet53
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -68,6 +70,12 @@ def get_model(model_type, include_top=True):
     elif model_type == 'nanonet':
         input_shape = (224, 224, 3)
         model = NanoNet(weights=None, include_top=include_top)
+    elif model_type == 'darknet53':
+        input_shape = (224, 224, 3)
+        model = DarkNet53(weights=None, include_top=include_top)
+    elif model_type == 'cspdarknet53':
+        input_shape = (224, 224, 3)
+        model = CSPDarkNet53(weights=None, include_top=include_top)
     else:
         raise ValueError('Unsupported model type')
     return model, input_shape[:2]
@@ -104,11 +112,14 @@ def train(args, model, input_shape):
     # data generator
     train_datagen = ImageDataGenerator(preprocessing_function=preprocess,
                                        zoom_range=0.25,
-                                       #shear_range=0.2,
-                                       #channel_shift_range=0.1,
-                                       #rotation_range=0.1,
                                        width_shift_range=0.05,
                                        height_shift_range=0.05,
+                                       brightness_range=0.05,
+                                       #rotation_range=30,
+                                       #shear_range=0.2,
+                                       #channel_shift_range=0.1,
+                                       #rescale=1./255,
+                                       #vertical_flip=True,
                                        horizontal_flip=True)
 
     test_datagen = ImageDataGenerator(preprocessing_function=preprocess)
@@ -197,7 +208,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_type', type=str, required=False, default='shufflenet_v2',
-        help='backbone model type: shufflenet/shufflenet_v2/nanonet, default=shufflenet_v2')
+        help='backbone model type: shufflenet/shufflenet_v2/nanonet/darknet53/cspdarknet53, default=shufflenet_v2')
     parser.add_argument('--train_data_path', type=str,# required=True,
         help='path to Imagenet train data')
     parser.add_argument('--val_data_path', type=str,# required=True,

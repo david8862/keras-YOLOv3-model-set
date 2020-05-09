@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 """YOLO_v4 Model Defined in Keras."""
 
+from keras_applications.imagenet_utils import _obtain_input_shape
+from tensorflow.keras.utils import get_source_inputs, get_file
 from tensorflow.keras.layers import Add, ZeroPadding2D, UpSampling2D, Concatenate
+from tensorflow.keras.layers import Input, GlobalAveragePooling2D, GlobalMaxPooling2D, Reshape, Flatten, Softmax
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 
@@ -108,3 +111,83 @@ def yolo4_body(inputs, num_anchors, num_classes, weights_path=None):
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x1)
 
     return Model(inputs, [y1, y2, y3])
+
+
+BASE_WEIGHT_PATH = (
+    'https://github.com/david8862/keras-YOLOv3-model-set/'
+    'releases/download/v1.0.1/')
+
+def CSPDarkNet53(input_shape=None,
+            input_tensor=None,
+            include_top=True,
+            weights='imagenet',
+            pooling=None,
+            classes=1000,
+            **kwargs):
+    """Generate cspdarknet53 model for Imagenet classification."""
+
+    if not (weights in {'imagenet', None} or os.path.exists(weights)):
+        raise ValueError('The `weights` argument should be either '
+                         '`None` (random initialization), `imagenet` '
+                         '(pre-training on ImageNet), '
+                         'or the path to the weights file to be loaded.')
+
+    if weights == 'imagenet' and include_top and classes != 1000:
+        raise ValueError('If using `weights` as `"imagenet"` with `include_top`'
+                         ' as true, `classes` should be 1000')
+
+    # Determine proper input shape
+    input_shape = _obtain_input_shape(input_shape,
+                                      default_size=224,
+                                      min_size=28,
+                                      data_format=K.image_data_format(),
+                                      require_flatten=include_top,
+                                      weights=weights)
+
+    if input_tensor is None:
+        img_input = Input(shape=input_shape)
+    else:
+        img_input = input_tensor
+
+    x = csp_darknet53_body(img_input)
+
+    if include_top:
+        model_name='cspdarknet53'
+        x = GlobalAveragePooling2D(name='avg_pool')(x)
+        x = Reshape((1, 1, 1024))(x)
+        x = DarknetConv2D(classes, (1, 1))(x)
+        x = Flatten()(x)
+        x = Softmax(name='Predictions/Softmax')(x)
+    else:
+        model_name='cspdarknet53_headless'
+        if pooling == 'avg':
+            x = GlobalAveragePooling2D(name='avg_pool')(x)
+        elif pooling == 'max':
+            x = GlobalMaxPooling2D(name='max_pool')(x)
+
+    # Ensure that the model takes into account
+    # any potential predecessors of `input_tensor`.
+    if input_tensor is not None:
+        inputs = get_source_inputs(input_tensor)
+    else:
+        inputs = img_input
+
+    # Create model.
+    model = Model(inputs, x, name=model_name)
+
+    # Load weights.
+    if weights == 'imagenet':
+        if include_top:
+            file_name = 'cspdarknet53_weights_tf_dim_ordering_tf_kernels_224.h5'
+            weight_path = BASE_WEIGHT_PATH + file_name
+        else:
+            file_name = 'cspdarknet53_weights_tf_dim_ordering_tf_kernels_224_no_top.h5'
+            weight_path = BASE_WEIGHT_PATH + file_name
+
+        weights_path = get_file(file_name, weight_path, cache_subdir='models')
+        model.load_weights(weights_path)
+    elif weights is not None:
+        model.load_weights(weights)
+
+    return model
+
