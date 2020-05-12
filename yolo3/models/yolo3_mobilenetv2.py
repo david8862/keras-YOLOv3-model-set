@@ -18,31 +18,43 @@ def yolo3_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
     # block_13_expand_relu: 26 x 26 x (576*alpha)
     # block_6_expand_relu: 52 x 52 x (192*alpha)
 
-    f1 = mobilenetv2.get_layer('out_relu').output
     # f1 :13 x 13 x 1280
-    x, y1 = make_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5))
-    #x, y1 = make_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5), predict_filters=int(1024*alpha))
-
-    x = compose(
-            DarknetConv2D_BN_Leaky(int(288*alpha), (1,1)),
-            UpSampling2D(2))(x)
-
-    f2 = mobilenetv2.get_layer('block_13_expand_relu').output
+    f1 = mobilenetv2.get_layer('out_relu').output
     # f2: 26 x 26 x (576*alpha)
-    x = Concatenate()([x,f2])
-
-    x, y2 = make_last_layers(x, int(192*alpha), num_anchors*(num_classes+5))
-    #x, y2 = make_last_layers(x, int(192*alpha), num_anchors*(num_classes+5), predict_filters=int(512*alpha))
-
-    x = compose(
-            DarknetConv2D_BN_Leaky(int(96*alpha), (1,1)),
-            UpSampling2D(2))(x)
-
-    f3 = mobilenetv2.get_layer('block_6_expand_relu').output
+    f2 = mobilenetv2.get_layer('block_13_expand_relu').output
     # f3 : 52 x 52 x (192*alpha)
+    f3 = mobilenetv2.get_layer('block_6_expand_relu').output
+
+    f1_channel_num = int(1280*alpha)
+    f2_channel_num = int(576*alpha)
+    f3_channel_num = int(192*alpha)
+    #f1_channel_num = 1024
+    #f2_channel_num = 512
+    #f3_channel_num = 256
+
+    #feature map 1 head & output (13x13 for 416 input)
+    x, y1 = make_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5))
+    #x, y1 = make_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5), predict_filters=int(1024*alpha))
+
+    #upsample fpn merge for feature map 1 & 2
+    x = compose(
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
+            UpSampling2D(2))(x)
+    x = Concatenate()([x, f2])
+
+    #feature map 2 head & output (26x26 for 416 input)
+    x, y2 = make_last_layers(x, f2_channel_num//2, num_anchors*(num_classes+5))
+    #x, y2 = make_last_layers(x, f2_channel_num//2, num_anchors*(num_classes+5), predict_filters=int(512*alpha))
+
+    #upsample fpn merge for feature map 2 & 3
+    x = compose(
+            DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
+            UpSampling2D(2))(x)
     x = Concatenate()([x, f3])
-    x, y3 = make_last_layers(x, int(96*alpha), num_anchors*(num_classes+5))
-    #x, y3 = make_last_layers(x, int(96*alpha), num_anchors*(num_classes+5), predict_filters=int(256*alpha))
+
+    #feature map 3 head & output (52x52 for 416 input)
+    x, y3 = make_last_layers(x, f3_channel_num//2, num_anchors*(num_classes+5))
+    #x, y3 = make_last_layers(x, f3_channel_num//2, num_anchors*(num_classes+5), predict_filters=int(256*alpha))
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
@@ -56,31 +68,43 @@ def yolo3lite_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
     # block_13_expand_relu: 26 x 26 x (576*alpha)
     # block_6_expand_relu: 52 x 52 x (192*alpha)
 
-    f1 = mobilenetv2.get_layer('out_relu').output
     # f1 :13 x 13 x 1280
-    x, y1 = make_depthwise_separable_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5), block_id_str='17')
-    #x, y1 = make_depthwise_separable_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5), block_id_str='17', predict_filters=int(1024*alpha))
-
-    x = compose(
-            DarknetConv2D_BN_Leaky(int(288*alpha), (1,1)),
-            UpSampling2D(2))(x)
-
-    f2 = mobilenetv2.get_layer('block_13_expand_relu').output
+    f1 = mobilenetv2.get_layer('out_relu').output
     # f2: 26 x 26 x (576*alpha)
-    x = Concatenate()([x,f2])
-
-    x, y2 = make_depthwise_separable_last_layers(x, int(192*alpha), num_anchors * (num_classes + 5), block_id_str='18')
-    #x, y2 = make_depthwise_separable_last_layers(x, int(192*alpha), num_anchors * (num_classes + 5), block_id_str='18', predict_filters=int(512*alpha))
-
-    x = compose(
-            DarknetConv2D_BN_Leaky(int(96*alpha), (1,1)),
-            UpSampling2D(2))(x)
-
-    f3 = mobilenetv2.get_layer('block_6_expand_relu').output
+    f2 = mobilenetv2.get_layer('block_13_expand_relu').output
     # f3 : 52 x 52 x (192*alpha)
+    f3 = mobilenetv2.get_layer('block_6_expand_relu').output
+
+    f1_channel_num = int(1280*alpha)
+    f2_channel_num = int(576*alpha)
+    f3_channel_num = int(192*alpha)
+    #f1_channel_num = 1024
+    #f2_channel_num = 512
+    #f3_channel_num = 256
+
+    #feature map 1 head & output (13x13 for 416 input)
+    x, y1 = make_depthwise_separable_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5), block_id_str='17')
+    #x, y1 = make_depthwise_separable_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5), block_id_str='17', predict_filters=int(1024*alpha))
+
+    #upsample fpn merge for feature map 1 & 2
+    x = compose(
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
+            UpSampling2D(2))(x)
+    x = Concatenate()([x, f2])
+
+    #feature map 2 head & output (26x26 for 416 input)
+    x, y2 = make_depthwise_separable_last_layers(x, f2_channel_num//2, num_anchors * (num_classes + 5), block_id_str='18')
+    #x, y2 = make_depthwise_separable_last_layers(x, f2_channel_num//2, num_anchors * (num_classes + 5), block_id_str='18', predict_filters=int(512*alpha))
+
+    #upsample fpn merge for feature map 2 & 3
+    x = compose(
+            DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
+            UpSampling2D(2))(x)
     x = Concatenate()([x, f3])
-    x, y3 = make_depthwise_separable_last_layers(x, int(96*alpha), num_anchors * (num_classes + 5), block_id_str='19')
-    #x, y3 = make_depthwise_separable_last_layers(x, int(96*alpha), num_anchors * (num_classes + 5), block_id_str='19', predict_filters=int(256*alpha))
+
+    #feature map 3 head & output (52x52 for 416 input)
+    x, y3 = make_depthwise_separable_last_layers(x, f3_channel_num//2, num_anchors * (num_classes + 5), block_id_str='19')
+    #x, y3 = make_depthwise_separable_last_layers(x, f3_channel_num//2, num_anchors * (num_classes + 5), block_id_str='19', predict_filters=int(256*alpha))
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
@@ -94,31 +118,43 @@ def yolo3lite_spp_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
     # block_13_expand_relu: 26 x 26 x (576*alpha)
     # block_6_expand_relu: 52 x 52 x (192*alpha)
 
-    f1 = mobilenetv2.get_layer('out_relu').output
     # f1 :13 x 13 x 1280
-    x, y1 = make_spp_depthwise_separable_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5), block_id_str='17')
-    #x, y1 = make_spp_depthwise_separable_last_layers(f1, int(576*alpha), num_anchors * (num_classes + 5), block_id_str='17', predict_filters=int(1024*alpha))
-
-    x = compose(
-            DarknetConv2D_BN_Leaky(int(288*alpha), (1,1)),
-            UpSampling2D(2))(x)
-
-    f2 = mobilenetv2.get_layer('block_13_expand_relu').output
+    f1 = mobilenetv2.get_layer('out_relu').output
     # f2: 26 x 26 x (576*alpha)
-    x = Concatenate()([x,f2])
-
-    x, y2 = make_depthwise_separable_last_layers(x, int(192*alpha), num_anchors * (num_classes + 5), block_id_str='18')
-    #x, y2 = make_depthwise_separable_last_layers(x, int(192*alpha), num_anchors * (num_classes + 5), block_id_str='18', predict_filters=int(512*alpha))
-
-    x = compose(
-            DarknetConv2D_BN_Leaky(int(96*alpha), (1,1)),
-            UpSampling2D(2))(x)
-
-    f3 = mobilenetv2.get_layer('block_6_expand_relu').output
+    f2 = mobilenetv2.get_layer('block_13_expand_relu').output
     # f3 : 52 x 52 x (192*alpha)
+    f3 = mobilenetv2.get_layer('block_6_expand_relu').output
+
+    f1_channel_num = int(1280*alpha)
+    f2_channel_num = int(576*alpha)
+    f3_channel_num = int(192*alpha)
+    #f1_channel_num = 1024
+    #f2_channel_num = 512
+    #f3_channel_num = 256
+
+    #feature map 1 head & output (13x13 for 416 input)
+    x, y1 = make_spp_depthwise_separable_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5), block_id_str='17')
+    #x, y1 = make_spp_depthwise_separable_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5), block_id_str='17', predict_filters=int(1024*alpha))
+
+    #upsample fpn merge for feature map 1 & 2
+    x = compose(
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
+            UpSampling2D(2))(x)
+    x = Concatenate()([x, f2])
+
+    #feature map 2 head & output (26x26 for 416 input)
+    x, y2 = make_depthwise_separable_last_layers(x, f2_channel_num//2, num_anchors * (num_classes + 5), block_id_str='18')
+    #x, y2 = make_depthwise_separable_last_layers(x, f2_channel_num//2, num_anchors * (num_classes + 5), block_id_str='18', predict_filters=int(512*alpha))
+
+    #upsample fpn merge for feature map 2 & 3
+    x = compose(
+            DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
+            UpSampling2D(2))(x)
     x = Concatenate()([x, f3])
-    x, y3 = make_depthwise_separable_last_layers(x, int(96*alpha), num_anchors * (num_classes + 5), block_id_str='19')
-    #x, y3 = make_depthwise_separable_last_layers(x, int(96*alpha), num_anchors * (num_classes + 5), block_id_str='19', predict_filters=int(256*alpha))
+
+    #feature map 3 head & output (52x52 for 416 input)
+    x, y3 = make_depthwise_separable_last_layers(x, f3_channel_num//2, num_anchors * (num_classes + 5), block_id_str='19')
+    #x, y3 = make_depthwise_separable_last_layers(x, f3_channel_num//2, num_anchors * (num_classes + 5), block_id_str='19', predict_filters=int(256*alpha))
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
@@ -132,24 +168,36 @@ def tiny_yolo3_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
     # block_13_expand_relu: 26 x 26 x (576*alpha)
     # block_6_expand_relu: 52 x 52 x (192*alpha)
 
-    x1 = mobilenetv2.get_layer('block_13_expand_relu').output
+    # f1 :13 x 13 x 1280
+    f1 = mobilenetv2.get_layer('out_relu').output
+    # f2: 26 x 26 x (576*alpha)
+    f2 = mobilenetv2.get_layer('block_13_expand_relu').output
 
-    x2 = mobilenetv2.get_layer('out_relu').output
-    x2 = DarknetConv2D_BN_Leaky(int(576*alpha), (1,1))(x2)
+    f1_channel_num = int(1280*alpha)
+    f2_channel_num = int(576*alpha)
+    #f1_channel_num = 1024
+    #f2_channel_num = 512
 
+    #feature map 1 transform
+    x1 = DarknetConv2D_BN_Leaky(f1_channel_num//2, (1,1))(f1)
+
+    #feature map 1 output (13x13 for 416 input)
     y1 = compose(
-            DarknetConv2D_BN_Leaky(int(1280*alpha), (3,3)),
-            #Depthwise_Separable_Conv2D_BN_Leaky(filters=int(1280*alpha), kernel_size=(3, 3), block_id_str='17'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
+            DarknetConv2D_BN_Leaky(f1_channel_num, (3,3)),
+            #Depthwise_Separable_Conv2D_BN_Leaky(filters=f1_channel_num, kernel_size=(3, 3), block_id_str='17'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x1)
 
+    #upsample fpn merge for feature map 1 & 2
     x2 = compose(
-            DarknetConv2D_BN_Leaky(int(288*alpha), (1,1)),
-            UpSampling2D(2))(x2)
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
+            UpSampling2D(2))(x1)
+
+    #feature map 2 output (26x26 for 416 input)
     y2 = compose(
             Concatenate(),
-            DarknetConv2D_BN_Leaky(int(576*alpha), (3,3)),
-            #Depthwise_Separable_Conv2D_BN_Leaky(filters=int(576*alpha), kernel_size=(3, 3), block_id_str='18'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
+            DarknetConv2D_BN_Leaky(f2_channel_num, (3,3)),
+            #Depthwise_Separable_Conv2D_BN_Leaky(filters=f2_channel_num, kernel_size=(3, 3), block_id_str='18'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2, f2])
 
     return Model(inputs, [y1,y2])
 
@@ -163,24 +211,36 @@ def tiny_yolo3lite_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0)
     # block_13_expand_relu: 26 x 26 x (576*alpha)
     # block_6_expand_relu: 52 x 52 x (192*alpha)
 
-    x1 = mobilenetv2.get_layer('block_13_expand_relu').output
+    # f1 :13 x 13 x 1280
+    f1 = mobilenetv2.get_layer('out_relu').output
+    # f2: 26 x 26 x (576*alpha)
+    f2 = mobilenetv2.get_layer('block_13_expand_relu').output
 
-    x2 = mobilenetv2.get_layer('out_relu').output
-    x2 = DarknetConv2D_BN_Leaky(int(576*alpha), (1,1))(x2)
+    f1_channel_num = int(1280*alpha)
+    f2_channel_num = int(576*alpha)
+    #f1_channel_num = 1024
+    #f2_channel_num = 512
 
+    #feature map 1 transform
+    x1 = DarknetConv2D_BN_Leaky(f1_channel_num//2, (1,1))(f1)
+
+    #feature map 1 output (13x13 for 416 input)
     y1 = compose(
-            #DarknetConv2D_BN_Leaky(int(1280*alpha), (3,3)),
-            Depthwise_Separable_Conv2D_BN_Leaky(filters=int(1280*alpha), kernel_size=(3, 3), block_id_str='17'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
+            #DarknetConv2D_BN_Leaky(f1_channel_num, (3,3)),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=f1_channel_num, kernel_size=(3, 3), block_id_str='17'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x1)
 
+    #upsample fpn merge for feature map 1 & 2
     x2 = compose(
-            DarknetConv2D_BN_Leaky(int(288*alpha), (1,1)),
-            UpSampling2D(2))(x2)
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
+            UpSampling2D(2))(x1)
+
+    #feature map 2 output (26x26 for 416 input)
     y2 = compose(
             Concatenate(),
-            #DarknetConv2D_BN_Leaky(int(576*alpha), (3,3)),
-            Depthwise_Separable_Conv2D_BN_Leaky(filters=int(576*alpha), kernel_size=(3, 3), block_id_str='18'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
+            #DarknetConv2D_BN_Leaky(f2_channel_num, (3,3)),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=f2_channel_num, kernel_size=(3, 3), block_id_str='18'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2, f2])
 
     return Model(inputs, [y1,y2])
 

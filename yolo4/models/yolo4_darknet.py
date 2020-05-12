@@ -53,61 +53,72 @@ def yolo4_body(inputs, num_anchors, num_classes, weights_path=None):
         darknet.load_weights(weights_path, by_name=True)
         print('Load weights {}.'.format(weights_path))
 
+    # f1: 13 x 13 x 1024
+    f1 = darknet.output
+    # f2: 26 x 26 x 512
+    f2 = darknet.layers[204].output
+    # f3: 52 x 52 x 256
+    f3 = darknet.layers[131].output
+
+    f1_channel_num = 1024
+    f2_channel_num = 512
+    f3_channel_num = 256
+
     #feature map 1 head (19x19 for 608 input)
-    x1 = make_yolo_spp_head(darknet.output, 512)
+    x1 = make_yolo_spp_head(f1, f1_channel_num//2)
 
     #upsample fpn merge for feature map 1 & 2
     x1_upsample = compose(
-            DarknetConv2D_BN_Leaky(256, (1,1)),
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
             UpSampling2D(2))(x1)
 
-    x2 = DarknetConv2D_BN_Leaky(256, (1,1))(darknet.layers[204].output)
+    x2 = DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1))(f2)
     x2 = Concatenate()([x2, x1_upsample])
 
     #feature map 2 head (38x38 for 608 input)
-    x2 = make_yolo_head(x2, 256)
+    x2 = make_yolo_head(x2, f2_channel_num//2)
 
     #upsample fpn merge for feature map 2 & 3
     x2_upsample = compose(
-            DarknetConv2D_BN_Leaky(128, (1,1)),
+            DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
             UpSampling2D(2))(x2)
 
-    x3 = DarknetConv2D_BN_Leaky(128, (1,1))(darknet.layers[131].output)
+    x3 = DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1))(f3)
     x3 = Concatenate()([x3, x2_upsample])
 
     #feature map 3 head & output (76x76 for 608 input)
-    #x3, y3 = make_last_layers(x3, 128, num_anchors*(num_classes+5))
-    x3 = make_yolo_head(x3, 128)
+    #x3, y3 = make_last_layers(x3, f3_channel_num//2, num_anchors*(num_classes+5))
+    x3 = make_yolo_head(x3, f3_channel_num//2)
     y3 = compose(
-            DarknetConv2D_BN_Leaky(256, (3,3)),
+            DarknetConv2D_BN_Leaky(f3_channel_num, (3,3)),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x3)
 
     #downsample fpn merge for feature map 3 & 2
     x3_downsample = compose(
             ZeroPadding2D(((1,0),(1,0))),
-            DarknetConv2D_BN_Leaky(256, (3,3), strides=(2,2)))(x3)
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (3,3), strides=(2,2)))(x3)
 
     x2 = Concatenate()([x3_downsample, x2])
 
     #feature map 2 output (38x38 for 608 input)
     #x2, y2 = make_last_layers(x2, 256, num_anchors*(num_classes+5))
-    x2 = make_yolo_head(x2, 256)
+    x2 = make_yolo_head(x2, f2_channel_num//2)
     y2 = compose(
-            DarknetConv2D_BN_Leaky(512, (3,3)),
+            DarknetConv2D_BN_Leaky(f2_channel_num, (3,3)),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
     #downsample fpn merge for feature map 2 & 1
     x2_downsample = compose(
             ZeroPadding2D(((1,0),(1,0))),
-            DarknetConv2D_BN_Leaky(512, (3,3), strides=(2,2)))(x2)
+            DarknetConv2D_BN_Leaky(f1_channel_num//2, (3,3), strides=(2,2)))(x2)
 
     x1 = Concatenate()([x2_downsample, x1])
 
     #feature map 1 output (19x19 for 608 input)
-    #x1, y1 = make_last_layers(x1, 512, num_anchors*(num_classes+5))
-    x1 = make_yolo_head(x1, 512)
+    #x1, y1 = make_last_layers(x1, f1_channel_num//2, num_anchors*(num_classes+5))
+    x1 = make_yolo_head(x1, f1_channel_num//2)
     y1 = compose(
-            DarknetConv2D_BN_Leaky(1024, (3,3)),
+            DarknetConv2D_BN_Leaky(f1_channel_num, (3,3)),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x1)
 
     return Model(inputs, [y1, y2, y3])

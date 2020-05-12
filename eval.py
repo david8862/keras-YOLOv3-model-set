@@ -7,6 +7,7 @@ import os, argparse, time
 import numpy as np
 from PIL import Image
 import operator
+from collections import OrderedDict
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
@@ -46,8 +47,8 @@ def annotation_parse(annotation_lines, class_names):
         ...
     }
     '''
-    annotation_records = {}
-    classes_records = {class_name: [] for class_name in class_names}
+    annotation_records = OrderedDict()
+    classes_records = OrderedDict({class_name: [] for class_name in class_names})
 
     for line in annotation_lines:
         box_records = {}
@@ -302,7 +303,7 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
     os.makedirs('result', exist_ok=True)
     result_file = open(os.path.join('result','detection_result.txt'), 'w')
 
-    pred_classes_records = {}
+    pred_classes_records = OrderedDict()
     pbar = tqdm(total=len(annotation_records), desc='Eval model')
     for (image_name, gt_records) in annotation_records.items():
         image = Image.open(image_name)
@@ -846,6 +847,9 @@ def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_r
         APs[class_name] = ap
         count_true_positives[class_name] = true_positive_count
 
+    #sort AP result by value
+    APs = OrderedDict(sorted(APs.items(), key=operator.itemgetter(1)))
+
     #get mAP percentage value
     #mAP = np.mean(list(APs.values()))*100
     mAP = get_mean_metric(APs, gt_classes_records)
@@ -896,7 +900,7 @@ def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_r
         print('mRec@IoU=%.2f result: %f' % (iou_threshold, mRec))
 
     #return mAP percentage value
-    return mAP
+    return mAP, APs
 
 
 
@@ -909,11 +913,15 @@ def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records
     pbar = tqdm(total=len(iou_threshold_list), desc='Eval COCO')
     for iou_threshold in iou_threshold_list:
         iou_threshold = round(iou_threshold, 2)
-        mAP = compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold, show_result=False)
+        mAP, _ = compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold, show_result=False)
         APs[iou_threshold] = round(mAP, 6)
         pbar.update(1)
 
     pbar.close()
+
+    #sort AP result by value
+    APs = OrderedDict(sorted(APs.items(), key=operator.itemgetter(1)))
+
     #get overall AP percentage value
     AP = np.mean(list(APs.values()))
 
@@ -934,7 +942,7 @@ def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records
         print('total AP: %f' % (AP))
 
     #return AP percentage value
-    return AP
+    return AP, APs
 
 
 def compute_AP_COCO_Scale(annotation_records, scale_gt_classes_records, pred_classes_records, class_names):
@@ -944,7 +952,7 @@ def compute_AP_COCO_Scale(annotation_records, scale_gt_classes_records, pred_cla
     scale_APs = {}
     for scale_key in ['small','medium','large']:
         gt_classes_records = scale_gt_classes_records[scale_key]
-        scale_AP = compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names, show_result=False)
+        scale_AP, _ = compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names, show_result=False)
         scale_APs[scale_key] = round(scale_AP, 4)
 
     #get overall AP percentage value
@@ -1080,9 +1088,9 @@ def eval_AP(model, model_format, annotation_lines, anchors, class_names, model_i
     AP = 0.0
 
     if eval_type == 'VOC':
-        AP = compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold)
+        AP, _ = compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold)
     elif eval_type == 'COCO':
-        AP = compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names)
+        AP, _ = compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names)
         # get AP for different scale: small, medium, large
         scale_gt_classes_records = get_scale_gt_dict(gt_classes_records, class_names)
         compute_AP_COCO_Scale(annotation_records, scale_gt_classes_records, pred_classes_records, class_names)

@@ -20,28 +20,40 @@ def yolo3_xception_body(inputs, num_anchors, num_classes):
     # block4_sepconv2_bn(middle in block4) : 52 x 52 x 728
     # add_37(end of block3) : 52 x 52 x 256
 
+    # f1: 13 x 13 x 2048
     f1 = xception.get_layer('block14_sepconv2_act').output
-    # f1 :13 x 13 x 2048
-    x, y1 = make_last_layers(f1, 1024, num_anchors * (num_classes + 5))
-
-    x = compose(
-            DarknetConv2D_BN_Leaky(512, (1,1)),
-            UpSampling2D(2))(x)
-
-    f2 = xception.get_layer('block13_sepconv2_bn').output
     # f2: 26 x 26 x 1024
+    f2 = xception.get_layer('block13_sepconv2_bn').output
+    # f3: 52 x 52 x 728
+    f3 = xception.get_layer('block4_sepconv2_bn').output
+
+    #f1_channel_num = 2048
+    #f2_channel_num = 1024
+    #f3_channel_num = 728
+    f1_channel_num = 1024
+    f2_channel_num = 512
+    f3_channel_num = 256
+
+    #feature map 1 head & output (13x13 for 416 input)
+    x, y1 = make_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5))
+
+    #upsample fpn merge for feature map 1 & 2
+    x = compose(
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
+            UpSampling2D(2))(x)
     x = Concatenate()([x,f2])
 
-    x, y2 = make_last_layers(x, 512, num_anchors*(num_classes+5))
+    #feature map 2 head & output (26x26 for 416 input)
+    x, y2 = make_last_layers(x, f2_channel_num//2, num_anchors*(num_classes+5))
 
+    #upsample fpn merge for feature map 2 & 3
     x = compose(
-            DarknetConv2D_BN_Leaky(256, (1,1)),
+            DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
             UpSampling2D(2))(x)
-
-    f3 = xception.get_layer('block4_sepconv2_bn').output
-    # f3 : 52 x 52 x 728
     x = Concatenate()([x, f3])
-    x, y3 = make_last_layers(x, 256, num_anchors*(num_classes+5))
+
+    #feature map 3 head & output (52x52 for 416 input)
+    x, y3 = make_last_layers(x, f3_channel_num//2, num_anchors*(num_classes+5))
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
@@ -57,28 +69,40 @@ def yolo3_spp_xception_body(inputs, num_anchors, num_classes):
     # block4_sepconv2_bn(middle in block4) : 52 x 52 x 728
     # add_37(end of block3) : 52 x 52 x 256
 
+    # f1: 13 x 13 x 2048
     f1 = xception.get_layer('block14_sepconv2_act').output
-    # f1 :13 x 13 x 2048
-    x, y1 = make_spp_last_layers(f1, 1024, num_anchors * (num_classes + 5))
-
-    x = compose(
-            DarknetConv2D_BN_Leaky(512, (1,1)),
-            UpSampling2D(2))(x)
-
-    f2 = xception.get_layer('block13_sepconv2_bn').output
     # f2: 26 x 26 x 1024
+    f2 = xception.get_layer('block13_sepconv2_bn').output
+    # f3: 52 x 52 x 728
+    f3 = xception.get_layer('block4_sepconv2_bn').output
+
+    #f1_channel_num = 2048
+    #f2_channel_num = 1024
+    #f3_channel_num = 728
+    f1_channel_num = 1024
+    f2_channel_num = 512
+    f3_channel_num = 256
+
+    #feature map 1 head & output (13x13 for 416 input)
+    x, y1 = make_spp_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5))
+
+    #upsample fpn merge for feature map 1 & 2
+    x = compose(
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
+            UpSampling2D(2))(x)
     x = Concatenate()([x,f2])
 
-    x, y2 = make_last_layers(x, 512, num_anchors*(num_classes+5))
+    #feature map 2 head & output (26x26 for 416 input)
+    x, y2 = make_last_layers(x, f2_channel_num//2, num_anchors*(num_classes+5))
 
+    #upsample fpn merge for feature map 2 & 3
     x = compose(
-            DarknetConv2D_BN_Leaky(256, (1,1)),
+            DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
             UpSampling2D(2))(x)
-
-    f3 = xception.get_layer('block4_sepconv2_bn').output
-    # f3 : 52 x 52 x 728
     x = Concatenate()([x, f3])
-    x, y3 = make_last_layers(x, 256, num_anchors*(num_classes+5))
+
+    #feature map 3 head & output (52x52 for 416 input)
+    x, y3 = make_last_layers(x, f3_channel_num//2, num_anchors*(num_classes+5))
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
@@ -94,28 +118,40 @@ def yolo3lite_xception_body(inputs, num_anchors, num_classes):
     # block4_sepconv2_bn(middle in block4) : 52 x 52 x 728
     # add_37(end of block3) : 52 x 52 x 256
 
+    # f1: 13 x 13 x 2048
     f1 = xception.get_layer('block14_sepconv2_act').output
-    # f1 :13 x 13 x 2048
-    x, y1 = make_depthwise_separable_last_layers(f1, 1024, num_anchors * (num_classes + 5), block_id_str='14')
-
-    x = compose(
-            DarknetConv2D_BN_Leaky(512, (1,1)),
-            UpSampling2D(2))(x)
-
-    f2 = xception.get_layer('block13_sepconv2_bn').output
     # f2: 26 x 26 x 1024
+    f2 = xception.get_layer('block13_sepconv2_bn').output
+    # f3: 52 x 52 x 728
+    f3 = xception.get_layer('block4_sepconv2_bn').output
+
+    #f1_channel_num = 2048
+    #f2_channel_num = 1024
+    #f3_channel_num = 728
+    f1_channel_num = 1024
+    f2_channel_num = 512
+    f3_channel_num = 256
+
+    #feature map 1 head & output (13x13 for 416 input)
+    x, y1 = make_depthwise_separable_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5), block_id_str='14')
+
+    #upsample fpn merge for feature map 1 & 2
+    x = compose(
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
+            UpSampling2D(2))(x)
     x = Concatenate()([x,f2])
 
-    x, y2 = make_depthwise_separable_last_layers(x, 512, num_anchors * (num_classes + 5), block_id_str='15')
+    #feature map 2 head & output (26x26 for 416 input)
+    x, y2 = make_depthwise_separable_last_layers(x, f2_channel_num//2, num_anchors * (num_classes + 5), block_id_str='15')
 
+    #upsample fpn merge for feature map 2 & 3
     x = compose(
-            DarknetConv2D_BN_Leaky(256, (1,1)),
+            DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
             UpSampling2D(2))(x)
-
-    f3 = xception.get_layer('block4_sepconv2_bn').output
-    # f3 : 52 x 52 x 728
     x = Concatenate()([x, f3])
-    x, y3 = make_depthwise_separable_last_layers(x, 256, num_anchors * (num_classes + 5), block_id_str='16')
+
+    #feature map 3 head & output (52x52 for 416 input)
+    x, y3 = make_depthwise_separable_last_layers(x, f3_channel_num//2, num_anchors * (num_classes + 5), block_id_str='16')
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
@@ -131,25 +167,36 @@ def tiny_yolo3_xception_body(inputs, num_anchors, num_classes):
     # block4_sepconv2_bn(middle in block4) : 52 x 52 x 728
     # add_37(end of block3) : 52 x 52 x 256
 
-    x1 = xception.get_layer('block13_sepconv2_bn').output
-    # x1 :26 x 26 x 1024
-    x2 = xception.get_layer('block14_sepconv2_act').output
-    # x2 :13 x 13 x 2048
-    x2 = DarknetConv2D_BN_Leaky(1024, (1,1))(x2)
+    # f1 :13 x 13 x 2048
+    f1 = xception.get_layer('block14_sepconv2_act').output
+    # f2 :26 x 26 x 1024
+    f2 = xception.get_layer('block13_sepconv2_bn').output
 
+    f1_channel_num = 2048
+    f2_channel_num = 1024
+    #f1_channel_num = 1024
+    #f2_channel_num = 512
+
+    #feature map 1 transform
+    x1 = DarknetConv2D_BN_Leaky(f1_channel_num//2, (1,1))(f1)
+
+    #feature map 1 output (13x13 for 416 input)
     y1 = compose(
-            DarknetConv2D_BN_Leaky(2048, (3,3)),
-            #Depthwise_Separable_Conv2D_BN_Leaky(filters=2048, kernel_size=(3, 3), block_id_str='14'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
+            DarknetConv2D_BN_Leaky(f1_channel_num, (3,3)),
+            #Depthwise_Separable_Conv2D_BN_Leaky(filters=f1_channel_num, kernel_size=(3, 3), block_id_str='14'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x1)
 
+    #upsample fpn merge for feature map 1 & 2
     x2 = compose(
-            DarknetConv2D_BN_Leaky(512, (1,1)),
-            UpSampling2D(2))(x2)
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
+            UpSampling2D(2))(x1)
+
+    #feature map 2 output (26x26 for 416 input)
     y2 = compose(
             Concatenate(),
-            DarknetConv2D_BN_Leaky(1024, (3,3)),
-            #Depthwise_Separable_Conv2D_BN_Leaky(filters=1024, kernel_size=(3, 3), block_id_str='15'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
+            DarknetConv2D_BN_Leaky(f2_channel_num, (3,3)),
+            #Depthwise_Separable_Conv2D_BN_Leaky(filters=f2_channel_num, kernel_size=(3, 3), block_id_str='15'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2, f2])
 
     return Model(inputs, [y1,y2])
 
@@ -165,25 +212,36 @@ def tiny_yolo3lite_xception_body(inputs, num_anchors, num_classes):
     # block4_sepconv2_bn(middle in block4) : 52 x 52 x 728
     # add_37(end of block3) : 52 x 52 x 256
 
-    x1 = xception.get_layer('block13_sepconv2_bn').output
-    # x1 :26 x 26 x 1024
-    x2 = xception.get_layer('block14_sepconv2_act').output
-    # x2 :13 x 13 x 2048
-    x2 = DarknetConv2D_BN_Leaky(1024, (1,1))(x2)
+    # f1 :13 x 13 x 2048
+    f1 = xception.get_layer('block14_sepconv2_act').output
+    # f2 :26 x 26 x 1024
+    f2 = xception.get_layer('block13_sepconv2_bn').output
 
+    f1_channel_num = 2048
+    f2_channel_num = 1024
+    #f1_channel_num = 1024
+    #f2_channel_num = 512
+
+    #feature map 1 transform
+    x1 = DarknetConv2D_BN_Leaky(f1_channel_num//2, (1,1))(f1)
+
+    #feature map 1 output (13x13 for 416 input)
     y1 = compose(
-            #DarknetConv2D_BN_Leaky(2048, (3,3)),
-            Depthwise_Separable_Conv2D_BN_Leaky(filters=2048, kernel_size=(3, 3), block_id_str='14'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
+            #DarknetConv2D_BN_Leaky(f1_channel_num, (3,3)),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=f1_channel_num, kernel_size=(3, 3), block_id_str='14'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x1)
 
+    #upsample fpn merge for feature map 1 & 2
     x2 = compose(
-            DarknetConv2D_BN_Leaky(512, (1,1)),
-            UpSampling2D(2))(x2)
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
+            UpSampling2D(2))(x1)
+
+    #feature map 2 output (26x26 for 416 input)
     y2 = compose(
             Concatenate(),
-            #DarknetConv2D_BN_Leaky(1024, (3,3)),
-            Depthwise_Separable_Conv2D_BN_Leaky(filters=1024, kernel_size=(3, 3), block_id_str='15'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
+            #DarknetConv2D_BN_Leaky(f2_channel_num, (3,3)),
+            Depthwise_Separable_Conv2D_BN_Leaky(filters=f2_channel_num, kernel_size=(3, 3), block_id_str='15'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2, f2])
 
     return Model(inputs, [y1,y2])
 

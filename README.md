@@ -415,6 +415,7 @@ Using [keras_to_onnx.py](https://github.com/david8862/keras-YOLOv3-model-set/tre
 # python keras_to_onnx.py
     --keras_model_file="path/to/keras/model.h5"
     --output_file="path/to/save/model.onnx"
+    --op_set=11
 ```
 
 You can also use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/eval.py) to do evaluation on the pb & onnx inference model

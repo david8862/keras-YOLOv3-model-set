@@ -61,19 +61,38 @@ def yolo3_body(inputs, num_anchors, num_classes, weights_path=None):
     if weights_path is not None:
         darknet.load_weights(weights_path, by_name=True)
         print('Load weights {}.'.format(weights_path))
-    x, y1 = make_last_layers(darknet.output, 512, num_anchors*(num_classes+5))
 
-    x = compose(
-            DarknetConv2D_BN_Leaky(256, (1,1)),
-            UpSampling2D(2))(x)
-    x = Concatenate()([x,darknet.layers[152].output])
-    x, y2 = make_last_layers(x, 256, num_anchors*(num_classes+5))
+    # f1: 13 x 13 x 1024
+    f1 = darknet.output
+    # f2: 26 x 26 x 512
+    f2 = darknet.layers[152].output
+    # f3: 52 x 52 x 256
+    f3 = darknet.layers[92].output
 
+    f1_channel_num = 1024
+    f2_channel_num = 512
+    f3_channel_num = 256
+
+    #feature map 1 head & output (19x19 for 608 input)
+    x, y1 = make_last_layers(f1, f1_channel_num//2, num_anchors*(num_classes+5))
+
+    #upsample fpn merge for feature map 1 & 2
     x = compose(
-            DarknetConv2D_BN_Leaky(128, (1,1)),
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
             UpSampling2D(2))(x)
-    x = Concatenate()([x,darknet.layers[92].output])
-    x, y3 = make_last_layers(x, 128, num_anchors*(num_classes+5))
+    x = Concatenate()([x, f2])
+
+    #feature map 2 head & output (38x38 for 608 input)
+    x, y2 = make_last_layers(x, f2_channel_num//2, num_anchors*(num_classes+5))
+
+    #upsample fpn merge for feature map 2 & 3
+    x = compose(
+            DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
+            UpSampling2D(2))(x)
+    x = Concatenate()([x, f3])
+
+    #feature map 3 head & output (76x76 for 608 input)
+    x, y3 = make_last_layers(x, f3_channel_num//2, num_anchors*(num_classes+5))
 
     return Model(inputs, [y1,y2,y3])
 
@@ -108,20 +127,38 @@ def yolo3_spp_body(inputs, num_anchors, num_classes, weights_path=None):
     if weights_path is not None:
         darknet.load_weights(weights_path, by_name=True)
         print('Load weights {}.'.format(weights_path))
-    #x, y1 = make_last_layers(darknet.output, 512, num_anchors*(num_classes+5))
-    x, y1 = make_spp_last_layers(darknet.output, 512, num_anchors*(num_classes+5))
 
-    x = compose(
-            DarknetConv2D_BN_Leaky(256, (1,1)),
-            UpSampling2D(2))(x)
-    x = Concatenate()([x,darknet.layers[152].output])
-    x, y2 = make_last_layers(x, 256, num_anchors*(num_classes+5))
+    # f1: 13 x 13 x 1024
+    f1 = darknet.output
+    # f2: 26 x 26 x 512
+    f2 = darknet.layers[152].output
+    # f3: 52 x 52 x 256
+    f3 = darknet.layers[92].output
 
+    f1_channel_num = 1024
+    f2_channel_num = 512
+    f3_channel_num = 256
+
+    #feature map 1 head & output (19x19 for 608 input)
+    x, y1 = make_spp_last_layers(f1, f1_channel_num//2, num_anchors*(num_classes+5))
+
+    #upsample fpn merge for feature map 1 & 2
     x = compose(
-            DarknetConv2D_BN_Leaky(128, (1,1)),
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
             UpSampling2D(2))(x)
-    x = Concatenate()([x,darknet.layers[92].output])
-    x, y3 = make_last_layers(x, 128, num_anchors*(num_classes+5))
+    x = Concatenate()([x, f2])
+
+    #feature map 2 head & output (38x38 for 608 input)
+    x, y2 = make_last_layers(x, f2_channel_num//2, num_anchors*(num_classes+5))
+
+    #upsample fpn merge for feature map 2 & 3
+    x = compose(
+            DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
+            UpSampling2D(2))(x)
+    x = Concatenate()([x, f3])
+
+    #feature map 3 head & output (76x76 for 608 input)
+    x, y3 = make_last_layers(x, f3_channel_num//2, num_anchors*(num_classes+5))
 
     return Model(inputs, [y1,y2,y3])
 
@@ -149,26 +186,46 @@ def custom_yolo3_spp_body(inputs, num_anchors, num_classes, weights_path):
 def yolo3lite_body(inputs, num_anchors, num_classes):
     """Create YOLO_V3 Lite model CNN body in Keras."""
     darknetlite = Model(inputs, darknet53lite_body(inputs))
-    x, y1 = make_depthwise_separable_last_layers(darknetlite.output, 512, num_anchors*(num_classes+5))
 
-    x = compose(
-            DarknetConv2D_BN_Leaky(256, (1,1)),
-            UpSampling2D(2))(x)
-    x = Concatenate()([x,darknetlite.layers[152].output])
-    x, y2 = make_depthwise_separable_last_layers(x, 256, num_anchors*(num_classes+5))
+    # f1: 13 x 13 x 1024
+    f1 = darknetlite.output
+    # f2: 26 x 26 x 512
+    f2 = darknetlite.layers[152].output
+    # f3: 52 x 52 x 256
+    f3 = darknetlite.layers[92].output
 
+    f1_channel_num = 1024
+    f2_channel_num = 512
+    f3_channel_num = 256
+
+    #feature map 1 head & output (19x19 for 608 input)
+    x, y1 = make_depthwise_separable_last_layers(f1, f1_channel_num//2, num_anchors*(num_classes+5))
+
+    #upsample fpn merge for feature map 1 & 2
     x = compose(
-            DarknetConv2D_BN_Leaky(128, (1,1)),
+            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
             UpSampling2D(2))(x)
-    x = Concatenate()([x,darknetlite.layers[92].output])
-    x, y3 = make_depthwise_separable_last_layers(x, 128, num_anchors*(num_classes+5))
+    x = Concatenate()([x, f2])
+
+    #feature map 2 head & output (38x38 for 608 input)
+    x, y2 = make_depthwise_separable_last_layers(x, f2_channel_num//2, num_anchors*(num_classes+5))
+
+    #upsample fpn merge for feature map 2 & 3
+    x = compose(
+            DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
+            UpSampling2D(2))(x)
+    x = Concatenate()([x, f3])
+
+    #feature map 3 head & output (76x76 for 608 input)
+    x, y3 = make_depthwise_separable_last_layers(x, f3_channel_num//2, num_anchors*(num_classes+5))
 
     return Model(inputs, [y1,y2,y3])
 
 
 def tiny_yolo3_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 model CNN body in keras.'''
-    x1 = compose(
+    #feature map 2 (26x26x256 for 416 input)
+    f2 = compose(
             DarknetConv2D_BN_Leaky(16, (3,3)),
             MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
             DarknetConv2D_BN_Leaky(32, (3,3)),
@@ -178,25 +235,35 @@ def tiny_yolo3_body(inputs, num_anchors, num_classes):
             DarknetConv2D_BN_Leaky(128, (3,3)),
             MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
             DarknetConv2D_BN_Leaky(256, (3,3)))(inputs)
-    x2 = compose(
+
+    #feature map 1 (13x13x1024 for 416 input)
+    f1 = compose(
             MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
             DarknetConv2D_BN_Leaky(512, (3,3)),
             MaxPooling2D(pool_size=(2,2), strides=(1,1), padding='same'),
-            DarknetConv2D_BN_Leaky(1024, (3,3)),
-            DarknetConv2D_BN_Leaky(256, (1,1)))(x1)
+            DarknetConv2D_BN_Leaky(1024, (3,3)))(f2)
+
+    #feature map 1 transform
+    x1 = DarknetConv2D_BN_Leaky(256, (1,1))(f1)
+
+    #feature map 1 output (13x13 for 416 input)
     y1 = compose(
             DarknetConv2D_BN_Leaky(512, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x1)
 
+    #upsample fpn merge for feature map 1 & 2
     x2 = compose(
             DarknetConv2D_BN_Leaky(128, (1,1)),
-            UpSampling2D(2))(x2)
+            UpSampling2D(2))(x1)
+
+    #feature map 2 output (26x26 for 416 input)
     y2 = compose(
             Concatenate(),
             DarknetConv2D_BN_Leaky(256, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2, f2])
 
     return Model(inputs, [y1,y2])
+
 
 def custom_tiny_yolo3_body(inputs, num_anchors, num_classes, weights_path):
     '''Create a custom Tiny YOLO_v3 model, use
@@ -218,7 +285,8 @@ def custom_tiny_yolo3_body(inputs, num_anchors, num_classes, weights_path):
 
 def tiny_yolo3lite_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 Lite model CNN body in keras.'''
-    x1 = compose(
+    #feature map 2 (26x26x256 for 416 input)
+    f2 = compose(
             Depthwise_Separable_Conv2D_BN_Leaky(16, (3,3)),
             MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
             Depthwise_Separable_Conv2D_BN_Leaky(32, (3,3)),
@@ -228,23 +296,32 @@ def tiny_yolo3lite_body(inputs, num_anchors, num_classes):
             Depthwise_Separable_Conv2D_BN_Leaky(128, (3,3)),
             MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
             Depthwise_Separable_Conv2D_BN_Leaky(256, (3,3)))(inputs)
-    x2 = compose(
+
+    #feature map 1 (13x13x1024 for 416 input)
+    f1 = compose(
             MaxPooling2D(pool_size=(2,2), strides=(2,2), padding='same'),
             Depthwise_Separable_Conv2D_BN_Leaky(512, (3,3)),
             MaxPooling2D(pool_size=(2,2), strides=(1,1), padding='same'),
-            Depthwise_Separable_Conv2D_BN_Leaky(1024, (3,3)),
-            DarknetConv2D_BN_Leaky(256, (1,1)))(x1)
+            Depthwise_Separable_Conv2D_BN_Leaky(1024, (3,3)))(f2)
+
+    #feature map 1 transform
+    x1 = DarknetConv2D_BN_Leaky(256, (1,1))(f1)
+
+    #feature map 1 output (13x13 for 416 input)
     y1 = compose(
             Depthwise_Separable_Conv2D_BN_Leaky(512, (3,3)),
             DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
 
+    #upsample fpn merge for feature map 1 & 2
     x2 = compose(
             DarknetConv2D_BN_Leaky(128, (1,1)),
-            UpSampling2D(2))(x2)
+            UpSampling2D(2))(x1)
+
+    #feature map 2 output (26x26 for 416 input)
     y2 = compose(
             Concatenate(),
             Depthwise_Separable_Conv2D_BN_Leaky(256, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2,x1])
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2, f2])
 
     return Model(inputs, [y1,y2])
 
@@ -326,5 +403,4 @@ def DarkNet53(input_shape=None,
         model.load_weights(weights)
 
     return model
-
 

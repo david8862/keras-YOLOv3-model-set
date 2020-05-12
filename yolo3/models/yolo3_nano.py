@@ -215,40 +215,41 @@ def yolo3_nano_body(inputs, num_anchors, num_classes, weights_path=None):
     # pep_block_15_add: 26 x 26 x 325
     # pep_block_7_add: 52 x 52 x 150
 
-    f1 = nano_net.get_layer('Conv_pw_3').output
     # f1 :13 x 13 x 189
+    f1 = nano_net.get_layer('Conv_pw_3').output
+    # f2: 26 x 26 x 325
+    f2 = nano_net.get_layer('pep_block_15_add').output
+    # f3 : 52 x 52 x 150
+    f3 = nano_net.get_layer('pep_block_7_add').output
+
+    #feature map 1 head & output (13x13 for 416 input)
     y1 = _ep_block(f1, filters=462, stride=1, expansion=EP_EXPANSION, block_id=6)
     y1 = DarknetConv2D(num_anchors * (num_classes + 5), (1,1))(y1)
+
+    #upsample fpn merge for feature map 1 & 2
     x = compose(
             NanoConv2D_BN_Relu6(105, (1,1)),
             UpSampling2D(2))(f1)
-
-
-    f2 = nano_net.get_layer('pep_block_15_add').output
-    # f2: 26 x 26 x 325
     x = Concatenate()([x,f2])
 
+    #feature map 2 head & output (26x26 for 416 input)
     x = _pep_block(x, proj_filters=113, filters=325, stride=1, expansion=PEP_EXPANSION, block_id=18)
     x = _pep_block(x, proj_filters=99, filters=207, stride=1, expansion=PEP_EXPANSION, block_id=19)
     x = DarknetConv2D(98, (1,1))(x)
-
     y2 = _ep_block(x, filters=183, stride=1, expansion=EP_EXPANSION, block_id=7)
     y2 = DarknetConv2D(num_anchors * (num_classes + 5), (1,1))(y2)
 
+    #upsample fpn merge for feature map 2 & 3
     x = compose(
             NanoConv2D_BN_Relu6(47, (1,1)),
             UpSampling2D(2))(x)
-
-
-    f3 = nano_net.get_layer('pep_block_7_add').output
-    # f3 : 52 x 52 x 150
     x = Concatenate()([x, f3])
 
+    #feature map 3 head & output (52x52 for 416 input)
     x = _pep_block(x, proj_filters=58, filters=122, stride=1, expansion=PEP_EXPANSION, block_id=20)
     x = _pep_block(x, proj_filters=52, filters=87, stride=1, expansion=PEP_EXPANSION, block_id=21)
     x = _pep_block(x, proj_filters=47, filters=93, stride=1, expansion=PEP_EXPANSION, block_id=22)
     y3 = DarknetConv2D(num_anchors * (num_classes + 5), (1,1))(x)
-
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
