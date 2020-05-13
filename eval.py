@@ -133,18 +133,6 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
 
 
 def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_threshold):
-    # TODO: currently MNN python API only support getting input/output tensor by default or
-    # by name. so we need to hardcode the output tensor names here to get them from model
-    if len(anchors) == 6:
-        output_tensor_names = ['conv2d_1/Conv2D', 'conv2d_3/Conv2D']
-    elif len(anchors) == 9:
-        output_tensor_names = ['conv2d_3/Conv2D', 'conv2d_8/Conv2D', 'conv2d_13/Conv2D']
-    elif len(anchors) == 5:
-        # YOLOv2 use 5 anchors and have only 1 prediction
-        output_tensor_names = ['predict_conv/Conv2D']
-    else:
-        raise ValueError('invalid anchor number')
-
     # assume only 1 input tensor for image
     input_tensor = interpreter.getSessionInput(session)
     # get input shape
@@ -170,9 +158,54 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
     input_tensor.copyFrom(tmp_input)
     interpreter.runSession(session)
 
+    def get_tensor_list(output_tensors):
+        # transform the output tensor dict to ordered tensor list, for further postprocess
+        #
+        # output tensor list should be like (for YOLOv3):
+        # [
+        #  (name, tensor) for (13, 13, 3, num_classes+5),
+        #  (name, tensor) for (26, 26, 3, num_classes+5),
+        #  (name, tensor) for (52, 52, 3, num_classes+5)
+        # ]
+        output_list = []
+
+        for (output_tensor_name, output_tensor) in output_tensors.items():
+            tensor_shape = output_tensor.getShape()
+            dim_type = output_tensor.getDimensionType()
+            tensor_height, tensor_width = tensor_shape[2:4] if dim_type == MNN.Tensor_DimensionType_Caffe else tensor_shape[1:3]
+
+            if len(anchors) == 6:
+                # Tiny YOLOv3
+                if tensor_height == height//32:
+                    output_list.insert(0, (output_tensor_name, output_tensor))
+                elif tensor_height == height//16:
+                    output_list.insert(1, (output_tensor_name, output_tensor))
+                else:
+                    raise ValueError('invalid tensor shape')
+            elif len(anchors) == 9:
+                # YOLOv3
+                if tensor_height == height//32:
+                    output_list.insert(0, (output_tensor_name, output_tensor))
+                elif tensor_height == height//16:
+                    output_list.insert(1, (output_tensor_name, output_tensor))
+                elif tensor_height == height//8:
+                    output_list.insert(2, (output_tensor_name, output_tensor))
+                else:
+                    raise ValueError('invalid tensor shape')
+            elif len(anchors) == 5:
+                # YOLOv2 use 5 anchors and have only 1 prediction
+                assert len(output_tensors) == 1, 'YOLOv2 model should have only 1 output tensor.'
+                output_list.insert(0, (output_tensor_name, output_tensor))
+            else:
+                raise ValueError('invalid anchor number')
+
+        return output_list
+
+    output_tensors = interpreter.getSessionOutputAll(session)
+    output_tensor_list = get_tensor_list(output_tensors)
+
     prediction = []
-    for output_tensor_name in output_tensor_names:
-        output_tensor = interpreter.getSessionOutput(session, output_tensor_name)
+    for (output_tensor_name, output_tensor) in output_tensor_list:
         output_shape = output_tensor.getShape()
 
         assert output_tensor.getDataType() == MNN.Halide_Type_Float
@@ -220,13 +253,16 @@ def yolo_predict_pb(model, image, anchors, num_classes, model_image_size, conf_t
     # assume only 1 input tensor for image
     input_tensor_name = 'graph/image_input:0'
 
-    # prepare input image
-    image_data = preprocess_image(image, model_image_size)
-    image_shape = image.size
-
     # get input/output tensors
     image_input = model.get_tensor_by_name(input_tensor_name)
     output_tensors = [model.get_tensor_by_name(output_tensor_name) for output_tensor_name in output_tensor_names]
+
+    batch, height, width, channel = image_input.shape
+    model_image_size = (int(height), int(width))
+
+    # prepare input image
+    image_data = preprocess_image(image, model_image_size)
+    image_shape = image.size
 
     with tf.Session(graph=model) as sess:
         prediction = sess.run(output_tensors, feed_dict={
@@ -243,13 +279,22 @@ def yolo_predict_pb(model, image, anchors, num_classes, model_image_size, conf_t
     return pred_boxes, pred_classes, pred_scores
 
 
-def yolo_predict_onnx(model, image, anchors, num_classes, model_image_size, conf_threshold):
+def yolo_predict_onnx(model, image, anchors, num_classes, conf_threshold):
+    input_tensors = []
+    for i, input_tensor in enumerate(model.get_inputs()):
+        input_tensors.append(input_tensor)
+
+    # assume only 1 input tensor for image
+    assert len(input_tensors) == 1, 'invalid input tensor number.'
+
+    batch, height, width, channel = input_tensors[0].shape
+    model_image_size = (height, width)
+
     # prepare input image
     image_data = preprocess_image(image, model_image_size)
     image_shape = image.size
 
-    image_data = image_data if isinstance(image_data, list) else [image_data]
-    feed = dict([(input.name, image_data[i]) for i, input in enumerate(model.get_inputs())])
+    feed = {input_tensors[0].name: image_data}
     prediction = model.run(None, feed)
 
     if len(anchors) == 5:
@@ -320,7 +365,7 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
             pred_boxes, pred_classes, pred_scores = yolo_predict_pb(model, image, anchors, len(class_names), model_image_size, conf_threshold)
         # support of ONNX model
         elif model_format == 'ONNX':
-            pred_boxes, pred_classes, pred_scores = yolo_predict_onnx(model, image, anchors, len(class_names), model_image_size, conf_threshold)
+            pred_boxes, pred_classes, pred_scores = yolo_predict_onnx(model, image, anchors, len(class_names), conf_threshold)
         # normal keras h5 model
         elif model_format == 'H5':
             pred_boxes, pred_classes, pred_scores = yolo_predict_keras(model, image, anchors, len(class_names), model_image_size, conf_threshold)

@@ -38,7 +38,7 @@ def validate_yolo_model(model_path, image_file, anchors, class_names, model_imag
     end = time.time()
     print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
 
-    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size)
+    handle_prediction([prediction], image_file, image, image_shape, anchors, class_names, model_image_size)
     return
 
 
@@ -90,18 +90,6 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, loop_c
     interpreter = MNN.Interpreter(model_path)
     session = interpreter.createSession()
 
-    # TODO: currently MNN python API only support getting input/output tensor by default or
-    # by name. so we need to hardcode the output tensor names here to get them from model
-    if len(anchors) == 6:
-        output_tensor_names = ['conv2d_1/BiasAdd', 'conv2d_3/BiasAdd']
-    elif len(anchors) == 9:
-        output_tensor_names = ['conv2d_3/BiasAdd', 'conv2d_8/BiasAdd', 'conv2d_13/BiasAdd']
-    elif len(anchors) == 5:
-        # YOLOv2 use 5 anchors and have only 1 prediction
-        output_tensor_names = ['predict_conv/BiasAdd']
-    else:
-        raise ValueError('invalid anchor number')
-
     # assume only 1 input tensor for image
     input_tensor = interpreter.getSessionInput(session)
     # get input shape
@@ -137,10 +125,57 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, loop_c
     end = time.time()
     print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
 
+    def get_tensor_list(output_tensors):
+        # transform the output tensor dict to ordered tensor list, for further postprocess
+        #
+        # output tensor list should be like (for YOLOv3):
+        # [
+        #  (name, tensor) for (13, 13, 3, num_classes+5),
+        #  (name, tensor) for (26, 26, 3, num_classes+5),
+        #  (name, tensor) for (52, 52, 3, num_classes+5)
+        # ]
+        output_list = []
+
+        for (output_tensor_name, output_tensor) in output_tensors.items():
+            tensor_shape = output_tensor.getShape()
+            dim_type = output_tensor.getDimensionType()
+            tensor_height, tensor_width = tensor_shape[2:4] if dim_type == MNN.Tensor_DimensionType_Caffe else tensor_shape[1:3]
+
+            if len(anchors) == 6:
+                # Tiny YOLOv3
+                if tensor_height == height//32:
+                    output_list.insert(0, (output_tensor_name, output_tensor))
+                elif tensor_height == height//16:
+                    output_list.insert(1, (output_tensor_name, output_tensor))
+                else:
+                    raise ValueError('invalid tensor shape')
+            elif len(anchors) == 9:
+                # YOLOv3
+                if tensor_height == height//32:
+                    output_list.insert(0, (output_tensor_name, output_tensor))
+                elif tensor_height == height//16:
+                    output_list.insert(1, (output_tensor_name, output_tensor))
+                elif tensor_height == height//8:
+                    output_list.insert(2, (output_tensor_name, output_tensor))
+                else:
+                    raise ValueError('invalid tensor shape')
+            elif len(anchors) == 5:
+                # YOLOv2 use 5 anchors and have only 1 prediction
+                assert len(output_tensors) == 1, 'YOLOv2 model should have only 1 output tensor.'
+                output_list.insert(0, (output_tensor_name, output_tensor))
+            else:
+                raise ValueError('invalid anchor number')
+
+        return output_list
+
+
+    output_tensors = interpreter.getSessionOutputAll(session)
+    output_tensor_list = get_tensor_list(output_tensors)
+
     prediction = []
-    for output_tensor_name in output_tensor_names:
-        output_tensor = interpreter.getSessionOutput(session, output_tensor_name)
+    for (output_tensor_name, output_tensor) in output_tensor_list:
         output_shape = output_tensor.getShape()
+        print('output tensor name: {}, shape: {}'.format(output_tensor_name, output_shape))
 
         assert output_tensor.getDataType() == MNN.Halide_Type_Float
 
@@ -187,11 +222,6 @@ def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_i
     # assume only 1 input tensor for image
     input_tensor_name = 'graph/image_input:0'
 
-    img = Image.open(image_file)
-    image = np.array(img, dtype='uint8')
-    image_data = preprocess_image(img, model_image_size)
-    image_shape = img.size
-
     #load frozen pb graph
     def load_pb_graph(model_path):
         # We parse the graph_def file
@@ -229,6 +259,14 @@ def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_i
     image_input = graph.get_tensor_by_name(input_tensor_name)
     output_tensors = [graph.get_tensor_by_name(output_tensor_name) for output_tensor_name in output_tensor_names]
 
+    batch, height, width, channel = image_input.shape
+    model_image_size = (int(height), int(width))
+
+    img = Image.open(image_file)
+    image = np.array(img, dtype='uint8')
+    image_data = preprocess_image(img, model_image_size)
+    image_shape = img.size
+
     # predict once first to bypass the model building time
     with tf.Session(graph=graph) as sess:
         prediction = sess.run(output_tensors, feed_dict={
@@ -247,8 +285,18 @@ def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_i
     handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size)
 
 
-def validate_yolo_model_onnx(model_path, image_file, anchors, class_names, model_image_size, loop_count):
+def validate_yolo_model_onnx(model_path, image_file, anchors, class_names, loop_count):
     sess = onnxruntime.InferenceSession(model_path)
+
+    input_tensors = []
+    for i, input_tensor in enumerate(sess.get_inputs()):
+        input_tensors.append(input_tensor)
+
+    # assume only 1 input tensor for image
+    assert len(input_tensors) == 1, 'invalid input tensor number.'
+
+    batch, height, width, channel = input_tensors[0].shape
+    model_image_size = (height, width)
 
     # prepare input image
     img = Image.open(image_file)
@@ -256,8 +304,7 @@ def validate_yolo_model_onnx(model_path, image_file, anchors, class_names, model
     image_data = preprocess_image(img, model_image_size)
     image_shape = img.size
 
-    image_data = image_data if isinstance(image_data, list) else [image_data]
-    feed = dict([(input.name, image_data[i]) for i, input in enumerate(sess.get_inputs())])
+    feed = {input_tensors[0].name: image_data}
 
     # predict once first to bypass the model building time
     prediction = sess.run(None, feed)
@@ -323,7 +370,7 @@ def main():
         validate_yolo_model_pb(args.model_path, args.image_file, anchors, class_names, model_image_size, args.loop_count)
     # support of ONNX model
     elif args.model_path.endswith('.onnx'):
-        validate_yolo_model_onnx(args.model_path, args.image_file, anchors, class_names, model_image_size, args.loop_count)
+        validate_yolo_model_onnx(args.model_path, args.image_file, anchors, class_names, args.loop_count)
     # normal keras h5 model
     elif args.model_path.endswith('.h5'):
         validate_yolo_model(args.model_path, args.image_file, anchors, class_names, model_image_size, args.loop_count)

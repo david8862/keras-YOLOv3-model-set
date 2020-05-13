@@ -28,6 +28,12 @@ Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux), we need to
 # cmake [-DCMAKE_TOOLCHAIN_FILE=<cross-compile toolchain file>]
         [-DMNN_BUILD_QUANTOOLS=ON -DMNN_BUILD_CONVERTER=ON -DMNN_BUILD_TRAIN=ON -MNN_BUILD_TRAIN_MINI=ON -MNN_USE_OPENCV=OFF] ..
         && make -j4
+
+### MNN OpenCL backend build
+# sudo apt install ocl-icd-opencl-dev
+# cmake [-DCMAKE_TOOLCHAIN_FILE=<cross-compile toolchain file>]
+        [-DMNN_OPENCL=ON -DMNN_SEP_BUILD=OFF -DMNN_USE_SYSTEM_LIB=ON] ..
+        && make -j4
 ```
 If you want to do cross compile for ARM platform, "CMAKE_TOOLCHAIN_FILE" should be specified
 "MNN_BUILD_QUANTOOLS" and "MNN_BUILD_CONVERTER" are for enabling MNN Quantization tool and MNN model converter
