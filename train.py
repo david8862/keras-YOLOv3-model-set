@@ -45,7 +45,6 @@ def main(args):
     if args.freeze_level is not None:
         freeze_level = args.freeze_level
 
-
     # callbacks for training process
     logging = TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=False, write_grads=False, write_images=False, update_freq='batch')
     checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
@@ -72,21 +71,46 @@ def main(args):
         num_val = int(len(dataset)*val_split)
         num_train = len(dataset) - num_val
 
+    # assign multiscale interval
+    if args.multiscale:
+        rescale_interval = args.rescale_interval
+    else:
+        rescale_interval = -1  #Doesn't rescale
+
+    # model input shape check
+    input_shape = args.model_image_size
+    assert (input_shape[0]%32 == 0 and input_shape[1]%32 == 0), 'Multiples of 32 required'
+
     # get different model type & train&val data generator
     if num_anchors == 9:
         # YOLOv3 use 9 anchors
         get_train_model = get_yolo3_train_model
         data_generator = yolo3_data_generator_wrapper
+
+        # tf.keras.Sequence style data generator
+        #train_data_generator = Yolo3DataGenerator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval)
+        #val_data_generator = Yolo3DataGenerator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes)
+
         tiny_version = False
     elif num_anchors == 6:
         # Tiny YOLOv3 use 6 anchors
         get_train_model = get_yolo3_train_model
         data_generator = yolo3_data_generator_wrapper
+
+        # tf.keras.Sequence style data generator
+        #train_data_generator = Yolo3DataGenerator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval)
+        #val_data_generator = Yolo3DataGenerator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes)
+
         tiny_version = True
     elif num_anchors == 5:
         # YOLOv2 use 5 anchors
         get_train_model = get_yolo2_train_model
         data_generator = yolo2_data_generator_wrapper
+
+        # tf.keras.Sequence style data generator
+        #train_data_generator = Yolo2DataGenerator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval)
+        #val_data_generator = Yolo2DataGenerator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes)
+
         tiny_version = False
     else:
         raise ValueError('Unsupported anchors number')
@@ -123,14 +147,14 @@ def main(args):
     model.summary()
 
     # Transfer training some epochs with frozen layers first if needed, to get a stable loss.
-    input_shape = args.model_image_size
-    assert (input_shape[0]%32 == 0 and input_shape[1]%32 == 0), 'Multiples of 32 required'
     initial_epoch = args.init_epoch
     epochs = initial_epoch + args.transfer_epoch
     print("Transfer training stage")
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, args.batch_size, input_shape))
+    #model.fit_generator(train_data_generator,
     model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment),
             steps_per_epoch=max(1, num_train//args.batch_size),
+            #validation_data=val_data_generator,
             validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//args.batch_size),
             epochs=epochs,
@@ -159,14 +183,11 @@ def main(args):
     model.compile(optimizer=optimizer, loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
 
 
-    if args.multiscale:
-        rescale_interval = args.rescale_interval
-    else:
-        rescale_interval = -1  #Doesn't rescale
-
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, args.batch_size, input_shape))
+    #model.fit_generator(train_data_generator,
     model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval),
         steps_per_epoch=max(1, num_train//args.batch_size),
+        #validation_data=val_data_generator,
         validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes),
         validation_steps=max(1, num_val//args.batch_size),
         epochs=args.total_epoch,

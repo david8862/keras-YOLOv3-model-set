@@ -3,6 +3,7 @@ scipy
 opencv-python
 opencv-contrib-python
 tensorflow-gpu
+keras_applications
 tensorflow-model-optimization
 matplotlib
 tqdm

@@ -30,7 +30,7 @@ Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux), we need to
         && make -j4
 
 ### MNN OpenCL backend build
-# sudo apt install ocl-icd-opencl-dev
+# apt install ocl-icd-opencl-dev
 # cmake [-DCMAKE_TOOLCHAIN_FILE=<cross-compile toolchain file>]
         [-DMNN_OPENCL=ON -DMNN_SEP_BUILD=OFF -DMNN_USE_SYSTEM_LIB=ON] ..
         && make -j4

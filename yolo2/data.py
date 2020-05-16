@@ -200,7 +200,7 @@ def get_y_true_data(box_data, anchors, input_shape, num_classes):
 
 
 class Yolo2DataGenerator(Sequence):
-    def __init__(self, annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval=-1, shuffle=True):
+    def __init__(self, annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment=None, rescale_interval=-1, shuffle=True):
         self.annotation_lines = annotation_lines
         self.batch_size = batch_size
         self.input_shape = input_shape
@@ -212,8 +212,11 @@ class Yolo2DataGenerator(Sequence):
         # prepare multiscale config
         # TODO: error happens when using Sequence data generator with
         #       multiscale input shape, disable multiscale first
+        if rescale_interval != -1:
+            raise ValueError("tf.keras.Sequence generator doesn't support multiscale input, pls remove related config")
         #self.rescale_interval = rescale_interval
         self.rescale_interval = -1
+
         self.rescale_step = 0
         self.input_shape_list = get_multiscale_list()
 
