@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import xml.etree.ElementTree as ET
-import numpy as np
 import os, argparse
-from os import getcwd
+import numpy as np
+import xml.etree.ElementTree as ET
+from collections import OrderedDict
 
 sets=[('2007', 'train'), ('2007', 'val'), ('2007', 'test'), ('2012', 'train'), ('2012', 'val')]
 classes = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
@@ -67,7 +67,7 @@ def get_classes(classes_path):
 
 
 parser = argparse.ArgumentParser(description='convert PascalVOC dataset annotation to txt annotation file')
-parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default is ../VOCdevkit', default=getcwd()+'/../VOCdevkit')
+parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default is ../VOCdevkit', default=os.getcwd()+'/../VOCdevkit')
 parser.add_argument('--year', type=str, help='subset path of year (2007/2012), default will cover both', default=None)
 parser.add_argument('--set', type=str, help='convert data set, default will cover train, val and test', default=None)
 parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
@@ -91,7 +91,7 @@ if args.set is not None:
 
 for year, image_set in sets:
     # count class item number in each set
-    class_count = {itm: 0 for itm in classes}
+    class_count = OrderedDict([(item, 0) for item in classes])
 
     image_ids = open('%s/VOC%s/ImageSets/Main/%s.txt'%(dataset_realpath, year, image_set)).read().strip().split()
     list_file = open('%s/%s_%s.txt'%(args.output_path, year, image_set), 'w')

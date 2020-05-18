@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os, json, argparse
-from collections import defaultdict
-from os import getcwd
+import os, argparse
+import json
 import numpy as np
+from collections import defaultdict, OrderedDict
 
 sets=[('instances_train2017', 'train2017'), ('instances_val2017', 'val2017')]
 
 class_count = {}
 
 parser = argparse.ArgumentParser(description='convert COCO dataset annotation to txt annotation file')
-parser.add_argument('--dataset_path', type=str, required=False, help='path to MSCOCO dataset, default is ../mscoco2017', default=getcwd()+'/../mscoco2017')
+parser.add_argument('--dataset_path', type=str, required=False, help='path to MSCOCO dataset, default is ../mscoco2017', default=os.getcwd()+'/../mscoco2017')
 parser.add_argument('--output_path', type=str, required=False,  help='output path for generated annotation txt files, default is ./', default='./')
-parser.add_argument('--classes_path', type=str, required=False, help='path to class definitions, default is ../configs/coco_classes.txt', default=getcwd()+'/../configs/coco_classes.txt')
+parser.add_argument('--classes_path', type=str, required=False, help='path to class definitions, default is ../configs/coco_classes.txt', default=os.getcwd()+'/../configs/coco_classes.txt')
 parser.add_argument('--include_no_obj', action="store_true", help='to include no object image', default=False)
 parser.add_argument('--customize_coco', default=False, action="store_true", help='It is a user customize coco dataset. Will not follow standard coco class label')
 args = parser.parse_args()
@@ -73,7 +73,7 @@ for dataset, datatype in sets:
     annotations = annotation_data['annotations']
 
     # count class item number in each set
-    class_count = {itm: 0 for itm in classes}
+    class_count = OrderedDict([(item, 0) for item in classes])
 
     # to include no object image, we need to involve
     # all images to image_annotation_dict
