@@ -287,7 +287,7 @@ def yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num
 
         if enhance_augment == 'mosaic':
             # add random mosaic augment on batch ground truth data
-            image_data, box_data = random_mosaic_augment(image_data, box_data, jitter=0.1)
+            image_data, box_data = random_mosaic_augment(image_data, box_data, jitter=0.2)
 
         y_true_data = get_y_true_data(box_data, anchors, input_shape, num_classes)
 

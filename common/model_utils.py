@@ -121,11 +121,11 @@ def get_optimizer(optim_type, learning_rate, decay_type='cosine', decay_steps=10
     lr_scheduler = get_lr_scheduler(learning_rate, decay_type, decay_steps)
 
     if optim_type == 'adam':
-        optimizer = Adam(learning_rate=lr_scheduler)
+        optimizer = Adam(learning_rate=lr_scheduler, amsgrad=False)
     elif optim_type == 'rmsprop':
-        optimizer = RMSprop(learning_rate=lr_scheduler)
+        optimizer = RMSprop(learning_rate=lr_scheduler, rho=0.9, momentum=0.0, centered=False)
     elif optim_type == 'sgd':
-        optimizer = SGD(learning_rate=lr_scheduler)
+        optimizer = SGD(learning_rate=lr_scheduler, momentum=0.0, nesterov=False)
     else:
         raise ValueError('Unsupported optimizer type')
 
