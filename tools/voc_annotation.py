@@ -68,6 +68,8 @@ def get_classes(classes_path):
 
 parser = argparse.ArgumentParser(description='convert PascalVOC dataset annotation to txt annotation file')
 parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default is ../VOCdevkit', default=getcwd()+'/../VOCdevkit')
+parser.add_argument('--year', type=str, help='subset path of year (2007/2012), default will cover both', default=None)
+parser.add_argument('--set', type=str, help='convert data set, default will cover train, val and test', default=None)
 parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
 parser.add_argument('--classes_path', type=str, required=False, help='path to class definitions')
 parser.add_argument('--include_difficult', action="store_true", help='to include difficult object', default=False)
@@ -80,6 +82,12 @@ if args.classes_path:
 
 # get real path for dataset
 dataset_realpath = os.path.realpath(args.dataset_path)
+
+# get specific sets to convert
+if args.year is not None:
+    sets = [item for item in sets if item[0] == args.year]
+if args.set is not None:
+    sets = [item for item in sets if item[1] == args.set]
 
 for year, image_set in sets:
     # count class item number in each set
