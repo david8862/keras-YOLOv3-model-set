@@ -162,9 +162,10 @@ def yolo4_efficientnet_body(inputs, num_anchors, num_classes, level=1):
     Create YOLO_v4 EfficientNet model CNN body in keras.
     # Arguments
         level: EfficientNet level number.
-            by default we use basic EfficientNetB1 as backbone
+            by default we use EfficientNetB1 as backbone
     '''
     efficientnet, feature_map_info = get_efficientnet_backbone_info(inputs, level=level)
+    print('backbone layers number: {}'.format(len(efficientnet.layers)))
 
     f1 = efficientnet.get_layer('top_activation').output
     f1_channel_num = feature_map_info['f1_channel_num']
@@ -186,9 +187,10 @@ def yolo4lite_efficientnet_body(inputs, num_anchors, num_classes, level=1):
     Create YOLO_v4 Lite EfficientNet model CNN body in keras.
     # Arguments
         level: EfficientNet level number.
-            by default we use basic EfficientNetB1 as backbone
+            by default we use EfficientNetB1 as backbone
     '''
     efficientnet, feature_map_info = get_efficientnet_backbone_info(inputs, level=level)
+    print('backbone layers number: {}'.format(len(efficientnet.layers)))
 
     f1 = efficientnet.get_layer('top_activation').output
     f1_channel_num = feature_map_info['f1_channel_num']
@@ -213,6 +215,7 @@ def tiny_yolo4_efficientnet_body(inputs, num_anchors, num_classes, level=0, use_
             by default we use basic EfficientNetB0 as backbone
     '''
     efficientnet, feature_map_info = get_efficientnet_backbone_info(inputs, level=level)
+    print('backbone layers number: {}'.format(len(efficientnet.layers)))
 
     f1 = efficientnet.get_layer('top_activation').output
     f2 = efficientnet.get_layer('block6a_expand_activation').output
@@ -233,6 +236,7 @@ def tiny_yolo4lite_efficientnet_body(inputs, num_anchors, num_classes, level=0, 
             by default we use basic EfficientNetB0 as backbone
     '''
     efficientnet, feature_map_info = get_efficientnet_backbone_info(inputs, level=level)
+    print('backbone layers number: {}'.format(len(efficientnet.layers)))
 
     f1 = efficientnet.get_layer('top_activation').output
     f2 = efficientnet.get_layer('block6a_expand_activation').output

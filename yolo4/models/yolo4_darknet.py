@@ -48,6 +48,7 @@ def csp_darknet53_body(x):
 def yolo4_body(inputs, num_anchors, num_classes, weights_path=None):
     """Create YOLO_V4 model CNN body in Keras."""
     darknet = Model(inputs, csp_darknet53_body(inputs))
+    print('backbone layers number: {}'.format(len(darknet.layers)))
     if weights_path is not None:
         darknet.load_weights(weights_path, by_name=True)
         print('Load weights {}.'.format(weights_path))

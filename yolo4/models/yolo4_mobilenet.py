@@ -13,6 +13,7 @@ from yolo4.models.layers import yolo4_predictions, yolo4lite_predictions, tiny_y
 def yolo4_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     """Create YOLO_V4 MobileNet model CNN body in Keras."""
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenet.layers)))
 
     # input: 416 x 416 x 3
     # conv_pw_13_relu :13 x 13 x (1024*alpha)
@@ -38,6 +39,7 @@ def yolo4_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
 def yolo4lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     '''Create YOLO_v4 Lite MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenet.layers)))
 
     # input: 416 x 416 x 3
     # conv_pw_13_relu :13 x 13 x (1024*alpha)
@@ -63,6 +65,7 @@ def yolo4lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
 def tiny_yolo4_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0, use_spp=True):
     '''Create Tiny YOLO_v4 MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenet.layers)))
 
     # input: 416 x 416 x 3
     # conv_pw_13_relu :13 x 13 x (1024*alpha)
@@ -85,6 +88,7 @@ def tiny_yolo4_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0, use_s
 def tiny_yolo4lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0, use_spp=True):
     '''Create Tiny YOLO_v3 Lite MobileNet model CNN body in keras.'''
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenet.layers)))
 
     # input: 416 x 416 x 3
     # conv_pw_13_relu :13 x 13 x (1024*alpha)

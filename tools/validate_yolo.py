@@ -37,8 +37,10 @@ def validate_yolo_model(model_path, image_file, anchors, class_names, model_imag
         prediction = model.predict([image_data])
     end = time.time()
     print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
+    if type(prediction) is not list:
+        prediction = [prediction]
 
-    handle_prediction([prediction], image_file, image, image_shape, anchors, class_names, model_image_size)
+    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size)
     return
 
 

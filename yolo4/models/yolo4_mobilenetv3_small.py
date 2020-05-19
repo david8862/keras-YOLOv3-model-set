@@ -13,6 +13,7 @@ from yolo4.models.layers import yolo4_predictions, yolo4lite_predictions, tiny_y
 def yolo4_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0):
     """Create YOLO_V4 MobileNetV3Small model CNN body in Keras."""
     mobilenetv3small = MobileNetV3Small(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenetv3small.layers)))
 
     # input: 416 x 416 x 3
     # activation_31(layer 165, final feature map): 13 x 13 x (576*alpha)
@@ -48,6 +49,7 @@ def yolo4_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0):
 def yolo4lite_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0):
     '''Create YOLO_v4 Lite MobileNetV3Small model CNN body in keras.'''
     mobilenetv3small = MobileNetV3Small(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenetv3small.layers)))
 
     # input: 416 x 416 x 3
     # activation_31(layer 165, final feature map): 13 x 13 x (576*alpha)
@@ -83,6 +85,7 @@ def yolo4lite_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0)
 def tiny_yolo4_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0, use_spp=True):
     '''Create Tiny YOLO_v4 MobileNetV3Small model CNN body in keras.'''
     mobilenetv3small = MobileNetV3Small(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenetv3small.layers)))
 
     # input: 416 x 416 x 3
     # activation_31(layer 165, final feature map): 13 x 13 x (576*alpha)
@@ -114,6 +117,7 @@ def tiny_yolo4_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0
 def tiny_yolo4lite_mobilenetv3small_body(inputs, num_anchors, num_classes, alpha=1.0, use_spp=True):
     '''Create Tiny YOLO_v4 Lite MobileNetV3Small model CNN body in keras.'''
     mobilenetv3small = MobileNetV3Small(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenetv3small.layers)))
 
     # input: 416 x 416 x 3
     # activation_31(layer 165, final feature map): 13 x 13 x (576*alpha)

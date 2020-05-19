@@ -13,6 +13,7 @@ from yolo3.models.layers import yolo3_predictions, yolo3lite_predictions, tiny_y
 def yolo3_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0):
     """Create YOLO_V3 MobileNetV3Large model CNN body in Keras."""
     mobilenetv3large = MobileNetV3Large(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenetv3large.layers)))
 
     # input: 416 x 416 x 3
     # activation_38(layer 194, final feature map): 13 x 13 x (960*alpha)
@@ -48,6 +49,7 @@ def yolo3_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0):
 def yolo3lite_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0):
     '''Create YOLO_v3 Lite MobileNetV3Large model CNN body in keras.'''
     mobilenetv3large = MobileNetV3Large(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenetv3large.layers)))
 
     # input: 416 x 416 x 3
     # activation_38(layer 194, final feature map): 13 x 13 x (960*alpha)
@@ -84,6 +86,7 @@ def yolo3lite_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0)
 def tiny_yolo3_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0):
     '''Create Tiny YOLO_v3 MobileNetV3Large model CNN body in keras.'''
     mobilenetv3large = MobileNetV3Large(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenetv3large.layers)))
 
     # input: 416 x 416 x 3
     # activation_38(layer 194, final feature map): 13 x 13 x (960*alpha)
@@ -115,6 +118,7 @@ def tiny_yolo3_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0
 def tiny_yolo3lite_mobilenetv3large_body(inputs, num_anchors, num_classes, alpha=1.0):
     '''Create Tiny YOLO_v3 Lite MobileNetV3Large model CNN body in keras.'''
     mobilenetv3large = MobileNetV3Large(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenetv3large.layers)))
 
     # input: 416 x 416 x 3
     # activation_38(layer 194, final feature map): 13 x 13 x (960*alpha)

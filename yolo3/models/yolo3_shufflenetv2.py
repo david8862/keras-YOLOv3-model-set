@@ -13,6 +13,7 @@ from yolo3.models.layers import yolo3_predictions, yolo3lite_predictions, tiny_y
 def yolo3_shufflenetv2_body(inputs, num_anchors, num_classes):
     """Create YOLO_V3 ShuffleNetV2 model CNN body in Keras."""
     shufflenetv2 = ShuffleNetV2(input_tensor=inputs, weights=None, include_top=False)
+    print('backbone layers number: {}'.format(len(shufflenetv2.layers)))
 
     # input: 416 x 416 x 3
     # 1x1conv5_out: 13 x 13 x 1024
@@ -41,6 +42,7 @@ def yolo3_shufflenetv2_body(inputs, num_anchors, num_classes):
 def yolo3lite_shufflenetv2_body(inputs, num_anchors, num_classes):
     '''Create YOLO_v3 Lite ShuffleNetV2 model CNN body in keras.'''
     shufflenetv2 = ShuffleNetV2(input_tensor=inputs, weights=None, include_top=False)
+    print('backbone layers number: {}'.format(len(shufflenetv2.layers)))
 
     # input: 416 x 416 x 3
     # 1x1conv5_out: 13 x 13 x 1024
@@ -69,6 +71,7 @@ def yolo3lite_shufflenetv2_body(inputs, num_anchors, num_classes):
 def yolo3lite_spp_shufflenetv2_body(inputs, num_anchors, num_classes):
     '''Create YOLO_v3 Lite SPP ShuffleNetV2 model CNN body in keras.'''
     shufflenetv2 = ShuffleNetV2(input_tensor=inputs, weights=None, include_top=False)
+    print('backbone layers number: {}'.format(len(shufflenetv2.layers)))
 
     # input: 416 x 416 x 3
     # 1x1conv5_out: 13 x 13 x 1024
@@ -97,6 +100,7 @@ def yolo3lite_spp_shufflenetv2_body(inputs, num_anchors, num_classes):
 def tiny_yolo3_shufflenetv2_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 ShuffleNetV2 model CNN body in keras.'''
     shufflenetv2 = ShuffleNetV2(input_tensor=inputs, weights=None, include_top=False)
+    print('backbone layers number: {}'.format(len(shufflenetv2.layers)))
 
     # input: 416 x 416 x 3
     # 1x1conv5_out: 13 x 13 x 1024
@@ -121,6 +125,7 @@ def tiny_yolo3_shufflenetv2_body(inputs, num_anchors, num_classes):
 def tiny_yolo3lite_shufflenetv2_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 Lite ShuffleNetV2 model CNN body in keras.'''
     shufflenetv2 = ShuffleNetV2(input_tensor=inputs, weights=None, include_top=False)
+    print('backbone layers number: {}'.format(len(shufflenetv2.layers)))
 
     # input: 416 x 416 x 3
     # 1x1conv5_out: 13 x 13 x 1024

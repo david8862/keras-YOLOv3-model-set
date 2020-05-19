@@ -13,6 +13,7 @@ from yolo3.models.layers import yolo3_predictions, yolo3lite_predictions, tiny_y
 def yolo3_xception_body(inputs, num_anchors, num_classes):
     """Create YOLO_V3 Xception model CNN body in Keras."""
     xception = Xception(input_tensor=inputs, weights='imagenet', include_top=False)
+    print('backbone layers number: {}'.format(len(xception.layers)))
 
     # input: 416 x 416 x 3
     # block14_sepconv2_act: 13 x 13 x 2048
@@ -43,6 +44,7 @@ def yolo3_xception_body(inputs, num_anchors, num_classes):
 def yolo3_spp_xception_body(inputs, num_anchors, num_classes):
     """Create YOLO_V3 SPP Xception model CNN body in Keras."""
     xception = Xception(input_tensor=inputs, weights='imagenet', include_top=False)
+    print('backbone layers number: {}'.format(len(xception.layers)))
 
     # input: 416 x 416 x 3
     # block14_sepconv2_act: 13 x 13 x 2048
@@ -73,6 +75,7 @@ def yolo3_spp_xception_body(inputs, num_anchors, num_classes):
 def yolo3lite_xception_body(inputs, num_anchors, num_classes):
     '''Create YOLO_v3 Lite Xception model CNN body in keras.'''
     xception = Xception(input_tensor=inputs, weights='imagenet', include_top=False)
+    print('backbone layers number: {}'.format(len(xception.layers)))
 
     # input: 416 x 416 x 3
     # block14_sepconv2_act: 13 x 13 x 2048
@@ -103,6 +106,7 @@ def yolo3lite_xception_body(inputs, num_anchors, num_classes):
 def tiny_yolo3_xception_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 Xception model CNN body in keras.'''
     xception = Xception(input_tensor=inputs, weights='imagenet', include_top=False)
+    print('backbone layers number: {}'.format(len(xception.layers)))
 
     # input: 416 x 416 x 3
     # block14_sepconv2_act: 13 x 13 x 2048
@@ -129,6 +133,7 @@ def tiny_yolo3_xception_body(inputs, num_anchors, num_classes):
 def tiny_yolo3lite_xception_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 Lite Xception model CNN body in keras.'''
     xception = Xception(input_tensor=inputs, weights='imagenet', include_top=False)
+    print('backbone layers number: {}'.format(len(xception.layers)))
 
     # input: 416 x 416 x 3
     # block14_sepconv2_act: 13 x 13 x 2048

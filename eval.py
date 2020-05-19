@@ -352,6 +352,8 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
     pbar = tqdm(total=len(annotation_records), desc='Eval model')
     for (image_name, gt_records) in annotation_records.items():
         image = Image.open(image_name)
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
         image_array = np.array(image, dtype='uint8')
 
         # support of tflite model
