@@ -37,6 +37,10 @@ def yolo3_correct_boxes(box_xy, box_wh, input_shape, image_shape):
     '''Get corrected boxes'''
     input_shape = K.cast(input_shape, K.dtype(box_xy))
     image_shape = K.cast(image_shape, K.dtype(box_xy))
+
+    #reshape the image_shape tensor to align with boxes dimension
+    image_shape = K.reshape(image_shape, [-1, 1, 1, 1, 2])
+
     new_shape = K.round(image_shape * K.min(input_shape/image_shape))
     offset = (input_shape-new_shape)/2./input_shape
     scale = input_shape/new_shape
