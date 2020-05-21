@@ -14,3 +14,5 @@ pycocotools
 keras2onnx
 onnx
 onnxruntime
+tfcoreml
+sympy
