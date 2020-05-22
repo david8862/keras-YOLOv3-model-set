@@ -372,6 +372,8 @@ Some experiment on PascalVOC dataset and comparison:
 
 | Model name | InputSize | TrainSet | TestSet | mAP | Size | Speed | Ps |
 | ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- |
+| [**YOLOv4 Efficientnet(B1)**](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.2.0/yolo4_efficientnet_512_voc.tar.gz) | 512x512 | VOC07+12 | VOC07 | **82.24%** | 251MB | 44ms | Keras on Titan XP |
+| [**Tiny YOLOv3 Lite-MobilenetV3Small**](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.2.0/tiny_yolo3_mobilenetv3small_lite_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 63.89% | **6.5MB** | 110ms | MNN on ARM Cortex-A53 * 4 |
 | [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_mobilnet_lite_320_voc.tar.gz) | 320x320 | VOC07+12 | VOC07 | 72.45% | 31.8MB | 17ms | Keras on Titan XP |
 | [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_mobilnet_lite_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 75.37% | 31.8MB| 20ms | Keras on Titan XP |
 | [YOLOv3 Lite-SPP-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_mobilnet_lite_spp_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 75.50% | 34MB | 22ms | Keras on Titan XP |

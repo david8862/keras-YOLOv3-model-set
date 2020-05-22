@@ -1219,7 +1219,7 @@ def main():
 
     parser.add_argument(
         '--classes_path', type=str, required=False,
-        help='path to class definitions, default configs/voc_classes.txt', default='configs/voc_classes.txt')
+        help='path to class definitions, default configs/voc_classes.txt', default=os.path.join('configs' , 'voc_classes.txt'))
 
     parser.add_argument(
         '--annotation_file', type=str, required=True,

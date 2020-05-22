@@ -32,10 +32,10 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 default_config = {
         "model_type": 'tiny_yolo3_darknet',
-        "weights_path": 'weights/yolov3-tiny.h5',
+        "weights_path": os.path.join('weights', 'yolov3-tiny.h5'),
         "pruning_model": False,
-        "anchors_path": 'configs/tiny_yolo3_anchors.txt',
-        "classes_path": 'configs/coco_classes.txt',
+        "anchors_path": os.path.join('configs', 'tiny_yolo3_anchors.txt'),
+        "classes_path": os.path.join('configs', 'coco_classes.txt'),
         "score" : 0.1,
         "iou" : 0.4,
         "model_image_size" : (416, 416),

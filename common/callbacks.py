@@ -107,4 +107,4 @@ class EvalCallBack(Callback):
             if self.save_eval_checkpoint and mAP > self.best_mAP:
                 # Save best mAP value and model checkpoint
                 self.best_mAP = mAP
-                self.model.save(self.log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}-mAP{mAP:.3f}.h5'.format(epoch=(epoch+1), loss=logs.get('loss'), val_loss=logs.get('val_loss'), mAP=mAP))
+                self.model.save(os.path.join(self.log_dir, 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}-mAP{mAP:.3f}.h5'.format(epoch=(epoch+1), loss=logs.get('loss'), val_loss=logs.get('val_loss'), mAP=mAP)))

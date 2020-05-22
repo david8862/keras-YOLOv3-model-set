@@ -29,7 +29,7 @@ optimize_tf_gpu(tf, K)
 
 def main(args):
     annotation_file = args.annotation_file
-    log_dir = 'logs/000/'
+    log_dir = os.path.join('logs', '000')
     classes_path = args.classes_path
     class_names = get_classes(classes_path)
     num_classes = len(class_names)
@@ -48,7 +48,7 @@ def main(args):
 
     # callbacks for training process
     logging = TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=False, write_grads=False, write_images=False, update_freq='batch')
-    checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
+    checkpoint = ModelCheckpoint(os.path.join(log_dir, 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5'),
         monitor='val_loss',
         verbose=1,
         save_weights_only=False,
@@ -208,9 +208,9 @@ def main(args):
             model = sparsity.strip_pruning(model)
 
     if template_model is not None:
-        template_model.save(log_dir + 'trained_final.h5')
+        template_model.save(os.path.join(log_dir, 'trained_final.h5'))
     else:
-        model.save(log_dir + 'trained_final.h5')
+        model.save(os.path.join(log_dir, 'trained_final.h5'))
 
 
 if __name__ == '__main__':
@@ -218,7 +218,7 @@ if __name__ == '__main__':
     # Model definition options
     parser.add_argument('--model_type', type=str, required=False, default='yolo3_mobilenet_lite',
         help='YOLO model type: yolo3_mobilenet_lite/tiny_yolo3_mobilenet/yolo3_darknet/..., default=yolo3_mobilenet_lite')
-    parser.add_argument('--anchors_path', type=str, required=False, default='configs/yolo3_anchors.txt',
+    parser.add_argument('--anchors_path', type=str, required=False, default=os.path.join('configs', 'yolo3_anchors.txt'),
         help='path to anchor definitions, default=configs/yolo3_anchors.txt')
     parser.add_argument('--model_image_size', type=str,required=False, default='416x416',
         help = "Initial model image input size as <num>x<num>, default 416x416")
@@ -232,7 +232,7 @@ if __name__ == '__main__':
         help='val annotation txt file, default=None')
     parser.add_argument('--val_split', type=float,required=False, default=0.1,
         help = "validation data persentage in dataset if no val dataset provide, default=0.1")
-    parser.add_argument('--classes_path', type=str, required=False, default='configs/voc_classes.txt',
+    parser.add_argument('--classes_path', type=str, required=False, default=os.path.join('configs', 'voc_classes.txt'),
         help='path to class definitions, default=configs/voc_classes.txt')
 
     # Training options

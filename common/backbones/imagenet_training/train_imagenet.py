@@ -19,7 +19,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from shufflenet import ShuffleNet
 from shufflenet_v2 import ShuffleNetV2
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..'))
 from yolo3.models.yolo3_nano import NanoNet
 from yolo3.models.yolo3_darknet import DarkNet53
 from yolo4.models.yolo4_darknet import CSPDarkNet53
@@ -94,10 +94,10 @@ def get_optimizer(optim_type, learning_rate):
 
 
 def train(args, model, input_shape):
-    log_dir = 'logs/'
+    log_dir = 'logs'
 
     # callbacks for training process
-    checkpoint = ModelCheckpoint(log_dir + 'ep{epoch:03d}-val_loss{val_loss:.3f}-val_acc{val_acc:.3f}-val_top_k_categorical_accuracy{val_top_k_categorical_accuracy:.3f}.h5',
+    checkpoint = ModelCheckpoint(os.path.join(log_dir, 'ep{epoch:03d}-val_loss{val_loss:.3f}-val_acc{val_acc:.3f}-val_top_k_categorical_accuracy{val_top_k_categorical_accuracy:.3f}.h5'),
         monitor='val_acc',
         mode='max',
         verbose=1,
@@ -157,7 +157,7 @@ def train(args, model, input_shape):
             callbacks=[logging, checkpoint, lr_scheduler, terminate_on_nan])
 
     # Finally store model
-    model.save(log_dir + 'trained_final.h5')
+    model.save(os.path.join(log_dir, 'trained_final.h5'))
 
 
 

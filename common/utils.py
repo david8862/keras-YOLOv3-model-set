@@ -96,6 +96,7 @@ def get_colors(class_names):
 def get_dataset(annotation_file, shuffle=True):
     with open(annotation_file) as f:
         lines = f.readlines()
+        lines = [line.strip() for line in lines]
 
     if shuffle:
         np.random.seed(10101)
