@@ -48,7 +48,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] Transfer training from imagenet
 - [x] Singlescale image input training
 - [x] Multiscale image input training
-- [x] Dynamic learning rate decay (Cosine/Exponential/Polynomial)
+- [x] Dynamic learning rate decay (Cosine/Exponential/Polynomial/PiecewiseConstant)
 - [x] Mosaic data augmentation
 - [x] Pruned model training (only valid for TF 1.x)
 
@@ -247,8 +247,8 @@ optional arguments:
   --learning_rate LEARNING_RATE
                         Initial learning rate, default=0.001
   --decay_type DECAY_TYPE
-                        Learning rate decay type
-                        (None/cosine/exponential/polynomial), default=None
+                        Learning rate decay type (None/cosine/exponential/poly
+                        nomial/piecewise_constant), default=None
   --transfer_epoch TRANSFER_EPOCH
                         Transfer training (from Imagenet) stage epochs,
                         default=20

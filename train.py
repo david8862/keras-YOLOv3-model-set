@@ -243,7 +243,7 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float,required=False, default=1e-3,
         help = "Initial learning rate, default=0.001")
     parser.add_argument('--decay_type', type=str,required=False, default=None,
-        help = "Learning rate decay type (None/cosine/exponential/polynomial), default=None")
+        help = "Learning rate decay type (None/cosine/exponential/polynomial/piecewise_constant), default=None")
     parser.add_argument('--transfer_epoch', type=int,required=False, default=20,
         help = "Transfer training (from Imagenet) stage epochs, default=20")
     parser.add_argument('--freeze_level', type=int,required=False, default=None,
