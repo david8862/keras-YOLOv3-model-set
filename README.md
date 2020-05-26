@@ -433,6 +433,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 ### TODO
 - [ ] DropBlock on YOLO head
 - [ ] Gaussian YOLOv3 loss
+- [ ] support non-square input
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones/imagenet_training)
 
 
