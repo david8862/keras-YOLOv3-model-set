@@ -80,7 +80,7 @@ def main(args):
 
     # model input shape check
     input_shape = args.model_image_size
-    assert (input_shape[0]%32 == 0 and input_shape[1]%32 == 0), 'Multiples of 32 required'
+    assert (input_shape[0]%32 == 0 and input_shape[1]%32 == 0), 'model_image_size should be multiples of 32'
 
     # get different model type & train&val data generator
     if num_anchors == 9:
@@ -221,7 +221,7 @@ if __name__ == '__main__':
     parser.add_argument('--anchors_path', type=str, required=False, default=os.path.join('configs', 'yolo3_anchors.txt'),
         help='path to anchor definitions, default=configs/yolo3_anchors.txt')
     parser.add_argument('--model_image_size', type=str,required=False, default='416x416',
-        help = "Initial model image input size as <num>x<num>, default 416x416")
+        help = "Initial model image input size as <height>x<width>, default 416x416")
     parser.add_argument('--weights_path', type=str,required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
 

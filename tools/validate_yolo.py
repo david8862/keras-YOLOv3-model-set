@@ -27,7 +27,8 @@ def validate_yolo_model(model_path, image_file, anchors, class_names, model_imag
     img = Image.open(image_file)
     image = np.array(img, dtype='uint8')
     image_data = preprocess_image(img, model_image_size)
-    image_shape = img.size
+    #origin image shape, in (height, width) format
+    image_shape = tuple(reversed(img.size))
 
     # predict once first to bypass the model building time
     model.predict([image_data])
@@ -66,7 +67,8 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, loo
     model_image_size = (height, width)
 
     image_data = preprocess_image(img, model_image_size)
-    image_shape = img.size
+    #origin image shape, in (height, width) format
+    image_shape = tuple(reversed(img.size))
 
     # predict once first to bypass the model building time
     interpreter.set_tensor(input_details[0]['index'], image_data)
@@ -110,7 +112,8 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, loop_c
     img = Image.open(image_file)
     image = np.array(img, dtype='uint8')
     image_data = preprocess_image(img, model_image_size)
-    image_shape = img.size
+    #origin image shape, in (height, width) format
+    image_shape = tuple(reversed(img.size))
 
     # use a temp tensor to copy data
     tmp_input = MNN.Tensor(input_shape, input_tensor.getDataType(),\
@@ -267,7 +270,8 @@ def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_i
     img = Image.open(image_file)
     image = np.array(img, dtype='uint8')
     image_data = preprocess_image(img, model_image_size)
-    image_shape = img.size
+    #origin image shape, in (height, width) format
+    image_shape = tuple(reversed(img.size))
 
     # predict once first to bypass the model building time
     with tf.Session(graph=graph) as sess:
@@ -304,7 +308,8 @@ def validate_yolo_model_onnx(model_path, image_file, anchors, class_names, loop_
     img = Image.open(image_file)
     image = np.array(img, dtype='uint8')
     image_data = preprocess_image(img, model_image_size)
-    image_shape = img.size
+    #origin image shape, in (height, width) format
+    image_shape = tuple(reversed(img.size))
 
     feed = {input_tensors[0].name: image_data}
 
@@ -350,7 +355,7 @@ def main():
     parser.add_argument('--image_file', help='image file to predict', type=str, required=True)
     parser.add_argument('--anchors_path',help='path to anchor definitions', type=str, required=True)
     parser.add_argument('--classes_path', help='path to class definitions, default ../configs/voc_classes.txt', type=str, default='../configs/voc_classes.txt')
-    parser.add_argument('--model_image_size', help='model image input size as <num>x<num>, default 416x416', type=str, default='416x416')
+    parser.add_argument('--model_image_size', help='model image input size as <height>x<width>, default 416x416', type=str, default='416x416')
     parser.add_argument('--loop_count', help='loop inference for certain times', type=int, default=1)
 
     args = parser.parse_args()
@@ -360,6 +365,7 @@ def main():
     class_names = get_classes(args.classes_path)
     height, width = args.model_image_size.split('x')
     model_image_size = (int(height), int(width))
+    assert (model_image_size[0]%32 == 0 and model_image_size[1]%32 == 0), 'model_image_size should be multiples of 32'
 
     # support of tflite model
     if args.model_path.endswith('.tflite'):

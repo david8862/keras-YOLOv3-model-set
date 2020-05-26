@@ -43,13 +43,14 @@ def main():
     parser.add_argument('--classes_path', type=str, required=True, help='path to class definitions')
     parser.add_argument('--output_path', type=str, required=False,  help='output path for augmented images, default is ./test', default='./test')
     parser.add_argument('--batch_size', type=int, required=False, help = "batch size for test data, default=16", default=16)
-    parser.add_argument('--model_image_size', type=str, required=False, help='model image input size as <num>x<num>, default 416x416', default='416x416')
+    parser.add_argument('--model_image_size', type=str, required=False, help='model image input size as <height>x<width>, default 416x416', default='416x416')
     parser.add_argument('--augment_type', type=str, required=False, help = "enhance data augmentation type (mosaic/cutmix), default=mosaic", default='mosaic')
 
     args = parser.parse_args()
     class_names = get_classes(args.classes_path)
     height, width = args.model_image_size.split('x')
     model_image_size = (int(height), int(width))
+    assert (model_image_size[0]%32 == 0 and model_image_size[1]%32 == 0), 'model_image_size should be multiples of 32'
 
     annotation_lines = get_dataset(args.annotation_file)
     os.makedirs(args.output_path, exist_ok=True)

@@ -117,12 +117,13 @@ if __name__ == "__main__":
     parser.add_argument('--anchors_file', type=str, required=True,
             help='anchor file to output')
     parser.add_argument('--model_image_size', type=str, required=False,
-            help='model image input size as <num>x<num>, default 608x608', default='608x608')
+            help='model image input size as <height>x<width>, default 608x608', default='608x608')
 
     args = parser.parse_args()
 
     height, width = args.model_image_size.split('x')
     model_image_size = (int(height), int(width))
+    assert (model_image_size[0]%32 == 0 and model_image_size[1]%32 == 0), 'model_image_size should be multiples of 32'
 
     if args.cluster_number != 9 and args.cluster_number != 6 and args.cluster_number != 5:
         warnings.warn('You choose to generate {} anchor clusters, but default YOLO anchor number should 5, 6 or 9'.format(args.cluster_number))

@@ -58,12 +58,13 @@ def main():
     parser.add_argument('--keras_model_file', required=True, type=str, help='path to keras model file')
     parser.add_argument('--annotation_file', required=True, type=str, help='annotation txt file to feed the converter')
     parser.add_argument('--sample_num', type=int, help='annotation sample number to feed the converter,default 30', default=30)
-    parser.add_argument('--model_input_shape', type=str, help='model image input shape as <num>x<num>, default 416x416', default='416x416')
+    parser.add_argument('--model_input_shape', type=str, help='model image input shape as <height>x<width>, default 416x416', default='416x416')
     parser.add_argument('--output_file', required=True, type=str, help='output tflite model file')
 
     args = parser.parse_args()
     height, width = args.model_input_shape.split('x')
     model_input_shape = (int(height), int(width))
+    assert (model_input_shape[0]%32 == 0 and model_input_shape[1]%32 == 0), 'model_input_shape should be multiples of 32'
 
     post_train_quant_convert(args.keras_model_file, args.annotation_file, args.sample_num, model_input_shape, args.output_file)
 

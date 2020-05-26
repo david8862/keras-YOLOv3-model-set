@@ -104,7 +104,8 @@ class YOLO_np(object):
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
 
         image_data = preprocess_image(image, self.model_image_size)
-        image_shape = image.size
+        #origin image shape, in (height, width) format
+        image_shape = tuple(reversed(image.size))
 
         start = time.time()
         out_boxes, out_classes, out_scores = self.predict(image_data, image_shape)
@@ -192,7 +193,9 @@ class YOLO(object):
             assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
 
         image_data = preprocess_image(image, self.model_image_size)
-        image_shape = np.array([image.size[0], image.size[1]])
+
+        # prepare origin image shape, (height, width) format
+        image_shape = np.array([image.size[1], image.size[0]])
         image_shape = np.expand_dims(image_shape, 0)
 
         start = time.time()
@@ -363,7 +366,7 @@ if __name__ == '__main__':
 
     parser.add_argument(
         '--model_image_size', type=str,
-        help='model image input size as <num>x<num>, default ' +
+        help='model image input size as <height>x<width>, default ' +
         str(YOLO.get_defaults("model_image_size")[0])+'x'+str(YOLO.get_defaults("model_image_size")[1]),
         default=str(YOLO.get_defaults("model_image_size")[0])+'x'+str(YOLO.get_defaults("model_image_size")[1])
     )
@@ -406,6 +409,7 @@ if __name__ == '__main__':
     if args.model_image_size:
         height, width = args.model_image_size.split('x')
         args.model_image_size = (int(height), int(width))
+        assert (args.model_image_size[0]%32 == 0 and args.model_image_size[1]%32 == 0), 'model_image_size should be multiples of 32'
 
     # get wrapped inference object
     yolo = YOLO_np(**vars(args))

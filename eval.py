@@ -112,7 +112,8 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
     model_image_size = (height, width)
 
     image_data = preprocess_image(image, model_image_size)
-    image_shape = image.size
+    #origin image shape, in (height, width) format
+    image_shape = tuple(reversed(image.size))
 
     interpreter.set_tensor(input_details[0]['index'], image_data)
     interpreter.invoke()
@@ -149,7 +150,8 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
 
     # prepare input image
     image_data = preprocess_image(image, model_image_size)
-    image_shape = image.size
+    #origin image shape, in (height, width) format
+    image_shape = tuple(reversed(image.size))
 
     # use a temp tensor to copy data
     tmp_input = MNN.Tensor(input_shape, input_tensor.getDataType(),\
@@ -262,7 +264,8 @@ def yolo_predict_pb(model, image, anchors, num_classes, model_image_size, conf_t
 
     # prepare input image
     image_data = preprocess_image(image, model_image_size)
-    image_shape = image.size
+    #origin image shape, in (height, width) format
+    image_shape = tuple(reversed(image.size))
 
     with tf.Session(graph=model) as sess:
         prediction = sess.run(output_tensors, feed_dict={
@@ -292,7 +295,8 @@ def yolo_predict_onnx(model, image, anchors, num_classes, conf_threshold):
 
     # prepare input image
     image_data = preprocess_image(image, model_image_size)
-    image_shape = image.size
+    #origin image shape, in (height, width) format
+    image_shape = tuple(reversed(image.size))
 
     feed = {input_tensors[0].name: image_data}
     prediction = model.run(None, feed)
@@ -309,7 +313,8 @@ def yolo_predict_onnx(model, image, anchors, num_classes, conf_threshold):
 
 def yolo_predict_keras(model, image, anchors, num_classes, model_image_size, conf_threshold):
     image_data = preprocess_image(image, model_image_size)
-    image_shape = image.size
+    #origin image shape, in (height, width) format
+    image_shape = tuple(reversed(image.size))
 
     prediction = model.predict([image_data])
     if len(anchors) == 5:
@@ -1239,7 +1244,7 @@ def main():
 
     parser.add_argument(
         '--model_image_size', type=str,
-        help='model image input size as <num>x<num>, default 416x416', default='416x416')
+        help='model image input size as <height>x<width>, default 416x416', default='416x416')
 
     parser.add_argument(
         '--save_result', default=False, action="store_true",
@@ -1253,6 +1258,7 @@ def main():
     class_names = get_classes(args.classes_path)
     height, width = args.model_image_size.split('x')
     model_image_size = (int(height), int(width))
+    assert (model_image_size[0]%32 == 0 and model_image_size[1]%32 == 0), 'model_image_size should be multiples of 32'
 
     annotation_lines = get_dataset(args.annotation_file, shuffle=False)
     model, model_format = load_eval_model(args.model_path)

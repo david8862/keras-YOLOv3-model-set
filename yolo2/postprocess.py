@@ -102,6 +102,10 @@ def yolo2_correct_boxes(box_xy, box_wh, input_shape, image_shape):
     new_shape = K.round(image_shape * K.min(input_shape/image_shape))
     offset = (input_shape-new_shape)/2./input_shape
     scale = input_shape/new_shape
+    # reverse offset/scale to match (w,h) order
+    offset = offset[..., ::-1]
+    scale = scale[..., ::-1]
+
     box_xy = (box_xy - offset) * scale
     box_wh *= scale
 
@@ -115,7 +119,8 @@ def yolo2_correct_boxes(box_xy, box_wh, input_shape, image_shape):
     ])
 
     # Scale boxes back to original image shape.
-    boxes *= K.concatenate([image_shape, image_shape])
+    image_wh = image_shape[..., ::-1]
+    boxes *= K.concatenate([image_wh, image_wh])
     return boxes
 
 

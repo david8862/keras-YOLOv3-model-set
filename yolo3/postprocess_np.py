@@ -12,7 +12,7 @@ def yolo3_head(predictions, anchors, num_classes, input_dims):
     :param num_classes: Total number of classes
     :param anchors: YOLO style anchor list for bounding box assignment
     :param input_dims: Input dimensions of the image
-    :param predictions: A list of three tensors with shape (N, 19, 19, 255), (N,38, 38, 255) and (N, 76, 76, 255)
+    :param predictions: A list of three tensors with shape (N, 19, 19, 255), (N, 38, 38, 255) and (N, 76, 76, 255)
     :return: A tensor with the shape (N, num_boxes, 85)
     """
     assert len(predictions) == len(anchors)//3, 'anchor numbers does not match prediction.'
@@ -33,47 +33,53 @@ def yolo3_head(predictions, anchors, num_classes, input_dims):
 
 def _yolo3_head(prediction, num_classes, anchors, input_dims):
     batch_size = np.shape(prediction)[0]
-    stride = input_dims[0] // np.shape(prediction)[1]
-    grid_size = input_dims[0] // stride
     num_anchors = len(anchors)
 
+    grid_size = np.shape(prediction)[1:3]
+    #check if stride on height & width are same
+    assert input_dims[0]//grid_size[0] == input_dims[1]//grid_size[1], 'model stride mismatch.'
+    stride = input_dims[0] // grid_size[0]
+
     prediction = np.reshape(prediction,
-                            (batch_size, num_anchors * grid_size * grid_size, num_classes + 5))
+                            (batch_size, num_anchors * grid_size[0] * grid_size[1], num_classes + 5))
 
-    box_xy = expit(prediction[:, :, :2])  # t_x (box x and y coordinates)
-    objectness = expit(prediction[:, :, 4])  # p_o (objectness score)
-    objectness = np.expand_dims(objectness, 2)  # To make the same number of values for axis 0 and 1
+    ################################
+    # generate x_y_offset grid map
+    grid_y = np.arange(grid_size[0])
+    grid_x = np.arange(grid_size[1])
+    x_offset, y_offset = np.meshgrid(grid_x, grid_y)
 
-    grid = np.arange(grid_size)
-    a, b = np.meshgrid(grid, grid)
-
-    x_offset = np.reshape(a, (-1, 1))
-    y_offset = np.reshape(b, (-1, 1))
+    x_offset = np.reshape(x_offset, (-1, 1))
+    y_offset = np.reshape(y_offset, (-1, 1))
 
     x_y_offset = np.concatenate((x_offset, y_offset), axis=1)
     x_y_offset = np.tile(x_y_offset, (1, num_anchors))
     x_y_offset = np.reshape(x_y_offset, (-1, 2))
     x_y_offset = np.expand_dims(x_y_offset, 0)
-
-    box_xy += x_y_offset
+    ################################
 
     # Log space transform of the height and width
-    anchors = [(a[0] / stride, a[1] / stride) for a in anchors]
-    anchors = np.tile(anchors, (grid_size * grid_size, 1))
+    #anchors = [(a[0] / stride, a[1] / stride) for a in anchors]
+    anchors = np.tile(anchors, (grid_size[0] * grid_size[1], 1))
     anchors = np.expand_dims(anchors, 0)
 
     box_wh = np.exp(prediction[:, :, 2:4]) * anchors
+    # Resize detection map back to the input image size
+    #box_wh *= stride
 
+
+    box_xy = expit(prediction[:, :, :2]) + x_y_offset  # t_x (box x and y coordinates)
+    box_xy *= stride
+    # Convert centoids to top left coordinates
+    box_xy -= box_wh / 2
+
+
+    # Sigmoid objectness scores
+    objectness = expit(prediction[:, :, 4])  # p_o (objectness score)
+    objectness = np.expand_dims(objectness, 2)  # To make the same number of values for axis 0 and 1
     # Sigmoid class scores
     class_scores = expit(prediction[:, :, 5:])
     #class_scores = softmax(prediction[:, :, 5:], axis=-1)
-
-    # Resize detection map back to the input image size
-    box_xy *= stride
-    box_wh *= stride
-
-    # Convert centoids to top left coordinates
-    box_xy -= box_wh / 2
 
     return np.concatenate([box_xy, box_wh, objectness, class_scores], axis=2)
 
@@ -300,12 +306,11 @@ def yolo3_adjust_boxes(boxes, img_shape, model_image_size):
     if boxes is None or len(boxes) == 0:
         return []
 
-    image_shape = np.array(img_shape, dtype='float32')
-    #height, width = image_shape
-    width, height = image_shape
-    adjusted_boxes = []
-
+    # model_image_size & image_shape should be (height, width) format
     model_image_size = np.array(model_image_size, dtype='float32')
+    image_shape = np.array(img_shape, dtype='float32')
+    height, width = image_shape
+    #width, height = image_shape
 
     new_shape = np.round(image_shape * np.min(model_image_size/image_shape))
     offset = (model_image_size-new_shape)/2.
@@ -316,15 +321,16 @@ def yolo3_adjust_boxes(boxes, img_shape, model_image_size):
     #ratio_x = width / model_image_size[1]
     #ratio_y = height / model_image_size[0]
 
+    adjusted_boxes = []
     for box in boxes:
         x, y, w, h = box
 
         w *= scale
         h *= scale
-        xmin = (x - offset[0]) * scale
-        ymin = (y - offset[1]) * scale
-        xmax = (x - offset[0]) * scale + w
-        ymax = (y - offset[1]) * scale + h
+        xmin = (x - offset[1]) * scale
+        ymin = (y - offset[0]) * scale
+        xmax = (x - offset[1]) * scale + w
+        ymax = (y - offset[0]) * scale + h
 
         # Rescale box coordinates
         #xmin = int(x * ratio_x)
