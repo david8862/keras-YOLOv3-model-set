@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(yoloDetection LANGUAGES CXX)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+#SET(CMAKE_BUILD_TYPE "Debug")
 SET(CMAKE_BUILD_TYPE "Release")
 
 #### specify the build flag
