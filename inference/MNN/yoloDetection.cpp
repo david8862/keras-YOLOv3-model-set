@@ -596,31 +596,36 @@ void RunInference(Settings* s) {
     // create model & session
     std::shared_ptr<Interpreter> net(Interpreter::createFromFile(s->model_name.c_str()));
     ScheduleConfig config;
-    config.type  = MNN_FORWARD_AUTO;
+    config.type  = MNN_FORWARD_AUTO; //MNN_FORWARD_CPU, MNN_FORWARD_OPENCL
+    config.backupType = MNN_FORWARD_CPU;
     config.numThread = s->number_of_threads;
+
+    BackendConfig bnconfig;
+    bnconfig.memory = BackendConfig::Memory_Normal; //Memory_High, Memory_Low
+    bnconfig.power = BackendConfig::Power_Normal; //Power_High, Power_Low
+    bnconfig.precision = BackendConfig::Precision_Normal; //Precision_High, Precision_Low
+    config.backendConfig = &bnconfig;
+
     auto session = net->createSession(config);
+    // since we don't need to create other sessions any more,
+    // just release model data to save memory
+    net->releaseModel();
 
     // get input tensor info
     // assume only 1 input tensor (image_input)
     auto inputs = net->getSessionInputAll(session);
     MNN_ASSERT(inputs.size() == 1);
     auto image_input = inputs.begin()->second;
-
-    auto shape = image_input->shape();
     int input_width = image_input->width();
     int input_height = image_input->height();
     int input_channel = image_input->channel();
-    if (input_channel == 0)
-        input_channel = 1;
-    if (input_height == 0)
-        input_height = 1;
-    if (input_width == 0)
-        input_width = 1;
     MNN_PRINT("image_input: width:%d , height:%d, channel: %d\n", input_width, input_height, input_channel);
 
-    shape[0] = 1;
-    net->resizeTensor(image_input, shape);
-    net->resizeSession(session);
+    //auto shape = image_input->shape();
+    //shape[0] = 1;
+    //net->resizeTensor(image_input, shape);
+    //net->resizeSession(session);
+
 
     // get output tensor info (e.g. for YOLOv3 arch):
     //image_input: 1 x 416 x 416 x 3
@@ -748,6 +753,9 @@ void RunInference(Settings* s) {
         MNN_PRINT("%s %f (%d, %d) (%d, %d)\n", classes[prediction_nms.class_index].c_str(), prediction_nms.confidence, int(prediction_nms.x), int(prediction_nms.y), int(prediction_nms.x + prediction_nms.width), int(prediction_nms.y + prediction_nms.height));
     }
 
+    // Release session and model
+    net->releaseSession(session);
+    //net->releaseModel();
     return;
 }
 

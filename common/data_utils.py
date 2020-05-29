@@ -3,8 +3,9 @@
 """Data process utility functions."""
 import numpy as np
 import random
-from PIL import Image, ImageEnhance
 import cv2
+from PIL import Image, ImageEnhance, ImageFilter
+import imgaug.augmenters as iaa
 #from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
 
 
@@ -348,6 +349,54 @@ def random_grayscale(image, jitter=.2):
         #back to 3 channels fake RGB
         image = image.convert('L')
         image = image.convert('RGB')
+
+    return image
+
+
+def random_blur(image, jitter=.1):
+    """
+    Random add normal blur to image
+
+    # Arguments
+        image: origin image for blur
+            PIL Image object containing image data
+        jitter: jitter range for blur probability,
+            scalar to control the blur probability.
+
+    # Returns
+        image: adjusted PIL Image object.
+    """
+    blur = rand() < jitter
+    if blur:
+        image = image.filter(ImageFilter.BLUR)
+
+    return image
+
+
+def random_motion_blur(image, jitter=.2):
+    """
+    Random add motion blur on image
+
+    # Arguments
+        image: origin image for motion blur
+            PIL Image object containing image data
+        jitter: jitter range for blur probability,
+            scalar to control the blur probability.
+
+    # Returns
+        image: adjusted PIL Image object.
+    """
+    motion_blur = rand() < jitter
+    if motion_blur:
+        img = np.array(image)
+        # random blur severity from 1 to 5
+        severity = np.random.randint(1, 6)
+
+        seq = iaa.Sequential([iaa.imgcorruptlike.MotionBlur(severity=severity)])
+        #seq = iaa.Sequential([iaa.MotionBlur(k=30)])
+
+        img = seq(images=np.expand_dims(img, 0))
+        image = Image.fromarray(img[0])
 
     return image
 

@@ -225,7 +225,7 @@ optional arguments:
                         path to anchor definitions,
                         default=configs/yolo3_anchors.txt
   --model_image_size MODEL_IMAGE_SIZE
-                        Initial model image input size as <num>x<num>, default
+                        Initial model image input size as <height>x<width>, default
                         416x416
   --weights_path WEIGHTS_PATH
                         Pretrained model/weights file for fine tune
@@ -308,6 +308,8 @@ We need to dump out inference model from training checkpoint for eval or demo. F
 ```
 
 Change model_type, anchors file & class file for different training mode. If "--model_pruning" was added in training, you also need to use "--pruning_model" here for dumping out the pruned model.
+
+NOTE: Now you can dump out a non-square input shape (e.g. using `--model_image_size=320x416`) model and do inference as normal, but the input height & weights must be multiples of 32.
 
 ### Evaluation
 Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/eval.py) to do evaluation on the inference model with your test data. It support following metrics:
@@ -433,7 +435,6 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 ### TODO
 - [ ] DropBlock on YOLO head
 - [ ] Gaussian YOLOv3 loss
-- [ ] support non-square input
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones/imagenet_training)
 
 

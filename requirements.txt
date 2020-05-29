@@ -16,3 +16,5 @@ onnx
 onnxruntime
 tfcoreml
 sympy
+imgaug
+imagecorruptions
