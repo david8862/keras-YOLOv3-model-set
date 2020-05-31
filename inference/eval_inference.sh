@@ -17,15 +17,15 @@ IMAGE_NUM=$(ls $IMAGE_PATH | wc -l)
 
 #prepare process bar
 i=0
-BAR_STR=""
+ICON_ARRAY=("\\" "|" "/" "-")
 
 
 for IMAGE in $IMAGE_LIST
 do
     ./yoloDetection -m $MODEL_FILE -i $IMAGE_PATH"/"$IMAGE -a $ANCHOR_FILE -l $CLASS_FILE -n $CONF_THRD -r $RESULT_FILE -t 4 -c 1 -w 1 2>&1 >> /dev/null
     #update process bar
-    printf "%d/%d [%s]\r" "$i" "$IMAGE_NUM" "$BAR_STR"
+    let index=i%4
+    printf "inference process: %d/%d [%c]\r" "$i" "$IMAGE_NUM" "${ICON_ARRAY[$index]}"
     let i=i+1
-    BAR_STR+="#"
 done
 

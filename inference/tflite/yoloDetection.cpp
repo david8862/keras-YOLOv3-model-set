@@ -484,6 +484,8 @@ uint8_t* letterbox_resize(uint8_t* inputImage, int image_width, int image_height
                      padding_image, padding_width, padding_height, 0, image_channel);
 
     uint8_t* input_image = (uint8_t*)malloc(input_height * input_width * input_channel * sizeof(uint8_t));
+    // here we need to fulfill the input image to 128 first, to align with the training preprocess
+    memset((void*)input_image, 128, input_height * input_width * input_channel * sizeof(uint8_t));
 
     // paste input image into letterbox image
     for (int h = 0; h < padding_height; h++) {
@@ -704,16 +706,22 @@ void RunInference(Settings* s) {
   // Show detection result
   LOG(INFO) << "Detection result:\n";
   for(auto prediction_nms : prediction_nms_list) {
+      // change box to (xmin,ymin,xmax,ymax) format
+      int x_min = std::max(0, int(prediction_nms.x));
+      int y_min = std::max(0, int(prediction_nms.y));
+      int x_max = std::min(image_width, int(prediction_nms.x + prediction_nms.width));
+      int y_max = std::min(image_height, int(prediction_nms.y + prediction_nms.height));
+
       LOG(INFO) << classes[prediction_nms.class_index] << " "
                 << prediction_nms.confidence << " "
-                << "(" << int(prediction_nms.x) << ", " << int(prediction_nms.y) << ")"
-                << " (" << int(prediction_nms.x + prediction_nms.width) << ", " << int(prediction_nms.y + prediction_nms.height) << ")\n";
+                << "(" << x_min << ", " << y_min << ")"
+                << " (" << x_max << ", " << y_max << ")\n";
       // save detection result to file
       resultOs << " "
-               << int(prediction_nms.x) << ","
-               << int(prediction_nms.y) << ","
-               << int(prediction_nms.x + prediction_nms.width) << ","
-               << int(prediction_nms.y + prediction_nms.height) << ","
+               << x_min << ","
+               << y_min << ","
+               << x_max << ","
+               << y_max << ","
                << prediction_nms.class_index << ","
                << prediction_nms.confidence;
   }
