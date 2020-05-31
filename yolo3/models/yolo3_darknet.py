@@ -276,8 +276,10 @@ def custom_tiny_yolo3_body(inputs, num_anchors, num_classes, weights_path):
     print('Load weights {}.'.format(weights_path))
 
     #get conv output in original network
-    y1 = base_model.get_layer('leaky_re_lu_8').output
-    y2 = base_model.get_layer('leaky_re_lu_10').output
+    #y1 = base_model.get_layer('leaky_re_lu_8').output
+    #y2 = base_model.get_layer('leaky_re_lu_10').output
+    y1 = base_model.layers[40].output
+    y2 = base_model.layers[41].output
     y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='prediction_13')(y1)
     y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='prediction_26')(y2)
     return Model(inputs, [y1,y2])

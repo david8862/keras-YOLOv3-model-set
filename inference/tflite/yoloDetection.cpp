@@ -17,6 +17,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
+#include <climits>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -647,7 +648,7 @@ void RunInference(Settings* s) {
 
   // Do yolo_postprocess to parse out valid predictions
   std::vector<t_prediction> prediction_list;
-  float conf_threshold = 0.1;
+  float conf_threshold = s->conf_thrd;
   float iou_threshold = 0.4;
   const std::vector<int> outputs = interpreter->outputs();
 
@@ -688,6 +689,18 @@ void RunInference(Settings* s) {
   gettimeofday(&stop_time, nullptr);
   LOG(INFO) << "NMS time: " << (get_us(stop_time) - get_us(start_time)) / 1000 << " ms\n";
 
+
+  // Open result txt file, in append mode
+  std::ofstream resultOs (s->result_file_name.c_str(), std::ios::out | std::ios::app);
+  // Get real path for input image
+  char real_path_buff[PATH_MAX];
+  if(realpath(s->input_img_name.c_str(), real_path_buff)) {
+      resultOs << real_path_buff;
+  } else {
+      LOG(FATAL) << "fail to get image real path!\n";
+      exit(-1);
+  }
+
   // Show detection result
   LOG(INFO) << "Detection result:\n";
   for(auto prediction_nms : prediction_nms_list) {
@@ -695,7 +708,17 @@ void RunInference(Settings* s) {
                 << prediction_nms.confidence << " "
                 << "(" << int(prediction_nms.x) << ", " << int(prediction_nms.y) << ")"
                 << " (" << int(prediction_nms.x + prediction_nms.width) << ", " << int(prediction_nms.y + prediction_nms.height) << ")\n";
+      // save detection result to file
+      resultOs << " "
+               << int(prediction_nms.x) << ","
+               << int(prediction_nms.y) << ","
+               << int(prediction_nms.x + prediction_nms.width) << ","
+               << int(prediction_nms.y + prediction_nms.height) << ","
+               << prediction_nms.class_index << ","
+               << prediction_nms.confidence;
   }
+  resultOs << "\n";
+  resultOs.close();
 
   return;
 }
@@ -707,12 +730,14 @@ void display_usage() {
       << "--image, -i: image_name.jpg\n"
       << "--classes, -l: classes labels for the model\n"
       << "--anchors, -a: anchor values for the model\n"
+      << "--conf_thrd, -n: confidence threshold for detection filter\n"
       << "--input_mean, -b: input mean\n"
       << "--input_std, -s: input standard deviation\n"
       << "--allow_fp16, -f: [0|1], allow running fp32 models with fp16 or not\n"
       << "--threads, -t: number of threads\n"
       << "--count, -c: loop interpreter->Invoke() for certain times\n"
       << "--warmup_runs, -w: number of warmup runs\n"
+      << "--result, -r: result txt file to save detection output\n"
       << "--verbose, -v: [0|1] print more information\n"
       << "\n";
 }
@@ -727,12 +752,14 @@ int Main(int argc, char** argv) {
         {"image", required_argument, nullptr, 'i'},
         {"classes", required_argument, nullptr, 'l'},
         {"anchors", required_argument, nullptr, 'a'},
+        {"conf_thrd", required_argument, nullptr, 'n'},
         {"input_mean", required_argument, nullptr, 'b'},
         {"input_std", required_argument, nullptr, 's'},
         {"threads", required_argument, nullptr, 't'},
         {"allow_fp16", required_argument, nullptr, 'f'},
         {"count", required_argument, nullptr, 'c'},
         {"warmup_runs", required_argument, nullptr, 'w'},
+        {"result", required_argument, nullptr, 'r'},
         {"verbose", required_argument, nullptr, 'v'},
         {"help", no_argument, nullptr, 'h'},
         {nullptr, 0, nullptr, 0}};
@@ -741,7 +768,7 @@ int Main(int argc, char** argv) {
     int option_index = 0;
 
     c = getopt_long(argc, argv,
-                    "a:b:c:f:hi:l:m:s:t:v:w:", long_options,
+                    "a:b:c:f:hi:l:m:n:r:s:t:v:w:", long_options,
                     &option_index);
 
     /* Detect the end of the options. */
@@ -771,6 +798,9 @@ int Main(int argc, char** argv) {
       case 'm':
         s.model_name = optarg;
         break;
+      case 'n':
+        s.conf_thrd = strtod(optarg, nullptr);
+        break;
       case 's':
         s.input_std = strtod(optarg, nullptr);
         break;
@@ -785,6 +815,9 @@ int Main(int argc, char** argv) {
       case 'w':
         s.number_of_warmup_runs =
             strtol(optarg, nullptr, 10);  // NOLINT(runtime/deprecated_fn)
+        break;
+      case 'r':
+        s.result_file_name = optarg;
         break;
       case 'h':
       case '?':

@@ -116,14 +116,16 @@ Usage: yoloDetection
 --image, -i: image_name.jpg
 --classes, -l: classes labels for the model
 --anchors, -a: anchor values for the model
+--conf_thrd, -n: confidence threshold for detection filter
 --input_mean, -b: input mean
 --input_std, -s: input standard deviation
 --threads, -t: number of threads
 --count, -c: loop model run for certain times
 --warmup_runs, -w: number of warmup runs
+--result, -r: result txt file to save detection output
 
 
-# ./yoloDetection -m model.pb.mnn -i ../../../example/dog.jpg -l ../../../configs/voc_classes.txt -a ../../../configs/tiny_yolo3_anchors.txt -t 8 -c 10 -w 3
+# ./yoloDetection -m model.pb.mnn -i ../../../example/dog.jpg -l ../../../configs/voc_classes.txt -a ../../../configs/tiny_yolo3_anchors.txt -n 0.1 -t 8 -c 10 -w 3
 Can't Find type=4 backend, use 0 instead
 image_input: w:320 , h:320, bpp: 3
 num_classes: 20
@@ -213,15 +215,17 @@ Usage: yoloDetection
 --image, -i: image_name.jpg
 --classes, -l: classes labels for the model
 --anchors, -a: anchor values for the model
+--conf_thrd, -n: confidence threshold for detection filter
 --input_mean, -b: input mean
 --input_std, -s: input standard deviation
 --allow_fp16, -f: [0|1], allow running fp32 models with fp16 or not
 --threads, -t: number of threads
 --count, -c: loop interpreter->Invoke() for certain times
 --warmup_runs, -w: number of warmup runs
+--result, -r: result txt file to save detection output
 --verbose, -v: [0|1] print more information
 
-# ./yoloDetection -m model.tflite -i ../../../example/dog.jpg -l ../../../configs/voc_classes.txt -a ../../../configs/tiny_yolo3_anchors.txt -t 8 -c 10 -w 3 -v 1
+# ./yoloDetection -m model.tflite -i ../../../example/dog.jpg -l ../../../configs/voc_classes.txt -a ../../../configs/tiny_yolo3_anchors.txt -n 0.1 -t 8 -c 10 -w 3 -v 1
 Loaded model model.tflite
 resolved reporter
 num_classes: 20

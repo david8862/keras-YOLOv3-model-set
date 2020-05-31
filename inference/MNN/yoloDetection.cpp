@@ -6,6 +6,8 @@
 //
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
 #include "MNN/ImageProcess.hpp"
 #include "MNN/Interpreter.hpp"
 #define MNN_OPEN_TIME_TRACE
@@ -49,12 +51,14 @@ struct Settings {
   int loop_count = 1;
   int number_of_threads = 4;
   int number_of_warmup_runs = 2;
+  float conf_thrd = 0.1f;
   float input_mean = 0.0f;
   float input_std = 255.0f;
   std::string model_name = "./model.mnn";
   std::string input_img_name = "./dog.jpg";
   std::string classes_file_name = "./classes.txt";
   std::string anchors_file_name = "./yolo3_anchors.txt";
+  std::string result_file_name = "./result.txt";
   bool input_floating = false;
   //bool verbose = false;
   //string input_layer_type = "uint8_t";
@@ -96,11 +100,13 @@ void display_usage() {
         << "--image, -i: image_name.jpg\n"
         << "--classes, -l: classes labels for the model\n"
         << "--anchors, -a: anchor values for the model\n"
+        << "--conf_thrd, -n: confidence threshold for detection filter\n"
         << "--input_mean, -b: input mean\n"
         << "--input_std, -s: input standard deviation\n"
         << "--threads, -t: number of threads\n"
         << "--count, -c: loop model run for certain times\n"
         << "--warmup_runs, -w: number of warmup runs\n"
+        << "--result, -r: result txt file to save detection output\n"
         //<< "--verbose, -v: [0|1] print more information\n"
         << "\n";
     return;
@@ -719,7 +725,7 @@ void RunInference(Settings* s) {
 
     // Do yolo_postprocess to parse out valid predictions
     std::vector<t_prediction> prediction_list;
-    float conf_threshold = 0.1;
+    float conf_threshold = s->conf_thrd;
     float iou_threshold = 0.4;
 
     gettimeofday(&start_time, nullptr);
@@ -747,11 +753,32 @@ void RunInference(Settings* s) {
     gettimeofday(&stop_time, nullptr);
     MNN_PRINT("NMS time: %lf ms\n", (get_us(stop_time) - get_us(start_time)) / 1000);
 
+    // Open result txt file, in append mode
+    std::ofstream resultOs (s->result_file_name.c_str(), std::ios::out | std::ios::app);
+    // Get real path for input image
+    char real_path_buff[PATH_MAX];
+    if(realpath(inputPath, real_path_buff)) {
+        resultOs << real_path_buff;
+    } else {
+        MNN_PRINT("fail to get image real path!\n");
+        exit(-1);
+    }
+
     // Show detection result
     MNN_PRINT("Detection result:\n");
     for(auto prediction_nms : prediction_nms_list) {
         MNN_PRINT("%s %f (%d, %d) (%d, %d)\n", classes[prediction_nms.class_index].c_str(), prediction_nms.confidence, int(prediction_nms.x), int(prediction_nms.y), int(prediction_nms.x + prediction_nms.width), int(prediction_nms.y + prediction_nms.height));
+        // save detection result to file
+        resultOs << " "
+                 << int(prediction_nms.x) << ","
+                 << int(prediction_nms.y) << ","
+                 << int(prediction_nms.x + prediction_nms.width) << ","
+                 << int(prediction_nms.y + prediction_nms.height) << ","
+                 << prediction_nms.class_index << ","
+                 << prediction_nms.confidence;
     }
+    resultOs << "\n";
+    resultOs.close();
 
     // Release session and model
     net->releaseSession(session);
@@ -770,11 +797,13 @@ int main(int argc, char** argv) {
         {"image", required_argument, nullptr, 'i'},
         {"classes", required_argument, nullptr, 'l'},
         {"anchors", required_argument, nullptr, 'a'},
+        {"conf_thrd", required_argument, nullptr, 'n'},
         {"input_mean", required_argument, nullptr, 'b'},
         {"input_std", required_argument, nullptr, 's'},
         {"threads", required_argument, nullptr, 't'},
         {"count", required_argument, nullptr, 'c'},
         {"warmup_runs", required_argument, nullptr, 'w'},
+        {"result", required_argument, nullptr, 'r'},
         //{"verbose", required_argument, nullptr, 'v'},
         {"help", no_argument, nullptr, 'h'},
         {nullptr, 0, nullptr, 0}};
@@ -783,7 +812,7 @@ int main(int argc, char** argv) {
     int option_index = 0;
 
     c = getopt_long(argc, argv,
-                    "a:b:c:hi:l:m:s:t:w:", long_options,
+                    "a:b:c:hi:l:m:n:r:s:t:w:", long_options,
                     &option_index);
 
     /* Detect the end of the options. */
@@ -809,6 +838,9 @@ int main(int argc, char** argv) {
       case 'm':
         s.model_name = optarg;
         break;
+      case 'n':
+        s.conf_thrd = strtod(optarg, nullptr);
+        break;
       case 's':
         s.input_std = strtod(optarg, nullptr);
         break;
@@ -823,6 +855,9 @@ int main(int argc, char** argv) {
       case 'w':
         s.number_of_warmup_runs =
             strtol(optarg, nullptr, 10);  // NOLINT(runtime/deprecated_fn)
+        break;
+      case 'r':
+        s.result_file_name = optarg;
         break;
       case 'h':
       case '?':
