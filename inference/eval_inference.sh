@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ "$#" -ne 6 ]; then
-    echo "Usage: $0 <model_file> <image_path> <anchor_file> <class_file> <conf_thrd> <result_file>"
+if [[ "$#" -ne 5 ]] && [[ "$#" -ne 6 ]]; then
+    echo "Usage: $0 <model_file> <image_path> <anchor_file> <class_file> <result_file> [conf_thrd=0.1]"
     exit 1
 fi
 
@@ -9,8 +9,13 @@ MODEL_FILE=$1
 IMAGE_PATH=$2
 ANCHOR_FILE=$3
 CLASS_FILE=$4
-CONF_THRD=$5
-RESULT_FILE=$6
+RESULT_FILE=$5
+
+if [ "$#" -eq 6 ]; then
+    CONF_THRD=$6
+else
+    CONF_THRD=0.1
+fi
 
 IMAGE_LIST=$(ls $IMAGE_PATH)
 IMAGE_NUM=$(ls $IMAGE_PATH | wc -l)
@@ -19,6 +24,8 @@ IMAGE_NUM=$(ls $IMAGE_PATH | wc -l)
 i=0
 ICON_ARRAY=("\\" "|" "/" "-")
 
+#clean result file first
+rm -rf $RESULT_FILE
 
 for IMAGE in $IMAGE_LIST
 do
@@ -28,4 +35,4 @@ do
     printf "inference process: %d/%d [%c]\r" "$i" "$IMAGE_NUM" "${ICON_ARRAY[$index]}"
     let i=i+1
 done
-
+echo ""

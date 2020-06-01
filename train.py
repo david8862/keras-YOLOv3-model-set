@@ -153,7 +153,7 @@ def main(args):
     print("Transfer training stage")
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, args.batch_size, input_shape))
     #model.fit_generator(train_data_generator,
-    model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment),
+    model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval),
             steps_per_epoch=max(1, num_train//args.batch_size),
             #validation_data=val_data_generator,
             validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes),

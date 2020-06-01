@@ -245,6 +245,18 @@ car 0.945672 (466, 79) (678, 173)
 dog 0.597517 (109, 215) (326, 519)
 ```
 
+### On-device evaluation
+
+1. Build your MNN/TFLite version "yoloDetection" application and put it on device together with [eval_inference.sh](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/inference/eval_inference.sh). Then run the script to generate on-device inference result txt file for test images:
+
+```
+# ./eval_inference.sh
+Usage: ./eval_inference.sh <model_file> <image_path> <anchor_file> <class_file> <result_file> [conf_thrd=0.1]
+```
+
+2. Use independent evaluation tool [object_detection_eval.py](https://github.com/david8862/Object-Detection-Evaluation/blob/master/object_detection_eval.py) to get mAP from result txt.
+
+
 ### TODO
 - [ ] further latency optimize on yolo3 postprocess C++ implementation
 - [ ] refactor demo app to get common interface
