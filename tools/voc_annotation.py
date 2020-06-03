@@ -83,6 +83,10 @@ if args.classes_path:
 # get real path for dataset
 dataset_realpath = os.path.realpath(args.dataset_path)
 
+# create output path
+os.makedirs(args.output_path, exist_ok=True)
+
+
 # get specific sets to convert
 if args.year is not None:
     sets = [item for item in sets if item[0] == args.year]

@@ -59,7 +59,7 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
     #image = random_blur(image)
 
     # random do motion blur to image
-    image = random_motion_blur(image, jitter=0.2)
+    #image = random_motion_blur(image, prob=0.2)
 
     # random vertical flip image
     image, vertical_flip = random_vertical_flip(image)
@@ -208,7 +208,7 @@ class Yolo3DataGenerator(Sequence):
 
         if self.enhance_augment == 'mosaic':
             # add random mosaic augment on batch ground truth data
-            image_data, box_data = random_mosaic_augment(image_data, box_data, jitter=0.1)
+            image_data, box_data = random_mosaic_augment(image_data, box_data, prob=0.2)
 
         y_true = preprocess_true_boxes(box_data, self.input_shape, self.anchors, self.num_classes)
 
@@ -249,7 +249,7 @@ def yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num
 
         if enhance_augment == 'mosaic':
             # add random mosaic augment on batch ground truth data
-            image_data, box_data = random_mosaic_augment(image_data, box_data, jitter=0.2)
+            image_data, box_data = random_mosaic_augment(image_data, box_data, prob=0.2)
 
         y_true = preprocess_true_boxes(box_data, input_shape, anchors, num_classes)
         yield [image_data, *y_true], np.zeros(batch_size)

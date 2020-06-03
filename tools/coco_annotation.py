@@ -56,6 +56,10 @@ classes = get_classes(args.classes_path)
 # get real path for dataset
 dataset_realpath = os.path.realpath(args.dataset_path)
 
+# create output path
+os.makedirs(args.output_path, exist_ok=True)
+
+
 for dataset, datatype in sets:
     image_annotation_dict = defaultdict(list)
     coco_annotation_file = open("%s/annotations/%s.json"%(dataset_realpath, dataset),

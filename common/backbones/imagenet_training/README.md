@@ -40,8 +40,8 @@ usage: train_imagenet.py [-h] [--model_type MODEL_TYPE]
                          [--batch_size BATCH_SIZE] [--optim_type OPTIM_TYPE]
                          [--learning_rate LEARNING_RATE]
                          [--init_epoch INIT_EPOCH] [--total_epoch TOTAL_EPOCH]
-                         [--gpu_num GPU_NUM] [--verify_with_image]
-                         [--dump_headless]
+                         [--gpu_num GPU_NUM] [--evaluate]
+                         [--verify_with_image] [--dump_headless]
                          [--output_model_file OUTPUT_MODEL_FILE]
 
 optional arguments:
@@ -67,6 +67,7 @@ optional arguments:
   --total_epoch TOTAL_EPOCH
                         Total training epochs, default=200
   --gpu_num GPU_NUM     Number of GPU to use, default=1
+  --evaluate            Evaluate a trained model with validation dataset
   --verify_with_image   Verify trained model with image
   --dump_headless       Dump out classification model to headless backbone
                         model
@@ -86,6 +87,12 @@ Checkpoints during training could be found at logs/. Choose a best one as result
 
 MultiGPU usage: use `--gpu_num N` to use N GPUs. It is passed to the [Keras multi_gpu_model()](https://keras.io/utils/#multi_gpu_model).
 
+
+### Evaluate trained model
+
+```
+# python train_imagenet.py --model_type=shufflenet_v2 --weights_path=logs/<checkpoint file> --val_data_path=data/ILSVRC2012_img_val/ --batch_size=64 --evaluate
+```
 
 ### Verify trained model
 

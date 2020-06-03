@@ -288,62 +288,62 @@ def random_sharpness(image, jitter=.5):
     return new_image
 
 
-def random_horizontal_flip(image, jitter=.5):
+def random_horizontal_flip(image, prob=.5):
     """
     Random horizontal flip for image
 
     # Arguments
         image: origin image for horizontal flip
             PIL Image object containing image data
-        jitter: jitter range for flip probability,
+        prob: probability for random flip,
             scalar to control the flip probability.
 
     # Returns
         image: adjusted PIL Image object.
         flip: boolean flag for horizontal flip action
     """
-    flip = rand() < jitter
+    flip = rand() < prob
     if flip:
         image = image.transpose(Image.FLIP_LEFT_RIGHT)
 
     return image, flip
 
 
-def random_vertical_flip(image, jitter=.2):
+def random_vertical_flip(image, prob=.2):
     """
     Random vertical flip for image
 
     # Arguments
         image: origin image for vertical flip
             PIL Image object containing image data
-        jitter: jitter range for flip probability,
+        prob: probability for random flip,
             scalar to control the flip probability.
 
     # Returns
         image: adjusted PIL Image object.
         flip: boolean flag for vertical flip action
     """
-    flip = rand() < jitter
+    flip = rand() < prob
     if flip:
         image = image.transpose(Image.FLIP_TOP_BOTTOM)
 
     return image, flip
 
 
-def random_grayscale(image, jitter=.2):
+def random_grayscale(image, prob=.2):
     """
     Random convert image to grayscale
 
     # Arguments
         image: origin image for grayscale convert
             PIL Image object containing image data
-        jitter: jitter range for convert probability,
+        prob: probability for grayscale convert,
             scalar to control the convert probability.
 
     # Returns
         image: adjusted PIL Image object.
     """
-    convert = rand() < jitter
+    convert = rand() < prob
     if convert:
         #convert to grayscale first, and then
         #back to 3 channels fake RGB
@@ -353,40 +353,40 @@ def random_grayscale(image, jitter=.2):
     return image
 
 
-def random_blur(image, jitter=.1):
+def random_blur(image, prob=.1):
     """
     Random add normal blur to image
 
     # Arguments
         image: origin image for blur
             PIL Image object containing image data
-        jitter: jitter range for blur probability,
+        prob: probability for blur,
             scalar to control the blur probability.
 
     # Returns
         image: adjusted PIL Image object.
     """
-    blur = rand() < jitter
+    blur = rand() < prob
     if blur:
         image = image.filter(ImageFilter.BLUR)
 
     return image
 
 
-def random_motion_blur(image, jitter=.2):
+def random_motion_blur(image, prob=.1):
     """
     Random add motion blur on image
 
     # Arguments
         image: origin image for motion blur
             PIL Image object containing image data
-        jitter: jitter range for blur probability,
+        prob: probability for blur,
             scalar to control the blur probability.
 
     # Returns
         image: adjusted PIL Image object.
     """
-    motion_blur = rand() < jitter
+    motion_blur = rand() < prob
     if motion_blur:
         img = np.array(image)
         # random blur severity from 1 to 5
@@ -465,7 +465,7 @@ def merge_mosaic_bboxes(bboxes, crop_x, crop_y, image_size):
     return box_data
 
 
-def random_mosaic_augment(image_data, boxes_data, jitter=.1):
+def random_mosaic_augment(image_data, boxes_data, prob=.1):
     """
     Random add mosaic augment on batch images and boxes, from YOLOv4
 
@@ -479,14 +479,14 @@ def random_mosaic_augment(image_data, boxes_data, jitter=.1):
             numpy array for normalized batch image data
         boxes_data: origin bboxes for mosaic augment
             numpy array for batch bboxes
-        jitter: jitter range for augment probability,
+        prob: probability for augment ,
             scalar to control the augment probability.
 
     # Returns
         image_data: augmented batch image data.
         boxes_data: augmented batch bboxes data.
     """
-    do_augment = rand() < jitter
+    do_augment = rand() < prob
     if not do_augment:
         return image_data, boxes_data
     else:
@@ -621,7 +621,7 @@ def merge_cutmix_bboxes(bboxes, cut_xmin, cut_ymin, cut_xmax, cut_ymax, image_si
     return box_data
 
 
-def random_cutmix_augment(image_data, boxes_data, jitter=.1):
+def random_cutmix_augment(image_data, boxes_data, prob=.1):
     """
     Random add cutmix augment on batch images and boxes
 
@@ -632,14 +632,14 @@ def random_cutmix_augment(image_data, boxes_data, jitter=.1):
             numpy array for normalized batch image data
         boxes_data: origin bboxes for cutmix augment
             numpy array for batch bboxes
-        jitter: jitter range for augment probability,
+        prob: probability for augment,
             scalar to control the augment probability.
 
     # Returns
         image_data: augmented batch image data.
         boxes_data: augmented batch bboxes data.
     """
-    do_augment = rand() < jitter
+    do_augment = rand() < prob
     if not do_augment:
         return image_data, boxes_data
     else:

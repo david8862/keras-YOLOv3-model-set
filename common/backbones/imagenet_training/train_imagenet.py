@@ -161,6 +161,37 @@ def train(args, model, input_shape):
 
 
 
+def evaluate_model(args, model, input_shape):
+    # eval data generator
+    eval_datagen = ImageDataGenerator(preprocessing_function=preprocess)
+    eval_generator = eval_datagen.flow_from_directory(
+            args.val_data_path,
+            target_size=input_shape,
+            batch_size=args.batch_size)
+
+    # get optimizer
+    optimizer = get_optimizer(args.optim_type, args.learning_rate)
+
+    # start training
+    model.compile(
+              optimizer=optimizer,
+              metrics=['accuracy', 'top_k_categorical_accuracy'],
+              loss='categorical_crossentropy')
+
+    print('Evaluate on {} samples, with batch size {}.'.format(eval_generator.samples, args.batch_size))
+    scores = model.evaluate_generator(
+            eval_generator,
+            steps=eval_generator.samples // args.batch_size,
+            max_queue_size=10,
+            workers=1,
+            use_multiprocessing=False,
+            verbose=1)
+
+    print('Evaluate loss:', scores[0])
+    print('Top-1 accuracy:', scores[1])
+    print('Top-k accuracy:', scores[2])
+
+
 def verify_with_image(model, input_shape):
     from tensorflow.keras.applications.resnet50 import decode_predictions
     from PIL import Image
@@ -194,7 +225,10 @@ def main(args):
         model = multi_gpu_model(model, gpus=args.gpu_num)
     model.summary()
 
-    if args.verify_with_image:
+    if args.evaluate:
+        K.set_learning_phase(0)
+        evaluate_model(args, model, input_shape)
+    elif args.verify_with_image:
         K.set_learning_phase(0)
         verify_with_image(model, input_shape)
     elif args.dump_headless:
@@ -227,6 +261,8 @@ if __name__ == '__main__':
         help = "Total training epochs, default=200")
     parser.add_argument('--gpu_num', type=int, required=False, default=1,
         help='Number of GPU to use, default=1')
+    parser.add_argument('--evaluate', default=False, action="store_true",
+        help='Evaluate a trained model with validation dataset')
     parser.add_argument('--verify_with_image', default=False, action="store_true",
         help='Verify trained model with image')
     parser.add_argument('--dump_headless', default=False, action="store_true",
