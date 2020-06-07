@@ -7,6 +7,7 @@ from tensorflow.keras.models import Model
 
 from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, Darknet_Depthwise_Separable_Conv2D_BN_Leaky
 from yolo3.models.layers import make_last_layers, make_depthwise_separable_last_layers, make_spp_last_layers
+from yolo3.models.layers import yolo3_predictions, yolo3lite_predictions, tiny_yolo3_predictions, tiny_yolo3lite_predictions
 
 
 def resblock_body(x, num_filters, num_blocks):
@@ -73,26 +74,7 @@ def yolo3_body(inputs, num_anchors, num_classes, weights_path=None):
     f2_channel_num = 512
     f3_channel_num = 256
 
-    #feature map 1 head & output (19x19 for 608 input)
-    x, y1 = make_last_layers(f1, f1_channel_num//2, num_anchors*(num_classes+5))
-
-    #upsample fpn merge for feature map 1 & 2
-    x = compose(
-            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
-            UpSampling2D(2))(x)
-    x = Concatenate()([x, f2])
-
-    #feature map 2 head & output (38x38 for 608 input)
-    x, y2 = make_last_layers(x, f2_channel_num//2, num_anchors*(num_classes+5))
-
-    #upsample fpn merge for feature map 2 & 3
-    x = compose(
-            DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
-            UpSampling2D(2))(x)
-    x = Concatenate()([x, f3])
-
-    #feature map 3 head & output (76x76 for 608 input)
-    x, y3 = make_last_layers(x, f3_channel_num//2, num_anchors*(num_classes+5))
+    y1, y2, y3 = yolo3_predictions((f1, f2, f3), (f1_channel_num, f2_channel_num, f3_channel_num), num_anchors, num_classes)
 
     return Model(inputs, [y1,y2,y3])
 
@@ -139,26 +121,7 @@ def yolo3_spp_body(inputs, num_anchors, num_classes, weights_path=None):
     f2_channel_num = 512
     f3_channel_num = 256
 
-    #feature map 1 head & output (19x19 for 608 input)
-    x, y1 = make_spp_last_layers(f1, f1_channel_num//2, num_anchors*(num_classes+5))
-
-    #upsample fpn merge for feature map 1 & 2
-    x = compose(
-            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
-            UpSampling2D(2))(x)
-    x = Concatenate()([x, f2])
-
-    #feature map 2 head & output (38x38 for 608 input)
-    x, y2 = make_last_layers(x, f2_channel_num//2, num_anchors*(num_classes+5))
-
-    #upsample fpn merge for feature map 2 & 3
-    x = compose(
-            DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
-            UpSampling2D(2))(x)
-    x = Concatenate()([x, f3])
-
-    #feature map 3 head & output (76x76 for 608 input)
-    x, y3 = make_last_layers(x, f3_channel_num//2, num_anchors*(num_classes+5))
+    y1, y2, y3 = yolo3_predictions((f1, f2, f3), (f1_channel_num, f2_channel_num, f3_channel_num), num_anchors, num_classes, use_spp=True)
 
     return Model(inputs, [y1,y2,y3])
 
@@ -198,26 +161,7 @@ def yolo3lite_body(inputs, num_anchors, num_classes):
     f2_channel_num = 512
     f3_channel_num = 256
 
-    #feature map 1 head & output (19x19 for 608 input)
-    x, y1 = make_depthwise_separable_last_layers(f1, f1_channel_num//2, num_anchors*(num_classes+5))
-
-    #upsample fpn merge for feature map 1 & 2
-    x = compose(
-            DarknetConv2D_BN_Leaky(f2_channel_num//2, (1,1)),
-            UpSampling2D(2))(x)
-    x = Concatenate()([x, f2])
-
-    #feature map 2 head & output (38x38 for 608 input)
-    x, y2 = make_depthwise_separable_last_layers(x, f2_channel_num//2, num_anchors*(num_classes+5))
-
-    #upsample fpn merge for feature map 2 & 3
-    x = compose(
-            DarknetConv2D_BN_Leaky(f3_channel_num//2, (1,1)),
-            UpSampling2D(2))(x)
-    x = Concatenate()([x, f3])
-
-    #feature map 3 head & output (76x76 for 608 input)
-    x, y3 = make_depthwise_separable_last_layers(x, f3_channel_num//2, num_anchors*(num_classes+5))
+    y1, y2, y3 = yolo3lite_predictions((f1, f2, f3), (f1_channel_num, f2_channel_num, f3_channel_num), num_anchors, num_classes)
 
     return Model(inputs, [y1,y2,y3])
 

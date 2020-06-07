@@ -105,7 +105,7 @@ for year, image_set in sets:
         if not os.path.exists(file_string):
             file_string = '%s/VOC%s/JPEGImages/%s.jpeg'%(dataset_realpath, year, image_id)
         if not os.path.exists(file_string):
-            raise ValueError('image file not exists')
+            raise ValueError('image file for id: {} not exists'.format(image_id))
 
         if has_object(dataset_realpath, year, image_id, args.include_difficult):
             list_file.write(file_string)

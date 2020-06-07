@@ -6,75 +6,66 @@ from tensorflow.keras.layers import MaxPooling2D, Lambda, Concatenate, GlobalAve
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications.mobilenet import MobileNet
 
-from yolo2.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, bottleneck_block, bottleneck_x2_block, space_to_depth_x2, space_to_depth_x2_output_shape
-
+from yolo2.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, yolo2_predictions, yolo2lite_predictions
 
 
 def yolo2_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     """Create YOLO_V2 MobileNet model CNN body in Keras."""
-
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenet.layers)))
 
     # input: 416 x 416 x 3
     # mobilenet.output            : 13 x 13 x (1024*alpha)
     # conv_pw_11_relu(layers[73]) : 26 x 26 x (512*alpha)
 
-    conv_head1 = compose(
-        DarknetConv2D_BN_Leaky(int(1024*alpha), (3, 3)),
-        DarknetConv2D_BN_Leaky(int(1024*alpha), (3, 3)))(mobilenet.output)
+    # f1: 13 x 13 x (1024*alpha)
+    f1 = mobilenet.output
+    # f2: 26 x 26 x (512*alpha)
+    f2 = mobilenet.get_layer('conv_pw_11_relu').output
 
-    # conv_pw_11_relu output shape: 26 x 26 x (512*alpha)
-    conv_pw_11_relu = mobilenet.layers[73].output
-    conv_head2 = DarknetConv2D_BN_Leaky(int(64*alpha), (1, 1))(conv_pw_11_relu)
-    # TODO: Allow Keras Lambda to use func arguments for output_shape?
-    conv_head2_reshaped = Lambda(
-        space_to_depth_x2,
-        output_shape=space_to_depth_x2_output_shape,
-        name='space_to_depth')(conv_head2)
+    f1_channel_num = int(1024*alpha)
+    f2_channel_num = int(512*alpha)
 
-    x = Concatenate()([conv_head2_reshaped, conv_head1])
-    x = DarknetConv2D_BN_Leaky(int(1024*alpha), (3, 3))(x)
-    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1), name='predict_conv')(x)
-    return Model(inputs, x)
+    y = yolo2_predictions((f1, f2), (f1_channel_num, f2_channel_num), num_anchors, num_classes)
+    return Model(inputs, y)
 
 
 def yolo2lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     """Create YOLO_V2 Lite MobileNet model CNN body in Keras."""
-
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenet.layers)))
 
     # input: 416 x 416 x 3
     # mobilenet.output            : 13 x 13 x (1024*alpha)
     # conv_pw_11_relu(layers[73]) : 26 x 26 x (512*alpha)
 
-    conv_head1 = compose(
-        Depthwise_Separable_Conv2D_BN_Leaky(int(1024*alpha), (3, 3), block_id_str='14'),
-        Depthwise_Separable_Conv2D_BN_Leaky(int(1024*alpha), (3, 3), block_id_str='15'))(mobilenet.output)
+    # f1: 13 x 13 x (1024*alpha)
+    f1 = mobilenet.output
+    # f2: 26 x 26 x (512*alpha)
+    f2 = mobilenet.get_layer('conv_pw_11_relu').output
 
-    # conv_pw_11_relu output shape: 26 x 26 x (512*alpha)
-    conv_pw_11_relu = mobilenet.layers[73].output
-    conv_head2 = DarknetConv2D_BN_Leaky(int(64*alpha), (1, 1))(conv_pw_11_relu)
-    # TODO: Allow Keras Lambda to use func arguments for output_shape?
-    conv_head2_reshaped = Lambda(
-        space_to_depth_x2,
-        output_shape=space_to_depth_x2_output_shape,
-        name='space_to_depth')(conv_head2)
+    f1_channel_num = int(1024*alpha)
+    f2_channel_num = int(512*alpha)
 
-    x = Concatenate()([conv_head2_reshaped, conv_head1])
-    x = Depthwise_Separable_Conv2D_BN_Leaky(int(1024*alpha), (3, 3), block_id_str='16')(x)
-    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1), name='predict_conv')(x)
-    return Model(inputs, x)
+    y = yolo2lite_predictions((f1, f2), (f1_channel_num, f2_channel_num), num_anchors, num_classes)
+    return Model(inputs, y)
 
 
 def tiny_yolo2_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     """Create Tiny YOLO_V2 MobileNet model CNN body in Keras."""
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenet.layers)))
 
     # input: 416 x 416 x 3
     # mobilenet.output : 13 x 13 x (1024*alpha)
+
+    # f1: 13 x 13 x (1024*alpha)
+    f1 = mobilenet.output
+    f1_channel_num = int(1024*alpha)
+
     y = compose(
-            DarknetConv2D_BN_Leaky(int(1024*alpha), (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv'))(mobilenet.output)
+            DarknetConv2D_BN_Leaky(f1_channel_num, (3,3)),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv'))(f1)
 
     return Model(inputs, y)
 
@@ -82,11 +73,17 @@ def tiny_yolo2_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
 def tiny_yolo2lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     """Create Tiny YOLO_V2 Lite MobileNet model CNN body in Keras."""
     mobilenet = MobileNet(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
+    print('backbone layers number: {}'.format(len(mobilenet.layers)))
 
     # input: 416 x 416 x 3
     # mobilenet.output : 13 x 13 x (1024*alpha)
+
+    # f1: 13 x 13 x (1024*alpha)
+    f1 = mobilenet.output
+    f1_channel_num = int(1024*alpha)
+
     y = compose(
-            Depthwise_Separable_Conv2D_BN_Leaky(int(1024*alpha), (3,3), block_id_str='14'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv'))(mobilenet.output)
+            Depthwise_Separable_Conv2D_BN_Leaky(f1_channel_num, (3,3), block_id_str='pred_1'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv'))(f1)
 
     return Model(inputs, y)

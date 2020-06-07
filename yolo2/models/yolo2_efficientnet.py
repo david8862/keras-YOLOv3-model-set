@@ -6,7 +6,7 @@ from tensorflow.keras.layers import MaxPooling2D, Lambda, Concatenate, GlobalAve
 from tensorflow.keras.models import Model
 
 from common.backbones.efficientnet import EfficientNetB0, EfficientNetB1, EfficientNetB2, EfficientNetB3, EfficientNetB4, EfficientNetB5, EfficientNetB6, EfficientNetB7
-from yolo2.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, bottleneck_block, bottleneck_x2_block, space_to_depth_x2, space_to_depth_x2_output_shape
+from yolo2.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, yolo2_predictions, yolo2lite_predictions
 
 
 def get_efficientnet_backbone_info(input_tensor, level=0):
@@ -164,25 +164,16 @@ def yolo2_efficientnet_body(inputs, num_anchors, num_classes, level=0):
             by default we use basic EfficientNetB0 as backbone
     '''
     efficientnet, feature_map_info = get_efficientnet_backbone_info(inputs, level=level)
+    print('backbone layers number: {}'.format(len(efficientnet.layers)))
+
+    f1 = efficientnet.get_layer('top_activation').output
     f1_channel_num = feature_map_info['f1_channel_num']
 
-    conv_head1 = compose(
-        DarknetConv2D_BN_Leaky(f1_channel_num, (3, 3)),
-        DarknetConv2D_BN_Leaky(f1_channel_num, (3, 3)))(efficientnet.output)
-
     f2 = efficientnet.get_layer('block6a_expand_activation').output
+    f2_channel_num = feature_map_info['f2_channel_num']
 
-    conv_head2 = DarknetConv2D_BN_Leaky(int(64*(f1_channel_num//1024)), (1, 1))(f2)
-    # TODO: Allow Keras Lambda to use func arguments for output_shape?
-    conv_head2_reshaped = Lambda(
-        space_to_depth_x2,
-        output_shape=space_to_depth_x2_output_shape,
-        name='space_to_depth')(conv_head2)
-
-    x = Concatenate()([conv_head2_reshaped, conv_head1])
-    x = DarknetConv2D_BN_Leaky(f1_channel_num, (3, 3))(x)
-    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1), name='predict_conv')(x)
-    return Model(inputs, x)
+    y = yolo2_predictions((f1, f2), (f1_channel_num, f2_channel_num), num_anchors, num_classes)
+    return Model(inputs, y)
 
 
 def yolo2lite_efficientnet_body(inputs, num_anchors, num_classes, level=0):
@@ -193,25 +184,16 @@ def yolo2lite_efficientnet_body(inputs, num_anchors, num_classes, level=0):
             by default we use basic EfficientNetB0 as backbone
     '''
     efficientnet, feature_map_info = get_efficientnet_backbone_info(inputs, level=level)
+    print('backbone layers number: {}'.format(len(efficientnet.layers)))
+
+    f1 = efficientnet.get_layer('top_activation').output
     f1_channel_num = feature_map_info['f1_channel_num']
 
-    conv_head1 = compose(
-        Depthwise_Separable_Conv2D_BN_Leaky(f1_channel_num, (3, 3)),
-        Depthwise_Separable_Conv2D_BN_Leaky(f1_channel_num, (3, 3)))(efficientnet.output)
-
     f2 = efficientnet.get_layer('block6a_expand_activation').output
+    f2_channel_num = feature_map_info['f2_channel_num']
 
-    conv_head2 = DarknetConv2D_BN_Leaky(int(64*(f1_channel_num//1024)), (1, 1))(f2)
-    # TODO: Allow Keras Lambda to use func arguments for output_shape?
-    conv_head2_reshaped = Lambda(
-        space_to_depth_x2,
-        output_shape=space_to_depth_x2_output_shape,
-        name='space_to_depth')(conv_head2)
-
-    x = Concatenate()([conv_head2_reshaped, conv_head1])
-    x = Depthwise_Separable_Conv2D_BN_Leaky(f1_channel_num, (3, 3))(x)
-    x = DarknetConv2D(num_anchors * (num_classes + 5), (1, 1), name='predict_conv')(x)
-    return Model(inputs, x)
+    y = yolo2lite_predictions((f1, f2), (f1_channel_num, f2_channel_num), num_anchors, num_classes)
+    return Model(inputs, y)
 
 
 def tiny_yolo2_efficientnet_body(inputs, num_anchors, num_classes, level=0):
@@ -222,11 +204,14 @@ def tiny_yolo2_efficientnet_body(inputs, num_anchors, num_classes, level=0):
             by default we use basic EfficientNetB0 as backbone
     '''
     efficientnet, feature_map_info = get_efficientnet_backbone_info(inputs, level=level)
+    print('backbone layers number: {}'.format(len(efficientnet.layers)))
+
+    f1 = efficientnet.get_layer('top_activation').output
     f1_channel_num = feature_map_info['f1_channel_num']
 
     y = compose(
             DarknetConv2D_BN_Leaky(f1_channel_num, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv'))(efficientnet.output)
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv'))(f1)
 
     return Model(inputs, y)
 
@@ -239,11 +224,14 @@ def tiny_yolo2lite_efficientnet_body(inputs, num_anchors, num_classes, level=0):
             by default we use basic EfficientNetB0 as backbone
     '''
     efficientnet, feature_map_info = get_efficientnet_backbone_info(inputs, level=level)
+    print('backbone layers number: {}'.format(len(efficientnet.layers)))
+
+    f1 = efficientnet.get_layer('top_activation').output
     f1_channel_num = feature_map_info['f1_channel_num']
 
     y = compose(
-            Depthwise_Separable_Conv2D_BN_Leaky(f1_channel_num, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv'))(efficientnet.output)
+            Depthwise_Separable_Conv2D_BN_Leaky(f1_channel_num, (3,3), block_id_str='pred_1'),
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv'))(f1)
 
     return Model(inputs, y)
 
