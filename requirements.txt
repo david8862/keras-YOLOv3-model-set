@@ -12,6 +12,7 @@ mnn
 Cython
 pycocotools
 keras2onnx
+tf2onnx
 onnx
 onnxruntime
 tfcoreml

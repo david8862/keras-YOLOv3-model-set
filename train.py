@@ -135,16 +135,20 @@ def main(args):
     # prepare optimizer
     optimizer = get_optimizer(args.optimizer, args.learning_rate, decay_type=None)
 
-    # get train model
-    model = get_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, optimizer=optimizer, label_smoothing=args.label_smoothing, model_pruning=args.model_pruning, pruning_end_step=pruning_end_step)
     # support multi-gpu training
-    template_model = None
     if args.gpu_num >= 2:
-        # keep the template model for saving result
-        template_model = model
-        model = multi_gpu_model(model, gpus=args.gpu_num)
-        # recompile multi gpu model
-        model.compile(optimizer=optimizer, loss={'yolo_loss': lambda y_true, y_pred: y_pred})
+        # devices_list=["/gpu:0", "/gpu:1"]
+        devices_list=["/gpu:{}".format(n) for n in range(args.gpu_num)]
+        strategy = tf.distribute.MirroredStrategy(devices=devices_list)
+        print ('Number of devices: {}'.format(strategy.num_replicas_in_sync))
+        with strategy.scope():
+            # get multi-gpu train model
+            model = get_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, optimizer=optimizer, label_smoothing=args.label_smoothing, model_pruning=args.model_pruning, pruning_end_step=pruning_end_step)
+
+    else:
+        # get normal train model
+        model = get_train_model(args.model_type, anchors, num_classes, weights_path=args.weights_path, freeze_level=freeze_level, optimizer=optimizer, label_smoothing=args.label_smoothing, model_pruning=args.model_pruning, pruning_end_step=pruning_end_step)
+
     model.summary()
 
     # Transfer training some epochs with frozen layers first if needed, to get a stable loss.
@@ -180,10 +184,16 @@ def main(args):
     # Unfreeze the whole network for further tuning
     # NOTE: more GPU memory is required after unfreezing the body
     print("Unfreeze and continue training, to fine-tune.")
-    for i in range(len(model.layers)):
-        model.layers[i].trainable = True
-    model.compile(optimizer=optimizer, loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
+    if args.gpu_num >= 2:
+        with strategy.scope():
+            for i in range(len(model.layers)):
+                model.layers[i].trainable = True
+            model.compile(optimizer=optimizer, loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
 
+    else:
+        for i in range(len(model.layers)):
+            model.layers[i].trainable = True
+        model.compile(optimizer=optimizer, loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
 
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, args.batch_size, input_shape))
     #model.fit_generator(train_data_generator,
@@ -202,15 +212,9 @@ def main(args):
 
     # Finally store model
     if args.model_pruning:
-        if template_model is not None:
-            template_model = sparsity.strip_pruning(template_model)
-        else:
-            model = sparsity.strip_pruning(model)
+        model = sparsity.strip_pruning(model)
+    model.save(os.path.join(log_dir, 'trained_final.h5'))
 
-    if template_model is not None:
-        template_model.save(os.path.join(log_dir, 'trained_final.h5'))
-    else:
-        model.save(os.path.join(log_dir, 'trained_final.h5'))
 
 
 if __name__ == '__main__':

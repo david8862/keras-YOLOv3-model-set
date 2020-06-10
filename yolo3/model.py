@@ -13,7 +13,7 @@ from tensorflow.keras.optimizers import Adam
 
 from yolo3.models.yolo3_darknet import yolo3_body, custom_tiny_yolo3_body, yolo3lite_body, tiny_yolo3lite_body, custom_yolo3_spp_body
 from yolo3.models.yolo3_mobilenet import yolo3_mobilenet_body, tiny_yolo3_mobilenet_body, yolo3lite_mobilenet_body, yolo3lite_spp_mobilenet_body, tiny_yolo3lite_mobilenet_body
-from yolo3.models.yolo3_mobilenetv2 import yolo3_mobilenetv2_body, tiny_yolo3_mobilenetv2_body, yolo3lite_mobilenetv2_body, yolo3lite_spp_mobilenetv2_body, tiny_yolo3lite_mobilenetv2_body
+from yolo3.models.yolo3_mobilenetv2 import yolo3_mobilenetv2_body, tiny_yolo3_mobilenetv2_body, yolo3lite_mobilenetv2_body, yolo3lite_spp_mobilenetv2_body, tiny_yolo3lite_mobilenetv2_body, yolo3_ultralite_mobilenetv2_body, tiny_yolo3_ultralite_mobilenetv2_body
 from yolo3.models.yolo3_shufflenetv2 import yolo3_shufflenetv2_body, tiny_yolo3_shufflenetv2_body, yolo3lite_shufflenetv2_body, yolo3lite_spp_shufflenetv2_body, tiny_yolo3lite_shufflenetv2_body
 from yolo3.models.yolo3_vgg16 import yolo3_vgg16_body, tiny_yolo3_vgg16_body
 from yolo3.models.yolo3_xception import yolo3_xception_body, yolo3lite_xception_body, tiny_yolo3_xception_body, tiny_yolo3lite_xception_body, yolo3_spp_xception_body
@@ -46,6 +46,7 @@ yolo3_model_map = {
     'yolo3_mobilenetv2': [yolo3_mobilenetv2_body, 155, None],
     'yolo3_mobilenetv2_lite': [yolo3lite_mobilenetv2_body, 155, None],
     'yolo3_mobilenetv2_lite_spp': [yolo3lite_spp_mobilenetv2_body, 155, None],
+    'yolo3_mobilenetv2_ultralite': [yolo3_ultralite_mobilenetv2_body, 155, None],
 
     'yolo3_mobilenetv3large': [yolo3_mobilenetv3large_body, 195, None],
     'yolo3_mobilenetv3large_lite': [yolo3lite_mobilenetv3large_body, 195, None],
@@ -98,6 +99,7 @@ yolo3_tiny_model_map = {
     'tiny_yolo3_mobilenet_lite': [tiny_yolo3lite_mobilenet_body, 87, None],
     'tiny_yolo3_mobilenetv2': [tiny_yolo3_mobilenetv2_body, 155, None],
     'tiny_yolo3_mobilenetv2_lite': [tiny_yolo3lite_mobilenetv2_body, 155, None],
+    'tiny_yolo3_mobilenetv2_ultralite': [tiny_yolo3_ultralite_mobilenetv2_body, 155, None],
 
     'tiny_yolo3_mobilenetv3large': [tiny_yolo3_mobilenetv3large_body, 195, None],
     'tiny_yolo3_mobilenetv3large_lite': [tiny_yolo3lite_mobilenetv3large_body, 195, None],
