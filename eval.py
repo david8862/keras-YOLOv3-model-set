@@ -5,8 +5,10 @@ Calculate mAP for YOLO model on some annotation dataset
 """
 import os, argparse, time
 import numpy as np
-from PIL import Image
 import operator
+from operator import mul
+from functools import reduce
+from PIL import Image
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -209,12 +211,14 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
     prediction = []
     for (output_tensor_name, output_tensor) in output_tensor_list:
         output_shape = output_tensor.getShape()
+        output_elementsize = reduce(mul, output_shape)
 
         assert output_tensor.getDataType() == MNN.Halide_Type_Float
 
         # copy output tensor to host, for further postprocess
         tmp_output = MNN.Tensor(output_shape, output_tensor.getDataType(),\
-                    np.zeros(output_shape, dtype=float), output_tensor.getDimensionType())
+                    #np.zeros(output_shape, dtype=float), output_tensor.getDimensionType())
+                    tuple(np.zeros(output_shape, dtype=float).reshape(output_elementsize, -1)), output_tensor.getDimensionType())
 
         output_tensor.copyToHostTensor(tmp_output)
         #tmp_output.printTensorData()
@@ -243,9 +247,9 @@ def yolo_predict_pb(model, image, anchors, num_classes, model_image_size, conf_t
     # NOTE: TF 1.x frozen pb graph need to specify input/output tensor name
     # so we need to hardcode the input/output tensor names here to get them from model
     if len(anchors) == 6:
-        output_tensor_names = ['graph/conv2d_1/BiasAdd:0', 'graph/conv2d_3/BiasAdd:0']
+        output_tensor_names = ['graph/predict_conv_1/BiasAdd:0', 'graph/predict_conv_2/BiasAdd:0']
     elif len(anchors) == 9:
-        output_tensor_names = ['graph/conv2d_3/BiasAdd:0', 'graph/conv2d_8/BiasAdd:0', 'graph/conv2d_13/BiasAdd:0']
+        output_tensor_names = ['graph/predict_conv_1/BiasAdd:0', 'graph/predict_conv_2/BiasAdd:0', 'graph/predict_conv_3/BiasAdd:0']
     elif len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         output_tensor_names = ['graph/predict_conv/BiasAdd:0']

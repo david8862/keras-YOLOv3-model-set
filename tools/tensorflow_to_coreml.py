@@ -35,10 +35,10 @@ def coreml_convert(input_model_file, output_file, model_image_size):
         #output_names = ['predict_conv/BiasAdd']
 
         # Tiny YOLOv3 model with 2 prediction outputs
-        output_names = ['conv2d_1/BiasAdd', 'conv2d_3/BiasAdd']
+        output_names = ['predict_conv_1/BiasAdd', 'predict_conv_2/BiasAdd']
 
         # YOLOv3 model with 3 prediction outputs
-        #output_names = ['conv2d_3/BiasAdd', 'conv2d_8/BiasAdd', 'conv2d_13/BiasAdd']
+        #output_names = ['predict_conv_1/BiasAdd', 'predict_conv_2/BiasAdd', 'predict_conv_3/BiasAdd']
     else:
         raise ValueError('unsupported model type')
 

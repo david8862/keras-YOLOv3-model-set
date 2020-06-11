@@ -191,7 +191,7 @@ def yolo4_predictions(feature_maps, feature_channel_nums, num_anchors, num_class
     x3 = make_yolo_head(x3, f3_channel_num//2)
     y3 = compose(
             DarknetConv2D_BN_Leaky(f3_channel_num, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x3)
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_3'))(x3)
 
     #downsample fpn merge for feature map 3 & 2
     x3_downsample = compose(
@@ -205,7 +205,7 @@ def yolo4_predictions(feature_maps, feature_channel_nums, num_anchors, num_class
     x2 = make_yolo_head(x2, f2_channel_num//2)
     y2 = compose(
             DarknetConv2D_BN_Leaky(f2_channel_num, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_2'))(x2)
 
     #downsample fpn merge for feature map 2 & 1
     x2_downsample = compose(
@@ -219,7 +219,7 @@ def yolo4_predictions(feature_maps, feature_channel_nums, num_anchors, num_class
     x1 = make_yolo_head(x1, f1_channel_num//2)
     y1 = compose(
             DarknetConv2D_BN_Leaky(f1_channel_num, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x1)
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_1'))(x1)
 
     return y1, y2, y3
 
@@ -254,7 +254,7 @@ def yolo4lite_predictions(feature_maps, feature_channel_nums, num_anchors, num_c
     x3 = make_yolo_depthwise_separable_head(x3, f3_channel_num//2, block_id_str='pred_3')
     y3 = compose(
             Depthwise_Separable_Conv2D_BN_Leaky(f3_channel_num, (3,3), block_id_str='pred_3_3'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x3)
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_3'))(x3)
 
     #downsample fpn merge for feature map 3 & 2
     x3_downsample = compose(
@@ -267,7 +267,7 @@ def yolo4lite_predictions(feature_maps, feature_channel_nums, num_anchors, num_c
     x2 = make_yolo_depthwise_separable_head(x2, f2_channel_num//2, block_id_str='pred_4')
     y2 = compose(
             Depthwise_Separable_Conv2D_BN_Leaky(f2_channel_num, (3,3), block_id_str='pred_4_3'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_2'))(x2)
 
     #downsample fpn merge for feature map 2 & 1
     x2_downsample = compose(
@@ -281,7 +281,7 @@ def yolo4lite_predictions(feature_maps, feature_channel_nums, num_anchors, num_c
     x1 = make_yolo_depthwise_separable_head(x1, f1_channel_num//2, block_id_str='pred_5')
     y1 = compose(
             Depthwise_Separable_Conv2D_BN_Leaky(f1_channel_num, (3,3), block_id_str='pred_5_3'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x1)
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_1'))(x1)
 
     return y1, y2, y3
 
@@ -305,7 +305,7 @@ def tiny_yolo4_predictions(feature_maps, feature_channel_nums, num_anchors, num_
             DarknetConv2D_BN_Leaky(f2_channel_num, (3,3)))([x1_upsample, f2])
 
     #feature map 2 output (26 x 26 x f2_channel_num for 416 input)
-    y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1))(x2)
+    y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_2')(x2)
 
     #downsample fpn merge for feature map 2 & 1
     x2_downsample = compose(
@@ -318,7 +318,7 @@ def tiny_yolo4_predictions(feature_maps, feature_channel_nums, num_anchors, num_
             DarknetConv2D_BN_Leaky(f1_channel_num, (3,3)))([x2_downsample, x1])
 
     #feature map 1 output (13 x 13 x f1_channel_num for 416 input)
-    y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1))(x1)
+    y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_1')(x1)
 
     return y1, y2
 
@@ -342,7 +342,7 @@ def tiny_yolo4lite_predictions(feature_maps, feature_channel_nums, num_anchors, 
             Depthwise_Separable_Conv2D_BN_Leaky(filters=f2_channel_num, kernel_size=(3, 3), block_id_str='pred_1'))([x1_upsample, f2])
 
     #feature map 2 output (26 x 26 x f2_channel_num for 416 input)
-    y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1))(x2)
+    y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_2')(x2)
 
     #downsample fpn merge for feature map 2 & 1
     x2_downsample = compose(
@@ -355,7 +355,7 @@ def tiny_yolo4lite_predictions(feature_maps, feature_channel_nums, num_anchors, 
             Depthwise_Separable_Conv2D_BN_Leaky(filters=f1_channel_num, kernel_size=(3, 3), block_id_str='pred_3'))([x2_downsample, x1])
 
     #feature map 1 output (13 x 13 x f1_channel_num for 416 input)
-    y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1))(x1)
+    y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_1')(x1)
 
     return y1, y2
 

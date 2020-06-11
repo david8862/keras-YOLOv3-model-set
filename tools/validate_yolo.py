@@ -4,6 +4,8 @@ import time
 from PIL import Image
 import os, sys, argparse
 import numpy as np
+from operator import mul
+from functools import reduce
 import MNN
 import onnxruntime
 from tensorflow.keras.models import load_model
@@ -180,13 +182,15 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, loop_c
     prediction = []
     for (output_tensor_name, output_tensor) in output_tensor_list:
         output_shape = output_tensor.getShape()
+        output_elementsize = reduce(mul, output_shape)
         print('output tensor name: {}, shape: {}'.format(output_tensor_name, output_shape))
 
         assert output_tensor.getDataType() == MNN.Halide_Type_Float
 
         # copy output tensor to host, for further postprocess
         tmp_output = MNN.Tensor(output_shape, output_tensor.getDataType(),\
-                    np.zeros(output_shape, dtype=float), output_tensor.getDimensionType())
+                    #np.zeros(output_shape, dtype=float), output_tensor.getDimensionType())
+                    tuple(np.zeros(output_shape, dtype=float).reshape(output_elementsize, -1)), output_tensor.getDimensionType())
 
         output_tensor.copyToHostTensor(tmp_output)
         #tmp_output.printTensorData()
@@ -215,9 +219,9 @@ def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_i
     # NOTE: TF 1.x frozen pb graph need to specify input/output tensor name
     # so we need to hardcode the input/output tensor names here to get them from model
     if len(anchors) == 6:
-        output_tensor_names = ['graph/conv2d_1/BiasAdd:0', 'graph/conv2d_3/BiasAdd:0']
+        output_tensor_names = ['graph/predict_conv_1/BiasAdd:0', 'graph/predict_conv_2/BiasAdd:0']
     elif len(anchors) == 9:
-        output_tensor_names = ['graph/conv2d_3/BiasAdd:0', 'graph/conv2d_8/BiasAdd:0', 'graph/conv2d_13/BiasAdd:0']
+        output_tensor_names = ['graph/predict_conv_1/BiasAdd:0', 'graph/predict_conv_2/BiasAdd:0', 'graph/predict_conv_3/BiasAdd:0']
     elif len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         output_tensor_names = ['graph/predict_conv/BiasAdd:0']

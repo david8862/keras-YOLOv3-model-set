@@ -74,7 +74,7 @@ yolo3_model_map = {
 
     'yolo3_nano': [yolo3_nano_body, 268, None],
 
-    'yolo4_darknet': [yolo4_body, 250, None],
+    'yolo4_darknet': [yolo4_body, 250, 'weights/cspdarknet53.h5'],
     'yolo4_mobilenet': [yolo4_mobilenet_body, 87, None],
     'yolo4_mobilenet_lite': [yolo4lite_mobilenet_body, 87, None],
     'yolo4_mobilenetv3large': [yolo4_mobilenetv3large_body, 195, None],

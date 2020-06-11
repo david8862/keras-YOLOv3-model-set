@@ -81,8 +81,8 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 # wget -O weights/yolov2-tiny.weights https://pjreddie.com/media/files/yolov2-tiny.weights
 # wget -O weights/yolov2-tiny-voc.weights https://pjreddie.com/media/files/yolov2-tiny-voc.weights
 
+### manually download csdarknet53-omega_final.weights from https://drive.google.com/open?id=18jCwaL4SJ-jOvXrZNGHJ5yz44g9zi8Hm
 # wget -O weights/yolov4.weights https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights
-# wget -O weights/yolov4.conv.137.weights https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.conv.137
 
 # python tools/convert.py cfg/yolov3.cfg weights/yolov3.weights weights/yolov3.h5
 # python tools/convert.py cfg/yolov3-tiny.cfg weights/yolov3-tiny.weights weights/yolov3-tiny.h5
@@ -93,6 +93,8 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 # python tools/convert.py cfg/yolov2-tiny-voc.cfg weights/yolov2-tiny-voc.weights weights/yolov2-tiny-voc.h5
 # python tools/convert.py cfg/darknet53.cfg weights/darknet53.conv.74.weights weights/darknet53.h5
 # python tools/convert.py cfg/darknet19_448_body.cfg weights/darknet19_448.conv.23.weights weights/darknet19.h5
+
+# python tools/convert.py cfg/csdarknet53-omega.cfg weights/csdarknet53-omega_final.weights weights/cspdarknet53.h5
 
 ### make sure to reorder output tensors for YOLOv4 cfg and weights file
 # python tools/convert.py --yolo4_reorder cfg/yolov4.cfg weights/yolov4.weights weights/yolov4.h5

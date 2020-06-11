@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 """YOLO_v4 Model Defined in Keras."""
 
+import os
 from keras_applications.imagenet_utils import _obtain_input_shape
 from tensorflow.keras.utils import get_source_inputs, get_file
 from tensorflow.keras.layers import Add, ZeroPadding2D, UpSampling2D, Concatenate
-from tensorflow.keras.layers import Input, GlobalAveragePooling2D, GlobalMaxPooling2D, Reshape, Flatten, Softmax
+from tensorflow.keras.layers import Input, GlobalAveragePooling2D, AveragePooling2D, GlobalMaxPooling2D, Reshape, Flatten, Softmax
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 
@@ -109,6 +110,7 @@ def CSPDarkNet53(input_shape=None,
 
     if include_top:
         model_name='cspdarknet53'
+        #x = AveragePooling2D(pool_size=2, strides=2, padding='valid', name='avg_pool')(x)
         x = GlobalAveragePooling2D(name='avg_pool')(x)
         x = Reshape((1, 1, 1024))(x)
         x = DarknetConv2D(classes, (1, 1))(x)
