@@ -9,9 +9,13 @@ import argparse
 import shutil
 import subprocess
 from tensorflow.keras.models import load_model
-
+from tensorflow.keras import backend as K
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from common.utils import get_custom_objects
+
+
+def mish(x):
+    return x * K.tanh(K.log(1 + K.exp(K.abs(-x))) + K.maximum(x, 0))
 
 
 def main():
@@ -21,7 +25,9 @@ def main():
     parser.add_argument('--op_set', required=False, type=int, help='onnx op set', default=10)
 
     args = parser.parse_args()
-    model = load_model(args.keras_model_file)
+    custom_ob_dict = get_custom_objects()
+    custom_ob_dict['mish'] = mish
+    model = load_model(args.keras_model_file, custom_objects=custom_object_dict)
     model.save('./tmp/')
 
     cmd = 'python -m tf2onnx.convert --saved_model ./tmp/ --output {} --opset {}'.format(args.output_file, args.op_set)
