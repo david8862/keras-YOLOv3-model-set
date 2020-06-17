@@ -43,6 +43,7 @@ def validate_yolo_model(model_path, image_file, anchors, class_names, model_imag
     if type(prediction) is not list:
         prediction = [prediction]
 
+    prediction.sort(key=lambda x: len(x[0]))
     handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size)
     return
 
@@ -87,6 +88,7 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, loo
     for output_detail in output_details:
         output_data = interpreter.get_tensor(output_detail['index'])
         prediction.append(output_data)
+
     prediction.sort(key=lambda x: len(x[0]))
     handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size)
     return
@@ -205,6 +207,7 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, loop_c
 
         prediction.append(output_data)
 
+    prediction.sort(key=lambda x: len(x[0]))
     handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size)
     return
 
@@ -292,6 +295,7 @@ def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_i
     end = time.time()
     print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
 
+    prediction.sort(key=lambda x: len(x[0]))
     handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size)
 
 
@@ -324,10 +328,10 @@ def validate_yolo_model_onnx(model_path, image_file, anchors, class_names, loop_
     for i in range(loop_count):
         prediction = sess.run(None, feed)
 
-    prediction.sort(key=lambda x: len(x[0]))
     end = time.time()
     print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
 
+    prediction.sort(key=lambda x: len(x[0]))
     handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size)
 
 

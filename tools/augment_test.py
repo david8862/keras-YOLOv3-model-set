@@ -70,9 +70,9 @@ def main():
     boxes_data = np.array(boxes_data)
 
     if args.augment_type == 'mosaic':
-        image_data, boxes_data = random_mosaic_augment(image_data, boxes_data, jitter=1)
+        image_data, boxes_data = random_mosaic_augment(image_data, boxes_data, prob=1)
     elif args.augment_type == 'cutmix':
-        image_data, boxes_data = random_cutmix_augment(image_data, boxes_data, jitter=1)
+        image_data, boxes_data = random_cutmix_augment(image_data, boxes_data, prob=1)
     else:
         raise ValueError('Unsupported augment type')
 

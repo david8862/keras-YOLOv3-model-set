@@ -82,7 +82,7 @@ def mish(x):
     return x * K.tanh(K.softplus(x))
 
 def DarknetConv2D_BN_Mish(*args, **kwargs):
-    """Darknet Convolution2D followed by BatchNormalization and LeakyReLU."""
+    """Darknet Convolution2D followed by BatchNormalization and Mish."""
     no_bias_kwargs = {'use_bias': False}
     no_bias_kwargs.update(kwargs)
     return compose(

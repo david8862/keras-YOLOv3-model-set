@@ -16,7 +16,7 @@ import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import (Conv2D, Input, ZeroPadding2D, Add, Lambda,
                           UpSampling2D, MaxPooling2D, AveragePooling2D, Concatenate, Activation)
-from tensorflow.keras.layers import LeakyReLU
+from tensorflow.keras.layers import LeakyReLU, ReLU
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l2
@@ -166,6 +166,8 @@ def _main(args):
             act_fn = None
             if activation == 'leaky':
                 pass  # Add advanced activation later.
+            elif activation == 'relu':
+                pass  # Add advanced activation later.
             elif activation == 'mish':
                 pass  # Add advanced activation later.
             elif activation != 'linear':
@@ -199,6 +201,10 @@ def _main(args):
                 all_layers.append(act_layer)
             elif activation == 'leaky':
                 act_layer = LeakyReLU(alpha=0.1)(prev_layer)
+                prev_layer = act_layer
+                all_layers.append(act_layer)
+            elif activation == 'relu':
+                act_layer = ReLU()(prev_layer)
                 prev_layer = act_layer
                 all_layers.append(act_layer)
 
