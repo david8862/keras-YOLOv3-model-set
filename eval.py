@@ -124,6 +124,7 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
     for output_detail in output_details:
         output_data = interpreter.get_tensor(output_detail['index'])
         prediction.append(output_data)
+    prediction.sort(key=lambda x: len(x[0]))
 
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
@@ -304,6 +305,7 @@ def yolo_predict_onnx(model, image, anchors, num_classes, conf_threshold):
 
     feed = {input_tensors[0].name: image_data}
     prediction = model.run(None, feed)
+    prediction.sort(key=lambda x: len(x[0]))
 
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
