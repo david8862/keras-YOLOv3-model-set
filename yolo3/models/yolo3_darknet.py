@@ -133,7 +133,7 @@ def custom_yolo3_spp_body(inputs, num_anchors, num_classes, weights_path):
     #TODO: get darknet class number from class file
     num_classes_coco = 80
     base_model = yolo3_spp_body(inputs, num_anchors, num_classes_coco)
-    base_model.load_weights(weights_path, by_name=True)
+    base_model.load_weights(weights_path, by_name=False)
     print('Load weights {}.'.format(weights_path))
 
     #get conv output in original network

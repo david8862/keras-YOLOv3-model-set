@@ -71,6 +71,7 @@ class YOLO_Kmeans:
             else:
                 x_y = ", %d,%d" % (data[i][0], data[i][1])
             f.write(x_y)
+        f.write("\n")
         f.close()
 
     def txt2boxes(self):
@@ -79,7 +80,7 @@ class YOLO_Kmeans:
         for line in f:
             infos = line.split(" ")
             # get image size
-            image = Image.open(infos[0])
+            image = Image.open(infos[0].strip())
             image_width, image_height = image.size
 
             length = len(infos)
