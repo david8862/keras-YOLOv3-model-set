@@ -220,7 +220,7 @@ def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_i
         tf.disable_eager_execution()
 
     # NOTE: TF 1.x frozen pb graph need to specify input/output tensor name
-    # so we need to hardcode the input/output tensor names here to get them from model
+    # so we hardcode the input/output tensor names here to get them from model
     if len(anchors) == 6:
         output_tensor_names = ['graph/predict_conv_1/BiasAdd:0', 'graph/predict_conv_2/BiasAdd:0']
     elif len(anchors) == 9:

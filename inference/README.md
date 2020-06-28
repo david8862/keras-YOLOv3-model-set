@@ -75,7 +75,7 @@ Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-
     or
 
     ```
-    # mnnconvert -f TF --modelFile model.pb --MNNModel model.pb.mnn --bizCode MNN
+    # mnnconvert -f TF --modelFile model.pb --MNNModel model.pb.mnn
     ```
 
 MNN support Post Training Integer quantization, so we can use its python CLI interface to do quantization on the generated .mnn model to get quantized .mnn model for ARM acceleration . A json config file [quantizeConfig.json](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/inference/MNN/configs/quantizeConfig.json) is needed to describe the feeding data:

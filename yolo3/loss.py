@@ -280,6 +280,9 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
         true_class_probs = y_true[l][..., 5:]
         if label_smoothing:
             true_class_probs = _smooth_labels(true_class_probs, label_smoothing)
+            true_objectness_probs = _smooth_labels(object_mask, label_smoothing)
+        else:
+            true_objectness_probs = object_mask
 
         grid, raw_pred, pred_xy, pred_wh = yolo3_head(yolo_outputs[l],
              anchors[anchor_mask[l]], num_classes, input_shape, calc_loss=True)
@@ -306,9 +309,9 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
 
         if use_focal_obj_loss:
             # Focal loss for objectness confidence
-            confidence_loss = sigmoid_focal_loss(object_mask, raw_pred[...,4:5])
+            confidence_loss = sigmoid_focal_loss(true_objectness_probs, raw_pred[...,4:5])
         else:
-            confidence_loss = object_mask * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True)+ \
+            confidence_loss = object_mask * K.binary_crossentropy(true_objectness_probs, raw_pred[...,4:5], from_logits=True)+ \
                 (1-object_mask) * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True) * ignore_mask
 
         if use_focal_loss:

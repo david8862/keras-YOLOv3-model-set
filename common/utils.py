@@ -2,10 +2,13 @@
 # -*- coding=utf-8 -*-
 """Miscellaneous utility functions."""
 
-from PIL import Image
+import os
 import numpy as np
-import os, cv2, colorsys
+import time
+import cv2, colorsys
+from PIL import Image
 from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
+
 from common.backbones.efficientnet import swish
 from common.backbones.mobilenet_v3 import hard_sigmoid, hard_swish
 from yolo4.models.layers import mish
@@ -99,9 +102,9 @@ def get_dataset(annotation_file, shuffle=True):
         lines = [line.strip() for line in lines]
 
     if shuffle:
-        np.random.seed(10101)
+        np.random.seed(int(time.time()))
         np.random.shuffle(lines)
-        np.random.seed(None)
+        #np.random.seed(None)
 
     return lines
 

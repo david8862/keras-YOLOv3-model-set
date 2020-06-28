@@ -247,7 +247,7 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
 
 def yolo_predict_pb(model, image, anchors, num_classes, model_image_size, conf_threshold):
     # NOTE: TF 1.x frozen pb graph need to specify input/output tensor name
-    # so we need to hardcode the input/output tensor names here to get them from model
+    # so we hardcode the input/output tensor names here to get them from model
     if len(anchors) == 6:
         output_tensor_names = ['graph/predict_conv_1/BiasAdd:0', 'graph/predict_conv_2/BiasAdd:0']
     elif len(anchors) == 9:

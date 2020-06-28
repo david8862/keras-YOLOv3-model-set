@@ -300,7 +300,7 @@ MultiGPU usage: use `--gpu_num N` to use N GPUs. It use [tf.distribute.MirroredS
 
 Loss type couldn't be changed from CLI options. You can try them by changing params in [loss.py(v3)](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo3/loss.py) or [loss.py(v2)](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo2/loss.py)
 
-Postprocess type (SoftNMS, DIoU-NMS) could be configured in [postprocess_np.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo3/postprocess_np.py)
+Postprocess type (SoftNMS, DIoU-NMS) could be configured in [yolo_postprocess_np.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/common/yolo_postprocess_np.py)
 
 ### Model dump
 We need to dump out inference model from training checkpoint for eval or demo. Following script cmd work for that.

@@ -136,10 +136,13 @@ def custom_yolo3_spp_body(inputs, num_anchors, num_classes, weights_path):
     base_model.load_weights(weights_path, by_name=False)
     print('Load weights {}.'.format(weights_path))
 
-    #get conv output in original network
-    y1 = base_model.get_layer('leaky_re_lu_58').output
-    y2 = base_model.get_layer('leaky_re_lu_65').output
-    y3 = base_model.get_layer('leaky_re_lu_72').output
+    # reform the predict conv layer for custom dataset classes
+    #y1 = base_model.get_layer('leaky_re_lu_58').output
+    #y2 = base_model.get_layer('leaky_re_lu_65').output
+    #y3 = base_model.get_layer('leaky_re_lu_72').output
+    y1 = base_model.layers[-6].output
+    y2 = base_model.layers[-5].output
+    y3 = base_model.layers[-4].output
     y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='prediction_13')(y1)
     y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='prediction_26')(y2)
     y3 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='prediction_52')(y3)
