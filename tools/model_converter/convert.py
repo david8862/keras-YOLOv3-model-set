@@ -22,7 +22,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.utils import plot_model as plot
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from yolo4.models.layers import mish
 
 parser = argparse.ArgumentParser(description='Darknet To Keras Converter.')

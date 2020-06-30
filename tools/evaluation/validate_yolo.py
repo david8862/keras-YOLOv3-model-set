@@ -12,7 +12,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.lite.python import interpreter as interpreter_wrapper
 import tensorflow as tf
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo2.postprocess_np import yolo2_postprocess_np
 from common.data_utils import preprocess_image
@@ -364,7 +364,7 @@ def main():
     parser.add_argument('--model_path', help='model file to predict', type=str, required=True)
     parser.add_argument('--image_file', help='image file to predict', type=str, required=True)
     parser.add_argument('--anchors_path',help='path to anchor definitions', type=str, required=True)
-    parser.add_argument('--classes_path', help='path to class definitions, default ../configs/voc_classes.txt', type=str, default='../configs/voc_classes.txt')
+    parser.add_argument('--classes_path', help='path to class definitions, default ../../configs/voc_classes.txt', type=str, default='../../configs/voc_classes.txt')
     parser.add_argument('--model_image_size', help='model image input size as <height>x<width>, default 416x416', type=str, default='416x416')
     parser.add_argument('--loop_count', help='loop inference for certain times', type=int, default=1)
 

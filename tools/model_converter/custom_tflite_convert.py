@@ -29,7 +29,7 @@ from tensorflow.python import keras
 from tensorflow.python import tf2
 from tensorflow.python.platform import app
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.utils import get_custom_objects
 
 def _parse_array(values, type_fn=str):

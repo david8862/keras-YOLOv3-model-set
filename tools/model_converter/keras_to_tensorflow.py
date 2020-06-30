@@ -20,7 +20,7 @@ from absl import logging
 from tensorflow.keras import backend as K
 from tensorflow.keras.models import model_from_json, model_from_yaml, load_model
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.utils import get_custom_objects
 
 K.set_learning_phase(0)

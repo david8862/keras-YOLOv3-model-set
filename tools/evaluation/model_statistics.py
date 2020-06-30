@@ -7,7 +7,7 @@ Compatible with TF 1.x and TF 2.x
 import os, sys, argparse
 import tensorflow as tf
 from tensorflow.keras.models import load_model
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.utils import get_custom_objects
 
 # check tf version to be compatible with TF 2.x

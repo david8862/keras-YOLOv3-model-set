@@ -10,7 +10,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from yolo3.data import get_ground_truth_data
 from common.utils import get_custom_objects
 

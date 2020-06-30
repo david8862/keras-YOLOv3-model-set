@@ -10,9 +10,9 @@ sets=[('instances_train2017', 'train2017'), ('instances_val2017', 'val2017')]
 class_count = {}
 
 parser = argparse.ArgumentParser(description='convert COCO dataset annotation to txt annotation file')
-parser.add_argument('--dataset_path', type=str, required=False, help='path to MSCOCO dataset, default is ../mscoco2017', default=os.getcwd()+'/../mscoco2017')
+parser.add_argument('--dataset_path', type=str, required=False, help='path to MSCOCO dataset, default is ../../mscoco2017', default=os.getcwd()+'/../../mscoco2017')
 parser.add_argument('--output_path', type=str, required=False,  help='output path for generated annotation txt files, default is ./', default='./')
-parser.add_argument('--classes_path', type=str, required=False, help='path to class definitions, default is ../configs/coco_classes.txt', default=os.getcwd()+'/../configs/coco_classes.txt')
+parser.add_argument('--classes_path', type=str, required=False, help='path to class definitions, default is ../../configs/coco_classes.txt', default=os.getcwd()+'/../../configs/coco_classes.txt')
 parser.add_argument('--include_no_obj', action="store_true", help='to include no object image', default=False)
 parser.add_argument('--customize_coco', default=False, action="store_true", help='It is a user customize coco dataset. Will not follow standard coco class label')
 args = parser.parse_args()

@@ -5,7 +5,7 @@ A simple script to pick out PascalVOC object from COCO annotation dataset
 """
 import os, sys, argparse
 import numpy as np
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.utils import get_classes, get_dataset
 
 
@@ -13,10 +13,10 @@ def main():
     parser = argparse.ArgumentParser(description='Pick out VOC object from COCO annotation dataset')
     parser.add_argument('--coco_annotation_file', type=str, required=True,
         help='coco annotation txt file')
-    parser.add_argument('--coco_classes_path', type=str, default='../configs/coco_classes.txt',
-        help='path to coco class definitions, default ../configs/coco_classes.txt')
-    parser.add_argument('--voc_classes_path', type=str, default='../configs/voc_classes.txt',
-        help='path to voc class definitions, default ../configs/voc_classes.txt')
+    parser.add_argument('--coco_classes_path', type=str, default='../../configs/coco_classes.txt',
+        help='path to coco class definitions, default ../../configs/coco_classes.txt')
+    parser.add_argument('--voc_classes_path', type=str, default='../../configs/voc_classes.txt',
+        help='path to voc class definitions, default ../../configs/voc_classes.txt')
     parser.add_argument('--output_voc_annotation_file', type=str, required=True,
         help='output voc classes annotation file')
 

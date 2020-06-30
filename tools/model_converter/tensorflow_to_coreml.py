@@ -8,7 +8,7 @@ from tensorflow.keras.models import load_model
 import tensorflow as tf
 import tfcoreml
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.utils import get_custom_objects
 
 def coreml_convert(input_model_file, output_file, model_image_size):

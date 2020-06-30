@@ -63,6 +63,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 
 ```
 # apt install python3-opencv
+# pip install Cython
 # pip install -r requirements.txt
 ```
 
@@ -84,20 +85,20 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 ### manually download csdarknet53-omega_final.weights from https://drive.google.com/open?id=18jCwaL4SJ-jOvXrZNGHJ5yz44g9zi8Hm
 # wget -O weights/yolov4.weights https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.weights
 
-# python tools/convert.py cfg/yolov3.cfg weights/yolov3.weights weights/yolov3.h5
-# python tools/convert.py cfg/yolov3-tiny.cfg weights/yolov3-tiny.weights weights/yolov3-tiny.h5
-# python tools/convert.py cfg/yolov3-spp.cfg weights/yolov3-spp.weights weights/yolov3-spp.h5
-# python tools/convert.py cfg/yolov2.cfg weights/yolov2.weights weights/yolov2.h5
-# python tools/convert.py cfg/yolov2-voc.cfg weights/yolov2-voc.weights weights/yolov2-voc.h5
-# python tools/convert.py cfg/yolov2-tiny.cfg weights/yolov2-tiny.weights weights/yolov2-tiny.h5
-# python tools/convert.py cfg/yolov2-tiny-voc.cfg weights/yolov2-tiny-voc.weights weights/yolov2-tiny-voc.h5
-# python tools/convert.py cfg/darknet53.cfg weights/darknet53.conv.74.weights weights/darknet53.h5
-# python tools/convert.py cfg/darknet19_448_body.cfg weights/darknet19_448.conv.23.weights weights/darknet19.h5
+# python tools/model_converter/convert.py cfg/yolov3.cfg weights/yolov3.weights weights/yolov3.h5
+# python tools/model_converter/convert.py cfg/yolov3-tiny.cfg weights/yolov3-tiny.weights weights/yolov3-tiny.h5
+# python tools/model_converter/convert.py cfg/yolov3-spp.cfg weights/yolov3-spp.weights weights/yolov3-spp.h5
+# python tools/model_converter/convert.py cfg/yolov2.cfg weights/yolov2.weights weights/yolov2.h5
+# python tools/model_converter/convert.py cfg/yolov2-voc.cfg weights/yolov2-voc.weights weights/yolov2-voc.h5
+# python tools/model_converter/convert.py cfg/yolov2-tiny.cfg weights/yolov2-tiny.weights weights/yolov2-tiny.h5
+# python tools/model_converter/convert.py cfg/yolov2-tiny-voc.cfg weights/yolov2-tiny-voc.weights weights/yolov2-tiny-voc.h5
+# python tools/model_converter/convert.py cfg/darknet53.cfg weights/darknet53.conv.74.weights weights/darknet53.h5
+# python tools/model_converter/convert.py cfg/darknet19_448_body.cfg weights/darknet19_448.conv.23.weights weights/darknet19.h5
 
-# python tools/convert.py cfg/csdarknet53-omega.cfg weights/csdarknet53-omega_final.weights weights/cspdarknet53.h5
+# python tools/model_converter/convert.py cfg/csdarknet53-omega.cfg weights/csdarknet53-omega_final.weights weights/cspdarknet53.h5
 
 ### make sure to reorder output tensors for YOLOv4 cfg and weights file
-# python tools/convert.py --yolo4_reorder cfg/yolov4.cfg weights/yolov4.weights weights/yolov4.h5
+# python tools/model_converter/convert.py --yolo4_reorder cfg/yolov4.cfg weights/yolov4.weights weights/yolov4.h5
 
 # python yolo.py --image
 # python yolo.py --input=<your video file>
@@ -126,9 +127,9 @@ Image detection sample:
     path/to/img2.jpg 120,300,250,600,2
     ...
     ```
-    1. For VOC style dataset, you can use [voc_annotation.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/voc_annotation.py) to convert original dataset to our annotation file:
+    1. For VOC style dataset, you can use [voc_annotation.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/dataset_converter/voc_annotation.py) to convert original dataset to our annotation file:
        ```
-       # cd tools && python voc_annotation.py -h
+       # cd tools/dataset_converter/ && python voc_annotation.py -h
        usage: voc_annotation.py [-h] [--dataset_path DATASET_PATH] [--year YEAR]
                                 [--set SET] [--output_path OUTPUT_PATH]
                                 [--classes_path CLASSES_PATH] [--include_difficult]
@@ -139,7 +140,7 @@ Image detection sample:
        optional arguments:
          -h, --help            show this help message and exit
          --dataset_path DATASET_PATH
-                               path to PascalVOC dataset, default is ../VOCdevkit
+                               path to PascalVOC dataset, default is ../../VOCdevkit
          --year YEAR           subset path of year (2007/2012), default will cover
                                both
          --set SET             convert data set, default will cover train, val and
@@ -165,9 +166,9 @@ Image detection sample:
        ```
        P.S. You can use [LabelImg](https://github.com/tzutalin/labelImg) to annotate your object detection dataset with Pascal VOC XML format
 
-    2. For COCO style dataset, you can use [coco_annotation.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/coco_annotation.py) to convert original dataset to our annotation file:
+    2. For COCO style dataset, you can use [coco_annotation.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/dataset_converter/coco_annotation.py) to convert original dataset to our annotation file:
        ```
-       # cd tools && python coco_annotation.py -h
+       # cd tools/dataset_converter/ && python coco_annotation.py -h
        usage: coco_annotation.py [-h] [--dataset_path DATASET_PATH]
                                  [--output_path OUTPUT_PATH]
                                  [--classes_path CLASSES_PATH] [--include_no_obj]
@@ -178,7 +179,7 @@ Image detection sample:
        optional arguments:
          -h, --help            show this help message and exit
          --dataset_path DATASET_PATH
-                               path to MSCOCO dataset, default is ../mscoco2017
+                               path to MSCOCO dataset, default is ../../mscoco2017
          --output_path OUTPUT_PATH
                                output path for generated annotation txt files,
                                default is ./
@@ -324,10 +325,10 @@ Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/ev
 # python eval.py --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.001 --annotation_file=2007_test.txt --save_result
 ```
 
-If you're evaluating with MSCOCO dataset, you can further use [pycoco_eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/pycoco_eval.py) with the generated txt detection result and COCO GT annotation to get official COCO AP with [pycocotools](https://github.com/cocodataset/cocoapi/tree/master/PythonAPI/pycocotools):
+If you're evaluating with MSCOCO dataset, you can further use [pycoco_eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/evaluation/pycoco_eval.py) with the generated txt detection result and COCO GT annotation to get official COCO AP with [pycocotools](https://github.com/cocodataset/cocoapi/tree/master/PythonAPI/pycocotools):
 
 ```
-# cd tools && python pycoco_eval.py -h
+# cd tools/evaluation/ && python pycoco_eval.py -h
 usage: pycoco_eval.py [-h] --result_txt RESULT_TXT --coco_annotation_json
                       COCO_ANNOTATION_JSON
                       [--coco_result_json COCO_RESULT_JSON] [--customize_coco]
@@ -346,10 +347,10 @@ optional arguments:
   --customize_coco      It is a user customize coco dataset. Will not follow
                         standard coco class label
 
-# python pycoco_eval.py --result_txt=../result/detection_result.txt --coco_annotation_json=./instances_val2017.json --coco_result_json=coco_result.json
+# python pycoco_eval.py --result_txt=../../result/detection_result.txt --coco_annotation_json=./instances_val2017.json --coco_result_json=coco_result.json
 ```
 
-P.S. for VOC style dataset, we also provide [pascal_voc_to_coco.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/pascal_voc_to_coco.py) to generate COCO GT annotation.
+P.S. for VOC style dataset, we also provide [pascal_voc_to_coco.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/dataset_converter/pascal_voc_to_coco.py) to generate COCO GT annotation.
 
 If you enable "--eval_online" option in train.py, a default Pascal VOC mAP evaluation on validation dataset will be executed during training. But that may cost more time for train process.
 
@@ -410,7 +411,7 @@ video detection mode
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 
 ### Tensorflow model convert
-Using [keras_to_tensorflow.py](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tools/keras_to_tensorflow.py) to convert the tf.keras .h5 model to tensorflow frozen pb model (only for TF 1.x):
+Using [keras_to_tensorflow.py](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tools/model_converter/keras_to_tensorflow.py) to convert the tf.keras .h5 model to tensorflow frozen pb model (only for TF 1.x):
 ```
 # python keras_to_tensorflow.py
     --input_model="path/to/keras/model.h5"
@@ -418,7 +419,7 @@ Using [keras_to_tensorflow.py](https://github.com/david8862/keras-YOLOv3-model-s
 ```
 
 ### ONNX model convert
-Using [keras_to_onnx.py](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tools/keras_to_onnx.py) to convert the tf.keras .h5 model to ONNX model:
+Using [keras_to_onnx.py](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tools/model_converter/keras_to_onnx.py) to convert the tf.keras .h5 model to ONNX model:
 ```
 ### need to set environment TF_KERAS=1 for tf.keras model
 # export TF_KERAS=1
@@ -449,7 +450,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
     - tensorflow 2.0.0/tensorflow 1.15.0
     - tf.keras 2.2.4-tf
 
-2. Default YOLOv4/v3/v2 anchors are used. If you want to use your own anchors, probably some changes are needed. [kmeans.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/kmeans.py) could be used to do K-Means anchor clustering on your dataset
+2. Default YOLOv4/v3/v2 anchors are used. If you want to use your own anchors, probably some changes are needed. [kmeans.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/misc/kmeans.py) could be used to do K-Means anchor clustering on your dataset
 
 3. Always load pretrained weights and freeze layers in the first stage of training.
 

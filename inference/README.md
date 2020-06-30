@@ -94,8 +94,8 @@ MNN support Post Training Integer quantization, so we can use its python CLI int
 
 4. Run validate script to check MNN model
 ```
-# cd keras-YOLOv3-model-set/tools/
-# python validate_yolo.py --model_path=model_quant.pb.mnn --anchors_path=../configs/tiny_yolo3_anchors.txt --classes_path=../configs/voc_classes.txt --image_file=../example/dog.jpg --loop_count=5
+# cd keras-YOLOv3-model-set/tools/evaluation/
+# python validate_yolo.py --model_path=model_quant.pb.mnn --anchors_path=../../configs/tiny_yolo3_anchors.txt --classes_path=../../configs/voc_classes.txt --image_file=../../example/dog.jpg --loop_count=5
 ```
 
 Visualized detection result:
@@ -175,7 +175,7 @@ If you want to do cross compile for ARM platform, "CMAKE_TOOLCHAIN_FILE" and "TA
 
 3. Convert trained YOLOv3/v2 model to tflite model
 
-Tensorflow-lite support both Float32 and UInt8 type model. We can dump out the keras .h5 model to Float32 .tflite model or use [post_train_quant_convert.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/post_train_quant_convert.py) script to convert to UInt8 model with TF 2.0 Post-training integer quantization tech, which could be smaller and faster on ARM:
+Tensorflow-lite support both Float32 and UInt8 type model. We can dump out the keras .h5 model to Float32 .tflite model or use [post_train_quant_convert.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/model_converter/post_train_quant_convert.py) script to convert to UInt8 model with TF 2.0 Post-training integer quantization tech, which could be smaller and faster on ARM:
 
 * dump out inference model from training checkpoint:
 
@@ -192,15 +192,15 @@ Tensorflow-lite support both Float32 and UInt8 type model. We can dump out the k
 * convert keras .h5 model to UInt8 tflite model with TF 2.0 Post-training integer quantization:
 
     ```
-    # cd keras-YOLOv3-model-set/tools
+    # cd keras-YOLOv3-model-set/tools/model_converter/
     # python post_train_quant_convert.py --keras_model_file=model.h5 --annotation_file=<train/test annotation file to feed converter> --model_input_shape=320x320 --sample_num=30 --output_file=model_quant.tflite
     ```
 
 
 4. Run validate script to check TFLite model
 ```
-# cd keras-YOLOv3-model-set/tools/
-# python validate_yolo.py --model_path=model.tflite --anchors_path=../configs/tiny_yolo3_anchors.txt --classes_path=../configs/voc_classes.txt --image_file=../example/dog.jpg --loop_count=5
+# cd keras-YOLOv3-model-set/tools/evaluation/
+# python validate_yolo.py --model_path=model.tflite --anchors_path=../../configs/tiny_yolo3_anchors.txt --classes_path=../../configs/voc_classes.txt --image_file=../../example/dog.jpg --loop_count=5
 ```
 #### You can also use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set#evaluation) to do evaluation on the TFLite model
 

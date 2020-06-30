@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 import cv2
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from yolo3.data import get_ground_truth_data
 from common.utils import get_dataset, get_classes, draw_label
 from common.data_utils import random_mosaic_augment, random_cutmix_augment

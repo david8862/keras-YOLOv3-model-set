@@ -13,7 +13,7 @@ from tensorflow.keras.models import load_model
 import keras2onnx
 import onnx
 
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.utils import get_custom_objects
 
 os.environ['TF_KERAS'] = '1'

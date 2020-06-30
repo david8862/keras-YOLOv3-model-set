@@ -67,7 +67,7 @@ def get_classes(classes_path):
 
 
 parser = argparse.ArgumentParser(description='convert PascalVOC dataset annotation to txt annotation file')
-parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default is ../VOCdevkit', default=os.getcwd()+'/../VOCdevkit')
+parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default is ../../VOCdevkit', default=os.getcwd()+'/../../VOCdevkit')
 parser.add_argument('--year', type=str, help='subset path of year (2007/2012), default will cover both', default=None)
 parser.add_argument('--set', type=str, help='convert data set, default will cover train, val and test', default=None)
 parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
