@@ -633,6 +633,52 @@ def draw_rec_prec(rec, prec, mrec, mprec, class_name, ap):
     plt.cla() # clear axes for next plot
 
 
+import bokeh
+import bokeh.io as bokeh_io
+import bokeh.plotting as bokeh_plotting
+def generate_rec_prec_html(mrec, mprec, scores, class_name, ap):
+    """
+     generate dynamic P-R curve HTML page for each class
+    """
+    rec_prec_plot_path = os.path.join('result' ,'classes')
+    os.makedirs(rec_prec_plot_path, exist_ok=True)
+    bokeh_io.output_file(os.path.join(rec_prec_plot_path, class_name + '.html'), title='P-R curve for ' + class_name)
+
+    # prepare curve data
+    area_under_curve_x = mrec[:-1] + [mrec[-2]] + [mrec[-1]]
+    area_under_curve_y = mprec[:-1] + [0.0] + [mprec[-1]]
+    score_on_curve = [0.0] + scores[:-1] + [0.0] + [scores[-1]] + [1.0]
+    source = bokeh.models.ColumnDataSource(data={
+      'rec'      : area_under_curve_x,
+      'prec' : area_under_curve_y,
+      'score' : score_on_curve,
+    })
+
+    # prepare plot figure
+    plt_title = 'class: ' + class_name + ' AP = {}%'.format(ap*100)
+    plt = bokeh_plotting.figure(plot_height=200 ,plot_width=200, tools="", toolbar_location=None,
+               title=plt_title, sizing_mode="scale_width")
+    plt.background_fill_color = "#f5f5f5"
+    plt.grid.grid_line_color = "white"
+    plt.xaxis.axis_label = 'Recall'
+    plt.yaxis.axis_label = 'Precision'
+    plt.axis.axis_line_color = None
+
+    # draw curve data
+    plt.line(x='rec', y='prec', line_width=2, color='#ebbd5b', source=source)
+    plt.add_tools(bokeh.models.HoverTool(
+      tooltips=[
+        ( 'score', '@score{0.0000 a}'),
+      ],
+      formatters={
+        'rec'      : 'printf',
+        'prec' : 'printf',
+      },
+      mode='vline'
+    ))
+    bokeh_io.save(plt)
+
+
 def adjust_axes(r, t, fig, axes):
     """
      Plot - adjust axes
@@ -752,7 +798,7 @@ def calc_AP(gt_records, pred_records, class_name, iou_threshold, show_result):
                       ['image_file', 'xmin,ymin,xmax,ymax'],
                       ...
                      ]
-         pred_record: predict records for one class, with format:
+         pred_records: predict records for one class, with format (in score descending order):
                      [
                       ['image_file', 'xmin,ymin,xmax,ymax', score],
                       ['image_file', 'xmin,ymin,xmax,ymax', score],
@@ -763,6 +809,9 @@ def calc_AP(gt_records, pred_records, class_name, iou_threshold, show_result):
     '''
     # append usage flag in gt_records for matching gt search
     gt_records = [gt_record + ['unused'] for gt_record in gt_records]
+
+    # prepare score list for generating P-R html page
+    scores = [pred_record[2] for pred_record in pred_records]
 
     # init true_positive and false_positive list
     nd = len(pred_records)  # number of predict data
@@ -793,6 +842,7 @@ def calc_AP(gt_records, pred_records, class_name, iou_threshold, show_result):
     ap, mrec, mprec = voc_ap(rec, prec)
     if show_result:
         draw_rec_prec(rec, prec, mrec, mprec, class_name, ap)
+        generate_rec_prec_html(mrec, mprec, scores, class_name, ap)
 
     return ap, true_positive_count
 

@@ -34,7 +34,7 @@ def tiny_yolo3_ultralite_predictions(feature_maps, feature_channel_nums, num_anc
     y1 = compose(
             #DarknetConv2D_BN_Leaky(f1_channel_num, (3,3)),
             Depthwise_Conv2D_BN_Leaky(kernel_size=(3, 3), block_id_str='pred_1'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x1)
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_1'))(x1)
 
     #upsample fpn merge for feature map 1 & 2
     x2 = compose(
@@ -46,12 +46,12 @@ def tiny_yolo3_ultralite_predictions(feature_maps, feature_channel_nums, num_anc
             Concatenate(),
             #DarknetConv2D_BN_Leaky(f2_channel_num, (3,3)),
             Depthwise_Conv2D_BN_Leaky(kernel_size=(3, 3), block_id_str='pred_2'),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2, f2])
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_2'))([x2, f2])
 
     return y1, y2
 
 
-def make_ultralite_last_layers(x, num_filters, out_filters, block_id_str=None, predict_filters=None):
+def make_ultralite_last_layers(x, num_filters, out_filters, block_id_str=None, predict_filters=None, predict_id='1'):
     '''3 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer'''
     if not block_id_str:
         block_id_str = str(K.get_uid())
@@ -69,7 +69,7 @@ def make_ultralite_last_layers(x, num_filters, out_filters, block_id_str=None, p
     y = compose(
             #Depthwise_Separable_Conv2D_BN_Leaky(filters=predict_filters, kernel_size=(3, 3), block_id_str=block_id_str+'_3'),
             Depthwise_Conv2D_BN_Leaky(kernel_size=(3, 3), block_id_str=block_id_str+'_3'),
-            DarknetConv2D(out_filters, (1,1)))(x)
+            DarknetConv2D(out_filters, (1,1), name='predict_conv_' + predict_id))(x)
     return x, y
 
 
@@ -79,9 +79,9 @@ def yolo3_ultralite_predictions(feature_maps, feature_channel_nums, num_anchors,
 
     #feature map 1 head & output (13x13 for 416 input)
     if use_spp:
-        x, y1 = make_spp_depthwise_separable_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5), block_id_str='pred_1')
+        x, y1 = make_spp_depthwise_separable_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5), block_id_str='pred_1', predict_id='1')
     else:
-        x, y1 = make_ultralite_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5), block_id_str='pred_1')
+        x, y1 = make_ultralite_last_layers(f1, f1_channel_num//2, num_anchors * (num_classes + 5), block_id_str='pred_1', predict_id='1')
 
     #upsample fpn merge for feature map 1 & 2
     x = compose(
@@ -90,7 +90,7 @@ def yolo3_ultralite_predictions(feature_maps, feature_channel_nums, num_anchors,
     x = Concatenate()([x,f2])
 
     #feature map 2 head & output (26x26 for 416 input)
-    x, y2 = make_ultralite_last_layers(x, f2_channel_num//2, num_anchors * (num_classes + 5), block_id_str='pred_2')
+    x, y2 = make_ultralite_last_layers(x, f2_channel_num//2, num_anchors * (num_classes + 5), block_id_str='pred_2', predict_id='2')
 
     #upsample fpn merge for feature map 2 & 3
     x = compose(
@@ -99,6 +99,6 @@ def yolo3_ultralite_predictions(feature_maps, feature_channel_nums, num_anchors,
     x = Concatenate()([x, f3])
 
     #feature map 3 head & output (52x52 for 416 input)
-    x, y3 = make_ultralite_last_layers(x, f3_channel_num//2, num_anchors * (num_classes + 5), block_id_str='pred_3')
+    x, y3 = make_ultralite_last_layers(x, f3_channel_num//2, num_anchors * (num_classes + 5), block_id_str='pred_3', predict_id='3')
 
     return y1, y2, y3

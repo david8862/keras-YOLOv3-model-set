@@ -19,3 +19,4 @@ tfcoreml
 sympy
 imgaug
 imagecorruptions
+bokeh
