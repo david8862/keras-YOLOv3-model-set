@@ -20,7 +20,7 @@ from yolo3.models.yolo3_xception import yolo3_xception_body, yolo3lite_xception_
 from yolo3.models.yolo3_nano import yolo3_nano_body
 from yolo3.models.yolo3_efficientnet import yolo3_efficientnet_body, tiny_yolo3_efficientnet_body, yolo3lite_efficientnet_body, yolo3lite_spp_efficientnet_body, tiny_yolo3lite_efficientnet_body
 from yolo3.models.yolo3_mobilenetv3_large import yolo3_mobilenetv3large_body, yolo3lite_mobilenetv3large_body, tiny_yolo3_mobilenetv3large_body, tiny_yolo3lite_mobilenetv3large_body
-from yolo3.models.yolo3_mobilenetv3_small import yolo3_mobilenetv3small_body, yolo3lite_mobilenetv3small_body, tiny_yolo3_mobilenetv3small_body, tiny_yolo3lite_mobilenetv3small_body
+from yolo3.models.yolo3_mobilenetv3_small import yolo3_mobilenetv3small_body, yolo3lite_mobilenetv3small_body, tiny_yolo3_mobilenetv3small_body, tiny_yolo3lite_mobilenetv3small_body, yolo3_ultralite_mobilenetv3small_body, tiny_yolo3_ultralite_mobilenetv3small_body
 
 from yolo4.models.yolo4_darknet import yolo4_body
 from yolo4.models.yolo4_mobilenet import yolo4_mobilenet_body, yolo4lite_mobilenet_body, tiny_yolo4_mobilenet_body, tiny_yolo4lite_mobilenet_body
@@ -52,6 +52,7 @@ yolo3_model_map = {
     'yolo3_mobilenetv3large_lite': [yolo3lite_mobilenetv3large_body, 195, None],
     'yolo3_mobilenetv3small': [yolo3_mobilenetv3small_body, 166, None],
     'yolo3_mobilenetv3small_lite': [yolo3lite_mobilenetv3small_body, 166, None],
+    'yolo3_mobilenetv3small_ultralite': [yolo3_ultralite_mobilenetv3small_body, 166, None],
 
     'yolo3_shufflenetv2': [yolo3_shufflenetv2_body, 205, None],
     'yolo3_shufflenetv2_lite': [yolo3lite_shufflenetv2_body, 205, None],
@@ -105,6 +106,7 @@ yolo3_tiny_model_map = {
     'tiny_yolo3_mobilenetv3large_lite': [tiny_yolo3lite_mobilenetv3large_body, 195, None],
     'tiny_yolo3_mobilenetv3small': [tiny_yolo3_mobilenetv3small_body, 166, None],
     'tiny_yolo3_mobilenetv3small_lite': [tiny_yolo3lite_mobilenetv3small_body, 166, None],
+    'tiny_yolo3_mobilenetv3small_ultralite': [tiny_yolo3_ultralite_mobilenetv3small_body, 166, None],
 
     'tiny_yolo3_shufflenetv2': [tiny_yolo3_shufflenetv2_body, 205, None],
     'tiny_yolo3_shufflenetv2_lite': [tiny_yolo3lite_shufflenetv2_body, 205, None],
