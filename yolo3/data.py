@@ -84,7 +84,7 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
     return image_data, box_data
 
 
-def preprocess_true_boxes(true_boxes, input_shape, anchors, num_classes):
+def preprocess_true_boxes(true_boxes, input_shape, anchors, num_classes, iou_thresh=0.2):
     '''Preprocess true boxes to training input format
 
     Parameters
