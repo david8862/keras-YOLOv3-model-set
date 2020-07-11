@@ -19,9 +19,9 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 
 #### Head
 - [x] YOLOv4 (Lite)
-- [x] Tiny YOLOv4 (Lite, no-SPP)
+- [x] Tiny YOLOv4 (Lite, no-SPP, unofficial)
 - [x] YOLOv3 (Lite, SPP)
-- [x] YOLOv3 Nano ([paper](https://arxiv.org/abs/1910.01271)) (unofficially)
+- [x] YOLOv3 Nano ([paper](https://arxiv.org/abs/1910.01271)) (unofficial)
 - [x] Tiny YOLOv3 (Lite)
 - [x] YOLOv2 (Lite)
 - [x] Tiny YOLOv2 (Lite)
@@ -50,6 +50,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] Multiscale image input training
 - [x] Dynamic learning rate decay (Cosine/Exponential/Polynomial/PiecewiseConstant)
 - [x] Mosaic data augmentation
+- [x] Multi anchors for single GT
 - [x] Pruned model training (only valid for TF 1.x)
 
 #### On-device deployment
@@ -214,9 +215,9 @@ usage: train.py [-h] [--model_type MODEL_TYPE] [--anchors_path ANCHORS_PATH]
                 [--total_epoch TOTAL_EPOCH] [--multiscale]
                 [--rescale_interval RESCALE_INTERVAL]
                 [--enhance_augment ENHANCE_AUGMENT]
-                [--label_smoothing LABEL_SMOOTHING] [--data_shuffle]
-                [--gpu_num GPU_NUM] [--model_pruning] [--eval_online]
-                [--eval_epoch_interval EVAL_EPOCH_INTERVAL]
+                [--label_smoothing LABEL_SMOOTHING] [--multi_anchor_assign]
+                [--data_shuffle] [--gpu_num GPU_NUM] [--model_pruning]
+                [--eval_online] [--eval_epoch_interval EVAL_EPOCH_INTERVAL]
                 [--save_eval_checkpoint]
 
 optional arguments:
@@ -228,8 +229,8 @@ optional arguments:
                         path to anchor definitions,
                         default=configs/yolo3_anchors.txt
   --model_image_size MODEL_IMAGE_SIZE
-                        Initial model image input size as <height>x<width>, default
-                        416x416
+                        Initial model image input size as <height>x<width>,
+                        default 416x416
   --weights_path WEIGHTS_PATH
                         Pretrained model/weights file for fine tune
   --annotation_file ANNOTATION_FILE
@@ -273,6 +274,8 @@ optional arguments:
   --label_smoothing LABEL_SMOOTHING
                         Label smoothing factor (between 0 and 1) for
                         classification loss, default=0
+  --multi_anchor_assign
+                        Assign multiple anchors to single ground truth
   --data_shuffle        Whether to shuffle train/val data for cross-validation
   --gpu_num GPU_NUM     Number of GPU to use, default=1
   --model_pruning       Use model pruning for optimization, only for TF 1.x
@@ -436,6 +439,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 
 ### TODO
+- [ ] support official Tiny YOLOv4
 - [ ] DropBlock on YOLO head
 - [ ] Gaussian YOLOv3 loss
 - [ ] support Quantization aware training

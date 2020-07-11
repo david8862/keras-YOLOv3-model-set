@@ -89,8 +89,8 @@ def main(args):
         data_generator = yolo3_data_generator_wrapper
 
         # tf.keras.Sequence style data generator
-        #train_data_generator = Yolo3DataGenerator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval)
-        #val_data_generator = Yolo3DataGenerator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes)
+        #train_data_generator = Yolo3DataGenerator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval, args.multi_anchor_assign)
+        #val_data_generator = Yolo3DataGenerator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes, multi_anchor_assign=args.multi_anchor_assign)
 
         tiny_version = False
     elif num_anchors == 6:
@@ -99,8 +99,8 @@ def main(args):
         data_generator = yolo3_data_generator_wrapper
 
         # tf.keras.Sequence style data generator
-        #train_data_generator = Yolo3DataGenerator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval)
-        #val_data_generator = Yolo3DataGenerator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes)
+        #train_data_generator = Yolo3DataGenerator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval, args.multi_anchor_assign)
+        #val_data_generator = Yolo3DataGenerator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes, multi_anchor_assign=args.multi_anchor_assign)
 
         tiny_version = True
     elif num_anchors == 5:
@@ -157,10 +157,10 @@ def main(args):
     print("Transfer training stage")
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, args.batch_size, input_shape))
     #model.fit_generator(train_data_generator,
-    model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval),
+    model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval, multi_anchor_assign=args.multi_anchor_assign),
             steps_per_epoch=max(1, num_train//args.batch_size),
             #validation_data=val_data_generator,
-            validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes),
+            validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes, multi_anchor_assign=args.multi_anchor_assign),
             validation_steps=max(1, num_val//args.batch_size),
             epochs=epochs,
             initial_epoch=initial_epoch,
@@ -197,10 +197,10 @@ def main(args):
 
     print('Train on {} samples, val on {} samples, with batch size {}, input_shape {}.'.format(num_train, num_val, args.batch_size, input_shape))
     #model.fit_generator(train_data_generator,
-    model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval),
+    model.fit_generator(data_generator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval, multi_anchor_assign=args.multi_anchor_assign),
         steps_per_epoch=max(1, num_train//args.batch_size),
         #validation_data=val_data_generator,
-        validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes),
+        validation_data=data_generator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes, multi_anchor_assign=args.multi_anchor_assign),
         validation_steps=max(1, num_val//args.batch_size),
         epochs=args.total_epoch,
         initial_epoch=epochs,
@@ -264,6 +264,8 @@ if __name__ == '__main__':
         help = "enhance data augmentation type (None/mosaic), default=None")
     parser.add_argument('--label_smoothing', type=float, required=False, default=0,
         help = "Label smoothing factor (between 0 and 1) for classification loss, default=0")
+    parser.add_argument('--multi_anchor_assign', default=False, action="store_true",
+        help = "Assign multiple anchors to single ground truth")
     parser.add_argument('--data_shuffle', default=False, action="store_true",
         help='Whether to shuffle train/val data for cross-validation')
     parser.add_argument('--gpu_num', type=int, required=False, default=1,

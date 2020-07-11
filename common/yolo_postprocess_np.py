@@ -104,7 +104,7 @@ def yolo_handle_predictions(predictions, max_boxes=100, confidence=0.1, iou_thre
     scores = box_class_scores[pos]
 
     # Boxes, Classes and Scores returned from NMS
-    n_boxes, n_classes, n_scores = nms_boxes(boxes, classes, scores, iou_threshold, confidence=confidence, use_diou=False, is_soft=False)
+    n_boxes, n_classes, n_scores = nms_boxes(boxes, classes, scores, iou_threshold, confidence=confidence, use_diou=True, is_soft=False)
 
     if n_boxes:
         boxes = np.concatenate(n_boxes)
