@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 """YOLO_v3 Darknet Model Defined in Keras."""
 
-from tensorflow.keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
+from tensorflow.keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D, GlobalAveragePooling2D, Flatten, Softmax, Reshape, Input
 from tensorflow.keras.models import Model
+from tensorflow.keras import backend as K
+from keras_applications.imagenet_utils import _obtain_input_shape
 
 from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, Darknet_Depthwise_Separable_Conv2D_BN_Leaky
 from yolo3.models.layers import make_last_layers, make_depthwise_separable_last_layers, make_spp_last_layers

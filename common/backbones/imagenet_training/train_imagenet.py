@@ -114,12 +114,12 @@ def train(args, model, input_shape):
                                        zoom_range=0.25,
                                        width_shift_range=0.05,
                                        height_shift_range=0.05,
-                                       brightness_range=0.05,
-                                       #rotation_range=30,
-                                       #shear_range=0.2,
-                                       #channel_shift_range=0.1,
+                                       brightness_range=[0.5,1.5],
+                                       rotation_range=30,
+                                       shear_range=0.2,
+                                       channel_shift_range=0.1,
                                        #rescale=1./255,
-                                       #vertical_flip=True,
+                                       vertical_flip=True,
                                        horizontal_flip=True)
 
     test_datagen = ImageDataGenerator(preprocessing_function=preprocess)
