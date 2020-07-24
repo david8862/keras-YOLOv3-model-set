@@ -9,9 +9,11 @@ def yolo2_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_
     predictions = yolo_correct_boxes(predictions, image_shape, model_image_size)
 
     boxes, classes, scores = yolo_handle_predictions(predictions,
-                                                max_boxes=max_boxes,
-                                                confidence=confidence,
-                                                iou_threshold=iou_threshold)
+                                                     image_shape,
+                                                     max_boxes=max_boxes,
+                                                     confidence=confidence,
+                                                     iou_threshold=iou_threshold)
+
     boxes = yolo_adjust_boxes(boxes, image_shape)
 
     return boxes, classes, scores

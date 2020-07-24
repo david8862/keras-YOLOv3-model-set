@@ -4,6 +4,7 @@ import numpy as np
 import copy
 from scipy.special import expit, softmax
 
+from common.wbf_postprocess import weighted_boxes_fusion
 
 def yolo_head(prediction, anchors, num_classes, input_dims, use_softmax=False):
     '''Convert final layer features to bounding box parameters.'''
@@ -89,7 +90,7 @@ def yolo_correct_boxes(predictions, img_shape, model_image_size):
 
 
 
-def yolo_handle_predictions(predictions, max_boxes=100, confidence=0.1, iou_threshold=0.4):
+def yolo_handle_predictions(predictions, image_shape, max_boxes=100, confidence=0.1, iou_threshold=0.4, use_wbf=False):
     boxes = predictions[:, :, :4]
     box_confidences = np.expand_dims(predictions[:, :, 4], -1)
     box_class_probs = predictions[:, :, 5:]
@@ -103,12 +104,16 @@ def yolo_handle_predictions(predictions, max_boxes=100, confidence=0.1, iou_thre
     classes = box_classes[pos]
     scores = box_class_scores[pos]
 
-    # Boxes, Classes and Scores returned from NMS
-    n_boxes, n_classes, n_scores = nms_boxes(boxes, classes, scores, iou_threshold, confidence=confidence, use_diou=True, is_soft=False)
+    if use_wbf:
+        # use Weighted-Boxes-Fusion for boxes postprocess
+        n_boxes, n_classes, n_scores = weighted_boxes_fusion([boxes], [classes], [scores], image_shape, weights=None, iou_thr=iou_threshold)
+    else:
+        # Boxes, Classes and Scores returned from NMS
+        n_boxes, n_classes, n_scores = nms_boxes(boxes, classes, scores, iou_threshold, confidence=confidence, use_diou=True, is_soft=False)
 
     if n_boxes:
         boxes = np.concatenate(n_boxes)
-        classes = np.concatenate(n_classes)
+        classes = np.concatenate(n_classes).astype('int32')
         scores = np.concatenate(n_scores)
         boxes, classes, scores = filter_boxes(boxes, classes, scores, max_boxes)
 

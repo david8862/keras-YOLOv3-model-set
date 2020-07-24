@@ -21,12 +21,17 @@ from yolo3.models.yolo3_nano import yolo3_nano_body
 from yolo3.models.yolo3_efficientnet import yolo3_efficientnet_body, tiny_yolo3_efficientnet_body, yolo3lite_efficientnet_body, yolo3lite_spp_efficientnet_body, tiny_yolo3lite_efficientnet_body
 from yolo3.models.yolo3_mobilenetv3_large import yolo3_mobilenetv3large_body, yolo3lite_mobilenetv3large_body, tiny_yolo3_mobilenetv3large_body, tiny_yolo3lite_mobilenetv3large_body
 from yolo3.models.yolo3_mobilenetv3_small import yolo3_mobilenetv3small_body, yolo3lite_mobilenetv3small_body, tiny_yolo3_mobilenetv3small_body, tiny_yolo3lite_mobilenetv3small_body, yolo3_ultralite_mobilenetv3small_body, tiny_yolo3_ultralite_mobilenetv3small_body
+from yolo3.models.yolo3_resnet50v2 import yolo3_resnet50v2_body, yolo3lite_resnet50v2_body, yolo3lite_spp_resnet50v2_body, tiny_yolo3_resnet50v2_body, tiny_yolo3lite_resnet50v2_body
+
 
 from yolo4.models.yolo4_darknet import yolo4_body
 from yolo4.models.yolo4_mobilenet import yolo4_mobilenet_body, yolo4lite_mobilenet_body, tiny_yolo4_mobilenet_body, tiny_yolo4lite_mobilenet_body
+from yolo4.models.yolo4_mobilenetv2 import yolo4_mobilenetv2_body, yolo4lite_mobilenetv2_body, tiny_yolo4_mobilenetv2_body, tiny_yolo4lite_mobilenetv2_body
+
 from yolo4.models.yolo4_mobilenetv3_large import yolo4_mobilenetv3large_body, yolo4lite_mobilenetv3large_body, tiny_yolo4_mobilenetv3large_body, tiny_yolo4lite_mobilenetv3large_body
 from yolo4.models.yolo4_mobilenetv3_small import yolo4_mobilenetv3small_body, yolo4lite_mobilenetv3small_body, tiny_yolo4_mobilenetv3small_body, tiny_yolo4lite_mobilenetv3small_body
 from yolo4.models.yolo4_efficientnet import yolo4_efficientnet_body, yolo4lite_efficientnet_body, tiny_yolo4_efficientnet_body, tiny_yolo4lite_efficientnet_body
+from yolo4.models.yolo4_resnet50v2 import yolo4_resnet50v2_body, yolo4lite_resnet50v2_body, tiny_yolo4_resnet50v2_body, tiny_yolo4lite_resnet50v2_body
 
 from yolo3.loss import yolo3_loss
 from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Yolo3PostProcessLayer
@@ -54,6 +59,10 @@ yolo3_model_map = {
     'yolo3_mobilenetv3small_lite': [yolo3lite_mobilenetv3small_body, 166, None],
     'yolo3_mobilenetv3small_ultralite': [yolo3_ultralite_mobilenetv3small_body, 166, None],
 
+    'yolo3_resnet50v2': [yolo3_resnet50v2_body, 190, None],
+    'yolo3_resnet50v2_lite': [yolo3lite_resnet50v2_body, 190, None],
+    'yolo3_resnet50v2_lite_spp': [yolo3lite_spp_resnet50v2_body, 190, None],
+
     'yolo3_shufflenetv2': [yolo3_shufflenetv2_body, 205, None],
     'yolo3_shufflenetv2_lite': [yolo3lite_shufflenetv2_body, 205, None],
     'yolo3_shufflenetv2_lite_spp': [yolo3lite_spp_shufflenetv2_body, 205, None],
@@ -78,10 +87,18 @@ yolo3_model_map = {
     'yolo4_darknet': [yolo4_body, 250, 'weights/cspdarknet53.h5'],
     'yolo4_mobilenet': [yolo4_mobilenet_body, 87, None],
     'yolo4_mobilenet_lite': [yolo4lite_mobilenet_body, 87, None],
+
+    'yolo4_mobilenetv2': [yolo4_mobilenetv2_body, 155, None],
+    'yolo4_mobilenetv2_lite': [yolo4lite_mobilenetv2_body, 155, None],
+
     'yolo4_mobilenetv3large': [yolo4_mobilenetv3large_body, 195, None],
     'yolo4_mobilenetv3large_lite': [yolo4lite_mobilenetv3large_body, 195, None],
     'yolo4_mobilenetv3small': [yolo4_mobilenetv3small_body, 166, None],
     'yolo4_mobilenetv3small_lite': [yolo4lite_mobilenetv3small_body, 166, None],
+
+    'yolo4_resnet50v2': [yolo4_resnet50v2_body, 190, None],
+    'yolo4_resnet50v2_lite': [yolo4lite_resnet50v2_body, 190, None],
+
     # NOTE: backbone_length is for EfficientNetB1
     # if change to other efficientnet level, you need to modify it
     'yolo4_efficientnet': [yolo4_efficientnet_body, 337, None],
@@ -108,6 +125,9 @@ yolo3_tiny_model_map = {
     'tiny_yolo3_mobilenetv3small_lite': [tiny_yolo3lite_mobilenetv3small_body, 166, None],
     'tiny_yolo3_mobilenetv3small_ultralite': [tiny_yolo3_ultralite_mobilenetv3small_body, 166, None],
 
+    'tiny_yolo3_resnet50v2': [tiny_yolo3_resnet50v2_body, 190, None],
+    'tiny_yolo3_resnet50v2_lite': [tiny_yolo3lite_resnet50v2_body, 190, None],
+
     'tiny_yolo3_shufflenetv2': [tiny_yolo3_shufflenetv2_body, 205, None],
     'tiny_yolo3_shufflenetv2_lite': [tiny_yolo3lite_shufflenetv2_body, 205, None],
 
@@ -126,6 +146,9 @@ yolo3_tiny_model_map = {
     'tiny_yolo4_mobilenet': [tiny_yolo4_mobilenet_body, 87, None],
     'tiny_yolo4_mobilenet_lite': [tiny_yolo4lite_mobilenet_body, 87, None],
     'tiny_yolo4_mobilenet_lite_nospp': [partial(tiny_yolo4lite_mobilenet_body, use_spp=False), 87, None],
+    'tiny_yolo4_mobilenetv2': [tiny_yolo4_mobilenetv2_body, 155, None],
+    'tiny_yolo4_mobilenetv2_lite': [tiny_yolo4lite_mobilenetv2_body, 155, None],
+    'tiny_yolo4_mobilenetv2_lite_nospp': [partial(tiny_yolo4lite_mobilenetv2_body, use_spp=False), 155, None],
 
     'tiny_yolo4_mobilenetv3large': [tiny_yolo4_mobilenetv3large_body, 195, None],
     'tiny_yolo4_mobilenetv3large_lite': [tiny_yolo4lite_mobilenetv3large_body, 195, None],
@@ -134,6 +157,10 @@ yolo3_tiny_model_map = {
     'tiny_yolo4_mobilenetv3small': [tiny_yolo4_mobilenetv3small_body, 166, None],
     'tiny_yolo4_mobilenetv3small_lite': [tiny_yolo4lite_mobilenetv3small_body, 166, None],
     'tiny_yolo4_mobilenetv3small_lite_nospp': [partial(tiny_yolo4lite_mobilenetv3small_body, use_spp=False), 166, None],
+
+    'tiny_yolo4_resnet50v2': [tiny_yolo4_resnet50v2_body, 190, None],
+    'tiny_yolo4_resnet50v2_lite': [tiny_yolo4lite_resnet50v2_body, 190, None],
+
     # NOTE: backbone_length is for EfficientNetB0
     # if change to other efficientnet level, you need to modify it
     'tiny_yolo4_efficientnet': [tiny_yolo4_efficientnet_body, 235, None],

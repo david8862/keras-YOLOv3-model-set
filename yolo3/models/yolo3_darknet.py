@@ -99,9 +99,9 @@ def yolo3_body(inputs, num_anchors, num_classes, weights_path=None):
     #y1 = base_model.get_layer('leaky_re_lu_57').output
     #y2 = base_model.get_layer('leaky_re_lu_64').output
     #y3 = base_model.get_layer('leaky_re_lu_71').output
-    #y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='prediction_13')(y1)
-    #y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='prediction_26')(y2)
-    #y3 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='prediction_52')(y3)
+    #y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_1')(y1)
+    #y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_2')(y2)
+    #y3 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_3')(y3)
     #return Model(inputs, [y1,y2,y3])
 
 
@@ -145,9 +145,9 @@ def custom_yolo3_spp_body(inputs, num_anchors, num_classes, weights_path):
     y1 = base_model.layers[-6].output
     y2 = base_model.layers[-5].output
     y3 = base_model.layers[-4].output
-    y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='prediction_13')(y1)
-    y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='prediction_26')(y2)
-    y3 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='prediction_52')(y3)
+    y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_1')(y1)
+    y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_2')(y2)
+    y3 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_3')(y3)
     return Model(inputs, [y1,y2,y3])
 
 
@@ -198,7 +198,7 @@ def tiny_yolo3_body(inputs, num_anchors, num_classes):
     #feature map 1 output (13x13 for 416 input)
     y1 = compose(
             DarknetConv2D_BN_Leaky(512, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x1)
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_1'))(x1)
 
     #upsample fpn merge for feature map 1 & 2
     x2 = compose(
@@ -209,7 +209,7 @@ def tiny_yolo3_body(inputs, num_anchors, num_classes):
     y2 = compose(
             Concatenate(),
             DarknetConv2D_BN_Leaky(256, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2, f2])
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_2'))([x2, f2])
 
     return Model(inputs, [y1,y2])
 
@@ -221,7 +221,7 @@ def custom_tiny_yolo3_body(inputs, num_anchors, num_classes, weights_path):
     #TODO: get darknet class number from class file
     num_classes_coco = 80
     base_model = tiny_yolo3_body(inputs, num_anchors, num_classes_coco)
-    base_model.load_weights(weights_path, by_name=True)
+    base_model.load_weights(weights_path, by_name=False)
     print('Load weights {}.'.format(weights_path))
 
     #get conv output in original network
@@ -229,8 +229,8 @@ def custom_tiny_yolo3_body(inputs, num_anchors, num_classes, weights_path):
     #y2 = base_model.get_layer('leaky_re_lu_10').output
     y1 = base_model.layers[40].output
     y2 = base_model.layers[41].output
-    y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='prediction_13')(y1)
-    y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='prediction_26')(y2)
+    y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_1')(y1)
+    y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_2')(y2)
     return Model(inputs, [y1,y2])
 
 
@@ -261,7 +261,7 @@ def tiny_yolo3lite_body(inputs, num_anchors, num_classes):
     #feature map 1 output (13x13 for 416 input)
     y1 = compose(
             Depthwise_Separable_Conv2D_BN_Leaky(512, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))(x2)
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_1'))(x2)
 
     #upsample fpn merge for feature map 1 & 2
     x2 = compose(
@@ -272,7 +272,7 @@ def tiny_yolo3lite_body(inputs, num_anchors, num_classes):
     y2 = compose(
             Concatenate(),
             Depthwise_Separable_Conv2D_BN_Leaky(256, (3,3)),
-            DarknetConv2D(num_anchors*(num_classes+5), (1,1)))([x2, f2])
+            DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_2'))([x2, f2])
 
     return Model(inputs, [y1,y2])
 
