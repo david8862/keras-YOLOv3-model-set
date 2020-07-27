@@ -441,6 +441,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 ### TODO
 - [ ] support official Tiny YOLOv4
+- [ ] support SyncBatchNorm
 - [ ] DropBlock on YOLO head
 - [ ] Gaussian YOLOv3 loss
 - [ ] support Quantization aware training

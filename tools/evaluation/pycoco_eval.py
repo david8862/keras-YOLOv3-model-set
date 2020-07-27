@@ -133,7 +133,7 @@ def main():
     parser = argparse.ArgumentParser(description='generate coco result json and evaluate COCO AP with pycocotools')
     parser.add_argument('--result_txt', required=True, type=str, help='txt detection result file')
     parser.add_argument('--coco_annotation_json', required=True, type=str, help='coco json annotation file')
-    parser.add_argument('--coco_result_json', required=False, type=str, help='output coco json result file, default is ./coco_result.json', default='coco_result.json')
+    parser.add_argument('--coco_result_json', required=False, type=str, help='output coco json result file, default=%(default)s', default='coco_result.json')
     parser.add_argument('--customize_coco', default=False, action="store_true", help='It is a user customize coco dataset. Will not follow standard coco class label')
     args = parser.parse_args()
 

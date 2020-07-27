@@ -3,6 +3,7 @@
 import os, argparse
 import json
 import numpy as np
+from tqdm import tqdm
 from collections import defaultdict, OrderedDict
 
 sets=[('instances_train2017', 'train2017'), ('instances_val2017', 'val2017')]
@@ -10,9 +11,9 @@ sets=[('instances_train2017', 'train2017'), ('instances_val2017', 'val2017')]
 class_count = {}
 
 parser = argparse.ArgumentParser(description='convert COCO dataset annotation to txt annotation file')
-parser.add_argument('--dataset_path', type=str, required=False, help='path to MSCOCO dataset, default is ../../mscoco2017', default=os.getcwd()+'/../../mscoco2017')
-parser.add_argument('--output_path', type=str, required=False,  help='output path for generated annotation txt files, default is ./', default='./')
-parser.add_argument('--classes_path', type=str, required=False, help='path to class definitions, default is ../../configs/coco_classes.txt', default=os.getcwd()+'/../../configs/coco_classes.txt')
+parser.add_argument('--dataset_path', type=str, required=False, help='path to MSCOCO dataset, default=%(default)s', default=os.getcwd()+'/../../mscoco2017')
+parser.add_argument('--output_path', type=str, required=False,  help='output path for generated annotation txt files, default=%(default)s', default='./')
+parser.add_argument('--classes_path', type=str, required=False, help='path to class definitions, default=%(default)s', default=os.getcwd()+'/../../configs/coco_classes.txt')
 parser.add_argument('--include_no_obj', action="store_true", help='to include no object image', default=False)
 parser.add_argument('--customize_coco', default=False, action="store_true", help='It is a user customize coco dataset. Will not follow standard coco class label')
 args = parser.parse_args()
@@ -114,6 +115,7 @@ for dataset, datatype in sets:
             image_file = '%s/%s/%012d.jpg' % (dataset_realpath, datatype, image_id)
             image_annotation_dict[image_file] = []
 
+    pbar = tqdm(total=len(annotations), desc='Parsing %s'%(datatype))
     for annotation in annotations:
         # annotation format:
         # {
@@ -138,9 +140,12 @@ for dataset, datatype in sets:
         # count object class for statistic
         class_name = classes[category_id]
         class_count[class_name] = class_count[class_name] + 1
+        pbar.update(1)
+    pbar.close()
 
     # save converting result to our annotation file
     annotation_file = open('%s/%s.txt'%(args.output_path, datatype), 'w')
+    pbar = tqdm(total=len(image_annotation_dict), desc='Saving %s'%(datatype))
     for image_file in image_annotation_dict.keys():
         annotation_file.write(image_file)
         box_infos = image_annotation_dict[image_file]
@@ -157,6 +162,9 @@ for dataset, datatype in sets:
                 x_min, y_min, x_max, y_max, int(category_id))
             annotation_file.write(box_annotation)
         annotation_file.write('\n')
+        pbar.update(1)
+
+    pbar.close()
     annotation_file.close()
     # print out item number statistic
     print('\nDone for %s/%s.txt. classes number statistic'%(args.output_path, datatype))

@@ -242,25 +242,25 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_type', type=str, required=False, default='shufflenet_v2',
-        help='backbone model type: shufflenet/shufflenet_v2/nanonet/darknet53/cspdarknet53, default=shufflenet_v2')
+        help='backbone model type: shufflenet/shufflenet_v2/nanonet/darknet53/cspdarknet53, default=%(default)s')
     parser.add_argument('--train_data_path', type=str,# required=True,
         help='path to Imagenet train data')
     parser.add_argument('--val_data_path', type=str,# required=True,
         help='path to Imagenet validation dataset')
-    parser.add_argument('--weights_path', type=str,required=False, default=None,
+    parser.add_argument('--weights_path', type=str, required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
-    parser.add_argument('--batch_size', type=int,required=False, default=128,
-        help = "batch size for train, default=128")
-    parser.add_argument('--optim_type', type=str, required=False, default='sgd',
-        help='optimizer type: sgd/rmsprop/adam, default=sgd')
+    parser.add_argument('--batch_size', type=int, required=False, default=128,
+        help = "batch size for train, default=%(default)s")
+    parser.add_argument('--optim_type', type=str, required=False, default='sgd', choices=['sgd', 'rmsprop', 'adam'],
+        help='optimizer type: sgd/rmsprop/adam, default=%(default)s')
     parser.add_argument('--learning_rate', type=float,required=False, default=.05,
-        help = "Initial learning rate, default=0.05")
+        help = "Initial learning rate, default=%(default)s")
     parser.add_argument('--init_epoch', type=int,required=False, default=0,
-        help = "Initial training epochs for fine tune training, default=0")
+        help = "Initial training epochs for fine tune training, default=%(default)s")
     parser.add_argument('--total_epoch', type=int,required=False, default=200,
-        help = "Total training epochs, default=200")
+        help = "Total training epochs, default=%(default)s")
     parser.add_argument('--gpu_num', type=int, required=False, default=1,
-        help='Number of GPU to use, default=1')
+        help='Number of GPU to use, default=%(default)s')
     parser.add_argument('--evaluate', default=False, action="store_true",
         help='Evaluate a trained model with validation dataset')
     parser.add_argument('--verify_with_image', default=False, action="store_true",

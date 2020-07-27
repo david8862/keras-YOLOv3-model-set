@@ -3,6 +3,7 @@
 import os, argparse
 import numpy as np
 import xml.etree.ElementTree as ET
+from tqdm import tqdm
 from collections import OrderedDict
 
 sets=[('2007', 'train'), ('2007', 'val'), ('2007', 'test'), ('2012', 'train'), ('2012', 'val')]
@@ -67,10 +68,10 @@ def get_classes(classes_path):
 
 
 parser = argparse.ArgumentParser(description='convert PascalVOC dataset annotation to txt annotation file')
-parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default is ../../VOCdevkit', default=os.getcwd()+'/../../VOCdevkit')
+parser.add_argument('--dataset_path', type=str, help='path to PascalVOC dataset, default=%(default)s', default=os.getcwd()+'/../../VOCdevkit')
 parser.add_argument('--year', type=str, help='subset path of year (2007/2012), default will cover both', default=None)
 parser.add_argument('--set', type=str, help='convert data set, default will cover train, val and test', default=None)
-parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default is ./', default='./')
+parser.add_argument('--output_path', type=str,  help='output path for generated annotation txt files, default=%(default)s', default='./')
 parser.add_argument('--classes_path', type=str, required=False, help='path to class definitions')
 parser.add_argument('--include_difficult', action="store_true", help='to include difficult object', default=False)
 parser.add_argument('--include_no_obj', action="store_true", help='to include no object image', default=False)
@@ -99,6 +100,7 @@ for year, image_set in sets:
 
     image_ids = open('%s/VOC%s/ImageSets/Main/%s.txt'%(dataset_realpath, year, image_set)).read().strip().split()
     list_file = open('%s/%s_%s.txt'%(args.output_path, year, image_set), 'w')
+    pbar = tqdm(total=len(image_ids), desc='Converting VOC%s_%s'%(year, image_set))
     for image_id in image_ids:
         file_string = '%s/VOC%s/JPEGImages/%s.jpg'%(dataset_realpath, year, image_id)
         # check if the image file exists
@@ -115,6 +117,8 @@ for year, image_set in sets:
             # include no object image. just write file path
             list_file.write(file_string)
             list_file.write('\n')
+        pbar.update(1)
+    pbar.close()
     list_file.close()
     # print out item number statistic
     print('\nDone for %s_%s.txt. classes number statistic'%(year, image_set))

@@ -221,55 +221,55 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # Model definition options
     parser.add_argument('--model_type', type=str, required=False, default='yolo3_mobilenet_lite',
-        help='YOLO model type: yolo3_mobilenet_lite/tiny_yolo3_mobilenet/yolo3_darknet/..., default=yolo3_mobilenet_lite')
+        help='YOLO model type: yolo3_mobilenet_lite/tiny_yolo3_mobilenet/yolo3_darknet/..., default=%(default)s')
     parser.add_argument('--anchors_path', type=str, required=False, default=os.path.join('configs', 'yolo3_anchors.txt'),
-        help='path to anchor definitions, default=configs/yolo3_anchors.txt')
-    parser.add_argument('--model_image_size', type=str,required=False, default='416x416',
-        help = "Initial model image input size as <height>x<width>, default 416x416")
-    parser.add_argument('--weights_path', type=str,required=False, default=None,
+        help='path to anchor definitions, default=%(default)s')
+    parser.add_argument('--model_image_size', type=str, required=False, default='416x416',
+        help = "Initial model image input size as <height>x<width>, default=%(default)s")
+    parser.add_argument('--weights_path', type=str, required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
 
     # Data options
     parser.add_argument('--annotation_file', type=str, required=False, default='trainval.txt',
-        help='train annotation txt file, default=trainval.txt')
+        help='train annotation txt file, default=%(default)s')
     parser.add_argument('--val_annotation_file', type=str, required=False, default=None,
-        help='val annotation txt file, default=None')
-    parser.add_argument('--val_split', type=float,required=False, default=0.1,
-        help = "validation data persentage in dataset if no val dataset provide, default=0.1")
+        help='val annotation txt file, default=%(default)s')
+    parser.add_argument('--val_split', type=float, required=False, default=0.1,
+        help = "validation data persentage in dataset if no val dataset provide, default=%(default)s")
     parser.add_argument('--classes_path', type=str, required=False, default=os.path.join('configs', 'voc_classes.txt'),
-        help='path to class definitions, default=configs/voc_classes.txt')
+        help='path to class definitions, default=%(default)s')
 
     # Training options
-    parser.add_argument('--batch_size', type=int,required=False, default=16,
-        help = "Batch size for train, default=16")
-    parser.add_argument('--optimizer', type=str,required=False, default='adam',
-        help = "optimizer for training (adam/rmsprop/sgd), default=adam")
-    parser.add_argument('--learning_rate', type=float,required=False, default=1e-3,
-        help = "Initial learning rate, default=0.001")
-    parser.add_argument('--decay_type', type=str,required=False, default=None,
-        help = "Learning rate decay type (None/cosine/exponential/polynomial/piecewise_constant), default=None")
-    parser.add_argument('--transfer_epoch', type=int,required=False, default=20,
-        help = "Transfer training (from Imagenet) stage epochs, default=20")
-    parser.add_argument('--freeze_level', type=int,required=False, default=None,
+    parser.add_argument('--batch_size', type=int, required=False, default=16,
+        help = "Batch size for train, default=%(default)s")
+    parser.add_argument('--optimizer', type=str, required=False, default='adam', choices=['adam', 'rmsprop', 'sgd'],
+        help = "optimizer for training (adam/rmsprop/sgd), default=%(default)s")
+    parser.add_argument('--learning_rate', type=float, required=False, default=1e-3,
+        help = "Initial learning rate, default=%(default)s")
+    parser.add_argument('--decay_type', type=str, required=False, default=None, choices=[None, 'cosine', 'exponential', 'polynomial', 'piecewise_constant'],
+        help = "Learning rate decay type, default=%(default)s")
+    parser.add_argument('--transfer_epoch', type=int, required=False, default=20,
+        help = "Transfer training (from Imagenet) stage epochs, default=%(default)s")
+    parser.add_argument('--freeze_level', type=int,required=False, default=None, choices=[None, 0, 1, 2],
         help = "Freeze level of the model in transfer training stage. 0:NA/1:backbone/2:only open prediction layer")
     parser.add_argument('--init_epoch', type=int,required=False, default=0,
-        help = "Initial training epochs for fine tune training, default=0")
+        help = "Initial training epochs for fine tune training, default=%(default)s")
     parser.add_argument('--total_epoch', type=int,required=False, default=250,
-        help = "Total training epochs, default=250")
+        help = "Total training epochs, default=%(default)s")
     parser.add_argument('--multiscale', default=False, action="store_true",
         help='Whether to use multiscale training')
     parser.add_argument('--rescale_interval', type=int, required=False, default=10,
-        help = "Number of iteration(batches) interval to rescale input size, default=10")
-    parser.add_argument('--enhance_augment', type=str, required=False, default=None,
-        help = "enhance data augmentation type (None/mosaic), default=None")
+        help = "Number of iteration(batches) interval to rescale input size, default=%(default)s")
+    parser.add_argument('--enhance_augment', type=str, required=False, default=None, choices=[None, 'mosaic'],
+        help = "enhance data augmentation type (None/mosaic), default=%(default)s")
     parser.add_argument('--label_smoothing', type=float, required=False, default=0,
-        help = "Label smoothing factor (between 0 and 1) for classification loss, default=0")
+        help = "Label smoothing factor (between 0 and 1) for classification loss, default=%(default)s")
     parser.add_argument('--multi_anchor_assign', default=False, action="store_true",
         help = "Assign multiple anchors to single ground truth")
     parser.add_argument('--data_shuffle', default=False, action="store_true",
         help='Whether to shuffle train/val data for cross-validation')
     parser.add_argument('--gpu_num', type=int, required=False, default=1,
-        help='Number of GPU to use, default=1')
+        help='Number of GPU to use, default=%(default)s')
     parser.add_argument('--model_pruning', default=False, action="store_true",
         help='Use model pruning for optimization, only for TF 1.x')
 
@@ -277,7 +277,7 @@ if __name__ == '__main__':
     parser.add_argument('--eval_online', default=False, action="store_true",
         help='Whether to do evaluation on validation dataset during training')
     parser.add_argument('--eval_epoch_interval', type=int, required=False, default=10,
-        help = "Number of iteration(epochs) interval to do evaluation, default=10")
+        help = "Number of iteration(epochs) interval to do evaluation, default=%(default)s")
     parser.add_argument('--save_eval_checkpoint', default=False, action="store_true",
         help='Whether to save checkpoint with best evaluation result')
 

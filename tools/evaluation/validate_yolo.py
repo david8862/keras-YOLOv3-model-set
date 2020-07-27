@@ -364,8 +364,8 @@ def main():
     parser.add_argument('--model_path', help='model file to predict', type=str, required=True)
     parser.add_argument('--image_file', help='image file to predict', type=str, required=True)
     parser.add_argument('--anchors_path',help='path to anchor definitions', type=str, required=True)
-    parser.add_argument('--classes_path', help='path to class definitions, default ../../configs/voc_classes.txt', type=str, default='../../configs/voc_classes.txt')
-    parser.add_argument('--model_image_size', help='model image input size as <height>x<width>, default 416x416', type=str, default='416x416')
+    parser.add_argument('--classes_path', help='path to class definitions, default=%(default)s', type=str, default='../../configs/voc_classes.txt')
+    parser.add_argument('--model_image_size', help='model image input size as <height>x<width>, default=%(default)s', type=str, default='416x416')
     parser.add_argument('--loop_count', help='loop inference for certain times', type=int, default=1)
 
     args = parser.parse_args()

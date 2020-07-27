@@ -58,7 +58,7 @@ def main():
     parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='Convert YOLO h5/pb model to CoreML model')
     parser.add_argument('--input_model_file', required=True, type=str, help='path to input h5/pb model file')
     parser.add_argument('--output_file', required=True, type=str, help='output CoreML .mlmodel file')
-    parser.add_argument('--model_image_size', required=False, type=str, help='model image input size as <height>x<width>, default 416x416', default='416x416')
+    parser.add_argument('--model_image_size', required=False, type=str, help='model image input size as <height>x<width>, default=%(default)s', default='416x416')
 
     args = parser.parse_args()
     height, width = args.model_image_size.split('x')

@@ -53,7 +53,7 @@ def main():
     parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='Convert YOLO tf.keras model to ONNX model')
     parser.add_argument('--keras_model_file', required=True, type=str, help='path to keras model file')
     parser.add_argument('--output_file', required=True, type=str, help='output onnx model file')
-    parser.add_argument('--op_set', required=False, type=int, help='onnx op set, default=10', default=10)
+    parser.add_argument('--op_set', required=False, type=int, help='onnx op set, default=%(default)s', default=10)
     parser.add_argument('--with_savedmodel', default=False, action="store_true", help='use a temp savedmodel for convert')
 
     args = parser.parse_args()

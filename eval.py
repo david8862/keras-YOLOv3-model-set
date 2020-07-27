@@ -1282,27 +1282,27 @@ def main():
 
     parser.add_argument(
         '--classes_path', type=str, required=False,
-        help='path to class definitions, default configs/voc_classes.txt', default=os.path.join('configs' , 'voc_classes.txt'))
+        help='path to class definitions, default=%(default)s', default=os.path.join('configs' , 'voc_classes.txt'))
 
     parser.add_argument(
         '--annotation_file', type=str, required=True,
         help='test annotation txt file')
 
     parser.add_argument(
-        '--eval_type', type=str,
-        help='evaluation type (VOC/COCO), default=VOC', default='VOC')
+        '--eval_type', type=str, required=False, choices=['VOC', 'COCO'],
+        help='evaluation type (VOC/COCO), default=%(default)s', default='VOC')
 
     parser.add_argument(
         '--iou_threshold', type=float,
-        help='IOU threshold for PascalVOC mAP, default=0.5', default=0.5)
+        help='IOU threshold for PascalVOC mAP, default=%(default)s', default=0.5)
 
     parser.add_argument(
         '--conf_threshold', type=float,
-        help='confidence threshold for filtering box in postprocess, default=0.001', default=0.001)
+        help='confidence threshold for filtering box in postprocess, default=%(default)s', default=0.001)
 
     parser.add_argument(
         '--model_image_size', type=str,
-        help='model image input size as <height>x<width>, default 416x416', default='416x416')
+        help='model image input size as <height>x<width>, default=%(default)s', default='416x416')
 
     parser.add_argument(
         '--save_result', default=False, action="store_true",

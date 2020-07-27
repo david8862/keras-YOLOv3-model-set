@@ -118,7 +118,7 @@ if __name__ == "__main__":
     parser.add_argument('--anchors_file', type=str, required=True,
             help='anchor file to output')
     parser.add_argument('--model_image_size', type=str, required=False,
-            help='model image input size as <height>x<width>, default 608x608', default='608x608')
+            help='model image input size as <height>x<width>, default=%(default)s', default='608x608')
 
     args = parser.parse_args()
 

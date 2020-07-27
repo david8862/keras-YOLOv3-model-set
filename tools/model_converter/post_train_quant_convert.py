@@ -57,8 +57,8 @@ def main():
 
     parser.add_argument('--keras_model_file', required=True, type=str, help='path to keras model file')
     parser.add_argument('--annotation_file', required=True, type=str, help='annotation txt file to feed the converter')
-    parser.add_argument('--sample_num', type=int, help='annotation sample number to feed the converter,default 30', default=30)
-    parser.add_argument('--model_input_shape', type=str, help='model image input shape as <height>x<width>, default 416x416', default='416x416')
+    parser.add_argument('--sample_num', type=int, help='annotation sample number to feed the converter,default=%(default)s', default=30)
+    parser.add_argument('--model_input_shape', type=str, help='model image input shape as <height>x<width>, default=%(default)s', default='416x416')
     parser.add_argument('--output_file', required=True, type=str, help='output tflite model file')
 
     args = parser.parse_args()

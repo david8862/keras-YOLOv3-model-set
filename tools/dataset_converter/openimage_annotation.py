@@ -6,7 +6,7 @@ from PIL import Image
 parser = argparse.ArgumentParser()
 parser.add_argument('--image_path', type=str, required=True, help='path to image files')
 parser.add_argument('--bbox_info_file', type=str, required=True, help='csv bounding box info file')
-parser.add_argument('--output_file', type=str,  help='generated annotation txt files, default is OpenImage.txt', default='OpenImage.txt')
+parser.add_argument('--output_file', type=str,  help='generated annotation txt files, default=%(default)s', default='OpenImage.txt')
 
 args = parser.parse_args()
 

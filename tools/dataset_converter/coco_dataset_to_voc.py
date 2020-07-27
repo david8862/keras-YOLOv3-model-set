@@ -14,9 +14,9 @@ def main():
     parser.add_argument('--coco_annotation_file', type=str, required=True,
         help='coco annotation txt file')
     parser.add_argument('--coco_classes_path', type=str, default='../../configs/coco_classes.txt',
-        help='path to coco class definitions, default ../../configs/coco_classes.txt')
+        help='path to coco class definitions, default=%(default)s')
     parser.add_argument('--voc_classes_path', type=str, default='../../configs/voc_classes.txt',
-        help='path to voc class definitions, default ../../configs/voc_classes.txt')
+        help='path to voc class definitions, default=%(default)s')
     parser.add_argument('--output_voc_annotation_file', type=str, required=True,
         help='output voc classes annotation file')
 
