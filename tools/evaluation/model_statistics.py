@@ -6,7 +6,8 @@ Compatible with TF 1.x and TF 2.x
 """
 import os, sys, argparse
 import tensorflow as tf
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.layers import Input
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.utils import get_custom_objects
 
@@ -34,11 +35,28 @@ def get_flops(model):
 
 def main():
     parser = argparse.ArgumentParser(description='tf.keras model FLOPs & PARAMs checking tool')
-    parser.add_argument('--model_path', help='model file to evaluate', type=str, required=True)
+    parser.add_argument('--model_path', type=str, required=True, help='model file to evaluate')
+    parser.add_argument('--model_image_size', type=str, required=False, default=None, help='model image input size as <height>x<width>, optional')
     args = parser.parse_args()
 
     custom_object_dict = get_custom_objects()
     model = load_model(args.model_path, compile=False, custom_objects=custom_object_dict)
+
+    batch, height, width, channel = model.input.shape.as_list()
+
+    if args.model_image_size:
+        height, width = args.model_image_size.split('x')
+        height, width = int(height), int(width)
+        assert (height%32 == 0 and width%32 == 0), 'model_image_size should be multiples of 32'
+
+    # to calculate FLOPs we need to use fixed input shape & batch size
+    assert height and width and channel, 'input shape should be specified'
+
+    if not batch:
+        # if dynamic batch, rebuild model with batch_size=1
+        input_tensor = Input(shape=(height, width, channel), batch_size=1)
+        output_tensor = model(input_tensor)
+        model = Model(input_tensor, output_tensor)
 
     get_flops(model)
 

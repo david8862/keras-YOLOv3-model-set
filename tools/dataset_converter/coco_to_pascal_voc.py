@@ -15,11 +15,12 @@ sets=['train2017', 'val2017']
 
 xml_head_template = """\
 <annotation>
-    <folder>VOC</folder>
+    <folder>JPEGImages</folder>
     <filename>%s</filename>
+    <relpath>../JPEGImages/%s</relpath>
     <source>
-        <database>My Database</database>
-        <annotation>COCO</annotation>
+        <database>Unknown</database>
+        <annotation>PASCAL VOC2007</annotation>
         <image>flickr</image>
         <flickrid>NULL</flickrid>
     </source>
@@ -81,7 +82,7 @@ def save_annotations_and_imgs(coco, dataset, filename, objs, coco_root_path, out
         return
     shutil.copy(img_path, dst_imgpath)
 
-    head = xml_head_template % (filename, img.shape[1], img.shape[0], img.shape[2])
+    head = xml_head_template % (filename, filename, img.shape[1], img.shape[0], img.shape[2])
     tail = xml_tail_template
     write_xml(annotation_path, head, objs, tail)
 

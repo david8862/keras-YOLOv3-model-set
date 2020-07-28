@@ -40,6 +40,11 @@ parser.add_argument(
     help='Save as Keras weights file instead of model file.',
     action='store_true')
 parser.add_argument(
+    '-f',
+    '--fixed_input_shape',
+    help='Use fixed input shape specified in cfg.',
+    action='store_true')
+parser.add_argument(
     '-r',
     '--yolo4_reorder',
     help='Reorder output tensors for YOLOv4 cfg and weights file.',
@@ -94,13 +99,20 @@ def _main(args):
     cfg_parser = configparser.ConfigParser()
     cfg_parser.read_file(unique_config_file)
 
+    weight_decay = float(cfg_parser['net_0']['decay']) if 'net_0' in cfg_parser.sections() else 5e-4
+
+    # Parase model input width, height
+    width = int(cfg_parser['net_0']['width']) if 'net_0' in cfg_parser.sections() else None
+    height = int(cfg_parser['net_0']['height']) if 'net_0' in cfg_parser.sections() else None
+
     print('Creating Keras model.')
-    input_layer = Input(shape=(None, None, 3), name='image_input')
+    if width and height and args.fixed_input_shape:
+        input_layer = Input(shape=(height, width, 3), name='image_input')
+    else:
+        input_layer = Input(shape=(None, None, 3), name='image_input')
     prev_layer = input_layer
     all_layers = []
 
-    weight_decay = float(cfg_parser['net_0']['decay']
-                         ) if 'net_0' in cfg_parser.sections() else 5e-4
     count = 0
     out_index = []
     for section in cfg_parser.sections():

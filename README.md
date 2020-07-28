@@ -43,7 +43,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] tf.keras batch-wise YOLOv3/v2 postprocess Lambda layer
 - [x] DIoU-NMS bounding box postprocess (numpy/C++)
 - [x] SoftNMS bounding box postprocess (numpy)
-- [x] WBF(Weighted-Boxes-Fusion) bounding box postprocess (numpy)
+- [x] WBF(Weighted-Boxes-Fusion) bounding box postprocess (numpy) ([paper](https://arxiv.org/abs/1910.13302))
 
 #### Train tech
 - [x] Transfer training from imagenet
