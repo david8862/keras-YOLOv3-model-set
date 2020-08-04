@@ -6,6 +6,7 @@ Compatible with TF 1.x and TF 2.x
 """
 import os, sys, argparse
 import tensorflow as tf
+import tensorflow.keras.backend as K
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Input
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
@@ -29,8 +30,35 @@ def get_flops(model):
     opts = tf.profiler.ProfileOptionBuilder.trainable_variables_parameter()
     params = tf.profiler.profile(graph=graph, run_meta=run_meta, cmd='op', options=opts)
 
-    print('Total FLOPs: {}m float_ops'.format(flops.total_float_ops/1e6))
-    print('Total PARAMs: {}m'.format(params.total_parameters/1e6))
+    flops_value = flops.total_float_ops
+    param_value = params.total_parameters
+
+    # get friendly FLOPs value string
+    if flops_value > 0 and flops_value <= 1e3:
+        flops_result_string = '{}'.format(flops_value)
+    elif flops_value > 1e3 and flops_value <= 1e6:
+        flops_result_string = '%.4fK'%(flops_value/1e3)
+    elif flops_value > 1e6 and flops_value <= 1e9:
+        flops_result_string = '%.4fM'%(flops_value/1e6)
+    elif flops_value > 1e9 and flops_value <= 1e12:
+        flops_result_string = '%.4fG'%(flops_value/1e9)
+    elif flops_value > 1e12:
+        flops_result_string = '%.4fT'%(flops_value/1e12)
+
+    # get friendly PARAMs value string
+    if param_value > 0 and param_value <= 1e3:
+        param_result_string = '{}'.format(param_value)
+    elif param_value > 1e3 and param_value <= 1e6:
+        param_result_string = '%.4fK'%(param_value/1e3)
+    elif param_value > 1e6 and param_value <= 1e9:
+        param_result_string = '%.4fM'%(param_value/1e6)
+    elif param_value > 1e9 and param_value <= 1e12:
+        param_result_string = '%.4fG'%(param_value/1e9)
+    elif param_value > 1e12:
+        param_result_string = '%.4fT'%(param_value/1e12)
+
+    print('Total FLOPs: {} float_ops'.format(flops_result_string))
+    print('Total PARAMs: {}'.format(param_result_string))
 
 
 def main():
@@ -58,6 +86,7 @@ def main():
         output_tensor = model(input_tensor)
         model = Model(input_tensor, output_tensor)
 
+    K.set_learning_phase(0)
     get_flops(model)
 
 

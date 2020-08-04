@@ -142,7 +142,7 @@ def coco_to_pascalvoc(coco_root_path, output_path, class_names):
                 objs = parse_obj_info(coco, dataset, img, class_dict, classes_ids, class_names)
                 save_annotations_and_imgs(coco, dataset, filename, objs, coco_root_path, output_path)
                 # record image id
-                dataset_list.add('%012d'%imgId)
+                dataset_list.add(os.path.splitext(filename)[0])
 
         # get sorted dataset list
         dataset_list = list(dataset_list)
