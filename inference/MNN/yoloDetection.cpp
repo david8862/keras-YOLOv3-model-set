@@ -54,6 +54,7 @@ struct Settings {
   float conf_thrd = 0.1f;
   float input_mean = 0.0f;
   float input_std = 255.0f;
+  bool elim_grid_sense = false;
   std::string model_name = "./model.mnn";
   std::string input_img_name = "./dog.jpg";
   std::string classes_file_name = "./classes.txt";
@@ -103,6 +104,7 @@ void display_usage() {
         << "--conf_thrd, -n: confidence threshold for detection filter\n"
         << "--input_mean, -b: input mean\n"
         << "--input_std, -s: input standard deviation\n"
+        << "--elim_grid_sense, -e: [0|1] eliminate grid sensitivity\n"
         << "--threads, -t: number of threads\n"
         << "--count, -c: loop model run for certain times\n"
         << "--warmup_runs, -w: number of warmup runs\n"
@@ -116,7 +118,7 @@ void display_usage() {
 // YOLO postprocess for each prediction feature map
 void yolo_postprocess(const Tensor* feature_map, const int input_width, const int input_height,
                       const int num_classes, const std::vector<std::pair<float, float>> anchors,
-                      std::vector<t_prediction> &prediction_list, float conf_threshold)
+                      std::vector<t_prediction> &prediction_list, float conf_threshold, float scale_x_y)
 {
     // 1. do following transform to get the output bbox,
     //    which is aligned with YOLOv3/YOLOv2 paper:
@@ -126,6 +128,15 @@ void yolo_postprocess(const Tensor* feature_map, const int input_width, const in
     //    bbox_w = (exp(pred_w) * anchor_w) / input_width
     //    bbox_h = (exp(pred_h) * anchor_h) / input_height
     //    bbox_obj = sigmoid(pred_obj)
+    //
+    //    if using "Eliminate grid sensitivity", bbox_x & bbox_y
+    //    will use following formula
+    //
+    //    bbox_x_tmp = sigmoid(bytes[bbox_x_offset]) * scale_x_y - (scale_x_y - 1) / 2;
+    //    bbox_y_tmp = sigmoid(bytes[bbox_y_offset]) * scale_x_y - (scale_x_y - 1) / 2;
+    //    bbox_x = (bbox_x_tmp + w) / width;
+    //    bbox_y = (bbox_y_tmp + h) / height;
+    //
     //
     // 2. get bbox confidence (class_score * objectness)
     //    and filter with threshold
@@ -220,8 +231,26 @@ void yolo_postprocess(const Tensor* feature_map, const int input_width, const in
                     }
 
                     // Decode YOLO predictions
-                    float bbox_x = (sigmoid(bytes[bbox_x_offset]) + w) / width;
-                    float bbox_y = (sigmoid(bytes[bbox_y_offset]) + h) / height;
+                    float bbox_x, bbox_y;
+
+                    if(scale_x_y > 0) {
+                        // Eliminate grid sensitivity trick involved in YOLOv4
+                        //
+                        // Reference Paper & code:
+                        //     "YOLOv4: Optimal Speed and Accuracy of Object Detection"
+                        //     https://arxiv.org/abs/2004.10934
+                        //     https://github.com/opencv/opencv/issues/17148
+                        //
+                        float bbox_x_tmp = sigmoid(bytes[bbox_x_offset]) * scale_x_y - (scale_x_y - 1) / 2;
+                        float bbox_y_tmp = sigmoid(bytes[bbox_y_offset]) * scale_x_y - (scale_x_y - 1) / 2;
+                        bbox_x = (bbox_x_tmp + w) / width;
+                        bbox_y = (bbox_y_tmp + h) / height;
+                    }
+                    else {
+                        bbox_x = (sigmoid(bytes[bbox_x_offset]) + w) / width;
+                        bbox_y = (sigmoid(bytes[bbox_y_offset]) + h) / height;
+                    }
+
                     float bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first / input_width;
                     float bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second / input_height;
                     float bbox_obj = sigmoid(bytes[bbox_obj_offset]);
@@ -381,7 +410,8 @@ void nms_boxes(const std::vector<t_prediction> prediction_list, std::vector<t_pr
 
                 // loop the list to get IoU with max score prediction
                 for(auto iter = class_pred_list.begin(); iter != class_pred_list.end();) {
-                    float iou = get_iou(current_pred, *iter);
+                    // by default we use DIoU NMS
+                    float iou = get_diou(current_pred, *iter);
                     // drop if IoU is larger than threshold
                     if(iou > iou_threshold) {
                         iter = class_pred_list.erase(iter);
@@ -401,17 +431,10 @@ void nms_boxes(const std::vector<t_prediction> prediction_list, std::vector<t_pr
 
 
 // select anchorset for corresponding featuremap layer
-std::vector<std::pair<float, float>> get_anchorset(std::vector<std::pair<float, float>> anchors, const int feature_width, const int input_width)
+std::vector<std::pair<float, float>> get_anchorset(std::vector<std::pair<float, float>> anchors, const int stride)
 {
     std::vector<std::pair<float, float>> anchorset;
     int anchor_num = anchors.size();
-
-    // stride could confirm the feature map level:
-    // image_input: 1 x 416 x 416 x 3
-    // stride 32: 1 x 13 x 13 x 3 x (num_classes + 5)
-    // stride 16: 1 x 26 x 26 x 3 x (num_classes + 5)
-    // stride 8: 1 x 52 x 52 x 3 x (num_classes + 5)
-    int stride = input_width / feature_width;
 
     // YOLOv3 model has 9 anchors and 3 feature layers
     if (anchor_num == 9) {
@@ -462,6 +485,57 @@ std::vector<std::pair<float, float>> get_anchorset(std::vector<std::pair<float, 
     }
 
     return anchorset;
+}
+
+
+// generate scale_x_y coefficient for "Eliminate grid sensitivity" feature,
+// according to CLI option
+float get_scale_x_y(const bool elim_grid_sense, std::vector<std::pair<float, float>> anchors, const int stride)
+{
+    int anchor_num = anchors.size();
+    // by default return an invalid scale_x_y value
+    float scale_x_y = -1;
+
+    if(elim_grid_sense) {
+        // YOLOv3 model has 9 anchors and 3 feature layers
+        if (anchor_num == 9) {
+            if (stride == 32) {
+                scale_x_y = 1.05;
+            }
+            else if (stride == 16) {
+                scale_x_y = 1.1;
+            }
+            else if (stride == 8) {
+                scale_x_y = 1.1;
+            }
+            else {
+                MNN_PRINT("invalid feature map stride!\n");
+                exit(-1);
+            }
+        }
+        // Tiny YOLOv3 model has 6 anchors and 2 feature layers
+        else if (anchor_num == 6) {
+            if (stride == 32) {
+                scale_x_y = 1.05;
+            }
+            else if (stride == 16) {
+                scale_x_y = 1.05;
+            }
+            else {
+                MNN_PRINT("invalid anchorset index!\n");
+                exit(-1);
+            }
+        }
+        // YOLOv2 model has 5 anchors and 1 feature layers
+        else if (anchor_num == 5) {
+            scale_x_y = 1.05;
+        }
+        else {
+            MNN_PRINT("invalid anchor numbers!\n");
+            exit(-1);
+        }
+    }
+    return scale_x_y;
 }
 
 
@@ -734,12 +808,22 @@ void RunInference(Settings* s) {
 
     for (int i = 0; i < num_layers; ++i) {
         Tensor* feature_map = featureTensors[i].get();
-        std::vector<std::pair<float, float>> anchorset = get_anchorset(anchors, feature_map->width(), input_width);
+
+        // stride could confirm the feature map level:
+        // image_input: 1 x 416 x 416 x 3
+        // stride 32: 1 x 13 x 13 x 3 x (num_classes + 5)
+        // stride 16: 1 x 26 x 26 x 3 x (num_classes + 5)
+        // stride 8: 1 x 52 x 52 x 3 x (num_classes + 5)
+        int stride = input_width / feature_map->width();
+
+        std::vector<std::pair<float, float>> anchorset = get_anchorset(anchors, stride);
+
+        float scale_x_y = get_scale_x_y(s->elim_grid_sense, anchors, stride);
 
         // Now we only support float32 type output tensor
         MNN_ASSERT(featureTensors[i]->getType().code == halide_type_float);
         MNN_ASSERT(featureTensors[i]->getType().bits == 32);
-        yolo_postprocess(featureTensors[i].get(), input_width, input_height, num_classes, anchorset, prediction_list, conf_threshold);
+        yolo_postprocess(featureTensors[i].get(), input_width, input_height, num_classes, anchorset, prediction_list, conf_threshold, scale_x_y);
     }
 
     gettimeofday(&stop_time, nullptr);
@@ -808,6 +892,7 @@ int main(int argc, char** argv) {
         {"conf_thrd", required_argument, nullptr, 'n'},
         {"input_mean", required_argument, nullptr, 'b'},
         {"input_std", required_argument, nullptr, 's'},
+        {"elim_grid_sense", required_argument, nullptr, 'e'},
         {"threads", required_argument, nullptr, 't'},
         {"count", required_argument, nullptr, 'c'},
         {"warmup_runs", required_argument, nullptr, 'w'},
@@ -820,7 +905,7 @@ int main(int argc, char** argv) {
     int option_index = 0;
 
     c = getopt_long(argc, argv,
-                    "a:b:c:hi:l:m:n:r:s:t:w:", long_options,
+                    "a:b:c:e:hi:l:m:n:r:s:t:w:", long_options,
                     &option_index);
 
     /* Detect the end of the options. */
@@ -835,6 +920,10 @@ int main(int argc, char** argv) {
         break;
       case 'c':
         s.loop_count =
+            strtol(optarg, nullptr, 10);  // NOLINT(runtime/deprecated_fn)
+        break;
+      case 'e':
+        s.elim_grid_sense =
             strtol(optarg, nullptr, 10);  // NOLINT(runtime/deprecated_fn)
         break;
       case 'i':

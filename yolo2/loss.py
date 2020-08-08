@@ -4,7 +4,7 @@
 import math
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from yolo2.postprocess import yolo2_head
+from yolo2.postprocess import yolo2_decode
 
 
 def box_iou(b1, b2):
@@ -178,7 +178,7 @@ def _smooth_labels(y_true, label_smoothing):
     return y_true * (1.0 - label_smoothing) + 0.5 * label_smoothing
 
 
-def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_loss=False, use_crossentropy_obj_loss=False, rescore_confidence=False, use_giou_loss=False, use_diou_loss=False):
+def yolo2_loss(args, anchors, num_classes, label_smoothing=0, elim_grid_sense=False, use_crossentropy_loss=False, use_crossentropy_obj_loss=False, rescore_confidence=False, use_giou_loss=False, use_diou_loss=False):
     """
     YOLOv2 loss function.
 
@@ -208,6 +208,7 @@ def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_l
     """
     (yolo_output, y_true) = args
     num_anchors = len(anchors)
+    scale_x_y = 1.05 if elim_grid_sense else None
     yolo_output_shape = K.shape(yolo_output)
     input_shape = K.cast(yolo_output_shape[1:3] * 32, K.dtype(y_true))
     grid_shape = K.cast(yolo_output_shape[1:3], K.dtype(y_true)) # height, width
@@ -217,8 +218,8 @@ def yolo2_loss(args, anchors, num_classes, label_smoothing=0, use_crossentropy_l
     class_scale = 1
     location_scale = 1
 
-    grid, raw_pred, pred_xy, pred_wh = yolo2_head(
-        yolo_output, anchors, num_classes, input_shape, calc_loss=True)
+    grid, raw_pred, pred_xy, pred_wh = yolo2_decode(
+        yolo_output, anchors, num_classes, input_shape, scale_x_y=scale_x_y, calc_loss=True)
     pred_confidence = K.sigmoid(raw_pred[..., 4:5])
     pred_class_prob = K.softmax(raw_pred[..., 5:])
 

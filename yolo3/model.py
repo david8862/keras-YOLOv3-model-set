@@ -215,7 +215,7 @@ def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, in
 
 
 
-def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, optimizer=Adam(lr=1e-3, decay=0), label_smoothing=0, model_pruning=False, pruning_end_step=10000):
+def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, freeze_level=1, optimizer=Adam(lr=1e-3, decay=0), label_smoothing=0, elim_grid_sense=False, model_pruning=False, pruning_end_step=10000):
     '''create the training model, for YOLOv3'''
     #K.clear_session() # get a new session
     num_anchors = len(anchors)
@@ -252,7 +252,7 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
         print('Unfreeze all of the layers.')
 
     model_loss, location_loss, confidence_loss, class_loss = Lambda(yolo3_loss, name='yolo_loss',
-            arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5, 'label_smoothing': label_smoothing})(
+            arguments={'anchors': anchors, 'num_classes': num_classes, 'ignore_thresh': 0.5, 'label_smoothing': label_smoothing, 'elim_grid_sense': elim_grid_sense})(
         [*model_body.output, *y_true])
 
     model = Model([model_body.input, *y_true], model_loss)
@@ -267,7 +267,7 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
     return model
 
 
-def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=None, input_shape=None, confidence=0.1):
+def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=None, input_shape=None, confidence=0.1, elim_grid_sense=False):
     '''create the inference model, for YOLOv3'''
     #K.clear_session() # get a new session
     num_anchors = len(anchors)
@@ -286,7 +286,7 @@ def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=Non
         print('Load weights {}.'.format(weights_path))
 
     boxes, scores, classes = Lambda(batched_yolo3_postprocess, name='yolo3_postprocess',
-            arguments={'anchors': anchors, 'num_classes': num_classes, 'confidence': confidence})(
+            arguments={'anchors': anchors, 'num_classes': num_classes, 'confidence': confidence, 'elim_grid_sense': elim_grid_sense})(
         [*model_body.output, image_shape])
     model = Model([model_body.input, image_shape], [boxes, scores, classes])
 

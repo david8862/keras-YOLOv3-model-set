@@ -22,7 +22,7 @@ class DatasetShuffleCallBack(Callback):
 
 
 class EvalCallBack(Callback):
-    def __init__(self, model_type, annotation_lines, anchors, class_names, model_image_size, model_pruning, log_dir, eval_epoch_interval=10, save_eval_checkpoint=False):
+    def __init__(self, model_type, annotation_lines, anchors, class_names, model_image_size, model_pruning, log_dir, eval_epoch_interval=10, save_eval_checkpoint=False, elim_grid_sense=False):
         self.model_type = model_type
         self.annotation_lines = annotation_lines
         self.anchors = anchors
@@ -32,6 +32,7 @@ class EvalCallBack(Callback):
         self.log_dir = log_dir
         self.eval_epoch_interval = eval_epoch_interval
         self.save_eval_checkpoint = save_eval_checkpoint
+        self.elim_grid_sense = elim_grid_sense
         self.best_mAP = 0.0
         self.eval_model = self.get_eval_model()
 
@@ -103,7 +104,7 @@ class EvalCallBack(Callback):
         if (epoch+1) % self.eval_epoch_interval == 0:
             # Do eval every eval_epoch_interval epochs
             eval_model = self.update_eval_model(self.model)
-            mAP = eval_AP(eval_model, 'H5', self.annotation_lines, self.anchors, self.class_names, self.model_image_size, eval_type='VOC', iou_threshold=0.5, conf_threshold=0.001, save_result=False)
+            mAP = eval_AP(eval_model, 'H5', self.annotation_lines, self.anchors, self.class_names, self.model_image_size, eval_type='VOC', iou_threshold=0.5, conf_threshold=0.001, elim_grid_sense=self.elim_grid_sense, save_result=False)
             if self.save_eval_checkpoint and mAP > self.best_mAP:
                 # Save best mAP value and model checkpoint
                 self.best_mAP = mAP

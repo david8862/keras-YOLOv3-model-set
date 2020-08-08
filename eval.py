@@ -101,7 +101,7 @@ def transform_gt_record(gt_records, class_names):
 
 
 
-def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold):
+def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold, elim_grid_sense):
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
 
@@ -129,14 +129,14 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
-        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
     else:
-        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
 
     return pred_boxes, pred_classes, pred_scores
 
 
-def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_threshold):
+def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_threshold, elim_grid_sense):
     # assume only 1 input tensor for image
     input_tensor = interpreter.getSessionInput(session)
     # get input shape
@@ -238,14 +238,14 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
-        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
     else:
-        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
 
     return pred_boxes, pred_classes, pred_scores
 
 
-def yolo_predict_pb(model, image, anchors, num_classes, model_image_size, conf_threshold):
+def yolo_predict_pb(model, image, anchors, num_classes, model_image_size, conf_threshold, elim_grid_sense):
     # NOTE: TF 1.x frozen pb graph need to specify input/output tensor name
     # so we hardcode the input/output tensor names here to get them from model
     if len(anchors) == 6:
@@ -282,14 +282,14 @@ def yolo_predict_pb(model, image, anchors, num_classes, model_image_size, conf_t
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
-        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
     else:
-        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
 
     return pred_boxes, pred_classes, pred_scores
 
 
-def yolo_predict_onnx(model, image, anchors, num_classes, conf_threshold):
+def yolo_predict_onnx(model, image, anchors, num_classes, conf_threshold, elim_grid_sense):
     input_tensors = []
     for i, input_tensor in enumerate(model.get_inputs()):
         input_tensors.append(input_tensor)
@@ -312,14 +312,14 @@ def yolo_predict_onnx(model, image, anchors, num_classes, conf_threshold):
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
-        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
     else:
-        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
 
     return pred_boxes, pred_classes, pred_scores
 
 
-def yolo_predict_keras(model, image, anchors, num_classes, model_image_size, conf_threshold):
+def yolo_predict_keras(model, image, anchors, num_classes, model_image_size, conf_threshold, elim_grid_sense):
     image_data = preprocess_image(image, model_image_size)
     #origin image shape, in (height, width) format
     image_shape = tuple(reversed(image.size))
@@ -327,14 +327,14 @@ def yolo_predict_keras(model, image, anchors, num_classes, model_image_size, con
     prediction = model.predict([image_data])
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors
-        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
     else:
-        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold)
+        pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
 
     return pred_boxes, pred_classes, pred_scores
 
 
-def get_prediction_class_records(model, model_format, annotation_records, anchors, class_names, model_image_size, conf_threshold, save_result):
+def get_prediction_class_records(model, model_format, annotation_records, anchors, class_names, model_image_size, conf_threshold, elim_grid_sense, save_result):
     '''
     Do the predict with YOLO model on annotation images to get predict class dict
 
@@ -371,19 +371,19 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
 
         # support of tflite model
         if model_format == 'TFLITE':
-            pred_boxes, pred_classes, pred_scores = yolo_predict_tflite(model, image, anchors, len(class_names), conf_threshold)
+            pred_boxes, pred_classes, pred_scores = yolo_predict_tflite(model, image, anchors, len(class_names), conf_threshold, elim_grid_sense)
         # support of MNN model
         elif model_format == 'MNN':
-            pred_boxes, pred_classes, pred_scores = yolo_predict_mnn(model, session, image, anchors, len(class_names), conf_threshold)
+            pred_boxes, pred_classes, pred_scores = yolo_predict_mnn(model, session, image, anchors, len(class_names), conf_threshold, elim_grid_sense)
         # support of TF 1.x frozen pb model
         elif model_format == 'PB':
-            pred_boxes, pred_classes, pred_scores = yolo_predict_pb(model, image, anchors, len(class_names), model_image_size, conf_threshold)
+            pred_boxes, pred_classes, pred_scores = yolo_predict_pb(model, image, anchors, len(class_names), model_image_size, conf_threshold, elim_grid_sense)
         # support of ONNX model
         elif model_format == 'ONNX':
-            pred_boxes, pred_classes, pred_scores = yolo_predict_onnx(model, image, anchors, len(class_names), conf_threshold)
+            pred_boxes, pred_classes, pred_scores = yolo_predict_onnx(model, image, anchors, len(class_names), conf_threshold, elim_grid_sense)
         # normal keras h5 model
         elif model_format == 'H5':
-            pred_boxes, pred_classes, pred_scores = yolo_predict_keras(model, image, anchors, len(class_names), model_image_size, conf_threshold)
+            pred_boxes, pred_classes, pred_scores = yolo_predict_keras(model, image, anchors, len(class_names), model_image_size, conf_threshold, elim_grid_sense)
         else:
             raise ValueError('invalid model format')
 
@@ -1189,12 +1189,12 @@ def get_scale_gt_dict(gt_classes_records, class_names):
 
 
 
-def eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, eval_type, iou_threshold, conf_threshold, save_result):
+def eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, eval_type, iou_threshold, conf_threshold, elim_grid_sense, save_result):
     '''
     Compute AP for detection model on annotation dataset
     '''
     annotation_records, gt_classes_records = annotation_parse(annotation_lines, class_names)
-    pred_classes_records = get_prediction_class_records(model, model_format, annotation_records, anchors, class_names, model_image_size, conf_threshold, save_result)
+    pred_classes_records = get_prediction_class_records(model, model_format, annotation_records, anchors, class_names, model_image_size, conf_threshold, elim_grid_sense, save_result)
     AP = 0.0
 
     if eval_type == 'VOC':
@@ -1305,6 +1305,10 @@ def main():
         help='model image input size as <height>x<width>, default=%(default)s', default='416x416')
 
     parser.add_argument(
+        '--elim_grid_sense', default=False, action="store_true",
+        help = "Eliminate grid sensitivity")
+
+    parser.add_argument(
         '--save_result', default=False, action="store_true",
         help='Save the detection result image in result/detection dir'
     )
@@ -1322,7 +1326,7 @@ def main():
     model, model_format = load_eval_model(args.model_path)
 
     start = time.time()
-    eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, args.eval_type, args.iou_threshold, args.conf_threshold, args.save_result)
+    eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, args.eval_type, args.iou_threshold, args.conf_threshold, args.elim_grid_sense, args.save_result)
     end = time.time()
     print("Evaluation time cost: {:.6f}s".format(end - start))
 

@@ -19,6 +19,33 @@ if tf.__version__.startswith('2'):
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
+def clever_format(value, format_string="%.2f"):
+    """
+    Convert statistic value to clever format string
+    """
+    if value <= 0:
+        raise ValueError('invalid statistic value {}'.format(value))
+
+    # get friendly statistic value string
+    if value > 0 and value <= 1e3:
+        value_string = format_string%(value)
+    elif value > 1e3 and value <= 1e6:
+        value_string = format_string%(value/1e3)+'K'
+    elif value > 1e6 and value <= 1e9:
+        value_string = format_string%(value/1e6)+'M'
+    elif value > 1e9 and value <= 1e12:
+        # here we can use either "GFLOPS" or "BFLOPS"
+        value_string = format_string%(value/1e9)+'G'
+    elif value > 1e12 and value <= 1e15:
+        value_string = format_string%(value/1e12)+'T'
+    elif value > 1e15 and value <= 1e18:
+        value_string = format_string%(value/1e15)+'P'
+    elif value > 1e18:
+        value_string = format_string%(value/1e18)+'E'
+
+    return value_string
+
+
 def get_flops(model):
     run_meta = tf.RunMetadata()
     graph = tf.get_default_graph()
@@ -33,29 +60,9 @@ def get_flops(model):
     flops_value = flops.total_float_ops
     param_value = params.total_parameters
 
-    # get friendly FLOPs value string
-    if flops_value > 0 and flops_value <= 1e3:
-        flops_result_string = '{}'.format(flops_value)
-    elif flops_value > 1e3 and flops_value <= 1e6:
-        flops_result_string = '%.4fK'%(flops_value/1e3)
-    elif flops_value > 1e6 and flops_value <= 1e9:
-        flops_result_string = '%.4fM'%(flops_value/1e6)
-    elif flops_value > 1e9 and flops_value <= 1e12:
-        flops_result_string = '%.4fG'%(flops_value/1e9)
-    elif flops_value > 1e12:
-        flops_result_string = '%.4fT'%(flops_value/1e12)
-
-    # get friendly PARAMs value string
-    if param_value > 0 and param_value <= 1e3:
-        param_result_string = '{}'.format(param_value)
-    elif param_value > 1e3 and param_value <= 1e6:
-        param_result_string = '%.4fK'%(param_value/1e3)
-    elif param_value > 1e6 and param_value <= 1e9:
-        param_result_string = '%.4fM'%(param_value/1e6)
-    elif param_value > 1e9 and param_value <= 1e12:
-        param_result_string = '%.4fG'%(param_value/1e9)
-    elif param_value > 1e12:
-        param_result_string = '%.4fT'%(param_value/1e12)
+    # get friendly FLOPs & PARAMs value string
+    flops_result_string = clever_format(flops_value, '%.4f')
+    param_result_string = clever_format(param_value, '%.4f')
 
     print('Total FLOPs: {} float_ops'.format(flops_result_string))
     print('Total PARAMs: {}'.format(param_result_string))

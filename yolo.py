@@ -17,7 +17,7 @@ from tensorflow.keras.layers import Input, Lambda
 from tensorflow_model_optimization.sparsity import keras as sparsity
 from PIL import Image
 
-from yolo3.model import get_yolo3_model, get_yolo3_inference_model#, get_yolo3_prenms_model
+from yolo3.model import get_yolo3_model, get_yolo3_inference_model
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo2.model import get_yolo2_model, get_yolo2_inference_model
 from yolo2.postprocess_np import yolo2_postprocess_np
@@ -39,6 +39,7 @@ default_config = {
         "score" : 0.1,
         "iou" : 0.4,
         "model_image_size" : (416, 416),
+        "elim_grid_sense": False,
         "gpu_num" : 1,
     }
 
@@ -123,9 +124,9 @@ class YOLO_np(object):
         num_anchors = len(self.anchors)
         if num_anchors == 5:
             # YOLOv2 use 5 anchors
-            out_boxes, out_classes, out_scores = yolo2_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100)
+            out_boxes, out_classes, out_scores = yolo2_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100, elim_grid_sense=self.elim_grid_sense)
         else:
-            out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100)
+            out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100, elim_grid_sense=self.elim_grid_sense)
         return out_boxes, out_classes, out_scores
 
 
@@ -169,9 +170,9 @@ class YOLO(object):
 
         if num_anchors == 5:
             # YOLOv2 use 5 anchors
-            inference_model = get_yolo2_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=0.1)
+            inference_model = get_yolo2_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=0.1, elim_grid_sense=self.elim_grid_sense)
         else:
-            inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=0.1)
+            inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=0.1, elim_grid_sense=self.elim_grid_sense)
 
         inference_model.summary()
         return inference_model
@@ -219,54 +220,6 @@ class YOLO(object):
         tf.keras.experimental.export_saved_model(model, saved_model_path)
         print('export inference model to %s' % str(saved_model_path))
 
-
-#class YOLO_prenms(object):
-    #_defaults = default_config
-
-    #@classmethod
-    #def get_defaults(cls, n):
-        #if n in cls._defaults:
-            #return cls._defaults[n]
-        #else:
-            #return "Unrecognized attribute name '" + n + "'"
-
-    #def __init__(self, **kwargs):
-        #super(YOLO_prenms, self).__init__()
-        #self.__dict__.update(self._defaults) # set up default values
-        #self.__dict__.update(kwargs) # and update with user overrides
-        #self.class_names = get_classes(self.classes_path)
-        #self.anchors = get_anchors(self.anchors_path)
-        #self.colors = get_colors(self.class_names)
-        #K.set_learning_phase(0)
-        #self.prenms_model = self._generate_model()
-
-    #def _generate_model(self):
-        #'''to generate the bounding boxes'''
-        #weights_path = os.path.expanduser(self.weights_path)
-        #assert weights_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
-
-        ## Load model, or construct model and load weights.
-        #num_anchors = len(self.anchors)
-        #num_classes = len(self.class_names)
-        ##YOLOv3 model has 9 anchors and 3 feature layers but
-        ##Tiny YOLOv3 model has 6 anchors and 2 feature layers,
-        ##so we can calculate feature layers number to get model type
-        #num_feature_layers = num_anchors//3
-
-        #prenms_model = get_yolo3_prenms_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,))
-
-        #return prenms_model
-
-
-    #def dump_model_file(self, output_model_file):
-        #self.prenms_model.save(output_model_file)
-
-    #def dump_saved_model(self, saved_model_path):
-        #model = self.prenms_model
-        #os.makedirs(saved_model_path, exist_ok=True)
-
-        #tf.keras.experimental.export_saved_model(model, saved_model_path)
-        #print('export inference model to %s' % str(saved_model_path))
 
 
 def detect_video(yolo, video_path, output_path=""):
@@ -352,7 +305,8 @@ if __name__ == '__main__':
 
     parser.add_argument(
         '--pruning_model', default=False, action="store_true",
-        help='Whether to be a pruning model/weights file')
+        help='Whether to be a pruning model/weights file, default ' + str(YOLO.get_defaults("pruning_model"))
+    )
 
     parser.add_argument(
         '--anchors_path', type=str,
@@ -369,6 +323,11 @@ if __name__ == '__main__':
         help='model image input size as <height>x<width>, default ' +
         str(YOLO.get_defaults("model_image_size")[0])+'x'+str(YOLO.get_defaults("model_image_size")[1]),
         default=str(YOLO.get_defaults("model_image_size")[0])+'x'+str(YOLO.get_defaults("model_image_size")[1])
+    )
+
+    parser.add_argument(
+        '--elim_grid_sense', default=False, action="store_true",
+        help = "Eliminate grid sensitivity, default " + str(YOLO.get_defaults("elim_grid_sense"))
     )
 
     parser.add_argument(

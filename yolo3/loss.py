@@ -4,7 +4,7 @@
 import math
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from yolo3.postprocess import yolo3_head
+from yolo3.postprocess import yolo3_decode
 
 def softmax_focal_loss(y_true, y_pred, gamma=2.0, alpha=0.25):
     """
@@ -245,7 +245,7 @@ def _smooth_labels(y_true, label_smoothing):
     return y_true * (1.0 - label_smoothing) + 0.5 * label_smoothing
 
 
-def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, use_focal_loss=False, use_focal_obj_loss=False, use_softmax_loss=False, use_giou_loss=False, use_diou_loss=True):
+def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, elim_grid_sense=False, use_focal_loss=False, use_focal_obj_loss=False, use_softmax_loss=False, use_giou_loss=False, use_diou_loss=True):
     '''
     YOLOv3 loss function.
 
@@ -265,7 +265,14 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
     num_layers = len(anchors)//3 # default setting
     yolo_outputs = args[:num_layers]
     y_true = args[num_layers:]
-    anchor_mask = [[6,7,8], [3,4,5], [0,1,2]] if num_layers==3 else [[3,4,5], [0,1,2]]
+
+    if num_layers == 3:
+        anchor_mask = [[6,7,8], [3,4,5], [0,1,2]]
+        scale_x_y = [1.05, 1.1, 1.2] if elim_grid_sense else [None, None, None]
+    else:
+        anchor_mask = [[3,4,5], [0,1,2]]
+        scale_x_y = [1.05, 1.05] if elim_grid_sense else [None, None]
+
     input_shape = K.cast(K.shape(yolo_outputs[0])[1:3] * 32, K.dtype(y_true[0]))
     grid_shapes = [K.cast(K.shape(yolo_outputs[l])[1:3], K.dtype(y_true[0])) for l in range(num_layers)]
     loss = 0
@@ -284,8 +291,8 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
         else:
             true_objectness_probs = object_mask
 
-        grid, raw_pred, pred_xy, pred_wh = yolo3_head(yolo_outputs[l],
-             anchors[anchor_mask[l]], num_classes, input_shape, calc_loss=True)
+        grid, raw_pred, pred_xy, pred_wh = yolo3_decode(yolo_outputs[l],
+             anchors[anchor_mask[l]], num_classes, input_shape, scale_x_y=scale_x_y[l], calc_loss=True)
         pred_box = K.concatenate([pred_xy, pred_wh])
 
         # Darknet raw box to calculate loss.

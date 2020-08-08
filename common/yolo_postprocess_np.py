@@ -6,8 +6,8 @@ from scipy.special import expit, softmax
 
 from common.wbf_postprocess import weighted_boxes_fusion
 
-def yolo_head(prediction, anchors, num_classes, input_dims, use_softmax=False):
-    '''Convert final layer features to bounding box parameters.'''
+def yolo_decode(prediction, anchors, num_classes, input_dims, scale_x_y=None, use_softmax=False):
+    '''Decode final layer features to bounding box parameters.'''
     batch_size = np.shape(prediction)[0]
     num_anchors = len(anchors)
 
@@ -39,7 +39,18 @@ def yolo_head(prediction, anchors, num_classes, input_dims, use_softmax=False):
     anchors = np.tile(anchors, (grid_size[0] * grid_size[1], 1))
     anchors = np.expand_dims(anchors, 0)
 
-    box_xy = (expit(prediction[..., :2]) + x_y_offset) / np.array(grid_size)[::-1]
+    if scale_x_y:
+        # Eliminate grid sensitivity trick involved in YOLOv4
+        #
+        # Reference Paper & code:
+        #     "YOLOv4: Optimal Speed and Accuracy of Object Detection"
+        #     https://arxiv.org/abs/2004.10934
+        #     https://github.com/opencv/opencv/issues/17148
+        #
+        box_xy_tmp = expit(prediction[..., :2]) * scale_x_y - (scale_x_y - 1) / 2
+        box_xy = (box_xy_tmp + x_y_offset) / np.array(grid_size)[::-1]
+    else:
+        box_xy = (expit(prediction[..., :2]) + x_y_offset) / np.array(grid_size)[::-1]
     box_wh = (np.exp(prediction[..., 2:4]) * anchors) / np.array(input_dims)[::-1]
 
     # Sigmoid objectness scores
@@ -234,7 +245,7 @@ def box_diou(boxes):
     return diou
 
 
-def nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.1, use_diou=False, is_soft=False, use_exp=False, sigma=0.5):
+def nms_boxes(boxes, classes, scores, iou_threshold, confidence=0.1, use_diou=True, is_soft=False, use_exp=False, sigma=0.5):
     nboxes, nclasses, nscores = [], [], []
     for c in set(classes):
         # handle data for one class

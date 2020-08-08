@@ -5,8 +5,8 @@ import tensorflow as tf
 from tensorflow.keras.layers import Layer
 from tensorflow.keras import backend as K
 
-def yolo3_head(feats, anchors, num_classes, input_shape, calc_loss=False):
-    """Convert final layer features to bounding box parameters."""
+def yolo3_decode(feats, anchors, num_classes, input_shape, scale_x_y=None, calc_loss=False):
+    """Decode final layer features to bounding box parameters."""
     num_anchors = len(anchors)
     # Reshape to batch, height, width, num_anchors, box_params.
     anchors_tensor = K.reshape(K.constant(anchors), [1, 1, 1, num_anchors, 2])
@@ -23,7 +23,18 @@ def yolo3_head(feats, anchors, num_classes, input_shape, calc_loss=False):
         feats, [-1, grid_shape[0], grid_shape[1], num_anchors, num_classes + 5])
 
     # Adjust preditions to each spatial grid point and anchor size.
-    box_xy = (K.sigmoid(feats[..., :2]) + grid) / K.cast(grid_shape[..., ::-1], K.dtype(feats))
+    if scale_x_y:
+        # Eliminate grid sensitivity trick involved in YOLOv4
+        #
+        # Reference Paper & code:
+        #     "YOLOv4: Optimal Speed and Accuracy of Object Detection"
+        #     https://arxiv.org/abs/2004.10934
+        #     https://github.com/opencv/opencv/issues/17148
+        #
+        box_xy_tmp = K.sigmoid(feats[..., :2]) * scale_x_y - (scale_x_y - 1) / 2
+        box_xy = (box_xy_tmp + grid) / K.cast(grid_shape[..., ::-1], K.dtype(feats))
+    else:
+        box_xy = (K.sigmoid(feats[..., :2]) + grid) / K.cast(grid_shape[..., ::-1], K.dtype(feats))
     box_wh = K.exp(feats[..., 2:4]) * anchors_tensor / K.cast(input_shape[..., ::-1], K.dtype(feats))
     box_confidence = K.sigmoid(feats[..., 4:5])
     box_class_probs = K.sigmoid(feats[..., 5:])
@@ -66,10 +77,10 @@ def yolo3_correct_boxes(box_xy, box_wh, input_shape, image_shape):
     return boxes
 
 
-def yolo3_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape):
+def yolo3_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape, scale_x_y):
     '''Process Conv layer output'''
-    box_xy, box_wh, box_confidence, box_class_probs = yolo3_head(feats,
-        anchors, num_classes, input_shape)
+    box_xy, box_wh, box_confidence, box_class_probs = yolo3_decode(feats,
+        anchors, num_classes, input_shape, scale_x_y=scale_x_y)
     boxes = yolo3_correct_boxes(box_xy, box_wh, input_shape, image_shape)
     boxes = K.reshape(boxes, [-1, 4])
     box_scores = box_confidence * box_class_probs
@@ -101,14 +112,21 @@ def yolo3_postprocess(args,
               num_classes,
               max_boxes=100,
               confidence=0.1,
-              iou_threshold=0.4):
+              iou_threshold=0.4,
+              elim_grid_sense=False):
     """Postprocess for YOLOv3 model on given input and return filtered boxes."""
 
     num_layers = len(anchors)//3 # default setting
     yolo_outputs = args[:num_layers]
     image_shape = args[num_layers]
 
-    anchor_mask = [[6,7,8], [3,4,5], [0,1,2]] if num_layers==3 else [[3,4,5], [0,1,2]] # default setting
+    if num_layers == 3:
+        anchor_mask = [[6,7,8], [3,4,5], [0,1,2]]
+        scale_x_y = [1.05, 1.1, 1.2] if elim_grid_sense else [None, None, None]
+    else:
+        anchor_mask = [[3,4,5], [0,1,2]]
+        scale_x_y = [1.05, 1.05] if elim_grid_sense else [None, None]
+
     input_shape = K.shape(yolo_outputs[0])[1:3] * 32
 
     # print("yolo_outputs",yolo_outputs)
@@ -116,7 +134,7 @@ def yolo3_postprocess(args,
     box_scores = []
     for l in range(num_layers):
         _boxes, _box_scores = yolo3_boxes_and_scores(yolo_outputs[l],
-            anchors[anchor_mask[l]], num_classes, input_shape, image_shape)
+            anchors[anchor_mask[l]], num_classes, input_shape, image_shape, scale_x_y=scale_x_y[l])
         boxes.append(_boxes)
         box_scores.append(_box_scores)
     boxes = K.concatenate(boxes, axis=0)
@@ -146,10 +164,10 @@ def yolo3_postprocess(args,
     return boxes_, scores_, classes_
 
 
-def batched_yolo3_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape):
+def batched_yolo3_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape, scale_x_y):
     '''Process Conv layer output'''
-    box_xy, box_wh, box_confidence, box_class_probs = yolo3_head(feats,
-        anchors, num_classes, input_shape)
+    box_xy, box_wh, box_confidence, box_class_probs = yolo3_decode(feats,
+        anchors, num_classes, input_shape, scale_x_y=scale_x_y)
 
     num_anchors = len(anchors)
     grid_shape = K.shape(feats)[1:3] # height, width
@@ -167,14 +185,21 @@ def batched_yolo3_postprocess(args,
               num_classes,
               max_boxes=100,
               confidence=0.1,
-              iou_threshold=0.4):
+              iou_threshold=0.4,
+              elim_grid_sense=False):
     """Postprocess for YOLOv3 model on given input and return filtered boxes."""
 
     num_layers = len(anchors)//3 # default setting
     yolo_outputs = args[:num_layers]
     image_shape = args[num_layers]
 
-    anchor_mask = [[6,7,8], [3,4,5], [0,1,2]] if num_layers==3 else [[3,4,5], [0,1,2]] # default setting
+    if num_layers == 3:
+        anchor_mask = [[6,7,8], [3,4,5], [0,1,2]]
+        scale_x_y = [1.05, 1.1, 1.2] if elim_grid_sense else [None, None, None]
+    else:
+        anchor_mask = [[3,4,5], [0,1,2]]
+        scale_x_y = [1.05, 1.05] if elim_grid_sense else [None, None]
+
     input_shape = K.shape(yolo_outputs[0])[1:3] * 32
 
     batch_size = K.shape(image_shape)[0] # batch size, tensor
@@ -183,7 +208,7 @@ def batched_yolo3_postprocess(args,
     box_scores = []
     for l in range(num_layers):
         _boxes, _box_scores = batched_yolo3_boxes_and_scores(yolo_outputs[l],
-            anchors[anchor_mask[l]], num_classes, input_shape, image_shape)
+            anchors[anchor_mask[l]], num_classes, input_shape, image_shape, scale_x_y=scale_x_y[l])
         boxes.append(_boxes)
         box_scores.append(_box_scores)
     boxes = K.concatenate(boxes, axis=1)

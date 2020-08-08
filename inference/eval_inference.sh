@@ -35,4 +35,4 @@ do
     printf "inference process: %d/%d [%c]\r" "$i" "$IMAGE_NUM" "${ICON_ARRAY[$index]}"
     let i=i+1
 done
-echo ""
+printf "\nDone\n"

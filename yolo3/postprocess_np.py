@@ -2,10 +2,10 @@
 # -*- coding=utf-8 -*-
 
 import numpy as np
-from common.yolo_postprocess_np import yolo_head, yolo_handle_predictions, yolo_correct_boxes, yolo_adjust_boxes
+from common.yolo_postprocess_np import yolo_decode, yolo_handle_predictions, yolo_correct_boxes, yolo_adjust_boxes
 
 
-def yolo3_head(predictions, anchors, num_classes, input_dims):
+def yolo3_decode(predictions, anchors, num_classes, input_dims, elim_grid_sense=False):
     """
     YOLOv3 Head to process predictions from YOLOv3 models
 
@@ -19,20 +19,22 @@ def yolo3_head(predictions, anchors, num_classes, input_dims):
 
     if len(predictions) == 3: # assume 3 set of predictions is YOLOv3
         anchor_mask = [[6,7,8], [3,4,5], [0,1,2]]
+        scale_x_y = [1.05, 1.1, 1.2] if elim_grid_sense else [None, None, None]
     elif len(predictions) == 2: # 2 set of predictions is YOLOv3-tiny
         anchor_mask = [[3,4,5], [0,1,2]]
+        scale_x_y = [1.05, 1.05] if elim_grid_sense else [None, None]
     else:
         raise ValueError('Unsupported prediction length: {}'.format(len(predictions)))
 
     results = []
     for i, prediction in enumerate(predictions):
-        results.append(yolo_head(prediction, anchors[anchor_mask[i]], num_classes, input_dims, use_softmax=False))
+        results.append(yolo_decode(prediction, anchors[anchor_mask[i]], num_classes, input_dims, scale_x_y=scale_x_y[i], use_softmax=False))
 
     return np.concatenate(results, axis=1)
 
 
-def yolo3_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=0.1, iou_threshold=0.4):
-    predictions = yolo3_head(yolo_outputs, anchors, num_classes, input_dims=model_image_size)
+def yolo3_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=0.1, iou_threshold=0.4, elim_grid_sense=False):
+    predictions = yolo3_decode(yolo_outputs, anchors, num_classes, input_dims=model_image_size, elim_grid_sense=elim_grid_sense)
     predictions = yolo_correct_boxes(predictions, image_shape, model_image_size)
 
     boxes, classes, scores = yolo_handle_predictions(predictions,

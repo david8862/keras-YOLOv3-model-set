@@ -43,6 +43,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] tf.keras batch-wise YOLOv3/v2 postprocess Lambda layer
 - [x] DIoU-NMS bounding box postprocess (numpy/C++)
 - [x] SoftNMS bounding box postprocess (numpy)
+- [x] Eliminate grid sensitivity (from [YOLOv4](https://arxiv.org/abs/2004.10934))
 - [x] WBF(Weighted-Boxes-Fusion) bounding box postprocess (numpy) ([paper](https://arxiv.org/abs/1910.13302))
 
 #### Train tech
@@ -51,7 +52,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] Multiscale image input training
 - [x] Dynamic learning rate decay (Cosine/Exponential/Polynomial/PiecewiseConstant)
 - [x] Mosaic data augmentation
-- [x] Multi anchors for single GT
+- [x] Multi anchors for single GT (from [YOLOv4](https://arxiv.org/abs/2004.10934))
 - [x] Pruned model training (only valid for TF 1.x)
 
 #### On-device deployment
@@ -209,16 +210,18 @@ usage: train.py [-h] [--model_type MODEL_TYPE] [--anchors_path ANCHORS_PATH]
                 [--annotation_file ANNOTATION_FILE]
                 [--val_annotation_file VAL_ANNOTATION_FILE]
                 [--val_split VAL_SPLIT] [--classes_path CLASSES_PATH]
-                [--batch_size BATCH_SIZE] [--optimizer OPTIMIZER]
-                [--learning_rate LEARNING_RATE] [--decay_type DECAY_TYPE]
+                [--batch_size BATCH_SIZE] [--optimizer {adam,rmsprop,sgd}]
+                [--learning_rate LEARNING_RATE]
+                [--decay_type {None,cosine,exponential,polynomial,piecewise_constant}]
                 [--transfer_epoch TRANSFER_EPOCH]
-                [--freeze_level FREEZE_LEVEL] [--init_epoch INIT_EPOCH]
+                [--freeze_level {None,0,1,2}] [--init_epoch INIT_EPOCH]
                 [--total_epoch TOTAL_EPOCH] [--multiscale]
                 [--rescale_interval RESCALE_INTERVAL]
-                [--enhance_augment ENHANCE_AUGMENT]
+                [--enhance_augment {None,mosaic}]
                 [--label_smoothing LABEL_SMOOTHING] [--multi_anchor_assign]
-                [--data_shuffle] [--gpu_num GPU_NUM] [--model_pruning]
-                [--eval_online] [--eval_epoch_interval EVAL_EPOCH_INTERVAL]
+                [--elim_grid_sense] [--data_shuffle] [--gpu_num GPU_NUM]
+                [--model_pruning] [--eval_online]
+                [--eval_epoch_interval EVAL_EPOCH_INTERVAL]
                 [--save_eval_checkpoint]
 
 optional arguments:
@@ -231,7 +234,7 @@ optional arguments:
                         default=configs/yolo3_anchors.txt
   --model_image_size MODEL_IMAGE_SIZE
                         Initial model image input size as <height>x<width>,
-                        default 416x416
+                        default=416x416
   --weights_path WEIGHTS_PATH
                         Pretrained model/weights file for fine tune
   --annotation_file ANNOTATION_FILE
@@ -246,18 +249,17 @@ optional arguments:
                         default=configs/voc_classes.txt
   --batch_size BATCH_SIZE
                         Batch size for train, default=16
-  --optimizer OPTIMIZER
+  --optimizer {adam,rmsprop,sgd}
                         optimizer for training (adam/rmsprop/sgd),
                         default=adam
   --learning_rate LEARNING_RATE
                         Initial learning rate, default=0.001
-  --decay_type DECAY_TYPE
-                        Learning rate decay type (None/cosine/exponential/poly
-                        nomial/piecewise_constant), default=None
+  --decay_type {None,cosine,exponential,polynomial,piecewise_constant}
+                        Learning rate decay type, default=None
   --transfer_epoch TRANSFER_EPOCH
                         Transfer training (from Imagenet) stage epochs,
                         default=20
-  --freeze_level FREEZE_LEVEL
+  --freeze_level {None,0,1,2}
                         Freeze level of the model in transfer training stage.
                         0:NA/1:backbone/2:only open prediction layer
   --init_epoch INIT_EPOCH
@@ -269,7 +271,7 @@ optional arguments:
   --rescale_interval RESCALE_INTERVAL
                         Number of iteration(batches) interval to rescale input
                         size, default=10
-  --enhance_augment ENHANCE_AUGMENT
+  --enhance_augment {None,mosaic}
                         enhance data augmentation type (None/mosaic),
                         default=None
   --label_smoothing LABEL_SMOOTHING
@@ -277,6 +279,7 @@ optional arguments:
                         classification loss, default=0
   --multi_anchor_assign
                         Assign multiple anchors to single ground truth
+  --elim_grid_sense     Eliminate grid sensitivity
   --data_shuffle        Whether to shuffle train/val data for cross-validation
   --gpu_num GPU_NUM     Number of GPU to use, default=1
   --model_pruning       Use model pruning for optimization, only for TF 1.x
@@ -288,6 +291,8 @@ optional arguments:
   --save_eval_checkpoint
                         Whether to save checkpoint with best evaluation result
 ```
+
+**NOTE**: if enable "--elim_grid_sense" feature during training, recommended to also use it in following demo/inference step.
 
 Following is a reference training config cmd:
 ```

@@ -182,6 +182,8 @@ def _main(args):
                 pass  # Add advanced activation later.
             elif activation == 'mish':
                 pass  # Add advanced activation later.
+            elif activation == 'logistic':
+                pass  # Add advanced activation later.
             elif activation != 'linear':
                 raise ValueError(
                     'Unknown activation function `{}` in section {}'.format(
@@ -217,6 +219,10 @@ def _main(args):
                 all_layers.append(act_layer)
             elif activation == 'relu':
                 act_layer = ReLU()(prev_layer)
+                prev_layer = act_layer
+                all_layers.append(act_layer)
+            elif activation == 'logistic':
+                act_layer = Activation('sigmoid')(prev_layer)
                 prev_layer = act_layer
                 all_layers.append(act_layer)
 

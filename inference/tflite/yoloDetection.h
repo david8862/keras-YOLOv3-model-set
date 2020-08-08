@@ -23,6 +23,7 @@ struct Settings {
   float conf_thrd = 0.1f;
   float input_mean = 0.0f;
   float input_std = 255.0f;
+  bool elim_grid_sense = false;
   std::string model_name = "./model.tflite";
   tflite::FlatBufferModel* model;
   std::string input_img_name = "./dog.jpg";
