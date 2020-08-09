@@ -102,7 +102,7 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
     return image_data, box_data
 
 
-def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
+def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes, multi_anchor_assign, iou_thresh=0.2):
     """Find detector in YOLO where ground truth box should appear.
 
     Parameters
@@ -119,6 +119,8 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
         List of model input image dimensions in form of h, w in pixels.
     num_classes : scalar
         Number of train classes
+    multi_anchor_assign: boolean, whether to use iou_thresh to assign multiple
+                         anchors for a single ground truth
 
     Returns
     -------
@@ -152,13 +154,15 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
 
     for box in true_boxes:
         # bypass invalid true_box, if w,h is 0
-        if box[2]==0 and box[3]==0: continue
+        if box[2]==0 and box[3]==0:
+            continue
 
         box_class = box[4:5]
         i = np.floor(box[1]*conv_height).astype('int')
         j = np.floor(box[0]*conv_width).astype('int')
         best_iou = 0
-        best_anchor = 0
+        #best_anchor = 0
+        selected_anchors = []
         for k, anchor in enumerate(anchors):
             # Find IOU between box shifted to origin and anchor box.
             box_maxes = box[2:4]*input_shape[::-1] / 2.
@@ -173,11 +177,23 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
             box_area = (box[2]*input_shape[1]) * (box[3]*input_shape[0])
             anchor_area = anchor[0] * anchor[1]
             iou = intersect_area / (box_area + anchor_area - intersect_area)
-            if iou > best_iou:
-                best_iou = iou
-                best_anchor = k
 
-        # Got best anchor and assign to true box
+            # select 1 best anchor or multiple anchors
+            if multi_anchor_assign:
+                if iou > iou_thresh:
+                    best_iou = iou
+                    selected_anchors.append(k)
+            else:
+                if iou > best_iou:
+                    best_iou = iou
+                    # make sure we only pick the best 1 anchor
+                    if len(selected_anchors) == 0:
+                        selected_anchors.append(k)
+                    else:
+                        selected_anchors[0] = k
+                    assert len(selected_anchors) == 1, 'over select anchors!'
+
+        # Got selected anchor and assign to true box
         if best_iou > 0:
             adjusted_box = np.array(
                 [
@@ -188,11 +204,12 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes):
                     box_class
                 ],
                 dtype=np.float32)
-            y_true[i, j, best_anchor] = adjusted_box
+            for selected_anchor in selected_anchors:
+                y_true[i, j, selected_anchor] = adjusted_box
     return y_true
 
 
-def get_y_true_data(box_data, anchors, input_shape, num_classes):
+def get_y_true_data(box_data, anchors, input_shape, num_classes, multi_anchor_assign):
     '''
     Precompute y_true feature map data on a batch for training.
     y_true feature map array gives the regression targets for the ground truth
@@ -200,19 +217,20 @@ def get_y_true_data(box_data, anchors, input_shape, num_classes):
     '''
     y_true_data = [0 for i in range(len(box_data))]
     for i, boxes in enumerate(box_data):
-        y_true_data[i] = preprocess_true_boxes(boxes, anchors, input_shape, num_classes)
+        y_true_data[i] = preprocess_true_boxes(boxes, anchors, input_shape, num_classes, multi_anchor_assign)
 
     return np.array(y_true_data)
 
 
 class Yolo2DataGenerator(Sequence):
-    def __init__(self, annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment=None, rescale_interval=-1, shuffle=True, **kwargs):
+    def __init__(self, annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment=None, rescale_interval=-1, multi_anchor_assign=False, shuffle=True, **kwargs):
         self.annotation_lines = annotation_lines
         self.batch_size = batch_size
         self.input_shape = input_shape
         self.anchors = anchors
         self.num_classes = num_classes
         self.enhance_augment = enhance_augment
+        self.multi_anchor_assign = multi_anchor_assign
         self.indexes = np.arange(len(self.annotation_lines))
         self.shuffle = shuffle
         # prepare multiscale config
@@ -255,7 +273,7 @@ class Yolo2DataGenerator(Sequence):
             # add random mosaic augment on batch ground truth data
             image_data, box_data = random_mosaic_augment(image_data, box_data, prob=0.2)
 
-        y_true_data = get_y_true_data(box_data, self.anchors, self.input_shape, self.num_classes)
+        y_true_data = get_y_true_data(box_data, self.anchors, self.input_shape, self.num_classes, self.multi_anchor_assign)
 
         return [image_data, y_true_data], np.zeros(self.batch_size)
 
@@ -265,7 +283,7 @@ class Yolo2DataGenerator(Sequence):
             np.random.shuffle(self.annotation_lines)
 
 
-def yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval):
+def yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval, multi_anchor_assign):
     '''data generator for fit_generator'''
     n = len(annotation_lines)
     i = 0
@@ -295,13 +313,13 @@ def yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num
             # add random mosaic augment on batch ground truth data
             image_data, box_data = random_mosaic_augment(image_data, box_data, prob=0.2)
 
-        y_true_data = get_y_true_data(box_data, anchors, input_shape, num_classes)
+        y_true_data = get_y_true_data(box_data, anchors, input_shape, num_classes, multi_anchor_assign)
 
         yield [image_data, y_true_data], np.zeros(batch_size)
 
 
-def yolo2_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment=None, rescale_interval=-1, **kwargs):
+def yolo2_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment=None, rescale_interval=-1, multi_anchor_assign=False, **kwargs):
     n = len(annotation_lines)
     if n==0 or batch_size<=0: return None
-    return yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval)
+    return yolo2_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval, multi_anchor_assign)
 

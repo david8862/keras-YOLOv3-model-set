@@ -94,6 +94,8 @@ def preprocess_true_boxes(true_boxes, input_shape, anchors, num_classes, multi_a
     input_shape: array-like, hw, multiples of 32
     anchors: array, shape=(N, 2), wh
     num_classes: integer
+    multi_anchor_assign: boolean, whether to use iou_thresh to assign multiple
+                         anchors for a single ground truth
 
     Returns
     -------
