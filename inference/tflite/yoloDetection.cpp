@@ -41,7 +41,7 @@
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize.h"
 
-#define LOG(x) std::cerr
+#define LOG(x) std::cout
 
 namespace yoloDetection {
 

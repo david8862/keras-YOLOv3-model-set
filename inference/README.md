@@ -26,7 +26,7 @@ Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux), we need to
 # ./tools/script/get_model.sh  # optional
 # mkdir build && cd build
 # cmake [-DCMAKE_TOOLCHAIN_FILE=<cross-compile toolchain file>]
-        [-DMNN_BUILD_QUANTOOLS=ON -DMNN_BUILD_CONVERTER=ON -DMNN_BUILD_TRAIN=ON -MNN_BUILD_TRAIN_MINI=ON -MNN_USE_OPENCV=OFF] ..
+        [-DMNN_BUILD_QUANTOOLS=ON -DMNN_BUILD_CONVERTER=ON -DMNN_BUILD_BENCHMARK=ON -DMNN_BUILD_TRAIN=ON -MNN_BUILD_TRAIN_MINI=ON -MNN_USE_OPENCV=OFF] ..
         && make -j4
 
 ### MNN OpenCL backend build
@@ -36,7 +36,13 @@ Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux), we need to
         && make -j4
 ```
 If you want to do cross compile for ARM platform, "CMAKE_TOOLCHAIN_FILE" should be specified
-"MNN_BUILD_QUANTOOLS" and "MNN_BUILD_CONVERTER" are for enabling MNN Quantization tool and MNN model converter
+
+"MNN_BUILD_QUANTOOLS" is for enabling MNN Quantization tool
+
+"MNN_BUILD_CONVERTER" is for enabling MNN model converter
+
+"MNN_BUILD_BENCHMARK" is for enabling on-device inference benchmark tool
+
 "MNN_BUILD_TRAIN" related are for enabling MNN training tools
 
 

@@ -163,7 +163,7 @@ def main():
 
     parser.add_argument('--coco_root_path', type=str, required=True, help='path to MSCOCO dataset')
     parser.add_argument('--output_path', type=str, required=True,  help='output path for generated PascalVOC dataset')
-    parser.add_argument('--classes_path', type=str, required=False, help='path to a selected sub-classes definition, optinal', default=None)
+    parser.add_argument('--classes_path', type=str, required=False, help='path to a selected sub-classes definition, optional', default=None)
 
     args = parser.parse_args()
     if args.classes_path:

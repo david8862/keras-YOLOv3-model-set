@@ -6,6 +6,7 @@
 
 import os, sys, argparse
 import numpy as np
+import cv2
 from multiprocessing import cpu_count
 
 import tensorflow.keras.backend as K
@@ -207,8 +208,20 @@ def verify_with_image(model, input_shape):
             img_array = np.asarray(resized_img).astype('float32')
             x = preprocess(img_array)
             preds = model.predict(x)
-            print('Predict result:', decode_predictions(preds))
-            img.show()
+
+            result = decode_predictions(preds)
+            print('Predict result:', result)
+
+            # show predict result on origin image
+            img_array = np.asarray(img)
+            cv2.putText(img_array, '{name}:{conf:.3f}'.format(name=result[0][0][1], conf=float(result[0][0][2])),
+                        (10,30),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=1,
+                        color=(255,0,0),
+                        thickness=2,
+                        lineType=cv2.LINE_AA)
+            Image.fromarray(img_array).show()
 
 
 def main(args):

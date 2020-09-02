@@ -669,6 +669,8 @@ def generate_rec_prec_html(mrec, mprec, scores, class_name, ap):
     plt.add_tools(bokeh.models.HoverTool(
       tooltips=[
         ( 'score', '@score{0.0000 a}'),
+        ( 'Prec', '@prec'),
+        ( 'Recall', '@rec'),
       ],
       formatters={
         'rec'      : 'printf',

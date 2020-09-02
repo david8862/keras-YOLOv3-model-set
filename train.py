@@ -50,12 +50,13 @@ def main(args):
     logging = TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=False, write_grads=False, write_images=False, update_freq='batch')
     checkpoint = ModelCheckpoint(os.path.join(log_dir, 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5'),
         monitor='val_loss',
+        mode='min',
         verbose=1,
         save_weights_only=False,
         save_best_only=True,
         period=1)
-    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, verbose=1, cooldown=0, min_lr=1e-10)
-    early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=50, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, mode='min', patience=10, verbose=1, cooldown=0, min_lr=1e-10)
+    early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=50, verbose=1, mode='min')
     terminate_on_nan = TerminateOnNaN()
 
     callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan]

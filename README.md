@@ -39,11 +39,10 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 #### Postprocess
 - [x] Numpy YOLOv3/v2 postprocess implementation
 - [x] TFLite/MNN C++ YOLOv3/v2 postprocess implementation
-- [x] TF YOLOv3/v2 postprocess model
-- [x] tf.keras batch-wise YOLOv3/v2 postprocess Lambda layer
+- [x] tf.keras batch-wise YOLOv3/v2 postprocess layer
 - [x] DIoU-NMS bounding box postprocess (numpy/C++)
 - [x] SoftNMS bounding box postprocess (numpy)
-- [x] Eliminate grid sensitivity (from [YOLOv4](https://arxiv.org/abs/2004.10934))
+- [x] Eliminate grid sensitivity (numpy/C++, from [YOLOv4](https://arxiv.org/abs/2004.10934))
 - [x] WBF(Weighted-Boxes-Fusion) bounding box postprocess (numpy) ([paper](https://arxiv.org/abs/1910.13302))
 
 #### Train tech
@@ -463,7 +462,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 2. Default YOLOv4/v3/v2 anchors are used. If you want to use your own anchors, probably some changes are needed. [kmeans.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/misc/kmeans.py) could be used to do K-Means anchor clustering on your dataset
 
-3. Always load pretrained weights and freeze layers in the first stage of training.
+3. Imagenet pretrained weights for backbone is automatically loaded when training, so recommended to freeze backbone layers for several epochs in transfer traning stage.
 
 4. Training strategy is for reference only. Adjust it according to your dataset and your goal. And add further strategy if needed.
 
