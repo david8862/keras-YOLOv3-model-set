@@ -13,8 +13,9 @@ from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Dense, MaxPool2D, G
 from tensorflow.keras.layers import BatchNormalization, Lambda
 from tensorflow.keras.layers import Input, Activation, Concatenate
 from tensorflow.keras.models import Model
-
 from tensorflow.keras import backend as K
+
+from common.backbones.layers import CustomBatchNormalization
 
 # TODO prepare an imagenet pretrained weights
 BASE_WEIGHT_PATH = ('https://github.com/JonathanCMitchell/mobilenet_v2_keras/'
@@ -57,21 +58,21 @@ def shuffle_unit(inputs, out_channels, bottleneck_ratio,strides=2,stage=1,block=
         inputs = c
 
     x = Conv2D(bottleneck_channels, kernel_size=(1,1), strides=1, padding='same', name='{}/1x1conv_1'.format(prefix))(inputs)
-    x = BatchNormalization(axis=bn_axis, name='{}/bn_1x1conv_1'.format(prefix))(x)
+    x = CustomBatchNormalization(axis=bn_axis, name='{}/bn_1x1conv_1'.format(prefix))(x)
     x = Activation('relu', name='{}/relu_1x1conv_1'.format(prefix))(x)
     x = DepthwiseConv2D(kernel_size=3, strides=strides, padding='same', name='{}/3x3dwconv'.format(prefix))(x)
-    x = BatchNormalization(axis=bn_axis, name='{}/bn_3x3dwconv'.format(prefix))(x)
+    x = CustomBatchNormalization(axis=bn_axis, name='{}/bn_3x3dwconv'.format(prefix))(x)
     x = Conv2D(bottleneck_channels, kernel_size=1,strides=1,padding='same', name='{}/1x1conv_2'.format(prefix))(x)
-    x = BatchNormalization(axis=bn_axis, name='{}/bn_1x1conv_2'.format(prefix))(x)
+    x = CustomBatchNormalization(axis=bn_axis, name='{}/bn_1x1conv_2'.format(prefix))(x)
     x = Activation('relu', name='{}/relu_1x1conv_2'.format(prefix))(x)
 
     if strides < 2:
         ret = Concatenate(axis=bn_axis, name='{}/concat_1'.format(prefix))([x, c_hat])
     else:
         s2 = DepthwiseConv2D(kernel_size=3, strides=2, padding='same', name='{}/3x3dwconv_2'.format(prefix))(inputs)
-        s2 = BatchNormalization(axis=bn_axis, name='{}/bn_3x3dwconv_2'.format(prefix))(s2)
+        s2 = CustomBatchNormalization(axis=bn_axis, name='{}/bn_3x3dwconv_2'.format(prefix))(s2)
         s2 = Conv2D(bottleneck_channels, kernel_size=1,strides=1,padding='same', name='{}/1x1_conv_3'.format(prefix))(s2)
-        s2 = BatchNormalization(axis=bn_axis, name='{}/bn_1x1conv_3'.format(prefix))(s2)
+        s2 = CustomBatchNormalization(axis=bn_axis, name='{}/bn_1x1conv_3'.format(prefix))(s2)
         s2 = Activation('relu', name='{}/relu_1x1conv_3'.format(prefix))(s2)
         ret = Concatenate(axis=bn_axis, name='{}/concat_2'.format(prefix))([x, s2])
 

@@ -45,6 +45,8 @@ from tensorflow.keras.layers import Input, Activation, ReLU, Reshape, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 
+from common.backbones.layers import CustomBatchNormalization
+
 #backend = None
 #layers = None
 #models = None
@@ -198,7 +200,7 @@ def _inverted_res_block(x, expansion, filters, kernel_size, stride,
                           padding='same',
                           use_bias=False,
                           name=prefix + 'expand')(x)
-        x = BatchNormalization(axis=channel_axis,
+        x = CustomBatchNormalization(axis=channel_axis,
                                       epsilon=1e-3,
                                       momentum=0.999,
                                       name=prefix + 'expand/BatchNorm')(x)
@@ -212,7 +214,7 @@ def _inverted_res_block(x, expansion, filters, kernel_size, stride,
                                padding='same' if stride == 1 else 'valid',
                                use_bias=False,
                                name=prefix + 'depthwise/Conv')(x)
-    x = BatchNormalization(axis=channel_axis,
+    x = CustomBatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
                                   momentum=0.999,
                                   name=prefix + 'depthwise/BatchNorm')(x)
@@ -226,7 +228,7 @@ def _inverted_res_block(x, expansion, filters, kernel_size, stride,
                       padding='same',
                       use_bias=False,
                       name=prefix + 'project')(x)
-    x = BatchNormalization(axis=channel_axis,
+    x = CustomBatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
                                   momentum=0.999,
                                   name=prefix + 'project/BatchNorm')(x)
@@ -432,7 +434,7 @@ def MobileNetV3(stack_fn,
                       padding='valid',
                       use_bias=False,
                       name='Conv')(x)
-    x = BatchNormalization(axis=channel_axis,
+    x = CustomBatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
                                   momentum=0.999,
                                   name='Conv/BatchNorm')(x)
@@ -452,7 +454,7 @@ def MobileNetV3(stack_fn,
                       padding='same',
                       use_bias=False,
                       name='Conv_1')(x)
-    x = BatchNormalization(axis=channel_axis,
+    x = CustomBatchNormalization(axis=channel_axis,
                                   epsilon=1e-3,
                                   momentum=0.999,
                                   name='Conv_1/BatchNorm')(x)

@@ -10,6 +10,7 @@ from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Concatenate, BatchN
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 
+from common.backbones.layers import CustomBatchNormalization
 from yolo3.models.layers import compose, DarknetConv2D
 
 
@@ -41,7 +42,7 @@ def correct_pad(backend, inputs, kernel_size):
 
 
 def NanoConv2D_BN_Relu6(*args, **kwargs):
-    """Darknet Convolution2D followed by BatchNormalization and ReLU6."""
+    """Darknet Convolution2D followed by CustomBatchNormalization and ReLU6."""
     nano_name = kwargs.get('name')
     if nano_name:
         name_kwargs = {'name': nano_name + '_conv2d'}
@@ -58,7 +59,7 @@ def NanoConv2D_BN_Relu6(*args, **kwargs):
     no_bias_kwargs.update(name_kwargs)
     return compose(
         DarknetConv2D(*args, **no_bias_kwargs),
-        BatchNormalization(name=bn_name),
+        CustomBatchNormalization(name=bn_name),
         ReLU(6., name=relu_name))
 
 
@@ -72,7 +73,7 @@ def _ep_block(inputs, filters, stride, expansion, block_id):
 
     # Expand
     x = Conv2D(int(expansion * in_channels), kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'expand')(x)
-    x = BatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'expand_BN')(x)
+    x = CustomBatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'expand_BN')(x)
     x = ReLU(6., name=prefix + 'expand_relu')(x)
 
     # Depthwise
@@ -80,12 +81,12 @@ def _ep_block(inputs, filters, stride, expansion, block_id):
         x = ZeroPadding2D(padding=correct_pad(K, x, 3), name=prefix + 'pad')(x)
 
     x = DepthwiseConv2D(kernel_size=3, strides=stride, activation=None, use_bias=False, padding='same' if stride == 1 else 'valid', name=prefix + 'depthwise')(x)
-    x = BatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'depthwise_BN')(x)
+    x = CustomBatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'depthwise_BN')(x)
     x = ReLU(6., name=prefix + 'depthwise_relu')(x)
 
     # Project
     x = Conv2D(pointwise_conv_filters, kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'project')(x)
-    x = BatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'project_BN')(x)
+    x = CustomBatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'project_BN')(x)
 
     if in_channels == pointwise_conv_filters and stride == 1:
         return Add(name=prefix + 'add')([inputs, x])
@@ -103,13 +104,13 @@ def _pep_block(inputs, proj_filters, filters, stride, expansion, block_id):
 
     # Pre-project
     x = Conv2D(proj_filters, kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'preproject')(x)
-    x = BatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'preproject_BN')(x)
+    x = CustomBatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'preproject_BN')(x)
     x = ReLU(6., name=prefix + 'preproject_relu')(x)
 
     # Expand
     #x = Conv2D(int(expansion * in_channels), kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'expand')(x)
     x = Conv2D(int(expansion * proj_filters), kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'expand')(x)
-    x = BatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'expand_BN')(x)
+    x = CustomBatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'expand_BN')(x)
     x = ReLU(6., name=prefix + 'expand_relu')(x)
 
     # Depthwise
@@ -117,12 +118,12 @@ def _pep_block(inputs, proj_filters, filters, stride, expansion, block_id):
         x = ZeroPadding2D(padding=correct_pad(K, x, 3), name=prefix + 'pad')(x)
 
     x = DepthwiseConv2D(kernel_size=3, strides=stride, activation=None, use_bias=False, padding='same' if stride == 1 else 'valid', name=prefix + 'depthwise')(x)
-    x = BatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'depthwise_BN')(x)
+    x = CustomBatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'depthwise_BN')(x)
     x = ReLU(6., name=prefix + 'depthwise_relu')(x)
 
     # Project
     x = Conv2D(pointwise_conv_filters, kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'project')(x)
-    x = BatchNormalization( epsilon=1e-3, momentum=0.999, name=prefix + 'project_BN')(x)
+    x = CustomBatchNormalization( epsilon=1e-3, momentum=0.999, name=prefix + 'project_BN')(x)
 
     if in_channels == pointwise_conv_filters and stride == 1:
         return Add(name=prefix + 'add')([inputs, x])

@@ -12,6 +12,8 @@ from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, MaxPooling2D, Avera
 from tensorflow.keras import backend as K
 import numpy as np
 
+from common.backbones.layers import CustomBatchNormalization
+
 # TODO prepare an imagenet pretrained weights
 BASE_WEIGHT_PATH = ('https://github.com/scheckmedia/keras-shufflenet/tree/master/weights/')
 
@@ -256,17 +258,17 @@ def _shuffle_unit(inputs, in_channels, out_channels, groups, bottleneck_ratio, s
     x = _group_conv(inputs, in_channels, out_channels=bottleneck_channels,
                     groups=(1 if stage == 2 and block == 1 else groups),
                     name='%s/1x1_gconv_1' % prefix)
-    x = BatchNormalization(axis=bn_axis, name='%s/bn_gconv_1' % prefix)(x)
+    x = CustomBatchNormalization(axis=bn_axis, name='%s/bn_gconv_1' % prefix)(x)
     x = Activation('relu', name='%s/relu_gconv_1' % prefix)(x)
 
     x = Lambda(channel_shuffle, arguments={'groups': groups}, name='%s/channel_shuffle' % prefix)(x)
     x = DepthwiseConv2D(kernel_size=(3, 3), padding="same", use_bias=False,
                         strides=strides, name='%s/1x1_dwconv_1' % prefix)(x)
-    x = BatchNormalization(axis=bn_axis, name='%s/bn_dwconv_1' % prefix)(x)
+    x = CustomBatchNormalization(axis=bn_axis, name='%s/bn_dwconv_1' % prefix)(x)
 
     x = _group_conv(x, bottleneck_channels, out_channels=out_channels if strides == 1 else out_channels - in_channels,
                     groups=groups, name='%s/1x1_gconv_2' % prefix)
-    x = BatchNormalization(axis=bn_axis, name='%s/bn_gconv_2' % prefix)(x)
+    x = CustomBatchNormalization(axis=bn_axis, name='%s/bn_gconv_2' % prefix)(x)
 
     if strides < 2:
         ret = Add(name='%s/add' % prefix)([x, inputs])

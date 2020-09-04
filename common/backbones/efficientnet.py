@@ -33,6 +33,7 @@ from tensorflow.keras.models import Model
 from tensorflow.python import tf2
 from tensorflow.keras import backend as K
 
+from common.backbones.layers import CustomBatchNormalization
 
 #backend = None
 #layers = None
@@ -177,7 +178,7 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
                           use_bias=False,
                           kernel_initializer=CONV_KERNEL_INITIALIZER,
                           name=name + 'expand_conv')(inputs)
-        x = BatchNormalization(axis=bn_axis, name=name + 'expand_bn')(x)
+        x = CustomBatchNormalization(axis=bn_axis, name=name + 'expand_bn')(x)
         x = Activation(activation_fn, name=name + 'expand_activation')(x)
     else:
         x = inputs
@@ -195,7 +196,7 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
                                use_bias=False,
                                depthwise_initializer=CONV_KERNEL_INITIALIZER,
                                name=name + 'dwconv')(x)
-    x = BatchNormalization(axis=bn_axis, name=name + 'bn')(x)
+    x = CustomBatchNormalization(axis=bn_axis, name=name + 'bn')(x)
     x = Activation(activation_fn, name=name + 'activation')(x)
 
     # Squeeze and Excitation phase
@@ -228,7 +229,7 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
                       use_bias=False,
                       kernel_initializer=CONV_KERNEL_INITIALIZER,
                       name=name + 'project_conv')(x)
-    x = BatchNormalization(axis=bn_axis, name=name + 'project_bn')(x)
+    x = CustomBatchNormalization(axis=bn_axis, name=name + 'project_bn')(x)
     if (id_skip is True and strides == 1 and filters_in == filters_out):
         if drop_rate > 0:
             if tf2.enabled():
@@ -360,7 +361,7 @@ def EfficientNet(width_coefficient,
                       use_bias=False,
                       kernel_initializer=CONV_KERNEL_INITIALIZER,
                       name='stem_conv')(x)
-    x = BatchNormalization(axis=bn_axis, name='stem_bn')(x)
+    x = CustomBatchNormalization(axis=bn_axis, name='stem_bn')(x)
     x = Activation(activation_fn, name='stem_activation')(x)
 
     # Build blocks
@@ -390,7 +391,7 @@ def EfficientNet(width_coefficient,
                       use_bias=False,
                       kernel_initializer=CONV_KERNEL_INITIALIZER,
                       name='top_conv')(x)
-    x = BatchNormalization(axis=bn_axis, name='top_bn')(x)
+    x = CustomBatchNormalization(axis=bn_axis, name='top_bn')(x)
     x = Activation(activation_fn, name='top_activation')(x)
     if include_top:
         x = GlobalAveragePooling2D(name='avg_pool')(x)

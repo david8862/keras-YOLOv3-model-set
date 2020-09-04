@@ -53,6 +53,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] Mosaic data augmentation
 - [x] Multi anchors for single GT (from [YOLOv4](https://arxiv.org/abs/2004.10934))
 - [x] Pruned model training (only valid for TF 1.x)
+- [x] Multi-GPU training with SyncBatchNorm support (valid for TF-2.2 and later)
 
 #### On-device deployment
 - [x] Tensorflow-Lite Float32/UInt8 model inference
@@ -445,7 +446,6 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 ### TODO
 - [ ] support official Tiny YOLOv4
-- [ ] support SyncBatchNorm
 - [ ] DropBlock on YOLO head
 - [ ] Gaussian YOLOv3 loss
 - [ ] support Quantization aware training

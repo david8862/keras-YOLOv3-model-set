@@ -11,6 +11,7 @@ from tensorflow.keras.layers import LeakyReLU, UpSampling2D
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.regularizers import l2
 
+from common.backbones.layers import CustomBatchNormalization
 
 def compose(*funcs):
     """Compose arbitrarily many functions, evaluated left to right.
@@ -48,10 +49,10 @@ def Darknet_Depthwise_Separable_Conv2D_BN_Leaky(filters, kernel_size=(3, 3), blo
     no_bias_kwargs.update(kwargs)
     return compose(
         DarknetDepthwiseConv2D(kernel_size, name='conv_dw_' + block_id_str, **no_bias_kwargs),
-        BatchNormalization(name='conv_dw_%s_bn' % block_id_str),
+        CustomBatchNormalization(name='conv_dw_%s_bn' % block_id_str),
         LeakyReLU(alpha=0.1, name='conv_dw_%s_leaky_relu' % block_id_str),
         Conv2D(filters, (1,1), padding='same', use_bias=False, strides=(1, 1), name='conv_pw_%s' % block_id_str),
-        BatchNormalization(name='conv_pw_%s_bn' % block_id_str),
+        CustomBatchNormalization(name='conv_pw_%s_bn' % block_id_str),
         LeakyReLU(alpha=0.1, name='conv_pw_%s_leaky_relu' % block_id_str))
 
 
@@ -61,20 +62,20 @@ def Depthwise_Separable_Conv2D_BN_Leaky(filters, kernel_size=(3, 3), block_id_st
         block_id_str = str(K.get_uid())
     return compose(
         DepthwiseConv2D(kernel_size, padding='same', name='conv_dw_' + block_id_str),
-        BatchNormalization(name='conv_dw_%s_bn' % block_id_str),
+        CustomBatchNormalization(name='conv_dw_%s_bn' % block_id_str),
         LeakyReLU(alpha=0.1, name='conv_dw_%s_leaky_relu' % block_id_str),
         Conv2D(filters, (1,1), padding='same', use_bias=False, strides=(1, 1), name='conv_pw_%s' % block_id_str),
-        BatchNormalization(name='conv_pw_%s_bn' % block_id_str),
+        CustomBatchNormalization(name='conv_pw_%s_bn' % block_id_str),
         LeakyReLU(alpha=0.1, name='conv_pw_%s_leaky_relu' % block_id_str))
 
 
 def DarknetConv2D_BN_Leaky(*args, **kwargs):
-    """Darknet Convolution2D followed by BatchNormalization and LeakyReLU."""
+    """Darknet Convolution2D followed by CustomBatchNormalization and LeakyReLU."""
     no_bias_kwargs = {'use_bias': False}
     no_bias_kwargs.update(kwargs)
     return compose(
         DarknetConv2D(*args, **no_bias_kwargs),
-        BatchNormalization(),
+        CustomBatchNormalization(),
         LeakyReLU(alpha=0.1))
 
 
