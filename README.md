@@ -44,6 +44,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] SoftNMS bounding box postprocess (numpy)
 - [x] Eliminate grid sensitivity (numpy/C++, from [YOLOv4](https://arxiv.org/abs/2004.10934))
 - [x] WBF(Weighted-Boxes-Fusion) bounding box postprocess (numpy) ([paper](https://arxiv.org/abs/1910.13302))
+- [x] Cluster NMS series bounding box postprocess (Fast/Matrix/SPM/Weighted) (numpy) ([paper](https://arxiv.org/abs/2005.03572))
 
 #### Train tech
 - [x] Transfer training from imagenet
@@ -102,6 +103,15 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 
 ### make sure to reorder output tensors for YOLOv4 cfg and weights file
 # python tools/model_converter/convert.py --yolo4_reorder cfg/yolov4.cfg weights/yolov4.weights weights/yolov4.h5
+
+
+### Yolo-Fastest
+# wget -O weights/yolo-fastest.weights https://github.com/dog-qiuqiu/Yolo-Fastest/blob/master/Yolo-Fastest/yolo-fastest.weights?raw=true
+# wget -O weights/yolo-fastest-xl.weights https://github.com/dog-qiuqiu/Yolo-Fastest/blob/master/Yolo-Fastest/yolo-fastest-xl.weights?raw=true
+
+# python tools/model_converter/convert.py cfg/yolo-fastest.cfg weights/yolo-fastest.weights weights/yolo-fastest.h5
+# python tools/model_converter/convert.py cfg/yolo-fastest-xl.cfg weights/yolo-fastest-xl.weights weights/yolo-fastest-xl.h5
+
 
 # python yolo.py --image
 # python yolo.py --input=<your video file>
@@ -372,38 +382,40 @@ Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalV
 
 Some experiment on MSCOCO dataset and comparison:
 
-| Model name | InputSize | TrainSet | TestSet | COCO AP | Pascal mAP@.5 | Size | Speed | Ps |
+| Model name | InputSize | TrainSet | TestSet | COCO AP | Pascal mAP@.5 | FLOPS | Param | Size | Speed | Ps |
 | ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- | ----- |
-| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 18.5 | 37.64 | 32MB | 14.6ms | Keras on Titan XP |
-| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_416_coco.tar.gz) | 416x416 | train2017 | val2017 | 21.5 | 42.58 | 32MB| 16.9ms | Keras on Titan XP |
-| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/tiny_yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 15.7 | 33.40 | 21MB | 8.7ms | Keras on Titan XP |
-| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/tiny_yolo3_mobilenet_lite_416_coco.tar.gz) | 416x416 | train2017 | val2017 | 18.3 | 38.59 | 21MB | 9.3ms | Keras on Titan XP |
-| [YOLOv3-Xception](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_xception_608_coco.tar.gz) | 608x608 | train2017 | val2017 | 26.0 | 51.16 | 403MB | 56ms | Keras on Titan XP |
-| [ssd_mobilenet_v1_coco](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md) | 600x600 | COCO train | COCO val | 21 || 28MB | 30ms | TF on Titan X |
-| [ssdlite_mobilenet_v2_coco](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md) | 600x600 | COCO train | COCO val | 22 || 19MB | 27ms | TF on Titan X |
+| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 19.40 | 38.58 | 4.76G | 8.09M | 32MB | 14.6ms | Keras on Titan XP |
+| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_416_coco.tar.gz) | 416x416 | train2017 | val2017 | 22.69 | 43.61 | 8.04G | 8.09M | 32MB | 16.9ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/tiny_yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 16.41 | 34.17 | 3.04G | 5.19M | 21MB | 8.7ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/tiny_yolo3_mobilenet_lite_416_coco.tar.gz) | 416x416 | train2017 | val2017 | 19.28 | 39.36 | 5.13G | 5.19M | 21MB | 9.3ms | Keras on Titan XP |
+| [YOLOv3-Xception](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_xception_608_coco.tar.gz) | 608x608 | train2017 | val2017 | 26.0 | 51.16 | 209.53G | 105.37M | 403MB | 56ms | Keras on Titan XP |
+| [ssd_mobilenet_v1_coco](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md) | 600x600 | COCO train | COCO val | 21 |  |  |  | 28MB | 30ms | TF on Titan X |
+| [ssdlite_mobilenet_v2_coco](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md) | 600x600 | COCO train | COCO val | 22 |  |  |  | 19MB | 27ms | TF on Titan X |
 
 Some experiment on PascalVOC dataset and comparison:
 
-| Model name | InputSize | TrainSet | TestSet | mAP | Size | Speed | Ps |
+| Model name | InputSize | TrainSet | TestSet | mAP | FLOPS | Param | Size | Speed | Ps |
 | ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- |
-| [**YOLOv4 Efficientnet(B1)**](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.2.0/yolo4_efficientnet_512_voc.tar.gz) | 512x512 | VOC07+12 | VOC07 | **82.24%** | 251MB | 44ms | Keras on Titan XP |
-| [**Tiny YOLOv3 Lite-MobilenetV3Small**](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.2.0/tiny_yolo3_mobilenetv3small_lite_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 63.89% | **6.5MB** | 110ms | MNN on ARM Cortex-A53 * 4 |
-| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_mobilnet_lite_320_voc.tar.gz) | 320x320 | VOC07+12 | VOC07 | 72.45% | 31.8MB | 17ms | Keras on Titan XP |
-| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_mobilnet_lite_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 75.37% | 31.8MB| 20ms | Keras on Titan XP |
-| [YOLOv3 Lite-SPP-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_mobilnet_lite_spp_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 75.50% | 34MB | 22ms | Keras on Titan XP |
-| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/tiny_yolo3_mobilnet_lite_320_voc.tar.gz) | 320x320 | VOC07+12 | VOC07 | 68.19% | 20.1MB | 9ms | Keras on Titan XP |
-| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/tiny_yolo3_mobilnet_lite_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 71.81% | 20.1MB | 11ms | Keras on Titan XP |
-| [Tiny YOLOv3 Lite-Mobilenet with GIoU loss](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/tiny_yolo3_mobilnet_lite_giou_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 72.02% | 20.1MB | 11ms | Keras on Titan XP |
-| [YOLOv3 Nano](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.1/yolo3_nano_weights_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 68.73% | 19MB | 29ms | Keras on Titan XP |
-| [YOLOv3-Xception](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_xception_512_voc.tar.gz) | 512x512 | VOC07+12 | VOC07 | 78.51% | 419.8MB | 48ms | Keras on Titan XP |
-| [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 320x320 | VOC07 | VOC07 | 64.22% || 29fps | Keras on 1080Ti |
-| [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 320x320 | VOC07+12 | VOC07 | 74.56% || 29fps | Keras on 1080Ti |
-| [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 416x416 | VOC07+12 | VOC07 | 76.82% || 25fps | Keras on 1080Ti |
-| [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12+coco | VOC07 | 72.7% | 22MB |||
-| [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12 | VOC07 | 68% | 22MB |||
-| [Faster RCNN, VGG-16](https://github.com/ShaoqingRen/faster_rcnn) | ~1000x600 | VOC07+12 | VOC07 | 73.2% || 151ms | Caffe on Titan X |
-| [SSD,VGG-16](https://github.com/pierluigiferrari/ssd_keras) | 300x300 | VOC07+12 | VOC07	| 77.5% | 201MB | 39fps | Keras on Titan X |
+| [**YOLOv4 Efficientnet(B1)**](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.2.0/yolo4_efficientnet_512_voc.tar.gz) | 512x512 | VOC07+12 | VOC07 | **82.39%** | 62.02G | 65.32M | 251MB | 44ms | Keras on Titan XP |
+| [**Tiny YOLOv3 Lite-MobilenetV3Small**](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.2.0/tiny_yolo3_mobilenetv3small_lite_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 65.09% | **731.64M** | **1.50M** | **6.5MB** | 110ms | MNN on ARM Cortex-A53 * 4 |
+| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_mobilnet_lite_320_voc.tar.gz) | 320x320 | VOC07+12 | VOC07 | 73.47% | 4.51G | 7.77M | 31.8MB | 17ms | Keras on Titan XP |
+| [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_mobilnet_lite_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 76.55% | 7.60G | 7.77M | 31.8MB | 20ms | Keras on Titan XP |
+| [YOLOv3 Lite-SPP-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_mobilnet_lite_spp_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 76.32% | 7.98G | 8.81M | 34MB | 22ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/tiny_yolo3_mobilnet_lite_320_voc.tar.gz) | 320x320 | VOC07+12 | VOC07 | 69.10% | 2.93G | 4.92M | 20.1MB | 9ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/tiny_yolo3_mobilnet_lite_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 72.90% | 4.95G | 4.92M | 20.1MB | 11ms | Keras on Titan XP |
+| [Tiny YOLOv3 Lite-Mobilenet with GIoU loss](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/tiny_yolo3_mobilnet_lite_giou_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 72.92% | 4.95G | 4.92M | 20.1MB | 11ms | Keras on Titan XP |
+| [YOLOv3 Nano](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.1/yolo3_nano_weights_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 68.73% | 6.40G | 4.66M | 19MB | 29ms | Keras on Titan XP |
+| [YOLOv3-Xception](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_xception_512_voc.tar.gz) | 512x512 | VOC07+12 | VOC07 | 78.51% | 147.30G | 104.72M | 419.8MB | 48ms | Keras on Titan XP |
+| [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 320x320 | VOC07 | VOC07 | 64.22% |  |  |  | 29fps | Keras on 1080Ti |
+| [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 320x320 | VOC07+12 | VOC07 | 74.56% |  |  |  | 29fps | Keras on 1080Ti |
+| [YOLOv3-Mobilenet](https://github.com/Adamdad/keras-YOLOv3-mobilenet) | 416x416 | VOC07+12 | VOC07 | 76.82% |  |  |  | 25fps | Keras on 1080Ti |
+| [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12+coco | VOC07 | 72.7% |  |  | 22MB |  |  |
+| [MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD) | 300x300 | VOC07+12 | VOC07 | 68% |  |  | 22MB |  |  |
+| [Faster RCNN, VGG-16](https://github.com/ShaoqingRen/faster_rcnn) | ~1000x600 | VOC07+12 | VOC07 | 73.2% |  |  |  | 151ms | Caffe on Titan X |
+| [SSD,VGG-16](https://github.com/pierluigiferrari/ssd_keras) | 300x300 | VOC07+12 | VOC07	| 77.5% |  |  | 201MB | 39fps | Keras on Titan X |
 
+
+**NOTE**: mAP/AP is evaluated with Weighted DIoU Cluster NMS post process, which has better performance than Traditional NMS
 
 ### Demo
 1. [yolo.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo.py)

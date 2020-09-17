@@ -701,7 +701,15 @@ void RunInference(Settings* s) {
     int input_width = image_input->width();
     int input_height = image_input->height();
     int input_channel = image_input->channel();
-    MNN_PRINT("image_input: width:%d , height:%d, channel: %d\n", input_width, input_height, input_channel);
+    int input_dim_type = image_input->getDimensionType();
+
+    std::vector<std::string> dim_type_string = {"TENSORFLOW", "CAFFE", "CAFFE_C4"};
+
+    MNN_PRINT("image_input: name:%s, width:%d, height:%d, channel:%d, dim_type:%s\n", inputs.begin()->first.c_str(), input_width, input_height, input_channel, dim_type_string[input_dim_type].c_str());
+
+    // assume input tensor is Tensorflow format, NHWC
+    // to align with the input image format
+    MNN_ASSERT(input_dim_type == Tensor::TENSORFLOW);
 
     //auto shape = image_input->shape();
     //shape[0] = 1;

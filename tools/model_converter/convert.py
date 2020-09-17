@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Reads Darknet config and weights and creates Keras model with TF backend.
-
 """
-
 import argparse
 import configparser
 import io
@@ -14,7 +12,7 @@ from collections import defaultdict
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.layers import (Conv2D, Input, ZeroPadding2D, Add, Lambda,
+from tensorflow.keras.layers import (Conv2D, DepthwiseConv2D, Input, ZeroPadding2D, Add, Lambda, Dropout,
                           UpSampling2D, MaxPooling2D, AveragePooling2D, Concatenate, Activation)
 from tensorflow.keras.layers import LeakyReLU, ReLU
 from tensorflow.keras.layers import BatchNormalization
@@ -127,17 +125,37 @@ def _main(args):
 
             padding = 'same' if pad == 1 and stride == 1 else 'valid'
 
+            # support DepthwiseConv2D with "groups"
+            # option in conv section
+            if 'groups' in cfg_parser[section]:
+                groups = int(cfg_parser[section]['groups'])
+                # Now only support DepthwiseConv2D with "depth_multiplier=1",
+                # which means conv groups should be same as filters
+                assert groups == filters, 'Only support groups is same as filters.'
+                depthwise = True
+                depth_multiplier = 1
+            else:
+                depthwise = False
+
             # Setting weights.
             # Darknet serializes convolutional weights as:
             # [bias/beta, [gamma, mean, variance], conv_weights]
             prev_layer_shape = K.int_shape(prev_layer)
 
-            weights_shape = (size, size, prev_layer_shape[-1], filters)
-            darknet_w_shape = (filters, weights_shape[2], size, size)
-            weights_size = np.product(weights_shape)
-
-            print('conv2d', 'bn'
-                  if batch_normalize else '  ', activation, weights_shape)
+            if depthwise:
+                # DepthwiseConv2D weights shape in TF:
+                # (kernel_size, kernel_size, in_channels, depth_multiplier).
+                weights_shape = (size, size, prev_layer_shape[-1], depth_multiplier)
+                darknet_w_shape = (depth_multiplier, weights_shape[2], size, size)
+                weights_size = np.product(weights_shape)
+                print('depthwiseconv2d', 'bn'
+                      if batch_normalize else '  ', activation, weights_shape)
+            else:
+                weights_shape = (size, size, prev_layer_shape[-1], filters)
+                darknet_w_shape = (filters, weights_shape[2], size, size)
+                weights_size = np.product(weights_shape)
+                print('conv2d', 'bn'
+                      if batch_normalize else '  ', activation, weights_shape)
 
             conv_bias = np.ndarray(
                 shape=(filters, ),
@@ -193,14 +211,26 @@ def _main(args):
             if stride>1:
                 # Darknet uses left and top padding instead of 'same' mode
                 prev_layer = ZeroPadding2D(((1,0),(1,0)))(prev_layer)
-            conv_layer = (Conv2D(
-                filters, (size, size),
-                strides=(stride, stride),
-                kernel_regularizer=l2(weight_decay),
-                use_bias=not batch_normalize,
-                weights=conv_weights,
-                activation=act_fn,
-                padding=padding))(prev_layer)
+
+            if depthwise:
+                conv_layer = (DepthwiseConv2D(
+                    (size, size),
+                    strides=(stride, stride),
+                    depth_multiplier=depth_multiplier,
+                    kernel_regularizer=l2(weight_decay),
+                    use_bias=not batch_normalize,
+                    weights=conv_weights,
+                    activation=act_fn,
+                    padding=padding))(prev_layer)
+            else:
+                conv_layer = (Conv2D(
+                    filters, (size, size),
+                    strides=(stride, stride),
+                    kernel_regularizer=l2(weight_decay),
+                    use_bias=not batch_normalize,
+                    weights=conv_weights,
+                    activation=act_fn,
+                    padding=padding))(prev_layer)
 
             if batch_normalize:
                 conv_layer = (BatchNormalization(
@@ -227,6 +257,9 @@ def _main(args):
                 all_layers.append(act_layer)
 
         elif section.startswith('route'):
+            if ('groups' in cfg_parser[section]) or ('group_id' in cfg_parser[section]):
+                raise ValueError('Not support route with groups')
+
             ids = [int(i) for i in cfg_parser[section]['layers'].split(',')]
             layers = [all_layers[i] for i in ids]
             if len(layers) > 1:
@@ -259,6 +292,12 @@ def _main(args):
             activation = cfg_parser[section]['activation']
             assert activation == 'linear', 'Only linear activation supported.'
             all_layers.append(Add()([all_layers[index], prev_layer]))
+            prev_layer = all_layers[-1]
+
+        elif section.startswith('dropout'):
+            rate = float(cfg_parser[section]['probability'])
+            assert rate >= 0 and rate <= 1, 'Dropout rate should be between 0 and 1, got {}.'.format(rate)
+            all_layers.append(Dropout(rate=rate)(prev_layer))
             prev_layer = all_layers[-1]
 
         elif section.startswith('upsample'):
