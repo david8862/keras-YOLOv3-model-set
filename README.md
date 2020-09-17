@@ -383,7 +383,7 @@ Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalV
 Some experiment on MSCOCO dataset and comparison:
 
 | Model name | InputSize | TrainSet | TestSet | COCO AP | Pascal mAP@.5 | FLOPS | Param | Size | Speed | Ps |
-| ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- | ----- |
+| ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- | ----- | ----- | ----- |
 | [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 19.40 | 38.58 | 4.76G | 8.09M | 32MB | 14.6ms | Keras on Titan XP |
 | [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/yolo3_mobilenet_lite_416_coco.tar.gz) | 416x416 | train2017 | val2017 | 22.69 | 43.61 | 8.04G | 8.09M | 32MB | 16.9ms | Keras on Titan XP |
 | [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.1.0/tiny_yolo3_mobilenet_lite_320_coco.tar.gz) | 320x320 | train2017 | val2017 | 16.41 | 34.17 | 3.04G | 5.19M | 21MB | 8.7ms | Keras on Titan XP |
@@ -395,7 +395,7 @@ Some experiment on MSCOCO dataset and comparison:
 Some experiment on PascalVOC dataset and comparison:
 
 | Model name | InputSize | TrainSet | TestSet | mAP | FLOPS | Param | Size | Speed | Ps |
-| ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- |
+| ----- | ------ | ------ | ------ | ----- | ----- | ----- | ----- | ----- | ----- |
 | [**YOLOv4 Efficientnet(B1)**](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.2.0/yolo4_efficientnet_512_voc.tar.gz) | 512x512 | VOC07+12 | VOC07 | **82.39%** | 62.02G | 65.32M | 251MB | 44ms | Keras on Titan XP |
 | [**Tiny YOLOv3 Lite-MobilenetV3Small**](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.2.0/tiny_yolo3_mobilenetv3small_lite_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 65.09% | **731.64M** | **1.50M** | **6.5MB** | 110ms | MNN on ARM Cortex-A53 * 4 |
 | [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_mobilnet_lite_320_voc.tar.gz) | 320x320 | VOC07+12 | VOC07 | 73.47% | 4.51G | 7.77M | 31.8MB | 17ms | Keras on Titan XP |
