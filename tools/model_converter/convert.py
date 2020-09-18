@@ -257,20 +257,39 @@ def _main(args):
                 all_layers.append(act_layer)
 
         elif section.startswith('route'):
-            if ('groups' in cfg_parser[section]) or ('group_id' in cfg_parser[section]):
-                raise ValueError('Not support route with groups')
-
             ids = [int(i) for i in cfg_parser[section]['layers'].split(',')]
             layers = [all_layers[i] for i in ids]
-            if len(layers) > 1:
-                print('Concatenating route layers:', layers)
-                concatenate_layer = Concatenate()(layers)
-                all_layers.append(concatenate_layer)
-                prev_layer = concatenate_layer
+
+            if ('groups' in cfg_parser[section]):
+                # support route with groups, which is for splitting input tensor into group
+                # Reference comment (from AlexeyAB):
+                #
+                # https://github.com/lutzroeder/netron/issues/531
+                #
+                assert 'group_id' in cfg_parser[section], 'route with groups should have group_id.'
+                assert len(layers) == 1, 'route with groups should have 1 input layer.'
+
+                groups = int(cfg_parser[section]['groups'])
+                group_id = int(cfg_parser[section]['group_id'])
+                route_layer = layers[0]  # group route only have 1 input layer
+                print('Split {} to {} groups and pick id {}'.format(route_layer, groups, group_id))
+
+                all_layers.append(
+                    Lambda(
+                        # tf.split implementation for groups route
+                        lambda x: tf.split(x, num_or_size_splits=groups, axis=-1)[group_id],
+                        name='group_route_'+str(len(all_layers)))(route_layer))
+                prev_layer = all_layers[-1]
             else:
-                skip_layer = layers[0]  # only one layer to route
-                all_layers.append(skip_layer)
-                prev_layer = skip_layer
+                if len(layers) > 1:
+                    print('Concatenating route layers:', layers)
+                    concatenate_layer = Concatenate()(layers)
+                    all_layers.append(concatenate_layer)
+                    prev_layer = concatenate_layer
+                else:
+                    skip_layer = layers[0]  # only one layer to route
+                    all_layers.append(skip_layer)
+                    prev_layer = skip_layer
 
         elif section.startswith('maxpool'):
             size = int(cfg_parser[section]['size'])
