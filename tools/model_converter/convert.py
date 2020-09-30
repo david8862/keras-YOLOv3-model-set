@@ -12,7 +12,7 @@ from collections import defaultdict
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.layers import (Conv2D, DepthwiseConv2D, Input, ZeroPadding2D, Add, Lambda, Dropout,
+from tensorflow.keras.layers import (Conv2D, DepthwiseConv2D, Input, ZeroPadding2D, Add, Multiply, Lambda, Dropout,
                           UpSampling2D, MaxPooling2D, AveragePooling2D, Concatenate, Activation)
 from tensorflow.keras.layers import LeakyReLU, ReLU
 from tensorflow.keras.layers import BatchNormalization
@@ -311,6 +311,16 @@ def _main(args):
             activation = cfg_parser[section]['activation']
             assert activation == 'linear', 'Only linear activation supported.'
             all_layers.append(Add()([all_layers[index], prev_layer]))
+            prev_layer = all_layers[-1]
+
+        elif section.startswith('sam'):
+            # support SAM (Modified Spatial Attention Module in YOLOv4) layer
+            # Reference comment:
+            #
+            # https://github.com/AlexeyAB/darknet/issues/3708
+            #
+            index = int(cfg_parser[section]['from'])
+            all_layers.append(Multiply()([all_layers[index], prev_layer]))
             prev_layer = all_layers[-1]
 
         elif section.startswith('dropout'):
