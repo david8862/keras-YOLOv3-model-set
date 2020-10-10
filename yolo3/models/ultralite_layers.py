@@ -8,7 +8,7 @@ from tensorflow.keras.layers import DepthwiseConv2D, Concatenate
 from tensorflow.keras.layers import LeakyReLU, UpSampling2D
 from tensorflow.keras.layers import BatchNormalization
 
-from common.backbones.layers import CustomBatchNormalization
+from common.backbones.layers import YoloDepthwiseConv2D, CustomBatchNormalization
 from yolo3.models.layers import *
 
 
@@ -17,7 +17,7 @@ def Depthwise_Conv2D_BN_Leaky(kernel_size=(3, 3), block_id_str=None):
     if not block_id_str:
         block_id_str = str(K.get_uid())
     return compose(
-        DepthwiseConv2D(kernel_size, padding='same', name='conv_dw_' + block_id_str),
+        YoloDepthwiseConv2D(kernel_size, padding='same', name='conv_dw_' + block_id_str),
         CustomBatchNormalization(name='conv_dw_%s_bn' % block_id_str),
         LeakyReLU(alpha=0.1, name='conv_dw_%s_leaky_relu' % block_id_str)
         )

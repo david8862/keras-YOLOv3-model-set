@@ -10,7 +10,7 @@ from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Concatenate, BatchN
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 
-from common.backbones.layers import CustomBatchNormalization
+from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatchNormalization
 from yolo3.models.layers import compose, DarknetConv2D
 
 
@@ -72,7 +72,7 @@ def _ep_block(inputs, filters, stride, expansion, block_id):
     prefix = 'ep_block_{}_'.format(block_id)
 
     # Expand
-    x = Conv2D(int(expansion * in_channels), kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'expand')(x)
+    x = YoloConv2D(int(expansion * in_channels), kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'expand')(x)
     x = CustomBatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'expand_BN')(x)
     x = ReLU(6., name=prefix + 'expand_relu')(x)
 
@@ -80,12 +80,12 @@ def _ep_block(inputs, filters, stride, expansion, block_id):
     if stride == 2:
         x = ZeroPadding2D(padding=correct_pad(K, x, 3), name=prefix + 'pad')(x)
 
-    x = DepthwiseConv2D(kernel_size=3, strides=stride, activation=None, use_bias=False, padding='same' if stride == 1 else 'valid', name=prefix + 'depthwise')(x)
+    x = YoloDepthwiseConv2D(kernel_size=3, strides=stride, activation=None, use_bias=False, padding='same' if stride == 1 else 'valid', name=prefix + 'depthwise')(x)
     x = CustomBatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'depthwise_BN')(x)
     x = ReLU(6., name=prefix + 'depthwise_relu')(x)
 
     # Project
-    x = Conv2D(pointwise_conv_filters, kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'project')(x)
+    x = YoloConv2D(pointwise_conv_filters, kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'project')(x)
     x = CustomBatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'project_BN')(x)
 
     if in_channels == pointwise_conv_filters and stride == 1:
@@ -103,13 +103,13 @@ def _pep_block(inputs, proj_filters, filters, stride, expansion, block_id):
 
 
     # Pre-project
-    x = Conv2D(proj_filters, kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'preproject')(x)
+    x = YoloConv2D(proj_filters, kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'preproject')(x)
     x = CustomBatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'preproject_BN')(x)
     x = ReLU(6., name=prefix + 'preproject_relu')(x)
 
     # Expand
-    #x = Conv2D(int(expansion * in_channels), kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'expand')(x)
-    x = Conv2D(int(expansion * proj_filters), kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'expand')(x)
+    #x = YoloConv2D(int(expansion * in_channels), kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'expand')(x)
+    x = YoloConv2D(int(expansion * proj_filters), kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'expand')(x)
     x = CustomBatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'expand_BN')(x)
     x = ReLU(6., name=prefix + 'expand_relu')(x)
 
@@ -117,12 +117,12 @@ def _pep_block(inputs, proj_filters, filters, stride, expansion, block_id):
     if stride == 2:
         x = ZeroPadding2D(padding=correct_pad(K, x, 3), name=prefix + 'pad')(x)
 
-    x = DepthwiseConv2D(kernel_size=3, strides=stride, activation=None, use_bias=False, padding='same' if stride == 1 else 'valid', name=prefix + 'depthwise')(x)
+    x = YoloDepthwiseConv2D(kernel_size=3, strides=stride, activation=None, use_bias=False, padding='same' if stride == 1 else 'valid', name=prefix + 'depthwise')(x)
     x = CustomBatchNormalization(epsilon=1e-3, momentum=0.999, name=prefix + 'depthwise_BN')(x)
     x = ReLU(6., name=prefix + 'depthwise_relu')(x)
 
     # Project
-    x = Conv2D(pointwise_conv_filters, kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'project')(x)
+    x = YoloConv2D(pointwise_conv_filters, kernel_size=1, padding='same', use_bias=False, activation=None, name=prefix + 'project')(x)
     x = CustomBatchNormalization( epsilon=1e-3, momentum=0.999, name=prefix + 'project_BN')(x)
 
     if in_channels == pointwise_conv_filters and stride == 1:

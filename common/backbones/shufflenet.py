@@ -12,7 +12,7 @@ from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, MaxPooling2D, Avera
 from tensorflow.keras import backend as K
 import numpy as np
 
-from common.backbones.layers import CustomBatchNormalization
+from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatchNormalization
 
 # TODO prepare an imagenet pretrained weights
 BASE_WEIGHT_PATH = ('https://github.com/scheckmedia/keras-shufflenet/tree/master/weights/')
@@ -120,7 +120,7 @@ def ShuffleNet(include_top=True,
         img_input = input_tensor
 
     # create shufflenet architecture
-    x = Conv2D(filters=out_channels_in_stage[0], kernel_size=(3, 3), padding='same',
+    x = YoloConv2D(filters=out_channels_in_stage[0], kernel_size=(3, 3), padding='same',
                use_bias=False, strides=(2, 2), activation="relu", name="conv1")(img_input)
     x = MaxPooling2D(pool_size=(3, 3), strides=(2, 2), padding='same', name="maxpool1")(x)
 
@@ -262,7 +262,7 @@ def _shuffle_unit(inputs, in_channels, out_channels, groups, bottleneck_ratio, s
     x = Activation('relu', name='%s/relu_gconv_1' % prefix)(x)
 
     x = Lambda(channel_shuffle, arguments={'groups': groups}, name='%s/channel_shuffle' % prefix)(x)
-    x = DepthwiseConv2D(kernel_size=(3, 3), padding="same", use_bias=False,
+    x = YoloDepthwiseConv2D(kernel_size=(3, 3), padding="same", use_bias=False,
                         strides=strides, name='%s/1x1_dwconv_1' % prefix)(x)
     x = CustomBatchNormalization(axis=bn_axis, name='%s/bn_dwconv_1' % prefix)(x)
 
@@ -309,7 +309,7 @@ def _group_conv(x, in_channels, out_channels, groups, kernel=1, stride=1, name='
     -------
     """
     if groups == 1:
-        return Conv2D(filters=out_channels, kernel_size=kernel, padding='same',
+        return YoloConv2D(filters=out_channels, kernel_size=kernel, padding='same',
                       use_bias=False, strides=stride, name=name)(x)
 
     # number of intput channels per group
@@ -321,7 +321,7 @@ def _group_conv(x, in_channels, out_channels, groups, kernel=1, stride=1, name='
     for i in range(groups):
         offset = i * ig
         group = Lambda(lambda z: z[:, :, :, offset: offset + ig], name='%s/g%d_slice' % (name, i))(x)
-        group_list.append(Conv2D(int(0.5 + out_channels / groups), kernel_size=kernel, strides=stride,
+        group_list.append(YoloConv2D(int(0.5 + out_channels / groups), kernel_size=kernel, strides=stride,
                                  use_bias=False, padding='same', name='%s_/g%d' % (name, i))(group))
     return Concatenate(name='%s/concat' % name)(group_list)
 

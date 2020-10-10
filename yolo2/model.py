@@ -5,7 +5,7 @@ create YOLOv2 models with different backbone & head
 """
 import warnings
 import tensorflow.keras.backend as K
-from tensorflow.keras.layers import Input, Lambda, Conv2D
+from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 

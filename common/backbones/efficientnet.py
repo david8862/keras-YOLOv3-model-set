@@ -26,14 +26,14 @@ from keras_applications.imagenet_utils import preprocess_input as _preprocess_in
 
 from tensorflow.keras.utils import get_source_inputs, get_file
 from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Dense, MaxPool2D, GlobalMaxPooling2D, GlobalAveragePooling2D, ZeroPadding2D
-from tensorflow.keras.layers import BatchNormalization, Lambda, Dropout, DepthwiseConv2D, Reshape
+from tensorflow.keras.layers import BatchNormalization, Lambda, Dropout, Reshape
 from tensorflow.keras.layers import Input, Activation, Concatenate, multiply, add
 from tensorflow.keras.models import Model
 
 from tensorflow.python import tf2
 from tensorflow.keras import backend as K
 
-from common.backbones.layers import CustomBatchNormalization
+from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatchNormalization
 
 #backend = None
 #layers = None
@@ -173,7 +173,7 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
     # Expansion phase
     filters = filters_in * expand_ratio
     if expand_ratio != 1:
-        x = Conv2D(filters, 1,
+        x =  YoloConv2D(filters, 1,
                           padding='same',
                           use_bias=False,
                           kernel_initializer=CONV_KERNEL_INITIALIZER,
@@ -190,7 +190,7 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
         conv_pad = 'valid'
     else:
         conv_pad = 'same'
-    x = DepthwiseConv2D(kernel_size,
+    x = YoloDepthwiseConv2D(kernel_size,
                                strides=strides,
                                padding=conv_pad,
                                use_bias=False,
@@ -204,12 +204,12 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
         filters_se = max(1, int(filters_in * se_ratio))
         se = GlobalAveragePooling2D(name=name + 'se_squeeze')(x)
         se = Reshape((1, 1, filters), name=name + 'se_reshape')(se)
-        se = Conv2D(filters_se, 1,
+        se = YoloConv2D(filters_se, 1,
                            padding='same',
                            activation=activation_fn,
                            kernel_initializer=CONV_KERNEL_INITIALIZER,
                            name=name + 'se_reduce')(se)
-        se = Conv2D(filters, 1,
+        se = YoloConv2D(filters, 1,
                            padding='same',
                            activation='sigmoid',
                            kernel_initializer=CONV_KERNEL_INITIALIZER,
@@ -224,7 +224,7 @@ def block(inputs, activation_fn=swish, drop_rate=0., name='',
         x = multiply([x, se], name=name + 'se_excite')
 
     # Output phase
-    x = Conv2D(filters_out, 1,
+    x = YoloConv2D(filters_out, 1,
                       padding='same',
                       use_bias=False,
                       kernel_initializer=CONV_KERNEL_INITIALIZER,
@@ -355,7 +355,7 @@ def EfficientNet(width_coefficient,
     x = img_input
     x = ZeroPadding2D(padding=correct_pad(K, x, 3),
                              name='stem_conv_pad')(x)
-    x = Conv2D(round_filters(32), 3,
+    x = YoloConv2D(round_filters(32), 3,
                       strides=2,
                       padding='valid',
                       use_bias=False,
@@ -386,7 +386,7 @@ def EfficientNet(width_coefficient,
             b += 1
 
     # Build top
-    x = Conv2D(round_filters(1280), 1,
+    x = YoloConv2D(round_filters(1280), 1,
                       padding='same',
                       use_bias=False,
                       kernel_initializer=CONV_KERNEL_INITIALIZER,

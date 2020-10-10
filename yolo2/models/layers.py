@@ -11,10 +11,10 @@ from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.regularizers import l2
 
-from common.backbones.layers import CustomBatchNormalization
+from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatchNormalization
 
 # Partial wrapper for Convolution2D with static default argument.
-_DarknetConv2D = partial(Conv2D, padding='same')
+_DarknetConv2D = partial(YoloConv2D, padding='same')
 
 
 def compose(*funcs):
@@ -29,20 +29,22 @@ def compose(*funcs):
         raise ValueError('Composition of empty sequence not supported.')
 
 
-@wraps(Conv2D)
+@wraps(YoloConv2D)
 def DarknetConv2D(*args, **kwargs):
-    """Wrapper to set Darknet weight regularizer for Convolution2D."""
+    """Wrapper to set Darknet weight regularizer for YoloConv2D."""
     darknet_conv_kwargs = {'kernel_regularizer': l2(5e-4)}
     darknet_conv_kwargs.update(kwargs)
+    #darknet_conv_kwargs = kwargs
     return _DarknetConv2D(*args, **darknet_conv_kwargs)
 
-@wraps(DepthwiseConv2D)
+@wraps(YoloDepthwiseConv2D)
 def DarknetDepthwiseConv2D(*args, **kwargs):
     """Wrapper to set Darknet parameters for Convolution2D."""
     darknet_conv_kwargs = {'kernel_regularizer': l2(5e-4)}
     darknet_conv_kwargs['padding'] = 'valid' if kwargs.get('strides')==(2,2) else 'same'
+    #darknet_conv_kwargs = {'padding': 'valid' if kwargs.get('strides')==(2,2) else 'same'}
     darknet_conv_kwargs.update(kwargs)
-    return DepthwiseConv2D(*args, **darknet_conv_kwargs)
+    return YoloDepthwiseConv2D(*args, **darknet_conv_kwargs)
 
 
 def Darknet_Depthwise_Separable_Conv2D_BN_Leaky(filters, kernel_size=(3, 3), block_id_str=None, **kwargs):
@@ -55,7 +57,7 @@ def Darknet_Depthwise_Separable_Conv2D_BN_Leaky(filters, kernel_size=(3, 3), blo
         DarknetDepthwiseConv2D(kernel_size, name='conv_dw_' + block_id_str, **no_bias_kwargs),
         CustomBatchNormalization(name='conv_dw_%s_bn' % block_id_str),
         LeakyReLU(alpha=0.1, name='conv_dw_%s_leaky_relu' % block_id_str),
-        Conv2D(filters, (1,1), padding='same', use_bias=False, strides=(1, 1), name='conv_pw_%s' % block_id_str),
+        YoloConv2D(filters, (1,1), padding='same', use_bias=False, strides=(1, 1), name='conv_pw_%s' % block_id_str),
         CustomBatchNormalization(name='conv_pw_%s_bn' % block_id_str),
         LeakyReLU(alpha=0.1, name='conv_pw_%s_leaky_relu' % block_id_str))
 
@@ -65,10 +67,10 @@ def Depthwise_Separable_Conv2D_BN_Leaky(filters, kernel_size=(3, 3), block_id_st
     if not block_id_str:
         block_id_str = str(K.get_uid())
     return compose(
-        DepthwiseConv2D(kernel_size, padding='same', name='conv_dw_' + block_id_str),
+        YoloDepthwiseConv2D(kernel_size, padding='same', name='conv_dw_' + block_id_str),
         CustomBatchNormalization(name='conv_dw_%s_bn' % block_id_str),
         LeakyReLU(alpha=0.1, name='conv_dw_%s_leaky_relu' % block_id_str),
-        Conv2D(filters, (1,1), padding='same', use_bias=False, strides=(1, 1), name='conv_pw_%s' % block_id_str),
+        YoloConv2D(filters, (1,1), padding='same', use_bias=False, strides=(1, 1), name='conv_pw_%s' % block_id_str),
         CustomBatchNormalization(name='conv_pw_%s_bn' % block_id_str),
         LeakyReLU(alpha=0.1, name='conv_pw_%s_leaky_relu' % block_id_str))
 

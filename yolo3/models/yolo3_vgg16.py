@@ -6,6 +6,7 @@ from tensorflow.keras.layers import Conv2D, UpSampling2D, Concatenate, MaxPoolin
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications.vgg16 import VGG16
 
+from common.backbones.layers import YoloConv2D
 from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, make_last_layers
 
 
@@ -36,10 +37,10 @@ def yolo3_vgg16_body(inputs, num_anchors, num_classes):
     #net, endpoint = inception_v2.inception_v2(inputs)
     vgg16 = VGG16(input_tensor=inputs,weights='imagenet',include_top=False)
     x = vgg16.get_layer('block5_pool').output
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv1')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv2')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv3')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv4')(x)
+    x = YoloConv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv1')(x)
+    x = YoloConv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv2')(x)
+    x = YoloConv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv3')(x)
+    x = YoloConv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv4')(x)
 
     # input: 416 x 416 x 3
     # block6_conv3 :13 x 13 x 512
@@ -48,7 +49,7 @@ def yolo3_vgg16_body(inputs, num_anchors, num_classes):
 
 
     # f1 :13 x 13 x 1024 13 x 13 x 512
-    x, y1 = make_last_layers(x, 512, num_anchors * (num_classes + 5))
+    x, y1 = make_last_layers(x, 512, num_anchors * (num_classes + 5), predict_id='1')
 
     x = compose(
             DarknetConv2D_BN_Leaky(256, (1,1)),
@@ -58,7 +59,7 @@ def yolo3_vgg16_body(inputs, num_anchors, num_classes):
     # f2: 26 x 26 x 512
     x = Concatenate()([x,f2])
 
-    x, y2 = make_last_layers(x, 256, num_anchors*(num_classes+5))
+    x, y2 = make_last_layers(x, 256, num_anchors*(num_classes+5), predict_id='2')
 
     x = compose(
             DarknetConv2D_BN_Leaky(128, (1,1)),
@@ -67,7 +68,7 @@ def yolo3_vgg16_body(inputs, num_anchors, num_classes):
     f3 = vgg16.get_layer('block4_conv3').output
     # f3 : 52 x 52 x 256
     x = Concatenate()([x, f3])
-    x, y3 = make_last_layers(x, 128, num_anchors*(num_classes+5))
+    x, y3 = make_last_layers(x, 128, num_anchors*(num_classes+5), predict_id='3')
 
     return Model(inputs = inputs, outputs=[y1,y2,y3])
 
@@ -75,10 +76,10 @@ def tiny_yolo3_vgg16_body(inputs, num_anchors, num_classes):
     '''Create Tiny YOLO_v3 VGG16 model CNN body in keras.'''
     vgg16 = VGG16(input_tensor=inputs,weights='imagenet',include_top=False)
     x = vgg16.get_layer('block5_pool').output
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv1')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv2')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv3')(x)
-    #x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv4')(x)
+    x = YoloConv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv1')(x)
+    x = YoloConv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv2')(x)
+    x = YoloConv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv3')(x)
+    #x = YoloConv2D(512, (3, 3), activation='relu', padding='same', name='block6_conv4')(x)
 
     # input: 416 x 416 x 3
     # block6_conv3 :13 x 13 x 512

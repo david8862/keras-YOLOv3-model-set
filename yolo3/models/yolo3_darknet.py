@@ -8,7 +8,7 @@ from tensorflow.keras import backend as K
 from keras_applications.imagenet_utils import _obtain_input_shape
 
 from yolo3.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, Depthwise_Separable_Conv2D_BN_Leaky, Darknet_Depthwise_Separable_Conv2D_BN_Leaky
-from yolo3.models.layers import make_last_layers, make_depthwise_separable_last_layers, make_spp_last_layers
+#from yolo3.models.layers import make_last_layers, make_depthwise_separable_last_layers, make_spp_last_layers
 from yolo3.models.layers import yolo3_predictions, yolo3lite_predictions, tiny_yolo3_predictions, tiny_yolo3lite_predictions
 
 
