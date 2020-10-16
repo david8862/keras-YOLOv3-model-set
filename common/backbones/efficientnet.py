@@ -17,7 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
 import math
 
 import keras_applications.imagenet_utils as keras_utils
@@ -33,6 +33,7 @@ from tensorflow.keras.models import Model
 from tensorflow.python import tf2
 from tensorflow.keras import backend as K
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatchNormalization
 
 #backend = None

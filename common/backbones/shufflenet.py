@@ -4,6 +4,8 @@
 # A tf.keras implementation of shufflenet,
 # which is ported from https://github.com/scheckmedia/keras-shufflenet
 #
+import os, sys
+
 from keras_applications.imagenet_utils import _obtain_input_shape
 from tensorflow.keras.models import Model
 from tensorflow.keras.utils import get_source_inputs, get_file
@@ -12,6 +14,7 @@ from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, MaxPooling2D, Avera
 from tensorflow.keras import backend as K
 import numpy as np
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatchNormalization
 
 # TODO prepare an imagenet pretrained weights

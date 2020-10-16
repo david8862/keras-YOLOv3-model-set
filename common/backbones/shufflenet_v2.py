@@ -4,9 +4,10 @@
 # A tf.keras implementation of shufflenet_v2,
 # which is ported from https://github.com/opconty/keras-shufflenetV2
 #
+import os, sys
 import numpy as np
-from keras_applications.imagenet_utils import _obtain_input_shape
 
+from keras_applications.imagenet_utils import _obtain_input_shape
 #from tensorflow.keras.utils import plot_model
 from tensorflow.keras.utils import get_source_inputs, get_file
 from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Dense, MaxPool2D, GlobalMaxPooling2D, GlobalAveragePooling2D
@@ -15,6 +16,7 @@ from tensorflow.keras.layers import Input, Activation, Concatenate
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatchNormalization
 
 # TODO prepare an imagenet pretrained weights

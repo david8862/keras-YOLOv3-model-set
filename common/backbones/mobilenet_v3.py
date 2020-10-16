@@ -33,7 +33,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
 import warnings
 
 from keras_applications.imagenet_utils import _obtain_input_shape
@@ -45,6 +45,7 @@ from tensorflow.keras.layers import Input, Activation, ReLU, Reshape, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatchNormalization
 
 #backend = None
@@ -380,7 +381,7 @@ def MobileNetV3(stack_fn,
                 #cols = K.int_shape(input_tensor)[2]
                 #input_shape = (cols, rows, 3)
 
-    # If input_shape is None and input_tensor is None using standart shape
+    # If input_shape is None and input_tensor is None using standard shape
     if input_shape is None and input_tensor is None:
         input_shape = (None, None, 3)
 
