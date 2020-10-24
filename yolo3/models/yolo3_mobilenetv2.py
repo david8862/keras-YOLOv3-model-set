@@ -4,7 +4,8 @@
 
 from tensorflow.keras.layers import UpSampling2D, Concatenate
 from tensorflow.keras.models import Model
-from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
+#from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
+from common.backbones.mobilenet_v2 import MobileNetV2
 
 from yolo3.models.layers import yolo3_predictions, yolo3lite_predictions, tiny_yolo3_predictions, tiny_yolo3lite_predictions
 from yolo3.models.ultralite_layers import yolo3_ultralite_predictions, tiny_yolo3_ultralite_predictions

@@ -27,9 +27,9 @@ def compose(*funcs):
 @wraps(YoloConv2D)
 def DarknetConv2D(*args, **kwargs):
     """Wrapper to set Darknet parameters for YoloConv2D."""
-    darknet_conv_kwargs = {'kernel_regularizer': l2(5e-4)}
-    darknet_conv_kwargs['padding'] = 'valid' if kwargs.get('strides')==(2,2) else 'same'
-    #darknet_conv_kwargs = {'padding': 'valid' if kwargs.get('strides')==(2,2) else 'same'}
+    #darknet_conv_kwargs = {'kernel_regularizer': l2(5e-4)}
+    #darknet_conv_kwargs['padding'] = 'valid' if kwargs.get('strides')==(2,2) else 'same'
+    darknet_conv_kwargs = {'padding': 'valid' if kwargs.get('strides')==(2,2) else 'same'}
     darknet_conv_kwargs.update(kwargs)
     return YoloConv2D(*args, **darknet_conv_kwargs)
 
@@ -37,9 +37,9 @@ def DarknetConv2D(*args, **kwargs):
 @wraps(YoloDepthwiseConv2D)
 def DarknetDepthwiseConv2D(*args, **kwargs):
     """Wrapper to set Darknet parameters for YoloDepthwiseConv2D."""
-    darknet_conv_kwargs = {'kernel_regularizer': l2(5e-4)}
-    darknet_conv_kwargs['padding'] = 'valid' if kwargs.get('strides')==(2,2) else 'same'
-    #darknet_conv_kwargs = {'padding': 'valid' if kwargs.get('strides')==(2,2) else 'same'}
+    #darknet_conv_kwargs = {'kernel_regularizer': l2(5e-4)}
+    #darknet_conv_kwargs['padding'] = 'valid' if kwargs.get('strides')==(2,2) else 'same'
+    darknet_conv_kwargs = {'padding': 'valid' if kwargs.get('strides')==(2,2) else 'same'}
     darknet_conv_kwargs.update(kwargs)
     return YoloDepthwiseConv2D(*args, **darknet_conv_kwargs)
 
