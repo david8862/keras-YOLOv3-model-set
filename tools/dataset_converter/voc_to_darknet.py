@@ -30,7 +30,7 @@ def convert_to_darknet(size, box):
 
 
 def convert_annotation(dataset_path, year, image_id, output_path, include_difficult):
-    in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id))
+    in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id), encoding='utf-8')
     out_file = open('%s/%s.txt'%(output_path, image_id), 'w')
     tree=ET.parse(in_file)
     root = tree.getroot()
@@ -69,7 +69,7 @@ def has_object(dataset_path, year, image_id, include_difficult):
     return a boolean result
     '''
     try:
-        in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id))
+        in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id), encoding='utf-8')
     except:
         # bypass image if no annotation
         return False

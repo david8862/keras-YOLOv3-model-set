@@ -36,7 +36,7 @@ def crop_bbox_image(image_name, bbox, count, class_name, output_path):
 
 
 def parse_and_crop(dataset_path, year, image_id, include_difficult, output_path):
-    in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id))
+    in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id), encoding='utf-8')
     tree=ET.parse(in_file)
     root = tree.getroot()
     count = 0
@@ -63,7 +63,7 @@ def parse_and_crop(dataset_path, year, image_id, include_difficult, output_path)
 
 def has_object(dataset_path, year, image_id, include_difficult):
     try:
-        in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id))
+        in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id), encoding='utf-8')
     except:
         # bypass image if no annotation
         return False

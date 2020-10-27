@@ -2,6 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 Reads Darknet config and weights and creates Keras model with TF backend.
+
+Support YOLOv2/v3/v4 families and Yolo-Fastest from following links:
+
+https://pjreddie.com/darknet/yolo/
+https://github.com/AlexeyAB/darknet
+https://github.com/dog-qiuqiu/Yolo-Fastest
+
+Refer README.md for usage details.
+
 """
 import argparse
 import configparser
