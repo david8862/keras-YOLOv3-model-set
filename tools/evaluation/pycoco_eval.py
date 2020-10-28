@@ -69,7 +69,12 @@ def coco_result_generate(result_txt, coco_result_json, customize_coco):
 
         # parse image_id from full image_name
         image_name = line[0]
-        image_id = int(os.path.basename(image_name).split('.')[0])
+        try:
+            image_id = int(os.path.basename(image_name).split('.')[0])
+        except:
+            # if image_name is not a number, try to use
+            # the name string as image_id
+            image_id = os.path.basename(image_name).split('.')[0]
         pbar.update(1)
 
         # parse boxes info

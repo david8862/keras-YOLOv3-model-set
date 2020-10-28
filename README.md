@@ -369,6 +369,25 @@ optional arguments:
 # python pycoco_eval.py --result_txt=../../result/detection_result.txt --coco_annotation_json=./instances_val2017.json --coco_result_json=coco_result.json
 ```
 
+You can use [tide_eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/evaluation/tide_eval.py) with the output COCO json result and COCO GT annotation for detection errors analysis. It's proposed and supported by [tide](https://github.com/dbolya/tide):
+
+```
+# cd tools/evaluation/ && python tide_eval.py -h
+usage: tide_eval.py [-h] --coco_annotation_json COCO_ANNOTATION_JSON
+                    --coco_result_json COCO_RESULT_JSON
+
+evaluate TIDE dAP with tidecv
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --coco_annotation_json COCO_ANNOTATION_JSON
+                        coco json annotation file
+  --coco_result_json COCO_RESULT_JSON
+                        coco json result file
+
+# python tide_eval.py --coco_annotation_json=./instances_val2017.json --coco_result_json=coco_result.json
+```
+
 P.S. for VOC style dataset, we also provide [pascal_voc_to_coco.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/dataset_converter/pascal_voc_to_coco.py) to generate COCO GT annotation.
 
 If you enable "--eval_online" option in train.py, a default Pascal VOC mAP evaluation on validation dataset will be executed during training. But that may cost more time for train process.
@@ -533,5 +552,11 @@ Please cite keras-YOLOv3-model-set in your publications if it helps your researc
      author={Zhaohui Zheng, Ping Wang, Wei Liu, Jinze Li, Rongguang Ye, Dongwei Ren},
      journal = {arXiv},
      year={2020}
+}
+@inproceedings{tide-eccv2020,
+  author    = {Daniel Bolya and Sean Foley and James Hays and Judy Hoffman},
+  title     = {TIDE: A General Toolbox for Identifying Object Detection Errors},
+  booktitle = {ECCV},
+  year      = {2020},
 }
 ```

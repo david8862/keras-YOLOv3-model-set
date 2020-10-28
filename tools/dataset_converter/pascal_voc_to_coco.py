@@ -30,14 +30,20 @@ def get_and_check(root, name, length):
 
 
 # get image_id from image file name
-def get_filename_as_int(filename):
+def parse_image_id(filename):
+    filename = os.path.splitext(filename)[0]
     try:
-        filename = os.path.splitext(filename)[0]
         # get rid of the underline in VOC2012 filename
-        filename = filename.replace('_', '')
-        return int(filename)
+        #filename = filename.replace('_', '')
+        #return int(filename)
+        image_id = int(filename)
     except:
-        raise NotImplementedError('Filename %s is supposed to be an integer.'%(filename))
+        # if image name is not a number, try to use
+        # the name string as image_id
+        image_id = filename
+        #raise NotImplementedError('Filename %s is supposed to be an integer.'%(filename))
+
+    return image_id
 
 
 def get_category(category_file):
@@ -46,8 +52,7 @@ def get_category(category_file):
     with open(category_file) as f:
         categories_names = f.readlines()
     for index, category_name in enumerate(categories_names):
-        # handle underline in class name
-        category_dict[category_name.strip().replace('_', ' ')] = index + 1
+        category_dict[category_name.strip()] = index + 1
     return category_dict
 
 
@@ -85,7 +90,7 @@ def convert(xml_list, xml_dir, categories, json_file, merge_category=False):
             raise NotImplementedError('%d paths found in %s'%(len(path), line))
 
         ## get image ID & size
-        image_id = get_filename_as_int(filename)  # image ID
+        image_id = parse_image_id(filename)  # image ID
         size = get_and_check(root, 'size', 1)
 
         # form up image info
