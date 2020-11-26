@@ -14,9 +14,10 @@ set(YOLO_DETECTION_SRC
         yoloDetection.cpp)
 
 #set(TF_ROOT_PATH /mnt/d/Downloads/tensorflow)
-
-include_directories("${TF_ROOT_PATH}" "${TF_ROOT_PATH}/tensorflow/lite/tools/make/downloads/flatbuffers/include")
 link_directories("${TF_ROOT_PATH}/tensorflow/lite/tools/make/gen/${TARGET_PLAT}/lib/")
+
 add_executable(yoloDetection ${YOLO_DETECTION_SRC})
-target_link_libraries(yoloDetection libtensorflow-lite.a -lstdc++ -lpthread -lm -ldl -lrt)
-#target_link_libraries(yoloDetection -ltensorflow-lite -lstdc++ -lpthread -lm -ldl -lrt)
+
+target_include_directories(yoloDetection PRIVATE ${TF_ROOT_PATH} ${TF_ROOT_PATH}/tensorflow/lite/tools/make/downloads/flatbuffers/include)
+target_link_libraries(yoloDetection PRIVATE libtensorflow-lite.a -lstdc++ -lpthread -lm -ldl -lrt)
+#target_link_libraries(yoloDetection PRIVATE -ltensorflow-lite -lstdc++ -lpthread -lm -ldl -lrt)

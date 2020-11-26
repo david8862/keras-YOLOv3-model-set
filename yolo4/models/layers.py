@@ -101,7 +101,7 @@ def Spp_Conv2D_BN_Leaky(x, num_filters):
 
     y = compose(
             Concatenate(),
-            DarknetConv2D_BN_Leaky(num_filters, (1,1)))([y1, y2, y3, x])
+            DarknetConv2D_BN_Leaky(num_filters, (1,1)))([y3, y2, y1, x])
     return y
 
 

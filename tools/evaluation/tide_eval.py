@@ -13,7 +13,7 @@ from tidecv import TIDE, datasets
 
 def tide_eval(annotation_file, result_file):
     tide = TIDE()
-    tide.evaluate(datasets.COCO(annotation_file), datasets.COCOResult(result_file), mode=TIDE.BOX) # Use TIDE.MASK for masks
+    tide.evaluate_range(datasets.COCO(annotation_file), datasets.COCOResult(result_file), mode=TIDE.BOX) # Use TIDE.MASK for masks
     tide.summarize()  # Summarize the results as tables in the console
     tide.plot()       # Show a summary figure. Specify a folder and it'll output a png to that folder.
 

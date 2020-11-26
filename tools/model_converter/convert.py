@@ -86,8 +86,8 @@ def _main(args):
         '.weights'), '{} is not a .weights file'.format(weights_path)
 
     output_path = os.path.expanduser(args.output_path)
-    assert output_path.endswith(
-        '.h5'), 'output path {} is not a .h5 file'.format(output_path)
+    #assert output_path.endswith(
+        #'.h5'), 'output path {} is not a .h5 file'.format(output_path)
     output_root = os.path.splitext(output_path)[0]
 
     # Load weights and config.

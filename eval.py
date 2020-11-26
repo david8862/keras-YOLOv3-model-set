@@ -640,6 +640,10 @@ def generate_rec_prec_html(mrec, mprec, scores, class_name, ap):
     """
      generate dynamic P-R curve HTML page for each class
     """
+    # bypass invalid class
+    if len(mrec) == 0 or len(mprec) == 0 or len(scores) == 0:
+        return
+
     rec_prec_plot_path = os.path.join('result' ,'classes')
     os.makedirs(rec_prec_plot_path, exist_ok=True)
     bokeh_io.output_file(os.path.join(rec_prec_plot_path, class_name + '.html'), title='P-R curve for ' + class_name)
@@ -679,6 +683,7 @@ def generate_rec_prec_html(mrec, mprec, scores, class_name, ap):
       mode='vline'
     ))
     bokeh_io.save(plt)
+    return
 
 
 def adjust_axes(r, t, fig, axes):
