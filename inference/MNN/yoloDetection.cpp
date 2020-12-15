@@ -353,14 +353,29 @@ static inline float sigmoid_fast(float x)
 // A fast implementation of exp & softmax function on X86/ARM
 //
 // Reference page:
-// https://blog.nowcoder.net/n/b2848400060b45b892042c097fd4cc9a
+// https://stackoverflow.com/questions/47025373/fastest-implementation-of-the-natural-exponential-function-using-sse
 //
-static inline float exp_fast(float x) {
-    x = 1.0 + x / 256.0; //1024.0
-    x *= x; x *= x; x *= x; x *= x;
-    x *= x; x *= x; x *= x; x *= x;
-    //x *= x; x *= x;
-    return x;
+static inline float exp_fast(float x)
+{
+    union { float f; int32_t i; } reinterpreter;
+    int type = 0;  //0: cubic spline (speed); 1: quartic spline (accuracy)
+
+    reinterpreter.i = (int32_t)(12102203.0f*x) + 127*(1 << 23);
+    int32_t m = (reinterpreter.i >> 7) & 0xFFFF;  // copy mantissa
+
+    if (type == 0) {
+        // cubic spline approximation,
+        // empirical values for small maximum relative error (8.34e-5)
+        reinterpreter.i +=
+            ((((((((1277*m) >> 14) + 14825)*m) >> 14) - 79749)*m) >> 11) - 626;
+    }
+    else {
+        // quartic spline approximation,
+        // empirical values for small maximum relative error (1.21e-5)
+        reinterpreter.i += (((((((((((3537*m) >> 16)
+            + 13668)*m) >> 18) + 15817)*m) >> 14) - 80470)*m) >> 11);
+    }
+    return reinterpreter.f;
 }
 
 void softmax_fast(const std::vector<float> &logits, std::vector<float> &output){
@@ -384,6 +399,7 @@ void softmax_fast(const std::vector<float> &logits, std::vector<float> &output){
 // following tricks:
 // 1. postpone bbox coordinate decode after filtering with confidence
 // 2. use sigmoid_fast in score/objectness decode
+// 3. use softmax_fast in YOLOv2 score decode
 //
 void yolo_postprocess_fast(const Tensor* feature_map, const int input_width, const int input_height,
                       const int num_classes, const std::vector<std::pair<float, float>> anchors,
@@ -501,7 +517,7 @@ void yolo_postprocess_fast(const Tensor* feature_map, const int input_width, con
                         for (int i = 0; i < num_classes; i++) {
                             logits_bbox_score.emplace_back(bytes[bbox_scores_offset + i * bbox_scores_step]);
                         }
-                        softmax(logits_bbox_score, bbox_score);
+                        softmax_fast(logits_bbox_score, bbox_score);
                     }
 
                     //get anchor output confidence (class_score * objectness) and filter with threshold
