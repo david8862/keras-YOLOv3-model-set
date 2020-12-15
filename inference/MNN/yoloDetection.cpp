@@ -304,6 +304,265 @@ void yolo_postprocess(const Tensor* feature_map, const int input_width, const in
 }
 
 
+/////////////////////////////////////////////////////////////////
+
+// A fast implementation of sigmoid function on X86/ARM CPU, using
+//
+// 1. constant approximation when out of cut-off value
+// 2. quick checking table inside cut-off range
+//
+// Reference page:
+// https://blog.csdn.net/weixin_43327597/article/details/107196976
+//
+#define SIGMOID_CUTOFF_BOTTOM (-6.0f)
+#define SIGMOID_CUTOFF_TOP (6.0f)
+#define SIGMOID_TABLE_RANGE (1000)
+
+static float sigmoid_table[SIGMOID_TABLE_RANGE];
+
+// init sigmoid value table, used between
+// [SIGMOID_CUTOFF_BOTTOM, SIGMOID_CUTOFF_TOP]
+//
+// need to be called at model init stage
+static inline void sigmoid_fast_init()
+{
+    for (int i = 0; i < SIGMOID_TABLE_RANGE; i++) {
+        sigmoid_table[i] = sigmoid(SIGMOID_CUTOFF_BOTTOM + i * (SIGMOID_CUTOFF_TOP - SIGMOID_CUTOFF_BOTTOM) / SIGMOID_TABLE_RANGE);
+    }
+
+    return;
+}
+
+static inline float sigmoid_fast(float x)
+{
+    //return 0.5 * (x / (1.0 + fabsf(x))) + 0.5;
+
+    if (x <= SIGMOID_CUTOFF_BOTTOM) {
+        return 0;
+    }
+    else if (x >= SIGMOID_CUTOFF_TOP) {
+        return 1;
+    }
+    else {
+        int index = round((x - SIGMOID_CUTOFF_BOTTOM) * SIGMOID_TABLE_RANGE / (SIGMOID_CUTOFF_TOP - SIGMOID_CUTOFF_BOTTOM));
+        return sigmoid_table[index];
+    }
+}
+
+
+//
+// A speed optimized YOLO postprocess implementation, including
+// following tricks:
+// 1. postpone bbox coordinate decode after filtering with confidence
+// 2. use sigmoid_fast in score/objectness decode
+//
+void yolo_postprocess_fast(const Tensor* feature_map, const int input_width, const int input_height,
+                      const int num_classes, const std::vector<std::pair<float, float>> anchors,
+                      std::vector<t_prediction> &prediction_list, float conf_threshold, float scale_x_y)
+{
+    // 1. do following transform to get the output bbox,
+    //    which is aligned with YOLOv3/YOLOv2 paper:
+    //
+    //    bbox_x = (sigmoid(pred_x) + grid_w) / grid_width
+    //    bbox_y = (sigmoid(pred_y) + grid_h) / grid_height
+    //    bbox_w = (exp(pred_w) * anchor_w) / input_width
+    //    bbox_h = (exp(pred_h) * anchor_h) / input_height
+    //    bbox_obj = sigmoid(pred_obj)
+    //
+    //    if using "Eliminate grid sensitivity", bbox_x & bbox_y
+    //    will use following formula
+    //
+    //    bbox_x_tmp = sigmoid(bytes[bbox_x_offset]) * scale_x_y - (scale_x_y - 1) / 2;
+    //    bbox_y_tmp = sigmoid(bytes[bbox_y_offset]) * scale_x_y - (scale_x_y - 1) / 2;
+    //    bbox_x = (bbox_x_tmp + w) / width;
+    //    bbox_y = (bbox_y_tmp + h) / height;
+    //
+    //
+    // 2. get bbox confidence (class_score * objectness)
+    //    and filter with threshold
+    //
+    //    bbox_conf[:] = sigmoid/softmax(bbox_class_score[:]) * bbox_obj
+    //    bbox_max_conf = max(bbox_conf[:])
+    //    bbox_max_index = argmax(bbox_conf[:])
+    //
+    // 3. filter bbox_max_conf with threshold
+    //
+    //    if(bbox_max_conf > conf_threshold)
+    //        enqueue the bbox info
+
+    const float* data = feature_map->host<float>();
+    auto dimType = feature_map->getDimensionType();
+
+    auto batch   = feature_map->batch();
+    auto channel = feature_map->channel();
+    auto height  = feature_map->height();
+    auto width   = feature_map->width();
+
+    int stride = input_width / width;
+    auto unit = sizeof(float);
+    int anchor_num_per_layer = anchors.size();
+
+    // now we only support single image postprocess
+    MNN_ASSERT(batch == 1);
+
+    // the featuremap channel should be like 3*(num_classes + 5)
+    MNN_ASSERT(anchor_num_per_layer * (num_classes + 5) == channel);
+
+    int bytesPerRow, bytesPerImage, bytesPerBatch;
+    if (dimType == Tensor::TENSORFLOW) {
+        // Tensorflow format tensor, NHWC
+        MNN_PRINT("Tensorflow format: NHWC\n");
+
+        bytesPerRow   = channel * unit;
+        bytesPerImage = width * bytesPerRow;
+        bytesPerBatch = height * bytesPerImage;
+
+    } else if (dimType == Tensor::CAFFE) {
+        // Caffe format tensor, NCHW
+        MNN_PRINT("Caffe format: NCHW\n");
+
+        bytesPerRow   = width * unit;
+        bytesPerImage = height * bytesPerRow;
+        bytesPerBatch = channel * bytesPerImage;
+
+    } else if (dimType == Tensor::CAFFE_C4) {
+        MNN_PRINT("Caffe format: NC4HW4, not supported\n");
+        exit(-1);
+    } else {
+        MNN_PRINT("Invalid tensor dim type: %d\n", dimType);
+        exit(-1);
+    }
+
+    for (int b = 0; b < batch; b++) {
+        auto bytes = data + b * bytesPerBatch / unit;
+        MNN_PRINT("batch %d:\n", b);
+
+        for (int h = 0; h < height; h++) {
+            for (int w = 0; w < width; w++) {
+                for (int anc = 0; anc < anchor_num_per_layer; anc++) {
+                    //
+                    //check bbox score and objectness first to filter invalid prediction
+                    //
+                    int bbox_obj_offset, bbox_scores_offset, bbox_scores_step;
+                    if (dimType == Tensor::TENSORFLOW) {
+                        // Tensorflow format tensor, NHWC
+                        bbox_obj_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 4;
+                        bbox_scores_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 5;
+                        bbox_scores_step = 1;
+
+                    } else if (dimType == Tensor::CAFFE) {
+                        // Caffe format tensor, NCHW
+                        bbox_obj_offset = (anc * (num_classes + 5) + 4) * width * height + h * width + w;
+                        bbox_scores_offset = (anc * (num_classes + 5) + 5) * width * height + h * width + w;
+                        bbox_scores_step = width * height;
+
+                    } else if (dimType == Tensor::CAFFE_C4) {
+                        MNN_PRINT("Caffe format: NC4HW4, not supported\n");
+                        exit(-1);
+                    } else {
+                        MNN_PRINT("Invalid tensor dim type: %d\n", dimType);
+                        exit(-1);
+                    }
+                    float bbox_obj = sigmoid_fast(bytes[bbox_obj_offset]);
+
+                    // Get softmax score for YOLOv2 prediction
+                    std::vector<float> logits_bbox_score;
+                    std::vector<float> bbox_score;
+                    if(anchor_num_per_layer == 5) {
+                        for (int i = 0; i < num_classes; i++) {
+                            logits_bbox_score.emplace_back(bytes[bbox_scores_offset + i * bbox_scores_step]);
+                        }
+                        softmax(logits_bbox_score, bbox_score);
+                    }
+
+                    //get anchor output confidence (class_score * objectness) and filter with threshold
+                    float max_conf = 0.0;
+                    int max_index = -1;
+                    for (int i = 0; i < num_classes; i++) {
+                        float tmp_conf = 0.0;
+                        if(anchor_num_per_layer == 5) {
+                            // YOLOv2 use 5 anchors and softmax class scores
+                            tmp_conf = bbox_score[i] * bbox_obj;
+                        }
+                        else {
+                            tmp_conf = sigmoid_fast(bytes[bbox_scores_offset + i * bbox_scores_step]) * bbox_obj;
+                        }
+
+                        if(tmp_conf > max_conf) {
+                            max_conf = tmp_conf;
+                            max_index = i;
+                        }
+                    }
+                    if(max_conf >= conf_threshold) {
+                        // got a valid prediction, decode bbox and form up data to push to result vector
+                        int bbox_x_offset, bbox_y_offset, bbox_w_offset, bbox_h_offset;
+
+                        if (dimType == Tensor::TENSORFLOW) {
+                            // Tensorflow format tensor, NHWC
+                            bbox_x_offset = h * width * channel + w * channel + anc * (num_classes + 5);
+                            bbox_y_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 1;
+                            bbox_w_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 2;
+                            bbox_h_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 3;
+
+                        } else if (dimType == Tensor::CAFFE) {
+                            // Caffe format tensor, NCHW
+                            bbox_x_offset = anc * (num_classes + 5) * width * height + h * width + w;
+                            bbox_y_offset = (anc * (num_classes + 5) + 1) * width * height + h * width + w;
+                            bbox_w_offset = (anc * (num_classes + 5) + 2) * width * height + h * width + w;
+                            bbox_h_offset = (anc * (num_classes + 5) + 3) * width * height + h * width + w;
+
+                        } else if (dimType == Tensor::CAFFE_C4) {
+                            MNN_PRINT("Caffe format: NC4HW4, not supported\n");
+                            exit(-1);
+                        } else {
+                            MNN_PRINT("Invalid tensor dim type: %d\n", dimType);
+                            exit(-1);
+                        }
+
+                        // Decode YOLO bbox predictions
+                        float bbox_x, bbox_y;
+
+                        if(scale_x_y > 0) {
+                            // Eliminate grid sensitivity trick involved in YOLOv4
+                            //
+                            // Reference Paper & code:
+                            //     "YOLOv4: Optimal Speed and Accuracy of Object Detection"
+                            //     https://arxiv.org/abs/2004.10934
+                            //     https://github.com/opencv/opencv/issues/17148
+                            //
+                            float bbox_x_tmp = sigmoid(bytes[bbox_x_offset]) * scale_x_y - (scale_x_y - 1) / 2;
+                            float bbox_y_tmp = sigmoid(bytes[bbox_y_offset]) * scale_x_y - (scale_x_y - 1) / 2;
+                            bbox_x = (bbox_x_tmp + w) / width;
+                            bbox_y = (bbox_y_tmp + h) / height;
+                        }
+                        else {
+                            bbox_x = (sigmoid(bytes[bbox_x_offset]) + w) / width;
+                            bbox_y = (sigmoid(bytes[bbox_y_offset]) + h) / height;
+                        }
+                        float bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first / input_width;
+                        float bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second / input_height;
+
+                        t_prediction bbox_prediction;
+                        bbox_prediction.x = bbox_x;
+                        bbox_prediction.y = bbox_y;
+                        bbox_prediction.width = bbox_w;
+                        bbox_prediction.height = bbox_h;
+                        bbox_prediction.confidence = max_conf;
+                        bbox_prediction.class_index = max_index;
+
+                        prediction_list.emplace_back(bbox_prediction);
+                    }
+                }
+            }
+        }
+    }
+
+    return;
+}
+//////////////////////////////////////////////////////////
+
+
+
 //calculate IoU for 2 prediction boxes
 float get_iou(t_prediction pred1, t_prediction pred2)
 {
@@ -675,6 +934,8 @@ void RunInference(Settings* s) {
     // record run time for every stage
     struct timeval start_time, stop_time;
 
+    sigmoid_fast_init();
+
     // create model & session
     std::shared_ptr<Interpreter> net(Interpreter::createFromFile(s->model_name.c_str()));
     ScheduleConfig config;
@@ -834,7 +1095,8 @@ void RunInference(Settings* s) {
         // Now we only support float32 type output tensor
         MNN_ASSERT(featureTensors[i]->getType().code == halide_type_float);
         MNN_ASSERT(featureTensors[i]->getType().bits == 32);
-        yolo_postprocess(featureTensors[i].get(), input_width, input_height, num_classes, anchorset, prediction_list, conf_threshold, scale_x_y);
+        //yolo_postprocess(featureTensors[i].get(), input_width, input_height, num_classes, anchorset, prediction_list, conf_threshold, scale_x_y);
+        yolo_postprocess_fast(featureTensors[i].get(), input_width, input_height, num_classes, anchorset, prediction_list, conf_threshold, scale_x_y);
     }
 
     gettimeofday(&stop_time, nullptr);
