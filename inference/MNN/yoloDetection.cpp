@@ -350,6 +350,35 @@ static inline float sigmoid_fast(float x)
 }
 
 
+// A fast implementation of exp & softmax function on X86/ARM
+//
+// Reference page:
+// https://blog.nowcoder.net/n/b2848400060b45b892042c097fd4cc9a
+//
+static inline float exp_fast(float x) {
+    x = 1.0 + x / 256.0; //1024.0
+    x *= x; x *= x; x *= x; x *= x;
+    x *= x; x *= x; x *= x; x *= x;
+    //x *= x; x *= x;
+    return x;
+}
+
+void softmax_fast(const std::vector<float> &logits, std::vector<float> &output){
+    float sum=0.0;
+    output.clear();
+
+    for(size_t i = 0; i<logits.size(); ++i) {
+        output.emplace_back(exp_fast(logits[i]));
+    }
+    sum = std::accumulate(output.begin(), output.end(), sum);
+
+    for(size_t i = 0; i<output.size(); ++i) {
+        output[i] /= sum;
+    }
+    return;
+}
+
+
 //
 // A speed optimized YOLO postprocess implementation, including
 // following tricks:
