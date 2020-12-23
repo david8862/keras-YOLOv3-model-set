@@ -274,7 +274,7 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
         scale_x_y = [1.05, 1.05] if elim_grid_sense else [None, None]
 
     input_shape = K.cast(K.shape(yolo_outputs[0])[1:3] * 32, K.dtype(y_true[0]))
-    grid_shapes = [K.cast(K.shape(yolo_outputs[l])[1:3], K.dtype(y_true[0])) for l in range(num_layers)]
+    grid_shapes = [K.cast(K.shape(yolo_outputs[i])[1:3], K.dtype(y_true[0])) for i in range(num_layers)]
     loss = 0
     total_location_loss = 0
     total_confidence_loss = 0
@@ -282,30 +282,30 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
     batch_size = K.shape(yolo_outputs[0])[0] # batch size, tensor
     batch_size_f = K.cast(batch_size, K.dtype(yolo_outputs[0]))
 
-    for l in range(num_layers):
-        object_mask = y_true[l][..., 4:5]
-        true_class_probs = y_true[l][..., 5:]
+    for i in range(num_layers):
+        object_mask = y_true[i][..., 4:5]
+        true_class_probs = y_true[i][..., 5:]
         if label_smoothing:
             true_class_probs = _smooth_labels(true_class_probs, label_smoothing)
             true_objectness_probs = _smooth_labels(object_mask, label_smoothing)
         else:
             true_objectness_probs = object_mask
 
-        grid, raw_pred, pred_xy, pred_wh = yolo3_decode(yolo_outputs[l],
-             anchors[anchor_mask[l]], num_classes, input_shape, scale_x_y=scale_x_y[l], calc_loss=True)
+        grid, raw_pred, pred_xy, pred_wh = yolo3_decode(yolo_outputs[i],
+             anchors[anchor_mask[i]], num_classes, input_shape, scale_x_y=scale_x_y[i], calc_loss=True)
         pred_box = K.concatenate([pred_xy, pred_wh])
 
         # Darknet raw box to calculate loss.
-        raw_true_xy = y_true[l][..., :2]*grid_shapes[l][::-1] - grid
-        raw_true_wh = K.log(y_true[l][..., 2:4] / anchors[anchor_mask[l]] * input_shape[::-1])
+        raw_true_xy = y_true[i][..., :2]*grid_shapes[i][::-1] - grid
+        raw_true_wh = K.log(y_true[i][..., 2:4] / anchors[anchor_mask[i]] * input_shape[::-1])
         raw_true_wh = K.switch(object_mask, raw_true_wh, K.zeros_like(raw_true_wh)) # avoid log(0)=-inf
-        box_loss_scale = 2 - y_true[l][...,2:3]*y_true[l][...,3:4]
+        box_loss_scale = 2 - y_true[i][...,2:3]*y_true[i][...,3:4]
 
         # Find ignore mask, iterate over each of batch.
         ignore_mask = tf.TensorArray(K.dtype(y_true[0]), size=1, dynamic_size=True)
         object_mask_bool = K.cast(object_mask, 'bool')
         def loop_body(b, ignore_mask):
-            true_box = tf.boolean_mask(y_true[l][b,...,0:4], object_mask_bool[b,...,0])
+            true_box = tf.boolean_mask(y_true[i][b,...,0:4], object_mask_bool[b,...,0])
             iou = box_iou(pred_box[b], true_box)
             best_iou = K.max(iou, axis=-1)
             ignore_mask = ignore_mask.write(b, K.cast(best_iou<ignore_thresh, K.dtype(true_box)))
@@ -338,14 +338,14 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
 
         if use_giou_loss:
             # Calculate GIoU loss as location loss
-            raw_true_box = y_true[l][...,0:4]
+            raw_true_box = y_true[i][...,0:4]
             giou = box_giou(raw_true_box, pred_box)
             giou_loss = object_mask * box_loss_scale * (1 - giou)
             giou_loss = K.sum(giou_loss) / batch_size_f
             location_loss = giou_loss
         elif use_diou_loss:
             # Calculate DIoU loss as location loss
-            raw_true_box = y_true[l][...,0:4]
+            raw_true_box = y_true[i][...,0:4]
             diou = box_diou(raw_true_box, pred_box)
             diou_loss = object_mask * box_loss_scale * (1 - diou)
             diou_loss = K.sum(diou_loss) / batch_size_f

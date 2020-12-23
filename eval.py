@@ -1021,7 +1021,7 @@ def compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_r
 
 
 
-def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names, show_result=True):
+def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names, class_filter=None, show_result=True):
     '''
     Compute MSCOCO AP list on AP 0.5:0.05:0.95
     '''
@@ -1030,7 +1030,11 @@ def compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records
     pbar = tqdm(total=len(iou_threshold_list), desc='Eval COCO')
     for iou_threshold in iou_threshold_list:
         iou_threshold = round(iou_threshold, 2)
-        mAP, _ = compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold, show_result=False)
+        mAP, mAPs = compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold, show_result=False)
+
+        if class_filter is not None:
+            mAP = get_filter_class_mAP(mAPs, class_filter, show_result=False)
+
         APs[iou_threshold] = round(mAP, 6)
         pbar.update(1)
 
@@ -1195,8 +1199,25 @@ def get_scale_gt_dict(gt_classes_records, class_names):
     return scale_gt_classes_records
 
 
+def get_filter_class_mAP(APs, class_filter, show_result=True):
+    filtered_mAP = 0.0
+    filtered_APs = OrderedDict()
 
-def eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, eval_type, iou_threshold, conf_threshold, elim_grid_sense, save_result):
+    for (class_name, AP) in APs.items():
+        if class_name in class_filter:
+            filtered_APs[class_name] = AP
+
+    filtered_mAP = np.mean(list(filtered_APs.values()))*100
+
+    if show_result:
+        print('\nfiltered classes AP')
+        for (class_name, AP) in filtered_APs.items():
+            print('%s: AP %.4f' % (class_name, AP))
+        print('mAP:', filtered_mAP, '\n')
+    return filtered_mAP
+
+
+def eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, eval_type, iou_threshold, conf_threshold, elim_grid_sense, save_result, class_filter=None):
     '''
     Compute AP for detection model on annotation dataset
     '''
@@ -1205,9 +1226,13 @@ def eval_AP(model, model_format, annotation_lines, anchors, class_names, model_i
     AP = 0.0
 
     if eval_type == 'VOC':
-        AP, _ = compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold)
+        AP, APs = compute_mAP_PascalVOC(annotation_records, gt_classes_records, pred_classes_records, class_names, iou_threshold)
+
+        if class_filter is not None:
+            get_filter_class_mAP(APs, class_filter)
+
     elif eval_type == 'COCO':
-        AP, _ = compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names)
+        AP, _ = compute_AP_COCO(annotation_records, gt_classes_records, pred_classes_records, class_names, class_filter)
         # get AP for different scale: small, medium, large
         scale_gt_classes_records = get_scale_gt_dict(gt_classes_records, class_names)
         compute_AP_COCO_Scale(annotation_records, scale_gt_classes_records, pred_classes_records, class_names)
@@ -1292,6 +1317,10 @@ def main():
         help='path to class definitions, default=%(default)s', default=os.path.join('configs' , 'voc_classes.txt'))
 
     parser.add_argument(
+        '--classes_filter_path', type=str, required=False,
+        help='path to class filter definitions, default=%(default)s', default=None)
+
+    parser.add_argument(
         '--annotation_file', type=str, required=True,
         help='test annotation txt file')
 
@@ -1329,11 +1358,17 @@ def main():
     model_image_size = (int(height), int(width))
     assert (model_image_size[0]%32 == 0 and model_image_size[1]%32 == 0), 'model_image_size should be multiples of 32'
 
+    # class filter parse
+    if args.classes_filter_path is not None:
+        class_filter = get_classes(args.classes_filter_path)
+    else:
+        class_filter = None
+
     annotation_lines = get_dataset(args.annotation_file, shuffle=False)
     model, model_format = load_eval_model(args.model_path)
 
     start = time.time()
-    eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, args.eval_type, args.iou_threshold, args.conf_threshold, args.elim_grid_sense, args.save_result)
+    eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, args.eval_type, args.iou_threshold, args.conf_threshold, args.elim_grid_sense, args.save_result, class_filter)
     end = time.time()
     print("Evaluation time cost: {:.6f}s".format(end - start))
 
