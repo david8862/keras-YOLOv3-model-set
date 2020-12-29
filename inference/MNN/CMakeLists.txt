@@ -18,5 +18,5 @@ link_directories("${MNN_ROOT_PATH}/build/")
 add_executable(yoloDetection ${YOLO_DETECTION_SRC})
 
 target_include_directories(yoloDetection PRIVATE ${MNN_ROOT_PATH}/include/ ${MNN_ROOT_PATH}/3rd_party/imageHelper/)
-target_link_libraries(yoloDetection PRIVATE -lMNN -lstdc++ -lpthread)
+target_link_libraries(yoloDetection PRIVATE -lMNN -lstdc++ -lpthread -ldl)
 #target_link_libraries(yoloDetection PRIVATE libMNN.a -Wl,--whole-archive -Wl,--no-whole-archive -lstdc++ -lpthread)

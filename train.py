@@ -10,6 +10,7 @@ from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback
 from tensorflow_model_optimization.sparsity import keras as sparsity
 
+from yolo5.model import get_yolo5_train_model
 from yolo3.model import get_yolo3_train_model
 from yolo3.data import yolo3_data_generator_wrapper, Yolo3DataGenerator
 from yolo2.model import get_yolo2_train_model
@@ -84,8 +85,20 @@ def main(args):
     assert (input_shape[0]%32 == 0 and input_shape[1]%32 == 0), 'model_image_size should be multiples of 32'
 
     # get different model type & train&val data generator
-    if num_anchors == 9:
-        # YOLOv3 use 9 anchors
+    if args.model_type.startswith('scaled_yolo4_') or args.model_type.startswith('yolo5_'):
+        # Scaled-YOLOv4 & YOLOv5 entrance, use yolo5 submodule but now still yolo3 data generator
+        # TODO: create new yolo5 data generator to apply YOLOv5 anchor assignment
+        get_train_model = get_yolo5_train_model
+        data_generator = yolo3_data_generator_wrapper
+
+        # tf.keras.Sequence style data generator
+        #train_data_generator = Yolo3DataGenerator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval, args.multi_anchor_assign)
+        #val_data_generator = Yolo3DataGenerator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes, multi_anchor_assign=args.multi_anchor_assign)
+
+        tiny_version = False
+    elif args.model_type.startswith('yolo3_') or args.model_type.startswith('yolo4_'):
+    #if num_anchors == 9:
+        # YOLOv3 & v4 entrance, use 9 anchors
         get_train_model = get_yolo3_train_model
         data_generator = yolo3_data_generator_wrapper
 
@@ -94,8 +107,9 @@ def main(args):
         #val_data_generator = Yolo3DataGenerator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes, multi_anchor_assign=args.multi_anchor_assign)
 
         tiny_version = False
-    elif num_anchors == 6:
-        # Tiny YOLOv3 use 6 anchors
+    elif args.model_type.startswith('tiny_yolo3_') or args.model_type.startswith('tiny_yolo4_'):
+    #elif num_anchors == 6:
+        # Tiny YOLOv3 & v4 entrance, use 6 anchors
         get_train_model = get_yolo3_train_model
         data_generator = yolo3_data_generator_wrapper
 
@@ -104,8 +118,9 @@ def main(args):
         #val_data_generator = Yolo3DataGenerator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes, multi_anchor_assign=args.multi_anchor_assign)
 
         tiny_version = True
-    elif num_anchors == 5:
-        # YOLOv2 use 5 anchors
+    elif args.model_type.startswith('yolo2_') or args.model_type.startswith('tiny_yolo2_'):
+    #elif num_anchors == 5:
+        # YOLOv2 & Tiny YOLOv2 use 5 anchors
         get_train_model = get_yolo2_train_model
         data_generator = yolo2_data_generator_wrapper
 
@@ -115,7 +130,7 @@ def main(args):
 
         tiny_version = False
     else:
-        raise ValueError('Unsupported anchors number')
+        raise ValueError('Unsupported model type')
 
     # prepare online evaluation callback
     if args.eval_online:

@@ -8,6 +8,7 @@ from tensorflow_model_optimization.sparsity import keras as sparsity
 from tensorflow.keras.callbacks import Callback
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+from yolo5.model import get_yolo5_model
 from yolo3.model import get_yolo3_model
 from yolo2.model import get_yolo2_model
 from eval import eval_AP
@@ -45,11 +46,21 @@ class EvalCallBack(Callback):
         #so we can calculate feature layers number to get model type
         num_feature_layers = num_anchors//3
 
-        if num_anchors == 5:
-            # YOLOv2 use 5 anchors
-            eval_model, _ = get_yolo2_model(self.model_type, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.model_pruning)
-        else:
+        if self.model_type.startswith('scaled_yolo4_') or self.model_type.startswith('yolo5_'):
+            # Scaled-YOLOv4 & YOLOv5 entrance
+            eval_model, _ = get_yolo5_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.model_pruning)
+            self.v5_decode = True
+        elif self.model_type.startswith('yolo3_') or self.model_type.startswith('yolo4_') or \
+             self.model_type.startswith('tiny_yolo3_') or self.model_type.startswith('tiny_yolo4_'):
+            # YOLOv3 & v4 entrance
             eval_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.model_pruning)
+            self.v5_decode = False
+        elif self.model_type.startswith('yolo2_') or self.model_type.startswith('tiny_yolo2_'):
+            # YOLOv2 entrance
+            eval_model, _ = get_yolo2_model(self.model_type, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.model_pruning)
+            self.v5_decode = False
+        else:
+            raise ValueError('Unsupported model type')
 
         return eval_model
 
@@ -104,7 +115,7 @@ class EvalCallBack(Callback):
         if (epoch+1) % self.eval_epoch_interval == 0:
             # Do eval every eval_epoch_interval epochs
             eval_model = self.update_eval_model(self.model)
-            mAP = eval_AP(eval_model, 'H5', self.annotation_lines, self.anchors, self.class_names, self.model_image_size, eval_type='VOC', iou_threshold=0.5, conf_threshold=0.001, elim_grid_sense=self.elim_grid_sense, save_result=False)
+            mAP = eval_AP(eval_model, 'H5', self.annotation_lines, self.anchors, self.class_names, self.model_image_size, eval_type='VOC', iou_threshold=0.5, conf_threshold=0.001, elim_grid_sense=self.elim_grid_sense, v5_decode=self.v5_decode, save_result=False)
             if self.save_eval_checkpoint and mAP > self.best_mAP:
                 # Save best mAP value and model checkpoint
                 self.best_mAP = mAP

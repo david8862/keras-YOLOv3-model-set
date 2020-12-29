@@ -14,7 +14,7 @@ from yolo4.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Leaky, 
 from yolo4.models.layers import yolo4_predictions
 
 
-def resblock_body(x, num_filters, num_blocks, all_narrow=True):
+def csp_resblock_body(x, num_filters, num_blocks, all_narrow=True):
     '''A series of resblocks starting with a downsampling Convolution2D'''
     # Darknet uses left and top padding instead of 'same' mode
     x = ZeroPadding2D(((1,0),(1,0)))(x)
@@ -38,11 +38,11 @@ def resblock_body(x, num_filters, num_blocks, all_narrow=True):
 def csp_darknet53_body(x):
     '''CSPDarknet53 body having 52 Convolution2D layers'''
     x = DarknetConv2D_BN_Mish(32, (3,3))(x)
-    x = resblock_body(x, 64, 1, False)
-    x = resblock_body(x, 128, 2)
-    x = resblock_body(x, 256, 8)
-    x = resblock_body(x, 512, 8)
-    x = resblock_body(x, 1024, 4)
+    x = csp_resblock_body(x, 64, 1, False)
+    x = csp_resblock_body(x, 128, 2)
+    x = csp_resblock_body(x, 256, 8)
+    x = csp_resblock_body(x, 512, 8)
+    x = csp_resblock_body(x, 1024, 4)
     return x
 
 
