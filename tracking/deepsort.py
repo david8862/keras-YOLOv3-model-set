@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os, sys, argparse
+import os, sys, argparse, glob
 import cv2
 import numpy as np
 from PIL import Image
@@ -55,25 +55,35 @@ def filter_box(out_boxes, out_classnames, out_scores, class_filter_names=None):
 def deepsort(yolo, args):
     #nms_max_overlap = 0.3 #nms threshold
 
-    # create video capture stream
-    video_capture = cv2.VideoCapture(0 if args.input == '0' else args.input)
-    if not video_capture.isOpened():
-        raise IOError("Couldn't open webcam or video")
+    images_input = True if os.path.isdir(args.input) else False
+    if images_input:
+        # get images list
+        jpeg_files = glob.glob(os.path.join(args.input, '*.jpeg'))
+        jpg_files = glob.glob(os.path.join(args.input, '*.jpg'))
+        frame_capture = jpeg_files + jpg_files
+        frame_capture.sort()
+    else:
+        # create video capture stream
+        frame_capture = cv2.VideoCapture(0 if args.input == '0' else args.input)
+        if not frame_capture.isOpened():
+            raise IOError("Couldn't open webcam or video")
 
     # create video save stream if needed
     save_output = True if args.output != "" else False
     if save_output:
+        if images_input:
+            raise IOError("image folder input could be saved to video file")
+
         # here we encode the video to MPEG-4 for better compatibility, you can use ffmpeg later
         # to convert it to x264 to reduce file size:
         # ffmpeg -i test.mp4 -vcodec libx264 -f mp4 test_264.mp4
         #
-        #video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if args.input == '0' else int(video_capture.get(cv2.CAP_PROP_FOURCC))
+        #video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if args.input == '0' else int(frame_capture.get(cv2.CAP_PROP_FOURCC))
         video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if args.input == '0' else cv2.VideoWriter_fourcc(*"mp4v")
-        video_fps       = video_capture.get(cv2.CAP_PROP_FPS)
-        video_size      = (int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                            int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+        video_fps       = frame_capture.get(cv2.CAP_PROP_FPS)
+        video_size      = (int(frame_capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                            int(frame_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         out = cv2.VideoWriter(args.output, video_FourCC, (5. if args.input == '0' else video_fps), video_size)
-
 
     if args.classes_filter_path:
         # load the object classes used in tracking, other class
@@ -103,11 +113,30 @@ def deepsort(yolo, args):
     COLORS = np.random.randint(0, 255, size=(200, 3), dtype="uint8")
 
 
+    i=0
     fps = 0.0
     while True:
-        ret, frame = video_capture.read()
+        def get_frame():
+            # get frame from video or image folder
+            if images_input:
+                if i >= len(frame_capture):
+                    ret = False
+                    frame = None
+                else:
+                    ret = True
+                    image_file = frame_capture[i]
+                    frame = cv2.imread(image_file)
+            else:
+                ret, frame = frame_capture.read()
+
+            return ret, frame
+
+        ret, frame = get_frame()
         if ret != True:
             break
+        #time.sleep(0.2)
+        i += 1
+
         start_time = time.time()
         image = Image.fromarray(frame[...,::-1]) # bgr to rgb
 
@@ -132,13 +161,13 @@ def deepsort(yolo, args):
         tracker.predict()
         tracker.update(detections)
 
-        track_indexes = []
         # show all detection result as white box
         for det in detections:
             bbox = det.to_tlbr()
             cv2.rectangle(frame,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,255), 2)
             cv2.putText(frame, str(det.class_name), (int(bbox[0]), int(bbox[1]-20)), 0, 5e-3*150, (255,255,255), 2)
 
+        track_indexes = []
         track_count = 0
         for track in tracker.tracks:
             if not track.is_confirmed() or track.time_since_update > 1:
@@ -181,7 +210,7 @@ def deepsort(yolo, args):
 
         # refresh window
         cv2.namedWindow("DeepSORT", 0);
-        #cv2.resizeWindow('DeepSORT', 1024, 768);
+        cv2.resizeWindow('DeepSORT', 1024, 768);
         cv2.imshow('DeepSORT', frame)
 
         if save_output:
@@ -195,7 +224,8 @@ def deepsort(yolo, args):
             break
 
     # Release everything if job is finished
-    video_capture.release()
+    if not images_input:
+        frame_capture.release()
     if save_output:
         out.release()
     cv2.destroyAllWindows()
@@ -274,12 +304,12 @@ def main():
     '''
     parser.add_argument(
         "--input", nargs='?', type=str,required=False,default='./path2your_video',
-        help = "Video input path"
+        help = "Input video file or images folder path"
     )
 
     parser.add_argument(
         "--output", nargs='?', type=str, default="",
-        help = "[Optional] Video output path"
+        help = "[Optional] output video file path"
     )
 
     args = parser.parse_args()
