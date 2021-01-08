@@ -267,7 +267,7 @@ def get_yolo3_train_model(model_type, anchors, num_classes, weights_path=None, f
     return model
 
 
-def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=None, input_shape=None, confidence=0.1, elim_grid_sense=False):
+def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=None, input_shape=None, confidence=0.1, iou_threshold=0.4, elim_grid_sense=False):
     '''create the inference model, for YOLOv3'''
     #K.clear_session() # get a new session
     num_anchors = len(anchors)
@@ -286,7 +286,7 @@ def get_yolo3_inference_model(model_type, anchors, num_classes, weights_path=Non
         print('Load weights {}.'.format(weights_path))
 
     boxes, scores, classes = Lambda(batched_yolo3_postprocess, name='yolo3_postprocess',
-            arguments={'anchors': anchors, 'num_classes': num_classes, 'confidence': confidence, 'elim_grid_sense': elim_grid_sense})(
+            arguments={'anchors': anchors, 'num_classes': num_classes, 'confidence': confidence, 'iou_threshold': iou_threshold, 'elim_grid_sense': elim_grid_sense})(
         [*model_body.output, image_shape])
     model = Model([model_body.input, image_shape], [boxes, scores, classes])
 

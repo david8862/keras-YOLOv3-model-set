@@ -129,21 +129,23 @@ class YOLO_np(object):
         #draw result on input image
         image_array = np.array(image, dtype='uint8')
         image_array = draw_boxes(image_array, out_boxes, out_classes, out_scores, self.class_names, self.colors)
-        return Image.fromarray(image_array)
+
+        out_classnames = [self.class_names[c] for c in out_classes]
+        return Image.fromarray(image_array), out_boxes, out_classnames, out_scores
 
 
     def predict(self, image_data, image_shape):
         num_anchors = len(self.anchors)
         if self.model_type.startswith('scaled_yolo4_') or self.model_type.startswith('yolo5_'):
             # Scaled-YOLOv4 & YOLOv5 entrance, enable "elim_grid_sense" by default
-            out_boxes, out_classes, out_scores = yolo5_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100, elim_grid_sense=True)
+            out_boxes, out_classes, out_scores = yolo5_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100, confidence=self.score, iou_threshold=self.iou, elim_grid_sense=True)
         elif self.model_type.startswith('yolo3_') or self.model_type.startswith('yolo4_') or \
              self.model_type.startswith('tiny_yolo3_') or self.model_type.startswith('tiny_yolo4_'):
             # YOLOv3 & v4 entrance
-            out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100, elim_grid_sense=self.elim_grid_sense)
+            out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100, confidence=self.score, iou_threshold=self.iou, elim_grid_sense=self.elim_grid_sense)
         elif self.model_type.startswith('yolo2_') or self.model_type.startswith('tiny_yolo2_'):
             # YOLOv2 entrance
-            out_boxes, out_classes, out_scores = yolo2_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100, elim_grid_sense=self.elim_grid_sense)
+            out_boxes, out_classes, out_scores = yolo2_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100, confidence=self.score, iou_threshold=self.iou, elim_grid_sense=self.elim_grid_sense)
         else:
             raise ValueError('Unsupported model type')
 
@@ -190,14 +192,14 @@ class YOLO(object):
 
         if self.model_type.startswith('scaled_yolo4_') or self.model_type.startswith('yolo5_'):
             # Scaled-YOLOv4 & YOLOv5 entrance, enable "elim_grid_sense" by default
-            inference_model = get_yolo5_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=0.1, elim_grid_sense=True)
+            inference_model = get_yolo5_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=self.score, iou_threshold=self.iou, elim_grid_sense=True)
         elif self.model_type.startswith('yolo3_') or self.model_type.startswith('yolo4_') or \
              self.model_type.startswith('tiny_yolo3_') or self.model_type.startswith('tiny_yolo4_'):
             # YOLOv3 & v4 entrance
-            inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=0.1, elim_grid_sense=self.elim_grid_sense)
+            inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=self.score, iou_threshold=self.iou, elim_grid_sense=self.elim_grid_sense)
         elif self.model_type.startswith('yolo2_') or self.model_type.startswith('tiny_yolo2_'):
             # YOLOv2 entrance
-            inference_model = get_yolo2_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=0.1, elim_grid_sense=self.elim_grid_sense)
+            inference_model = get_yolo2_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=self.score, iou_threshold=self.iou, elim_grid_sense=self.elim_grid_sense)
         else:
             raise ValueError('Unsupported model type')
 
@@ -235,7 +237,9 @@ class YOLO(object):
         #draw result on input image
         image_array = np.array(image, dtype='uint8')
         image_array = draw_boxes(image_array, out_boxes, out_classes, out_scores, self.class_names, self.colors)
-        return Image.fromarray(image_array)
+
+        out_classnames = [self.class_names[c] for c in out_classes]
+        return Image.fromarray(image_array), out_boxes, out_classnames, out_scores
 
     def dump_model_file(self, output_model_file):
         self.inference_model.save(output_model_file)
@@ -255,27 +259,31 @@ def detect_video(yolo, video_path, output_path=""):
     if not vid.isOpened():
         raise IOError("Couldn't open webcam or video")
 
-    # here we encode the video to MPEG-4 for better compatibility, you can use ffmpeg later
-    # to convert it to x264 to reduce file size:
-    # ffmpeg -i test.mp4 -vcodec libx264 -f mp4 test_264.mp4
-    #
-    #video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if video_path == '0' else int(vid.get(cv2.CAP_PROP_FOURCC))
-    video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if video_path == '0' else cv2.VideoWriter_fourcc(*"mp4v")
-    video_fps       = vid.get(cv2.CAP_PROP_FPS)
-    video_size      = (int(vid.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                        int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT)))
     isOutput = True if output_path != "" else False
     if isOutput:
-        print("!!! TYPE:", type(output_path), type(video_FourCC), type(video_fps), type(video_size))
+        # here we encode the video to MPEG-4 for better compatibility, you can use ffmpeg later
+        # to convert it to x264 to reduce file size:
+        # ffmpeg -i test.mp4 -vcodec libx264 -f mp4 test_264.mp4
+        #
+        #video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if video_path == '0' else int(vid.get(cv2.CAP_PROP_FOURCC))
+        video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if video_path == '0' else cv2.VideoWriter_fourcc(*"mp4v")
+        video_fps       = vid.get(cv2.CAP_PROP_FPS)
+        video_size      = (int(vid.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                            int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+        #print("!!! TYPE:", type(output_path), type(video_FourCC), type(video_fps), type(video_size))
         out = cv2.VideoWriter(output_path, video_FourCC, (5. if video_path == '0' else video_fps), video_size)
+
     accum_time = 0
     curr_fps = 0
     fps = "FPS: ??"
     prev_time = timer()
     while True:
-        return_value, frame = vid.read()
+        ret, frame = vid.read()
+        if ret != True:
+            break
+
         image = Image.fromarray(frame)
-        image = yolo.detect_image(image)
+        image, _, _, _ = yolo.detect_image(image)
         result = np.asarray(image)
         curr_time = timer()
         exec_time = curr_time - prev_time
@@ -310,11 +318,11 @@ def detect_img(yolo):
             print('Open Error! Try again!')
             continue
         else:
-            r_image = yolo.detect_image(image)
+            r_image, _, _, _ = yolo.detect_image(image)
             r_image.show()
 
 
-if __name__ == '__main__':
+def main():
     # class YOLO defines the default value, so suppress any default here
     parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='demo or dump out YOLO h5 model')
     '''
@@ -423,3 +431,7 @@ if __name__ == '__main__':
         detect_video(yolo, args.input, args.output)
     else:
         print("Must specify at least video_input_path.  See usage with --help.")
+
+
+if __name__ == '__main__':
+    main()

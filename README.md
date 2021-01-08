@@ -104,6 +104,9 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 ### make sure to reorder output tensors for YOLOv4 cfg and weights file
 # python tools/model_converter/convert.py --yolo4_reorder cfg/yolov4.cfg weights/yolov4.weights weights/yolov4.h5
 
+### Scaled YOLOv4
+### manually download yolov4-csp.weights from https://drive.google.com/file/d/1NQwz47cW0NUgy7L3_xOKaNEfLoQuq3EL/view?usp=sharing
+# python tools/model_converter/convert.py --yolo4_reorder cfg/yolov4-csp_fixed.cfg weights/yolov4-csp.weights weights/scaled-yolov4-csp.h5
 
 ### Yolo-Fastest
 # wget -O weights/yolo-fastest.weights https://github.com/dog-qiuqiu/Yolo-Fastest/blob/master/Yolo-Fastest/yolo-fastest.weights?raw=true
