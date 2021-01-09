@@ -21,13 +21,13 @@ from common.utils import get_classes, get_colors
 K.clear_session()
 
 
-def filter_box(out_boxes, out_classnames, out_scores, class_filter_names=None):
-    filtered_boxes = []
-    filtered_class_names = []
-    filtered_scores = []
+def get_tracking_object(out_boxes, out_classnames, out_scores, tracking_class_names=None):
+    tracking_boxes = []
+    tracking_class_names = []
+    tracking_scores = []
     for i, out_classname in enumerate(out_classnames):
-        # if object class not in filter list, bypass it
-        if class_filter_names and (out_classname not in class_filter_names):
+        # if object class not for tracking, bypass it
+        if tracking_class_names and (out_classname not in tracking_class_names):
            continue
         score = out_scores[i]
 
@@ -46,10 +46,10 @@ def filter_box(out_boxes, out_classnames, out_scores, class_filter_names=None):
             h = h + y
             y = 0
 
-        filtered_boxes.append([x,y,w,h])
-        filtered_class_names.append(out_classname)
-        filtered_scores.append(score)
-    return filtered_boxes, filtered_class_names, filtered_scores
+        tracking_boxes.append([x,y,w,h])
+        tracking_class_names.append(out_classname)
+        tracking_scores.append(score)
+    return tracking_boxes, tracking_class_names, tracking_scores
 
 
 def deepsort(yolo, args):
@@ -85,12 +85,12 @@ def deepsort(yolo, args):
                             int(frame_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         out = cv2.VideoWriter(args.output, video_FourCC, (5. if args.input == '0' else video_fps), video_size)
 
-    if args.classes_filter_path:
-        # load the object classes used in tracking, other class
+    if args.tracking_classes_path:
+        # load the object classes used in tracking if have, other class
         # from detector will be ignored
-        class_filter_names = get_classes(args.classes_filter_path)
+        tracking_class_names = get_classes(args.tracking_classes_path)
     else:
-        class_filter_names = None
+        tracking_class_names = None
 
 
     #create deep_sort box encoder
@@ -142,13 +142,13 @@ def deepsort(yolo, args):
 
         # detect object from image
         _, out_boxes, out_classnames, out_scores = yolo.detect_image(image)
-        # filter & convert bbox from (xmin,ymin,xmax,ymax) to (x,y,w,h)
-        boxes, class_names, scores = filter_box(out_boxes, out_classnames, out_scores, class_filter_names)
+        # get tracking objects and convert bbox from (xmin,ymin,xmax,ymax) to (x,y,w,h)
+        boxes, class_names, scores = get_tracking_object(out_boxes, out_classnames, out_scores, tracking_class_names)
 
         # get encoded features of bbox area image
         features = encoder(frame, boxes)
 
-        # form up detection records, here we use 1.0 score for all bbox
+        # form up detection records
         detections = [Detection(bbox, score, feature, class_name) for bbox, score, class_name, feature in zip(boxes, scores, class_names, features)]
 
         # Run non-maximum suppression.
@@ -234,9 +234,9 @@ def deepsort(yolo, args):
 
 def main():
     # class YOLO defines the default value, so suppress any default here
-    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='demo deepsort multi object tracking with YOLO detection model')
+    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='Demo of deepsort multi object tracking with YOLO detection model')
     '''
-    Command line options
+    YOLO model options
     '''
     parser.add_argument(
         '--model_type', type=str,
@@ -250,7 +250,7 @@ def main():
 
     parser.add_argument(
         '--pruning_model', default=False, action="store_true",
-        help='Whether to be a pruning model/weights file, default ' + str(YOLO.get_defaults("pruning_model"))
+        help='Whether using a pruning YOLO model/weights file, default ' + str(YOLO.get_defaults("pruning_model"))
     )
 
     parser.add_argument(
@@ -262,10 +262,6 @@ def main():
         '--classes_path', type=str,
         help='path to YOLO detection class definitions, default ' + YOLO.get_defaults("classes_path")
     )
-
-    parser.add_argument(
-        '--classes_filter_path', type=str, required=False,
-        help='path to class filter definitions for tracking, default=%(default)s', default=None)
 
     parser.add_argument(
         '--model_image_size', type=str,
@@ -289,10 +285,17 @@ def main():
         help = "Whether to apply eliminate grid sensitivity in YOLO, default " + str(YOLO.get_defaults("elim_grid_sense"))
     )
 
+    '''
+    DeepSORT model options
+    '''
     parser.add_argument(
         '--deepsort_model_path', type=str, default="model/mars-small128.pb",
         help = "DeepSORT encoder model path, default=%(default)s"
     )
+
+    parser.add_argument(
+        '--tracking_classes_path', type=str, required=False,
+        help='[Optional] Path to DeepSORT tracking class definitions, default=%(default)s', default=None)
 
     #parser.add_argument(
         #'--gpu_num', type=int,

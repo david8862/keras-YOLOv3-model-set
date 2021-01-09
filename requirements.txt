@@ -1,5 +1,6 @@
 numpy==1.17.5
 scipy
+scikit-learn
 opencv-python
 opencv-contrib-python
 tensorflow-gpu
