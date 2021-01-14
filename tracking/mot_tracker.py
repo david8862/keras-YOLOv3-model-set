@@ -6,8 +6,10 @@ import numpy as np
 from PIL import Image
 from timeit import time
 from collections import deque
-import tensorflow.keras.backend as K
 
+# implementation of SORT tracker
+from sort.sort import Sort
+# implementation of DeepSORT tracker
 from deep_sort import preprocessing
 from deep_sort import nn_matching
 from deep_sort.detection import Detection
@@ -18,10 +20,24 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from yolo import YOLO, YOLO_np
 from common.utils import get_classes, get_colors
 
-K.clear_session()
+
+def get_frame(frame_capture, i, images_input):
+    # get frame from video or image folder
+    if images_input:
+        if i >= len(frame_capture):
+            ret = False
+            frame = None
+        else:
+            ret = True
+            image_file = frame_capture[i]
+            frame = cv2.imread(image_file)
+    else:
+        ret, frame = frame_capture.read()
+
+    return ret, frame
 
 
-def get_tracking_object(out_boxes, out_classnames, out_scores, tracking_class_names=None):
+def get_tracking_object(out_boxes, out_classnames, out_scores, tracking_class_names=None, convert_box=True):
     tracking_boxes = []
     tracking_class_names = []
     tracking_scores = []
@@ -39,14 +55,17 @@ def get_tracking_object(out_boxes, out_classnames, out_scores, tracking_class_na
         w = int(box[2]-box[0])
         h = int(box[3]-box[1])
         # adjust invalid box
-        if x < 0 :
+        if x < 0:
             w = w + x
             x = 0
-        if y < 0 :
+        if y < 0:
             h = h + y
             y = 0
 
-        tracking_boxes.append([x,y,w,h])
+        if convert_box:
+            tracking_boxes.append([x,y,w,h])
+        else:
+            tracking_boxes.append(box)
         tracking_class_names.append(out_classname)
         tracking_scores.append(score)
     return tracking_boxes, tracking_class_names, tracking_scores
@@ -72,7 +91,7 @@ def deepsort(yolo, args):
     save_output = True if args.output != "" else False
     if save_output:
         if images_input:
-            raise IOError("image folder input could be saved to video file")
+            raise ValueError("image folder input could be saved to video file")
 
         # here we encode the video to MPEG-4 for better compatibility, you can use ffmpeg later
         # to convert it to x264 to reduce file size:
@@ -116,22 +135,7 @@ def deepsort(yolo, args):
     i=0
     fps = 0.0
     while True:
-        def get_frame():
-            # get frame from video or image folder
-            if images_input:
-                if i >= len(frame_capture):
-                    ret = False
-                    frame = None
-                else:
-                    ret = True
-                    image_file = frame_capture[i]
-                    frame = cv2.imread(image_file)
-            else:
-                ret, frame = frame_capture.read()
-
-            return ret, frame
-
-        ret, frame = get_frame()
+        ret, frame = get_frame(frame_capture, i, images_input)
         if ret != True:
             break
         #time.sleep(0.2)
@@ -164,7 +168,7 @@ def deepsort(yolo, args):
         # show all detection result as white box
         for det in detections:
             bbox = det.to_tlbr()
-            cv2.rectangle(frame,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,255), 2)
+            cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255,255,255), 2)
             cv2.putText(frame, str(det.class_name), (int(bbox[0]), int(bbox[1]-20)), 0, 5e-3*150, (255,255,255), 2)
 
         track_indexes = []
@@ -232,9 +236,175 @@ def deepsort(yolo, args):
 
 
 
+def sort(yolo, args):
+
+    images_input = True if os.path.isdir(args.input) else False
+    if images_input:
+        # get images list
+        jpeg_files = glob.glob(os.path.join(args.input, '*.jpeg'))
+        jpg_files = glob.glob(os.path.join(args.input, '*.jpg'))
+        frame_capture = jpeg_files + jpg_files
+        frame_capture.sort()
+    else:
+        # create video capture stream
+        frame_capture = cv2.VideoCapture(0 if args.input == '0' else args.input)
+        if not frame_capture.isOpened():
+            raise IOError("Couldn't open webcam or video")
+
+    # create video save stream if needed
+    save_output = True if args.output != "" else False
+    if save_output:
+        if images_input:
+            raise ValueError("image folder input could be saved to video file")
+
+        # here we encode the video to MPEG-4 for better compatibility, you can use ffmpeg later
+        # to convert it to x264 to reduce file size:
+        # ffmpeg -i test.mp4 -vcodec libx264 -f mp4 test_264.mp4
+        #
+        #video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if args.input == '0' else int(frame_capture.get(cv2.CAP_PROP_FOURCC))
+        video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if args.input == '0' else cv2.VideoWriter_fourcc(*"mp4v")
+        video_fps       = frame_capture.get(cv2.CAP_PROP_FPS)
+        video_size      = (int(frame_capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                            int(frame_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+        out = cv2.VideoWriter(args.output, video_FourCC, (5. if args.input == '0' else video_fps), video_size)
+
+    if args.tracking_classes_path:
+        # load the object classes used in tracking if have, other class
+        # from detector will be ignored
+        tracking_class_names = get_classes(args.tracking_classes_path)
+    else:
+        tracking_class_names = None
+
+    # create instance of the SORT tracker
+    tracker = Sort(max_age=5, min_hits=3, iou_threshold=0.3)
+
+    # alloc a set of queues to record motion trace
+    # for each track id
+    motion_traces = [deque(maxlen=30) for _ in range(9999)]
+    total_obj_counter = []
+
+    # initialize a list of colors to represent each possible class label
+    np.random.seed(100)
+    COLORS = np.random.randint(0, 255, size=(200, 3), dtype="uint8")
+
+
+    i=0
+    fps = 0.0
+    while True:
+        ret, frame = get_frame(frame_capture, i, images_input)
+        if ret != True:
+            break
+        #time.sleep(0.2)
+        i += 1
+
+        start_time = time.time()
+        image = Image.fromarray(frame[...,::-1]) # bgr to rgb
+
+        # detect object from image
+        _, out_boxes, out_classnames, out_scores = yolo.detect_image(image)
+        # get tracking objects
+        boxes, class_names, scores = get_tracking_object(out_boxes, out_classnames, out_scores, tracking_class_names, convert_box=False)
+
+        # form up detection records
+        if len(boxes) != 0:
+            detections = np.array([bbox + [score] for bbox, score, class_name in zip(boxes, scores, class_names)])
+        else:
+            detections = np.empty((0, 5))
+
+        # Call the tracker
+        tracks = tracker.update(detections)
+
+        # show all detection result as white box
+        for j, bbox in enumerate(boxes):
+            cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (255,255,255), 2)
+            cv2.putText(frame, class_names[j], (int(bbox[0]), int(bbox[1]-20)), 0, 5e-3*150, (255,255,255), 2)
+
+        track_indexes = []
+        track_count = 0
+        for track in tracks:
+            bbox = track[:4]
+            track_id = int(track[4])
+
+            # record tracking info and get bbox
+            track_indexes.append(int(track_id))
+            total_obj_counter.append(int(track_id))
+
+            # show all tracking result as color box
+            color = [int(c) for c in COLORS[track_id % len(COLORS)]]
+            cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (color), 3)
+            cv2.putText(frame, str(track_id), (int(bbox[0]), int(bbox[1]-20)), 0, 5e-3*150, (color), 2)
+
+            #if track.class_name:
+               #cv2.putText(frame, str(track.class_name), (int(bbox[0]+30), int(bbox[1]-20)), 0, 5e-3*150, (color), 2)
+
+            track_count += 1
+
+            # get center point (x,y) of current track bbox and record in queue
+            center = (int(((bbox[0])+(bbox[2]))/2),int(((bbox[1])+(bbox[3]))/2))
+            motion_traces[track_id].append(center)
+
+            # draw current center point
+            thickness = 5
+            cv2.circle(frame,  (center), 1, color, thickness)
+            #draw motion trace
+            motion_trace = motion_traces[track_id]
+            for j in range(1, len(motion_trace)):
+                if motion_trace[j - 1] is None or motion_trace[j] is None:
+                   continue
+                thickness = int(np.sqrt(64 / float(j + 1)) * 2)
+                cv2.line(frame, (motion_trace[j-1]), (motion_trace[j]), (color), thickness)
+
+        # show tracking statistics
+        total_obj_num = len(set(total_obj_counter))
+        cv2.putText(frame, "Total Object Counter: " + str(total_obj_num), (int(20), int(120)), 0, 5e-3 * 200, (0,255,0), 2)
+        cv2.putText(frame, "Current Object Counter: "+str(track_count), (int(20), int(80)), 0, 5e-3 * 200, (0,255,0), 2)
+        cv2.putText(frame, "FPS: %f"%(fps), (int(20), int(40)), 0, 5e-3 * 200, (0,255,0), 3)
+
+        # refresh window
+        cv2.namedWindow("SORT", 0);
+        cv2.resizeWindow('SORT', 1024, 768);
+        cv2.imshow('SORT', frame)
+
+        if save_output:
+            #save a frame
+            out.write(frame)
+
+        end_time = time.time()
+        fps = (fps + (1./(end_time - start_time))) / 2
+        # Press q to stop video
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # Release everything if job is finished
+    if not images_input:
+        frame_capture.release()
+    if save_output:
+        out.release()
+    cv2.destroyAllWindows()
+
+
+
 def main():
     # class YOLO defines the default value, so suppress any default here
-    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='Demo of deepsort multi object tracking with YOLO detection model')
+    parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='Demo of multi object tracking (MOT) with YOLO detection model')
+    '''
+    MOT model options
+    '''
+    parser.add_argument(
+        '--tracking_model_type', type=str, default="sort", choices=['sort', 'deepsort'],
+        help = "MOT model type (sort/deepsort), default=%(default)s"
+    )
+
+    parser.add_argument(
+        '--tracking_classes_path', type=str, required=False,
+        help='[Optional] Path to DeepSORT tracking class definitions, default=%(default)s', default=None
+    )
+
+    parser.add_argument(
+        '--deepsort_model_path', type=str, required=False, default="model/mars-small128.pb",
+        help = "[Optional] DeepSORT encoder model path, default=%(default)s"
+    )
+
     '''
     YOLO model options
     '''
@@ -285,18 +455,6 @@ def main():
         help = "Whether to apply eliminate grid sensitivity in YOLO, default " + str(YOLO.get_defaults("elim_grid_sense"))
     )
 
-    '''
-    DeepSORT model options
-    '''
-    parser.add_argument(
-        '--deepsort_model_path', type=str, default="model/mars-small128.pb",
-        help = "DeepSORT encoder model path, default=%(default)s"
-    )
-
-    parser.add_argument(
-        '--tracking_classes_path', type=str, required=False,
-        help='[Optional] Path to DeepSORT tracking class definitions, default=%(default)s', default=None)
-
     #parser.add_argument(
         #'--gpu_num', type=int,
         #help='Number of GPU to use, default ' + str(YOLO.get_defaults("gpu_num"))
@@ -325,7 +483,13 @@ def main():
     # get YOLO wrapped detection object
     yolo = YOLO_np(**vars(args))
 
-    deepsort(yolo, args)
+    # choose different MOT model
+    if args.tracking_model_type == 'sort':
+        sort(yolo, args)
+    elif args.tracking_model_type == 'deepsort':
+        deepsort(yolo, args)
+    else:
+        raise ValueError('Unsupported MOT model')
 
 
 if __name__ == '__main__':
