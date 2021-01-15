@@ -49,7 +49,7 @@ void Sort::update(std::vector<TrackingBox>& detect_frame_data)
     unsigned int detect_num = detect_frame_data.size();
 
     std::vector<std::vector<double>> iou_matrix;
-    iou_matrix.resize(track_num, vector<double>(detect_num, 0));
+    iou_matrix.resize(track_num, std::vector<double>(detect_num, 0));
 
     for (unsigned int i = 0; i < track_num; i++) { // compute iou matrix as a distance matrix
         for (unsigned int j = 0; j < detect_num; j++) {
@@ -77,9 +77,9 @@ void Sort::update(std::vector<TrackingBox>& detect_frame_data)
         for (unsigned int i = 0; i < track_num; ++i)
             matched_items.insert(assignment[i]);
 
-        set_difference(all_items.begin(), all_items.end(),
+        std::set_difference(all_items.begin(), all_items.end(),
                 matched_items.begin(), matched_items.end(),
-                insert_iterator<set<int>>(unmatched_detections, unmatched_detections.begin()));
+                std::insert_iterator<std::set<int>>(unmatched_detections, unmatched_detections.begin()));
     }
     else if (detect_num < track_num) { // there are unmatched trajectory/predictions
         for (unsigned int i = 0; i < track_num; ++i)

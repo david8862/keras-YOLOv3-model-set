@@ -1073,8 +1073,8 @@ void SORT_tracking(Sort& trackers, std::vector<t_prediction>& detection_results,
     cv::namedWindow("SORT", 0);
     cv::resizeWindow("SORT", 1024, 768);
     cv::imshow("SORT", img);
-    cv::waitKey(10);
-    //usleep(100000);
+
+    return;
 }
 
 
@@ -1319,6 +1319,10 @@ void RunInference(Settings* s) {
         resultOs.close();
 
         SORT_tracking(trackers, prediction_nms_list, imagePath, classes, track_classes);
+        //usleep(100000);
+        char code = (char)cv::waitKey(100);
+        if (code == 27 || code == 'q' || code == 'Q')
+            break;
     }
 
     cv::destroyAllWindows();

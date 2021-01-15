@@ -7,10 +7,10 @@
 #include "opencv2/video/tracking.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
-using namespace std;
-using namespace cv;
+//using namespace std;
+//using namespace cv;
 
-#define StateType Rect_<float>
+#define StateType cv::Rect_<float>
 
 
 // This class represents the internel state of individual tracked objects observed as bounding box.
