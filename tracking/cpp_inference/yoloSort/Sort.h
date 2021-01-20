@@ -1,5 +1,6 @@
-///////////////////////////////////////////////////////////////////////////////
+//
 // Sort.h: SORT(Simple Online and Realtime Tracking) Class Declaration
+//
 
 #ifndef SORT_H
 #define SORT_H
@@ -21,7 +22,6 @@
 // definition of a tracking bbox
 typedef struct TrackingBox
 {
-    //int frame;
     int id;
     cv::Rect_<float> box;
 }TrackingBox;

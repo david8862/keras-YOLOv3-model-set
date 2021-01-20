@@ -1,5 +1,5 @@
 //
-//  mot_tracker.cpp
+//  yoloSort.cpp
 //  SORT MOT C++ implementation based on YOLO detection model
 //  running with MNN inference engine
 //
@@ -65,7 +65,6 @@ struct Settings {
   float input_std = 255.0f;
   bool elim_grid_sense = false;
   std::string model_name = "./model.mnn";
-  //std::string input_img_name = "./dog.jpg";
   std::string input_imgs_path = "./images";
   std::string classes_file_name = "./classes.txt";
   std::string track_classes_file_name;
@@ -109,7 +108,6 @@ void display_usage() {
     std::cout
         << "Usage: yoloSort\n"
         << "--mnn_model, -m: model_name.mnn\n"
-        //<< "--image, -i: image_name.jpg\n"
         << "--image_path, -i: ./images/\n"
         << "--classes, -l: classes labels for detection model\n"
         << "--track_classes, -k: classes labels for tracker\n"
@@ -1340,7 +1338,6 @@ int main(int argc, char** argv) {
   while (1) {
     static struct option long_options[] = {
         {"mnn_model", required_argument, nullptr, 'm'},
-        //{"image", required_argument, nullptr, 'i'},
         {"image_path", required_argument, nullptr, 'i'},
         {"classes", required_argument, nullptr, 'l'},
         {"track_classes", required_argument, nullptr, 'k'},
@@ -1383,7 +1380,6 @@ int main(int argc, char** argv) {
             strtol(optarg, nullptr, 10);  // NOLINT(runtime/deprecated_fn)
         break;
       case 'i':
-        //s.input_img_name = optarg;
         s.input_imgs_path = optarg;
         break;
       case 'l':

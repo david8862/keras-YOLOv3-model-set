@@ -1,5 +1,6 @@
-///////////////////////////////////////////////////////////////////////////////
-// KalmanTracker.cpp: KalmanTracker Class Implementation Declaration
+//
+// KalmanTracker.cpp: KalmanTracker Class Implementation
+//
 
 #include "KalmanTracker.h"
 
