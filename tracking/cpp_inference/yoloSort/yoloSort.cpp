@@ -110,7 +110,7 @@ void display_usage() {
         << "--mnn_model, -m: model_name.mnn\n"
         << "--image_path, -i: ./images/\n"
         << "--classes, -l: classes labels for detection model\n"
-        << "--track_classes, -k: classes labels for tracker\n"
+        << "--track_classes, -k: classes labels for tracker, will track all detect classes if not provided\n"
         << "--anchors, -a: anchor values for the model\n"
         << "--conf_thrd, -n: confidence threshold for detection filter\n"
         << "--input_mean, -b: input mean\n"

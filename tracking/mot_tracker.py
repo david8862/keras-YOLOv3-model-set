@@ -397,7 +397,7 @@ def main():
 
     parser.add_argument(
         '--tracking_classes_path', type=str, required=False,
-        help='[Optional] Path to DeepSORT tracking class definitions, default=%(default)s', default=None
+        help='[Optional] Path to DeepSORT tracking class definitions, will track all detect classes if None, default=%(default)s', default=None
     )
 
     parser.add_argument(

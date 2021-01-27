@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Scaled-YOLOv4-CSP Model Defined in Keras."""
+"""YOLOv5 Darknet Model Defined in Keras."""
 
 import os
 from keras_applications.imagenet_utils import _obtain_input_shape
@@ -10,75 +10,64 @@ from tensorflow.keras.layers import Input, GlobalAveragePooling2D, AveragePoolin
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 
-from yolo4.models.layers import compose, DarknetConv2D, DarknetConv2D_BN_Mish
-from yolo5.models.layers import yolo5_predictions
+from yolo4.models.layers import compose, DarknetConv2D
+from yolo5.models.layers import make_divisible, DarknetConv2D_BN_Swish, yolo5_predictions, bottleneck_csp_block, focus_block
 
 
-def resblock_body(x, num_filters, num_blocks):
+def csp_resblock_body(x, num_filters, num_blocks, depth_multiple, width_multiple):
     '''A series of resblocks starting with a downsampling Convolution2D'''
     # Darknet uses left and top padding instead of 'same' mode
     x = ZeroPadding2D(((1,0),(1,0)))(x)
-    x = DarknetConv2D_BN_Mish(num_filters, (3,3), strides=(2,2))(x)
-    for i in range(num_blocks):
-        y = compose(
-                DarknetConv2D_BN_Mish(num_filters//2, (1,1)),
-                DarknetConv2D_BN_Mish(num_filters, (3,3)))(x)
-        x = Add()([x,y])
+    x = DarknetConv2D_BN_Swish(make_divisible(num_filters*width_multiple, 8), (3,3), strides=(2,2))(x)
+
+    x = bottleneck_csp_block(x, num_filters, num_blocks, depth_multiple, width_multiple, shortcut=True)
     return x
 
 
-def csp_resblock_body(x, num_filters, num_blocks, all_narrow=True):
-    '''A series of resblocks starting with a downsampling Convolution2D'''
-    # Darknet uses left and top padding instead of 'same' mode
+def yolo5_darknet_body(x, depth_multiple, width_multiple):
+    '''A modified darknet body for YOLOv5'''
+    #x = ZeroPadding2D(((3,0),(3,0)))(x)
+    #x = DarknetConv2D_BN_Swish(make_divisible(64*width_multiple, 8), (5,5), strides=(2,2))(x)
+    x = focus_block(x, 64, width_multiple, kernel=3)
+
+    x = csp_resblock_body(x, 128, 3, depth_multiple, width_multiple)
+    x = csp_resblock_body(x, 256, 9, depth_multiple, width_multiple)
+    # f3: 52 x 52 x (256*width_multiple)
+    f3 = x
+
+    x = csp_resblock_body(x, 512, 9, depth_multiple, width_multiple)
+    # f2: 26 x 26 x (512*width_multiple)
+    f2 = x
+
     x = ZeroPadding2D(((1,0),(1,0)))(x)
-    x = DarknetConv2D_BN_Mish(num_filters, (3,3), strides=(2,2))(x)
+    x = DarknetConv2D_BN_Swish(make_divisible(1024*width_multiple, 8), (3,3), strides=(2,2))(x)
+    # different with PyTorch version, we will try to leave
+    # the SPP & BottleneckCSP block to head part
 
-    res_connection = DarknetConv2D_BN_Mish(num_filters//2 if all_narrow else num_filters, (1,1))(x)
-    x = DarknetConv2D_BN_Mish(num_filters//2 if all_narrow else num_filters, (1,1))(x)
-
-    for i in range(num_blocks):
-        y = compose(
-                DarknetConv2D_BN_Mish(num_filters//2, (1,1)),
-                DarknetConv2D_BN_Mish(num_filters//2 if all_narrow else num_filters, (3,3)))(x)
-        x = Add()([x,y])
-
-    x = DarknetConv2D_BN_Mish(num_filters//2 if all_narrow else num_filters, (1,1))(x)
-    x = Concatenate()([x , res_connection])
-
-    return DarknetConv2D_BN_Mish(num_filters, (1,1))(x)
+    # f1 = x: 13 x 13 x (1024*width_multiple)
+    return x, f2, f3
 
 
-def scaled_csp_darknet53_body(x):
-    '''CSPDarknet53 body having 52 Convolution2D layers'''
-    x = DarknetConv2D_BN_Mish(32, (3,3))(x)
-    x = resblock_body(x, 64, 1)
-    x = csp_resblock_body(x, 128, 2)
-    x = csp_resblock_body(x, 256, 8)
-    x = csp_resblock_body(x, 512, 8)
-    x = csp_resblock_body(x, 1024, 4)
-    return x
+def yolo5_body(inputs, num_anchors, num_classes, depth_multiple=1.0, width_multiple=1.0, weights_path=None):
+    """Create YOLOv5 model CNN body in Keras."""
+    # due to depth_multiple, we need to get feature tensors from darknet
+    # body function:
+    # f1: 13 x 13 x (1024*width_multiple)
+    # f2: 26 x 26 x (512*width_multiple)
+    # f3: 52 x 52 x (256*width_multiple)
+    f1, f2, f3 = yolo5_darknet_body(inputs, depth_multiple, width_multiple)
+    darknet = Model(inputs, f1)
 
-
-def scaled_yolo4_csp_body(inputs, num_anchors, num_classes, weights_path=None):
-    """Create Scaled-YOLOv4-CSP model CNN body in Keras."""
-    darknet = Model(inputs, scaled_csp_darknet53_body(inputs))
     print('backbone layers number: {}'.format(len(darknet.layers)))
     if weights_path is not None:
         darknet.load_weights(weights_path, by_name=True)
         print('Load weights {}.'.format(weights_path))
 
-    # f1: 13 x 13 x 1024
-    f1 = darknet.output
-    # f2: 26 x 26 x 512, layer 'activation_54'
-    f2 = darknet.layers[191].output
-    # f3: 52 x 52 x 256, layer 'activation_33'
-    f3 = darknet.layers[118].output
+    f1_channel_num = int(1024*width_multiple)
+    f2_channel_num = int(512*width_multiple)
+    f3_channel_num = int(256*width_multiple)
 
-    f1_channel_num = 1024
-    f2_channel_num = 512
-    f3_channel_num = 256
-
-    y1, y2, y3 = yolo5_predictions((f1, f2, f3), (f1_channel_num, f2_channel_num, f3_channel_num), num_anchors, num_classes)
+    y1, y2, y3 = yolo5_predictions((f1, f2, f3), (f1_channel_num, f2_channel_num, f3_channel_num), num_anchors, num_classes, depth_multiple, width_multiple)
 
     return Model(inputs, [y1, y2, y3])
 

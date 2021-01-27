@@ -11,7 +11,8 @@ from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 
-from yolo5.models.scaled_yolo4_csp_darknet import scaled_yolo4_csp_body
+from scaled_yolo4.models.scaled_yolo4_csp_darknet import scaled_yolo4_csp_body
+from yolo5.models.yolo5_darknet import yolo5_body
 
 from yolo5.loss import yolo5_loss
 from yolo5.postprocess import batched_yolo5_postprocess
@@ -25,9 +26,12 @@ from common.model_utils import add_metrics, get_pruning_model
 #   [model_function, backbone_length, pretrain_weight_path]
 #
 yolo5_model_map = {
+    'yolo5_small_darknet': [partial(yolo5_body, depth_multiple=0.33, width_multiple=0.50), 0, None],
+    'yolo5_medium_darknet': [partial(yolo5_body, depth_multiple=0.67, width_multiple=0.75), 0, None],
+    'yolo5_large_darknet': [partial(yolo5_body, depth_multiple=1.0, width_multiple=1.0), 0, None],
+    'yolo5_xlarge_darknet': [partial(yolo5_body, depth_multiple=1.33, width_multiple=1.25), 0, None],
     'scaled_yolo4_csp_darknet': [scaled_yolo4_csp_body, 0, None],
 }
-
 
 # A map of model type to construction info list for Tiny YOLOv5
 #

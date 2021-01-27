@@ -43,7 +43,8 @@ optional arguments:
                         MOT model type (sort/deepsort), default=sort
   --tracking_classes_path TRACKING_CLASSES_PATH
                         [Optional] Path to DeepSORT tracking class
-                        definitions, default=None
+                        definitions, will track all detect classes if None,
+                        default=None
   --deepsort_model_path DEEPSORT_MODEL_PATH
                         [Optional] DeepSORT encoder model path,
                         default=model/mars-small128.pb

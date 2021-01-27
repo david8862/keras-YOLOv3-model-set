@@ -37,7 +37,7 @@ Usage: yoloSort
 --mnn_model, -m: model_name.mnn
 --image_path, -i: ./images/
 --classes, -l: classes labels for detection model
---track_classes, -k: classes labels for tracker
+--track_classes, -k: classes labels for tracker, will track all detect classes if not provided
 --anchors, -a: anchor values for the model
 --conf_thrd, -n: confidence threshold for detection filter
 --input_mean, -b: input mean
