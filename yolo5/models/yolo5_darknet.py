@@ -41,7 +41,7 @@ def yolo5_darknet_body(x, depth_multiple, width_multiple):
 
     x = ZeroPadding2D(((1,0),(1,0)))(x)
     x = DarknetConv2D_BN_Swish(make_divisible(1024*width_multiple, 8), (3,3), strides=(2,2))(x)
-    # different with PyTorch version, we will try to leave
+    # different with ultralytics PyTorch version, we will try to leave
     # the SPP & BottleneckCSP block to head part
 
     # f1 = x: 13 x 13 x (1024*width_multiple)

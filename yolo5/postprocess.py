@@ -34,18 +34,18 @@ def yolo5_decode(feats, anchors, num_classes, input_shape, scale_x_y, calc_loss=
     # Reference:
     #     https://github.com/ultralytics/yolov5/blob/master/models/yolo.py#L56
     #     https://alexeyab84.medium.com/scaled-yolo-v4-is-the-best-neural-network-for-object-detection-on-ms-coco-dataset-39dfa22fa982
-    feats = K.sigmoid(feats)
+    sigmoid_feats = K.sigmoid(feats)
 
     # Adjust preditions to each spatial grid point and anchor size.
-    box_xy_tmp = feats[..., :2] * scale_x_y - (scale_x_y - 1) / 2
-    box_xy = (box_xy_tmp + grid) / K.cast(grid_shape[..., ::-1], K.dtype(feats))
+    box_xy_tmp = sigmoid_feats[..., :2] * scale_x_y - (scale_x_y - 1) / 2
+    box_xy = (box_xy_tmp + grid) / K.cast(grid_shape[..., ::-1], K.dtype(sigmoid_feats))
     #box_wh = K.exp(feats[..., 2:4]) * anchors_tensor / K.cast(input_shape[..., ::-1], K.dtype(feats))
-    box_wh = ((feats[..., 2:4]*2)**2 * anchors_tensor) / K.cast(input_shape[..., ::-1], K.dtype(feats))
+    box_wh = ((sigmoid_feats[..., 2:4]*2)**2 * anchors_tensor) / K.cast(input_shape[..., ::-1], K.dtype(sigmoid_feats))
 
     # Sigmoid objectness scores
-    box_confidence = feats[..., 4:5]
+    box_confidence = sigmoid_feats[..., 4:5]
     # Sigmoid class scores
-    box_class_probs = feats[..., 5:]
+    box_class_probs = sigmoid_feats[..., 5:]
 
     if calc_loss == True:
         return grid, feats, box_xy, box_wh

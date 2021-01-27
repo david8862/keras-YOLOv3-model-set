@@ -7,7 +7,7 @@ import math
 from functools import wraps, reduce
 
 import tensorflow.keras.backend as K
-from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Add, Concatenate, MaxPooling2D, BatchNormalization, Activation, UpSampling2D, ZeroPadding2D
+from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Add, Concatenate, MaxPooling2D, BatchNormalization, Activation, UpSampling2D, ZeroPadding2D, Lambda
 from tensorflow.keras.regularizers import l2
 
 from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatchNormalization
@@ -71,10 +71,10 @@ def Spp_Conv2D_BN_Swish(x, num_filters):
 
 def focus_block(x, num_filters, width_multiple, kernel):
     num_filters = make_divisible(num_filters*width_multiple, 8)
-    x1 = x[:, ::2, ::2, :]
-    x2 = x[:, 1::2, ::2, :]
-    x3 = x[:, ::2, 1::2, :]
-    x4 = x[:, 1::2, 1::2, :]
+    x1 = Lambda(lambda z: z[:, ::2, ::2, :], name='focus_slice1')(x)
+    x2 = Lambda(lambda z: z[:, 1::2, ::2, :], name='focus_slice2')(x)
+    x3 = Lambda(lambda z: z[:, ::2, 1::2, :], name='focus_slice3')(x)
+    x4 = Lambda(lambda z: z[:, 1::2, 1::2, :], name='focus_slice4')(x)
     x = Concatenate()([x1, x2, x3, x4])
     x = DarknetConv2D_BN_Swish(num_filters, (kernel, kernel))(x)
 
@@ -183,7 +183,7 @@ def yolo5_predictions(feature_maps, feature_channel_nums, num_anchors, num_class
     f1, f2, f3 = feature_maps
     f1_channel_num, f2_channel_num, f3_channel_num = feature_channel_nums
 
-    # SPP & BottleneckCSP block, in PyTorch version
+    # SPP & BottleneckCSP block, in ultralytics PyTorch version
     # they're defined in backbone
     x1 = make_yolo5_spp_neck(f1, f1_channel_num)
     x1 = bottleneck_csp_block(x1, f1_channel_num, 3, depth_multiple, width_multiple, shortcut=False)
@@ -238,7 +238,7 @@ def yolo5lite_predictions(feature_maps, feature_channel_nums, num_anchors, num_c
     f1, f2, f3 = feature_maps
     f1_channel_num, f2_channel_num, f3_channel_num = feature_channel_nums
 
-    # SPP & BottleneckCSP block, in PyTorch version
+    # SPP & BottleneckCSP block, in ultralytics PyTorch version
     # they're defined in backbone
     x1 = make_yolo5_spp_neck(f1, f1_channel_num)
     x1 = bottleneck_csp_lite_block(x1, f1_channel_num, 3, depth_multiple, width_multiple, shortcut=False)

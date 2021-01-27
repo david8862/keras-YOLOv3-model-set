@@ -245,7 +245,7 @@ def _smooth_labels(y_true, label_smoothing):
     return y_true * (1.0 - label_smoothing) + 0.5 * label_smoothing
 
 
-def yolo5_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, elim_grid_sense=True, use_focal_loss=False, use_focal_obj_loss=False, use_softmax_loss=False, use_giou_loss=True, use_diou_loss=False):
+def yolo5_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, elim_grid_sense=True, use_focal_loss=False, use_focal_obj_loss=False, use_softmax_loss=False, use_giou_loss=False, use_diou_loss=True):
     '''
     YOLOv5 loss function.
 
@@ -273,9 +273,10 @@ def yolo5_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
     confidence_loss_gain = 1.0
 
     # balance weights for confidence (objectness) loss
-    # on different predict heads (x/8, x/16, x/32)
+    # on different predict heads (x/32, x/16, x/8),
+    # here the order is reversed from ultralytics PyTorch version
     # from https://github.com/ultralytics/yolov5/blob/master/utils/loss.py#L109
-    confidence_balance_weights = [4.0, 1.0, 0.4]
+    confidence_balance_weights = [0.4, 1.0, 4.0]
 
     if num_layers == 3:
         anchor_mask = [[6,7,8], [3,4,5], [0,1,2]]
@@ -353,7 +354,7 @@ def yolo5_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
         # use box iou for positive sample as objectness ground truth,
         # to calculate confidence loss
         # from https://github.com/ultralytics/yolov5/blob/master/utils/loss.py#L127
-        true_objectness_probs = object_mask * iou
+        true_objectness_probs = K.maximum(iou, 0)
 
         if use_focal_obj_loss:
             # Focal loss for objectness confidence
