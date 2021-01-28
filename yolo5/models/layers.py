@@ -125,7 +125,7 @@ def bottleneck_csp_c3_block(x, num_filters, num_blocks, depth_multiple, width_mu
     return DarknetConv2D_BN_Swish(num_filters, (1,1))(x)
 
 
-def bottleneck_csp_lite_block(x, num_filters, num_blocks, depth_multiple, width_multiple, shortcut=False):
+def bottleneck_csp_lite_block(x, num_filters, num_blocks, depth_multiple, width_multiple, shortcut=False, block_id_str=None):
     '''CSP Bottleneck https://github.com/WongKinYiu/CrossStagePartialNetworks'''
     num_filters = make_divisible(num_filters*width_multiple, 8)
     num_blocks = max(round(num_blocks * depth_multiple), 1) if num_blocks > 1 else num_blocks  # depth gain
@@ -138,7 +138,7 @@ def bottleneck_csp_lite_block(x, num_filters, num_blocks, depth_multiple, width_
         y = compose(
                 DarknetConv2D_BN_Swish(num_filters//2, (1,1)),
                 #DarknetConv2D_BN_Swish(num_filters//2, (3,3)))(x)
-                Depthwise_Separable_Conv2D_BN_Swish(filters=num_filters//2, kernel_size=(3, 3)))(x)
+                Depthwise_Separable_Conv2D_BN_Swish(filters=num_filters//2, kernel_size=(3, 3), block_id_str=block_id_str+'_1'))(x)
         x = Add()([x,y]) if shortcut else y
 
     x = DarknetConv2D(num_filters//2, (1,1))(x)
@@ -149,7 +149,7 @@ def bottleneck_csp_lite_block(x, num_filters, num_blocks, depth_multiple, width_
     return DarknetConv2D_BN_Swish(num_filters, (1,1))(x)
 
 
-def bottleneck_csp_c3_lite_block(x, num_filters, num_blocks, depth_multiple, width_multiple, shortcut=False):
+def bottleneck_csp_c3_lite_block(x, num_filters, num_blocks, depth_multiple, width_multiple, shortcut=False, block_id_str=None):
     '''CSP Bottleneck with 3 convolutions'''
     num_filters = make_divisible(num_filters*width_multiple, 8)
     num_blocks = max(round(num_blocks * depth_multiple), 1) if num_blocks > 1 else num_blocks  # depth gain
@@ -162,7 +162,7 @@ def bottleneck_csp_c3_lite_block(x, num_filters, num_blocks, depth_multiple, wid
         y = compose(
                 DarknetConv2D_BN_Swish(num_filters//2, (1,1)),
                 #DarknetConv2D_BN_Swish(num_filters//2, (3,3)))(x)
-                Depthwise_Separable_Conv2D_BN_Swish(filters=num_filters//2, kernel_size=(3, 3)))(x)
+                Depthwise_Separable_Conv2D_BN_Swish(filters=num_filters//2, kernel_size=(3, 3), block_id_str=block_id_str+'_1'))(x)
         x = Add()([x,y]) if shortcut else y
 
     #x = DarknetConv2D(num_filters//2, (1,1))(x)
@@ -241,7 +241,7 @@ def yolo5lite_predictions(feature_maps, feature_channel_nums, num_anchors, num_c
     # SPP & BottleneckCSP block, in ultralytics PyTorch version
     # they're defined in backbone
     x1 = make_yolo5_spp_neck(f1, f1_channel_num)
-    x1 = bottleneck_csp_lite_block(x1, f1_channel_num, 3, depth_multiple, width_multiple, shortcut=False)
+    x1 = bottleneck_csp_lite_block(x1, f1_channel_num, 3, depth_multiple, width_multiple, shortcut=False, block_id_str='pred_1')
 
     #feature map 1 head (19x19 for 608 input)
     x1 = DarknetConv2D_BN_Swish(f2_channel_num, (1,1))(x1)
@@ -250,7 +250,7 @@ def yolo5lite_predictions(feature_maps, feature_channel_nums, num_anchors, num_c
     x1_upsample = UpSampling2D(2)(x1)
     x2 = Concatenate()([f2, x1_upsample])
 
-    x2 = bottleneck_csp_lite_block(x2, f2_channel_num, 3, depth_multiple, width_multiple, shortcut=False)
+    x2 = bottleneck_csp_lite_block(x2, f2_channel_num, 3, depth_multiple, width_multiple, shortcut=False, block_id_str='pred_2')
     #feature map 2 head (38x38 for 608 input)
     x2 = DarknetConv2D_BN_Swish(f3_channel_num, (1,1))(x2)
 
@@ -259,19 +259,19 @@ def yolo5lite_predictions(feature_maps, feature_channel_nums, num_anchors, num_c
     x3 = Concatenate()([f3, x2_upsample])
 
     #feature map 3 head & output (76x76 for 608 input)
-    x3 = bottleneck_csp_lite_block(x3, f3_channel_num, 3, depth_multiple, width_multiple, shortcut=False)
+    x3 = bottleneck_csp_lite_block(x3, f3_channel_num, 3, depth_multiple, width_multiple, shortcut=False, block_id_str='pred_3')
     y3 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_3')(x3)
 
     #downsample fpn merge for feature map 3 & 2
     x3_downsample = compose(
             ZeroPadding2D(((1,0),(1,0))),
             #DarknetConv2D_BN_Swish(f3_channel_num, (3,3), strides=(2,2)))(x3)
-            Darknet_Depthwise_Separable_Conv2D_BN_Swish(f3_channel_num, (3,3), strides=(2,2)))(x3)
+            Darknet_Depthwise_Separable_Conv2D_BN_Swish(f3_channel_num, (3,3), strides=(2,2), block_id_str='pred_3_2'))(x3)
 
     x2 = Concatenate()([x3_downsample, x2])
 
     #feature map 2 output (38x38 for 608 input)
-    x2 = bottleneck_csp_lite_block(x2, f2_channel_num, 3, depth_multiple, width_multiple, shortcut=False)
+    x2 = bottleneck_csp_lite_block(x2, f2_channel_num, 3, depth_multiple, width_multiple, shortcut=False, block_id_str='pred_4')
 
     y2 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_2')(x2)
 
@@ -279,12 +279,12 @@ def yolo5lite_predictions(feature_maps, feature_channel_nums, num_anchors, num_c
     x2_downsample = compose(
             ZeroPadding2D(((1,0),(1,0))),
             #DarknetConv2D_BN_Swish(f2_channel_num, (3,3), strides=(2,2)))(x2)
-            Darknet_Depthwise_Separable_Conv2D_BN_Swish(f2_channel_num, (3,3), strides=(2,2)))(x2)
+            Darknet_Depthwise_Separable_Conv2D_BN_Swish(f2_channel_num, (3,3), strides=(2,2), block_id_str='pred_4_2'))(x2)
 
     x1 = Concatenate()([x2_downsample, x1])
 
     #feature map 1 output (19x19 for 608 input)
-    x1 = bottleneck_csp_lite_block(x1, f1_channel_num, 3, depth_multiple, width_multiple, shortcut=False)
+    x1 = bottleneck_csp_lite_block(x1, f1_channel_num, 3, depth_multiple, width_multiple, shortcut=False, block_id_str='pred_5')
 
     y1 = DarknetConv2D(num_anchors*(num_classes+5), (1,1), name='predict_conv_1')(x1)
 

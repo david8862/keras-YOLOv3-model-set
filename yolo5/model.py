@@ -13,6 +13,7 @@ from tensorflow.keras.optimizers import Adam
 
 from scaled_yolo4.models.scaled_yolo4_csp_darknet import scaled_yolo4_csp_body
 from yolo5.models.yolo5_darknet import yolo5_body
+from yolo5.models.yolo5_mobilenet import yolo5_mobilenet_body, yolo5lite_mobilenet_body
 
 from yolo5.loss import yolo5_loss
 from yolo5.postprocess import batched_yolo5_postprocess
@@ -31,6 +32,9 @@ yolo5_model_map = {
     'yolo5_large_darknet': [partial(yolo5_body, depth_multiple=1.0, width_multiple=1.0), 0, None],
     'yolo5_xlarge_darknet': [partial(yolo5_body, depth_multiple=1.33, width_multiple=1.25), 0, None],
     'scaled_yolo4_csp_darknet': [scaled_yolo4_csp_body, 0, None],
+
+    'yolo5_mobilenet': [yolo5_mobilenet_body, 87, None],
+    'yolo5_mobilenet_lite': [yolo5lite_mobilenet_body, 87, None],
 }
 
 # A map of model type to construction info list for Tiny YOLOv5

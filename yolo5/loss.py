@@ -358,11 +358,11 @@ def yolo5_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
 
         if use_focal_obj_loss:
             # Focal loss for objectness confidence
-            confidence_loss = sigmoid_focal_loss(true_objectness_probs, raw_pred[...,4:5]) * confidence_balance_weights[i]
+            confidence_loss = confidence_balance_weights[i] * sigmoid_focal_loss(true_objectness_probs, raw_pred[...,4:5])
         else:
-            confidence_loss = K.binary_crossentropy(true_objectness_probs, raw_pred[...,4:5], from_logits=True) * confidence_balance_weights[i]
-            #confidence_loss = object_mask * K.binary_crossentropy(true_objectness_probs, raw_pred[...,4:5], from_logits=True)+ \
-                #(1-object_mask) * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True) * ignore_mask
+            #confidence_loss = K.binary_crossentropy(true_objectness_probs, raw_pred[...,4:5], from_logits=True) * confidence_balance_weights[i]
+            confidence_loss = confidence_balance_weights[i] * (object_mask * K.binary_crossentropy(true_objectness_probs, raw_pred[...,4:5], from_logits=True)+ \
+                (1-object_mask) * K.binary_crossentropy(object_mask, raw_pred[...,4:5], from_logits=True))# * ignore_mask
 
         if use_focal_loss:
             # Focal loss for classification score
