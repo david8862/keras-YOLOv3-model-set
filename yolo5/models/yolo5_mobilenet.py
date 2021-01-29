@@ -6,7 +6,7 @@
 from tensorflow.keras.models import Model
 from tensorflow.keras.applications.mobilenet import MobileNet
 
-from yolo5.models.layers import yolo5_predictions, yolo5lite_predictions
+from yolo5.models.layers import yolo5_predictions, yolo5lite_predictions, yolo5_spp_neck
 
 
 def yolo5_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
@@ -26,17 +26,21 @@ def yolo5_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     # f3: 52 x 52 x (256*alpha) for 416 input
     f3 = mobilenet.get_layer('conv_pw_5_relu').output
 
-    # use yolo5_small depth_multiple, and alpha as width_multiple
+    # add SPP neck with original channel number
+    f1 = yolo5_spp_neck(f1, int(1024*alpha))
+
+    # use yolo5_small depth_multiple and width_multiple for head
     depth_multiple = 0.33
-    width_multiple = alpha
+    width_multiple = 0.5
 
     f1_channel_num = int(1024*width_multiple)
     f2_channel_num = int(512*width_multiple)
     f3_channel_num = int(256*width_multiple)
 
-    y1, y2, y3 = yolo5_predictions((f1, f2, f3), (f1_channel_num, f2_channel_num, f3_channel_num), num_anchors, num_classes, depth_multiple, width_multiple)
+    y1, y2, y3 = yolo5_predictions((f1, f2, f3), (f1_channel_num, f2_channel_num, f3_channel_num), num_anchors, num_classes, depth_multiple, width_multiple, with_spp=False)
 
     return Model(inputs, [y1, y2, y3])
+
 
 def yolo5lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     """Create YOLO_V5 Lite MobileNet model CNN body in Keras."""
@@ -55,15 +59,18 @@ def yolo5lite_mobilenet_body(inputs, num_anchors, num_classes, alpha=1.0):
     # f3: 52 x 52 x (256*alpha) for 416 input
     f3 = mobilenet.get_layer('conv_pw_5_relu').output
 
-    # use yolo5_small depth_multiple, and alpha as width_multiple
+    # add SPP neck with original channel number
+    f1 = yolo5_spp_neck(f1, int(1024*alpha))
+
+    # use yolo5_small depth_multiple and width_multiple for head
     depth_multiple = 0.33
-    width_multiple = alpha
+    width_multiple = 0.5
 
     f1_channel_num = int(1024*width_multiple)
     f2_channel_num = int(512*width_multiple)
     f3_channel_num = int(256*width_multiple)
 
-    y1, y2, y3 = yolo5lite_predictions((f1, f2, f3), (f1_channel_num, f2_channel_num, f3_channel_num), num_anchors, num_classes, depth_multiple, width_multiple)
+    y1, y2, y3 = yolo5lite_predictions((f1, f2, f3), (f1_channel_num, f2_channel_num, f3_channel_num), num_anchors, num_classes, depth_multiple, width_multiple, with_spp=False)
 
     return Model(inputs, [y1, y2, y3])
 

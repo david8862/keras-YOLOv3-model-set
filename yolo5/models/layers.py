@@ -171,7 +171,7 @@ def bottleneck_csp_c3_lite_block(x, num_filters, num_blocks, depth_multiple, wid
     return DarknetConv2D_BN_Swish(num_filters, (1,1))(x)
 
 
-def make_yolo5_spp_neck(x, num_filters):
+def yolo5_spp_neck(x, num_filters):
     '''Conv2D_BN_Swish layer followed by a SPP_Conv block'''
     x = DarknetConv2D_BN_Swish(num_filters//2, (1,1))(x)
     x = Spp_Conv2D_BN_Swish(x, num_filters)
@@ -179,14 +179,16 @@ def make_yolo5_spp_neck(x, num_filters):
     return x
 
 
-def yolo5_predictions(feature_maps, feature_channel_nums, num_anchors, num_classes, depth_multiple, width_multiple):
+def yolo5_predictions(feature_maps, feature_channel_nums, num_anchors, num_classes, depth_multiple, width_multiple, with_spp=True):
     f1, f2, f3 = feature_maps
     f1_channel_num, f2_channel_num, f3_channel_num = feature_channel_nums
 
     # SPP & BottleneckCSP block, in ultralytics PyTorch version
     # they're defined in backbone
-    x1 = make_yolo5_spp_neck(f1, f1_channel_num)
-    x1 = bottleneck_csp_block(x1, f1_channel_num, 3, depth_multiple, width_multiple, shortcut=False)
+    if with_spp:
+        f1 = yolo5_spp_neck(f1, f1_channel_num)
+
+    x1 = bottleneck_csp_block(f1, f1_channel_num, 3, depth_multiple, width_multiple, shortcut=False)
 
     #feature map 1 head (19x19 for 608 input)
     x1 = DarknetConv2D_BN_Swish(f2_channel_num, (1,1))(x1)
@@ -234,14 +236,16 @@ def yolo5_predictions(feature_maps, feature_channel_nums, num_anchors, num_class
     return y1, y2, y3
 
 
-def yolo5lite_predictions(feature_maps, feature_channel_nums, num_anchors, num_classes, depth_multiple, width_multiple):
+def yolo5lite_predictions(feature_maps, feature_channel_nums, num_anchors, num_classes, depth_multiple, width_multiple, with_spp=True):
     f1, f2, f3 = feature_maps
     f1_channel_num, f2_channel_num, f3_channel_num = feature_channel_nums
 
     # SPP & BottleneckCSP block, in ultralytics PyTorch version
     # they're defined in backbone
-    x1 = make_yolo5_spp_neck(f1, f1_channel_num)
-    x1 = bottleneck_csp_lite_block(x1, f1_channel_num, 3, depth_multiple, width_multiple, shortcut=False, block_id_str='pred_1')
+    if with_spp:
+        f1 = yolo5_spp_neck(f1, f1_channel_num)
+
+    x1 = bottleneck_csp_lite_block(f1, f1_channel_num, 3, depth_multiple, width_multiple, shortcut=False, block_id_str='pred_1')
 
     #feature map 1 head (19x19 for 608 input)
     x1 = DarknetConv2D_BN_Swish(f2_channel_num, (1,1))(x1)

@@ -268,15 +268,20 @@ def yolo5_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
 
     # gains for box, class and confidence loss
     # from https://github.com/ultralytics/yolov5/blob/master/data/hyp.scratch.yaml
-    box_loss_gain = 0.05
-    class_loss_gain = 0.5
+    #box_loss_gain = 0.05
+    #class_loss_gain = 0.5
+    #confidence_loss_gain = 1.0
+
+    box_loss_gain = 1.0
+    class_loss_gain = 1.0
     confidence_loss_gain = 1.0
 
     # balance weights for confidence (objectness) loss
     # on different predict heads (x/32, x/16, x/8),
     # here the order is reversed from ultralytics PyTorch version
     # from https://github.com/ultralytics/yolov5/blob/master/utils/loss.py#L109
-    confidence_balance_weights = [0.4, 1.0, 4.0]
+    #confidence_balance_weights = [0.4, 1.0, 4.0]
+    confidence_balance_weights = [1.0, 1.0, 1.0]
 
     if num_layers == 3:
         anchor_mask = [[6,7,8], [3,4,5], [0,1,2]]
@@ -312,7 +317,7 @@ def yolo5_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
         raw_true_xy = y_true[i][..., :2]*grid_shapes[i][::-1] - grid
         raw_true_wh = K.log(y_true[i][..., 2:4] / anchors[anchor_mask[i]] * input_shape[::-1])
         raw_true_wh = K.switch(object_mask, raw_true_wh, K.zeros_like(raw_true_wh)) # avoid log(0)=-inf
-        #box_loss_scale = 2 - y_true[i][...,2:3]*y_true[i][...,3:4]
+        box_loss_scale = 2 - y_true[i][...,2:3]*y_true[i][...,3:4]
 
         # Find ignore mask, iterate over each of batch.
         #ignore_mask = tf.TensorArray(K.dtype(y_true[0]), size=1, dynamic_size=True)
@@ -331,14 +336,14 @@ def yolo5_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
             # Calculate GIoU loss as location loss
             raw_true_box = y_true[i][...,0:4]
             giou = box_giou(raw_true_box, pred_box)
-            giou_loss = object_mask * (1 - giou)
+            giou_loss = object_mask * box_loss_scale * (1 - giou)
             location_loss = giou_loss
             iou = giou
         elif use_diou_loss:
             # Calculate DIoU loss as location loss
             raw_true_box = y_true[i][...,0:4]
             diou = box_diou(raw_true_box, pred_box)
-            diou_loss = object_mask * (1 - diou)
+            diou_loss = object_mask * box_loss_scale * (1 - diou)
             location_loss = diou_loss
             iou = diou
         else:
@@ -351,10 +356,10 @@ def yolo5_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
             #wh_loss = K.sum(wh_loss) / batch_size_f
             #location_loss = xy_loss + wh_loss
 
-        # use box iou for positive sample as objectness ground truth,
+        # use box iou for positive sample as objectness ground truth (need to detach gradient),
         # to calculate confidence loss
         # from https://github.com/ultralytics/yolov5/blob/master/utils/loss.py#L127
-        true_objectness_probs = K.maximum(iou, 0)
+        true_objectness_probs = tf.stop_gradient(K.maximum(iou, 0))
 
         if use_focal_obj_loss:
             # Focal loss for objectness confidence
@@ -382,6 +387,13 @@ def yolo5_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
         confidence_loss = confidence_loss_gain * K.sum(confidence_loss) / batch_size_f
         class_loss = class_loss_gain * K.sum(class_loss) / batch_size_f
         location_loss = box_loss_gain * K.sum(location_loss) / batch_size_f
+
+        #object_number = K.sum(object_mask)
+        #divided_factor = K.switch(object_number > 1, object_number, K.constant(1, K.dtype(object_number)))
+
+        #confidence_loss = confidence_loss_gain * K.mean(confidence_loss)
+        #class_loss = class_loss_gain * K.sum(class_loss) / divided_factor
+        #location_loss = box_loss_gain * K.sum(location_loss) / divided_factor
 
         loss += location_loss + confidence_loss + class_loss
         total_location_loss += location_loss
