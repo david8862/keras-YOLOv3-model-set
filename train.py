@@ -11,6 +11,7 @@ from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnP
 from tensorflow_model_optimization.sparsity import keras as sparsity
 
 from yolo5.model import get_yolo5_train_model
+from yolo5.data import yolo5_data_generator_wrapper, Yolo5DataGenerator
 from yolo3.model import get_yolo3_train_model
 from yolo3.data import yolo3_data_generator_wrapper, Yolo3DataGenerator
 from yolo2.model import get_yolo2_train_model
@@ -89,11 +90,11 @@ def main(args):
         # Scaled-YOLOv4 & YOLOv5 entrance, use yolo5 submodule but now still yolo3 data generator
         # TODO: create new yolo5 data generator to apply YOLOv5 anchor assignment
         get_train_model = get_yolo5_train_model
-        data_generator = yolo3_data_generator_wrapper
+        data_generator = yolo5_data_generator_wrapper
 
         # tf.keras.Sequence style data generator
-        #train_data_generator = Yolo3DataGenerator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval, args.multi_anchor_assign)
-        #val_data_generator = Yolo3DataGenerator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes, multi_anchor_assign=args.multi_anchor_assign)
+        #train_data_generator = Yolo5DataGenerator(dataset[:num_train], args.batch_size, input_shape, anchors, num_classes, args.enhance_augment, rescale_interval, args.multi_anchor_assign)
+        #val_data_generator = Yolo5DataGenerator(dataset[num_train:], args.batch_size, input_shape, anchors, num_classes, multi_anchor_assign=args.multi_anchor_assign)
 
         tiny_version = False
     elif args.model_type.startswith('yolo3_') or args.model_type.startswith('yolo4_'):
