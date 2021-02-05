@@ -5,7 +5,7 @@ import numpy as np
 import random, math
 from PIL import Image
 from tensorflow.keras.utils import Sequence
-from common.data_utils import normalize_image, letterbox_resize, random_resize_crop_pad, reshape_boxes, random_hsv_distort, random_horizontal_flip, random_vertical_flip, random_grayscale, random_brightness, random_chroma, random_contrast, random_sharpness, random_blur, random_motion_blur, random_mosaic_augment
+from common.data_utils import normalize_image, letterbox_resize, random_resize_crop_pad, reshape_boxes, random_hsv_distort, random_horizontal_flip, random_vertical_flip, random_grayscale, random_brightness, random_chroma, random_contrast, random_sharpness, random_blur, random_motion_blur, random_rotate, random_mosaic_augment
 from common.utils import get_multiscale_list
 
 
@@ -71,6 +71,10 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
 
     # reshape boxes based on augment
     boxes = reshape_boxes(boxes, src_shape=image_size, target_shape=model_input_size, padding_shape=padding_size, offset=padding_offset, horizontal_flip=horizontal_flip, vertical_flip=vertical_flip)
+
+    # random rotate image and boxes
+    image, boxes = random_rotate(image, boxes)
+
     if len(boxes)>max_boxes:
         boxes = boxes[:max_boxes]
 

@@ -39,7 +39,7 @@ def yolo4_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
 
 
 def yolo4lite_mobilenetv2_body(inputs, num_anchors, num_classes, alpha=1.0):
-    '''Create YOLO_v4 Lite MobileNetV2 model CNN body in keras.'''
+    '''Create YOLO_V4 Lite MobileNetV2 model CNN body in keras.'''
     mobilenetv2 = MobileNetV2(input_tensor=inputs, weights='imagenet', include_top=False, alpha=alpha)
     print('backbone layers number: {}'.format(len(mobilenetv2.layers)))
 

@@ -401,6 +401,91 @@ def random_motion_blur(image, prob=.1):
     return image
 
 
+def random_rotate(image, boxes, rotate_range=20, prob=0.1):
+    """
+    Random rotate for image and bounding boxes
+
+    reference:
+        https://github.com/ultralytics/yolov5/blob/master/utils/datasets.py#L824
+
+    NOTE: bbox area will be expand in many cases after
+          rotate, like:
+     _______________
+    |               |
+    |               |
+    |      _______  |
+    |     | _____ | |
+    |     | \   / | |
+    |     |  \ /  | |
+    |     |   V   | |
+    |     |_______| |
+    |               |
+    -----------------
+
+    # Arguments
+        image: origin image for rotate
+            PIL Image object containing image data
+        boxes: Ground truth object bounding boxes,
+            numpy array of shape (num_boxes, 5),
+            box format (xmin, ymin, xmax, ymax, cls_id).
+
+        prob: probability for random rotate,
+            scalar to control the rotate probability.
+
+    # Returns
+        image: rotated PIL Image object.
+        boxes: rotated bounding box numpy array
+    """
+    if rotate_range:
+        angle = random.gauss(mu=0.0, sigma=rotate_range)
+    else:
+        angle = 0.0
+
+    warpAffine = rand() < prob
+    if warpAffine and rotate_range:
+        width, height = image.size
+        scale = 1.0
+
+        M = cv2.getRotationMatrix2D(center=(width//2, height//2), angle=angle, scale=scale)
+        img = cv2.warpAffine(np.array(image), M, (width, height), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0)#, borderValue=(114, 114, 114))
+
+        # Rotate boxes coordinates
+        n = len(boxes)
+        if n:
+            # warp points
+            xy = np.ones((n * 4, 3))
+            xy[:, :2] = boxes[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(n * 4, 2) # x1y1, x2y2, x1y2, x2y1
+            xy = xy @ M.T  # transform
+            xy = xy[:, :2].reshape(n, 8)
+
+            # create new boxes
+            x = xy[:, [0, 2, 4, 6]]
+            y = xy[:, [1, 3, 5, 7]]
+            xy = np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
+
+            # clip boxes
+            xy[:, [0, 2]] = xy[:, [0, 2]].clip(0, width)
+            xy[:, [1, 3]] = xy[:, [1, 3]].clip(0, height)
+
+            boxes[:, :4] = xy
+            # filter candidates
+            #i = box_candidates(box1=boxes[:, :4].T * scale, box2=xy.T)
+            #boxes = boxes[i]
+            #boxes[:, :4] = xy[i]
+
+        image = Image.fromarray(img)
+
+    return image, boxes
+
+
+def box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.1):  # box1(4,n), box2(4,n)
+    # Compute candidate boxes: box1 before augment, box2 after augment, wh_thr (pixels), aspect_ratio_thr, area_ratio
+    w1, h1 = box1[2] - box1[0], box1[3] - box1[1]
+    w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
+    ar = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))  # aspect ratio
+    return (w2 > wh_thr) & (h2 > wh_thr) & (w2 * h2 / (w1 * h1 + 1e-16) > area_thr) & (ar < ar_thr)  # candidates
+
+
 def merge_mosaic_bboxes(bboxes, crop_x, crop_y, image_size):
     # adjust & merge mosaic samples bboxes as following area order:
     # -----------
