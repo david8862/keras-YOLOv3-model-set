@@ -52,7 +52,7 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes, multi_a
         y_true feature map array with shape [conv_height, conv_width, num_anchors, 6]
         in form of relative x, y, w, h, objectness, class
     """
-    assert (true_boxes[..., 4]<num_classes).all(), 'class id must be less than num_classes'
+    assert (true_boxes[..., 4] < num_classes).all(), 'class id must be less than num_classes'
     height, width = input_shape
     num_anchors = len(anchors)
     # Downsampling factor of 5x 2-stride max_pools == 32.
@@ -68,8 +68,8 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes, multi_a
     input_shape = np.array(input_shape, dtype='int32')
     boxes_xy = (true_boxes[..., 0:2] + true_boxes[..., 2:4]) // 2
     boxes_wh = true_boxes[..., 2:4] - true_boxes[..., 0:2]
-    true_boxes[..., 0:2] = boxes_xy/input_shape[::-1]
-    true_boxes[..., 2:4] = boxes_wh/input_shape[::-1]
+    true_boxes[..., 0:2] = boxes_xy / input_shape[::-1]
+    true_boxes[..., 2:4] = boxes_wh / input_shape[::-1]
 
     num_box_params = true_boxes.shape[1]
     y_true = np.zeros(
@@ -78,18 +78,18 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes, multi_a
 
     for box in true_boxes:
         # bypass invalid true_box, if w,h is 0
-        if box[2]==0 and box[3]==0:
+        if box[2] == 0 and box[3] == 0:
             continue
 
         box_class = box[4:5]
-        i = np.floor(box[1]*conv_height).astype('int')
-        j = np.floor(box[0]*conv_width).astype('int')
+        i = np.floor(box[1] * conv_height).astype('int')
+        j = np.floor(box[0] * conv_width).astype('int')
         best_iou = 0
         #best_anchor = 0
         selected_anchors = []
         for k, anchor in enumerate(anchors):
             # Find IOU between box shifted to origin and anchor box.
-            box_maxes = box[2:4]*input_shape[::-1] / 2.
+            box_maxes = box[2:4] * input_shape[::-1] / 2.
             box_mins = -box_maxes
             anchor_maxes = (anchor / 2.)
             anchor_mins = -anchor_maxes
@@ -98,7 +98,7 @@ def preprocess_true_boxes(true_boxes, anchors, input_shape, num_classes, multi_a
             intersect_maxes = np.minimum(box_maxes, anchor_maxes)
             intersect_wh = np.maximum(intersect_maxes - intersect_mins, 0.)
             intersect_area = intersect_wh[0] * intersect_wh[1]
-            box_area = (box[2]*input_shape[1]) * (box[3]*input_shape[0])
+            box_area = (box[2] * input_shape[1]) * (box[3] * input_shape[0])
             anchor_area = anchor[0] * anchor[1]
             iou = intersect_area / (box_area + anchor_area - intersect_area)
 

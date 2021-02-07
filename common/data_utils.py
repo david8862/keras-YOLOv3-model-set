@@ -450,36 +450,48 @@ def random_rotate(image, boxes, rotate_range=20, prob=0.1):
         width, height = image.size
         scale = 1.0
 
+        # get rotate matrix and apply for image
         M = cv2.getRotationMatrix2D(center=(width//2, height//2), angle=angle, scale=scale)
         img = cv2.warpAffine(np.array(image), M, (width, height), flags=cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0)#, borderValue=(114, 114, 114))
 
-        # Rotate boxes coordinates
+        # rotate boxes coordinates
         n = len(boxes)
         if n:
-            # warp points
-            xy = np.ones((n * 4, 3))
-            xy[:, :2] = boxes[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(n * 4, 2) # x1y1, x2y2, x1y2, x2y1
-            xy = xy @ M.T  # transform
-            xy = xy[:, :2].reshape(n, 8)
+            # form up 4 corner points ([xmin,ymin], [xmax,ymax], [xmin,ymax], [xmax,ymin])
+            # from (xmin, ymin, xmax, ymax), every coord is [x,y,1] format for applying
+            # rotation matrix
+            corner_points = np.ones((n * 4, 3))
+            corner_points[:, :2] = boxes[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(n * 4, 2) # [xmin,ymin], [xmax,ymax], [xmin,ymax], [xmax,ymin]
 
-            # create new boxes
-            x = xy[:, [0, 2, 4, 6]]
-            y = xy[:, [1, 3, 5, 7]]
-            xy = np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
+            # apply rotation transform
+            corner_points = corner_points @ M.T
 
-            # clip boxes
-            xy[:, [0, 2]] = xy[:, [0, 2]].clip(0, width)
-            xy[:, [1, 3]] = xy[:, [1, 3]].clip(0, height)
+            # pick rotated corner (x,y) and reshape to 1 column
+            corner_points = corner_points[:, :2].reshape(n, 8)
+            # select x lines and y lines
+            corner_x = corner_points[:, [0, 2, 4, 6]]
+            corner_y = corner_points[:, [1, 3, 5, 7]]
 
-            boxes[:, :4] = xy
+            # create new bounding boxes according to rotated corner points boundary
+            rotate_boxes = np.concatenate((corner_x.min(axis=-1), corner_y.min(axis=-1), corner_x.max(axis=-1), corner_y.max(axis=-1))).reshape(4, n).T
+
+            # clip boxes with image size
+            # NOTE: use (width-1) & (height-1) as max to avoid index overflow
+            rotate_boxes[:, [0, 2]] = rotate_boxes[:, [0, 2]].clip(0, width-1)
+            rotate_boxes[:, [1, 3]] = rotate_boxes[:, [1, 3]].clip(0, height-1)
+
+            # apply new boxes
+            boxes[:, :4] = rotate_boxes
+
             # filter candidates
-            #i = box_candidates(box1=boxes[:, :4].T * scale, box2=xy.T)
+            #i = box_candidates(box1=boxes[:, :4].T * scale, box2=rotate_boxes.T)
             #boxes = boxes[i]
-            #boxes[:, :4] = xy[i]
+            #boxes[:, :4] = rotate_boxes[i]
 
         image = Image.fromarray(img)
 
     return image, boxes
+
 
 
 def box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.1):  # box1(4,n), box2(4,n)
