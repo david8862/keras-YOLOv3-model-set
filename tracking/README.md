@@ -78,9 +78,8 @@ Reference demo config:
 # python tracking/mot_tracker.py --tracking_model_type=deepsort --tracking_classes_path=tracking_classes.txt --deepsort_model_path=tracking/model/mars-small128.pb --model_type=yolo3_mobilenet_lite --weights_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --score=0.2 --iou=0.6 --input=demo.mp4
 ```
 
-<p align="center">
-  <img src="assets/tracking.gif">
-</p>
+![image](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/assets/tracking.gif)
+
 
 
 ## Train deep association metric model
