@@ -401,7 +401,7 @@ def main():
     )
 
     parser.add_argument(
-        '--deepsort_model_path', type=str, required=False, default="model/mars-small128.pb",
+        '--deepsort_model_path', type=str, required=False, default="tracking/model/mars-small128.pb",
         help = "[Optional] DeepSORT encoder model path, default=%(default)s"
     )
 
