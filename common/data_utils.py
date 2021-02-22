@@ -832,7 +832,23 @@ def normalize_image(image):
     # Returns
         image: numpy image array with dtype=float, 0.0 ~ 1.0
     """
-    image = image / 255.0
+    image = image.astype(np.float32) / 255.0
+
+    return image
+
+
+def denormalize_image(image):
+    """
+    Denormalize image array from 0.0 ~ 1.0
+    to 0 ~ 255
+
+    # Arguments
+        image: normalized image array with dtype=float, -1.0 ~ 1.0
+
+    # Returns
+        image: numpy image array with dtype=uint8, 0 ~ 255
+    """
+    image = (image * 255.0).astype(np.uint8)
 
     return image
 
