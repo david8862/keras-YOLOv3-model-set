@@ -1,14 +1,14 @@
 #!/usr/bin/python3
 # -*- coding=utf-8 -*-
 """
-test random rotate augment for image and boxes
+test random rotate or gridmask augment for image and boxes
 """
 import os, sys
 import numpy as np
 from PIL import Image
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
-from common.data_utils import random_rotate
+from common.data_utils import random_rotate, random_gridmask
 from common.utils import get_classes, get_colors, draw_boxes
 
 
@@ -33,7 +33,12 @@ def main():
 
     image_origin = draw_boxes(np.array(image, dtype='uint8'), boxes[:, :4], classes, scores, class_names, colors)
 
-    image, boxes = random_rotate(image, boxes, prob=1.0)
+    # choose rotate or gridmask augment
+    #image, boxes = random_rotate(image, boxes, prob=1.0)
+    image, boxes = random_gridmask(image, boxes, prob=1.0)
+
+    classes = boxes[:, -1]
+    scores = [1.0]*len(classes)
     image = draw_boxes(np.array(image, dtype='uint8'), boxes[:, :4], classes, scores, class_names, colors)
 
     Image.fromarray(image_origin).show()

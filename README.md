@@ -52,6 +52,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] Multiscale image input training
 - [x] Dynamic learning rate decay (Cosine/Exponential/Polynomial/PiecewiseConstant)
 - [x] Mosaic data augmentation
+- [x] GridMask data augmentation ([paper](https://arxiv.org/abs/2001.04086))
 - [x] Multi anchors for single GT (from [YOLOv4](https://arxiv.org/abs/2004.10934))
 - [x] Pruned model training (only valid for TF 1.x)
 - [x] Multi-GPU training with SyncBatchNorm support (valid for TF-2.2 and later)
@@ -479,7 +480,6 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 
 ### TODO
-- [ ] DropBlock on YOLO head
 - [ ] Gaussian YOLOv3 loss
 - [ ] support Quantization aware training
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones/imagenet_training)

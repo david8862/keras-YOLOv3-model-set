@@ -3,6 +3,7 @@
 """Data process utility functions."""
 import numpy as np
 import random
+import math
 import cv2
 from PIL import Image, ImageEnhance, ImageFilter
 import imgaug.augmenters as iaa
@@ -500,6 +501,115 @@ def box_candidates(box1, box2, wh_thr=2, ar_thr=20, area_thr=0.1):  # box1(4,n),
     w2, h2 = box2[2] - box2[0], box2[3] - box2[1]
     ar = np.maximum(w2 / (h2 + 1e-16), h2 / (w2 + 1e-16))  # aspect ratio
     return (w2 > wh_thr) & (h2 > wh_thr) & (w2 * h2 / (w1 * h1 + 1e-16) > area_thr) & (ar < ar_thr)  # candidates
+
+
+
+class Grid(object):
+    def __init__(self, d1, d2, rotate=360, ratio=0.5, mode=1, prob=1.):
+        self.d1 = d1
+        self.d2 = d2
+        self.rotate = rotate
+        self.ratio = ratio
+        self.mode=mode
+        self.st_prob = self.prob = prob
+
+    def set_prob(self, epoch, max_epoch):
+        self.prob = self.st_prob * min(1, epoch / max_epoch)
+
+    def __call__(self, img):
+        h = img.size[1]
+        w = img.size[0]
+
+        if np.random.rand() > self.prob:
+            return img, np.ones((h, w), np.float32)
+
+        # 1.5 * h, 1.5 * w works fine with the squared images
+        # But with rectangular input, the mask might not be able to recover back to the input image shape
+        # A square mask with edge length equal to the diagnoal of the input image
+        # will be able to cover all the image spot after the rotation. This is also the minimum square.
+        hh = math.ceil((math.sqrt(h*h + w*w)))
+
+        d = np.random.randint(self.d1, self.d2)
+        #d = self.d
+
+        # maybe use ceil? but i guess no big difference
+        self.l = math.ceil(d*self.ratio)
+
+        mask = np.ones((hh, hh), np.float32)
+        st_h = np.random.randint(d)
+        st_w = np.random.randint(d)
+        for i in range(-1, hh//d+1):
+                s = d*i + st_h
+                t = s+self.l
+                s = max(min(s, hh), 0)
+                t = max(min(t, hh), 0)
+                mask[s:t,:] *= 0
+        for i in range(-1, hh//d+1):
+                s = d*i + st_w
+                t = s+self.l
+                s = max(min(s, hh), 0)
+                t = max(min(t, hh), 0)
+                mask[:,s:t] *= 0
+        r = np.random.randint(self.rotate)
+        mask = Image.fromarray(np.uint8(mask))
+        mask = mask.rotate(r)
+        mask = np.asarray(mask)
+        mask = mask[(hh-h)//2:(hh-h)//2+h, (hh-w)//2:(hh-w)//2+w]
+
+        if self.mode == 1:
+            mask = 1-mask
+
+        #mask = mask.expand_as(img)
+        img = np.array(img) * np.expand_dims(mask, -1)
+
+        return Image.fromarray(img), mask
+
+
+def random_gridmask(image, boxes, prob=0.2):
+    """
+    Random add GridMask augment for image
+
+    reference:
+        https://arxiv.org/abs/2001.04086
+        https://github.com/Jia-Research-Lab/GridMask/blob/master/imagenet_grid/utils/grid.py
+
+    # Arguments
+        image: origin image for GridMask
+            PIL Image object containing image data
+        boxes: Ground truth object bounding boxes,
+            numpy array of shape (num_boxes, 5),
+            box format (xmin, ymin, xmax, ymax, cls_id).
+
+        prob: probability for GridMask,
+            scalar to control the GridMask probability.
+
+    # Returns
+        image: adjusted PIL Image object.
+        boxes: rotated bounding box numpy array
+    """
+    grid = Grid(d1=image.size[0]//7, d2=image.size[0]//3, rotate=360, ratio=0.5, prob=prob)
+    image, mask = grid(image)
+
+    n = len(boxes)
+    if n:
+        # check box width and height to discard invalid box
+        boxes_w = boxes[:, 2] - boxes[:, 0]
+        boxes_h = boxes[:, 3] - boxes[:, 1]
+        boxes = boxes[np.logical_and(boxes_w>1, boxes_h>1)] # discard invalid box
+
+        new_boxes = []
+        # filter out box which is heavily masked
+        for box in boxes:
+            xmin, ymin, xmax, ymax = box[:4]
+            box_mask = mask[ymin:ymax, xmin:xmax]
+            box_area = (xmax - xmin) * (ymax - ymin)
+            box_valid_area = box_mask.sum()
+            if box_valid_area > (box_area * 0.3): # only keep box when valid_area > 30%
+                new_boxes.append(box)
+
+        boxes = np.vstack(new_boxes) if len(new_boxes) >= 1 else np.array([[]])
+
+    return image, boxes
 
 
 def merge_mosaic_bboxes(bboxes, crop_x, crop_y, image_size):

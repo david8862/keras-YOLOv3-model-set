@@ -31,7 +31,7 @@ def convert_annotation(dataset_path, year, image_id, list_file, include_difficul
 
         # parse box coordinate to (xmin,ymin,xmax,ymax) format
         xml_box = obj.find('bndbox')
-        box = (int(xml_box.find('xmin').text), int(xml_box.find('ymin').text), int(xml_box.find('xmax').text), int(xml_box.find('ymax').text))
+        box = (int(float(xml_box.find('xmin').text)), int(float(xml_box.find('ymin').text)), int(float(xml_box.find('xmax').text)), int(float(xml_box.find('ymax').text)))
         # write box info to txt
         list_file.write(" " + ",".join([str(item) for item in box]) + ',' + str(class_id))
         class_count[class_name] = class_count[class_name] + 1

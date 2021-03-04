@@ -1,4 +1,5 @@
 numpy==1.17.5
+setuptools
 scipy
 scikit-learn
 opencv-python
