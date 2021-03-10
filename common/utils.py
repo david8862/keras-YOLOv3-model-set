@@ -128,6 +128,8 @@ def draw_label(image, text, color, coords):
     return image
 
 def draw_boxes(image, boxes, classes, scores, class_names, colors, show_score=True):
+    if boxes is None or len(boxes) == 0:
+        return image
     if classes is None or len(classes) == 0:
         return image
 

@@ -37,9 +37,12 @@ def main():
     #image, boxes = random_rotate(image, boxes, prob=1.0)
     image, boxes = random_gridmask(image, boxes, prob=1.0)
 
-    classes = boxes[:, -1]
-    scores = [1.0]*len(classes)
-    image = draw_boxes(np.array(image, dtype='uint8'), boxes[:, :4], classes, scores, class_names, colors)
+    if len(boxes) > 0:
+        classes = boxes[:, -1]
+        scores = [1.0]*len(classes)
+        boxes = boxes[:, :4]
+
+    image = draw_boxes(np.array(image, dtype='uint8'), boxes, classes, scores, class_names, colors)
 
     Image.fromarray(image_origin).show()
     Image.fromarray(image).show()

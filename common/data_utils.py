@@ -607,7 +607,7 @@ def random_gridmask(image, boxes, prob=0.2):
             if box_valid_area > (box_area * 0.3): # only keep box when valid_area > 30%
                 new_boxes.append(box)
 
-        boxes = np.vstack(new_boxes) if len(new_boxes) >= 1 else np.array([[]])
+        boxes = np.vstack(new_boxes) if len(new_boxes) >= 1 else np.array([])
 
     return image, boxes
 
