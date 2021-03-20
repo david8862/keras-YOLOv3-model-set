@@ -2,19 +2,20 @@
 # -*- coding: utf-8 -*-
 import os, sys, argparse, glob
 import cv2
+import json
 import numpy as np
 from PIL import Image
 from timeit import time
 from collections import deque
 
 # implementation of SORT tracker
-from sort.sort import Sort
+from model.sort.sort import Sort
 # implementation of DeepSORT tracker
-from deep_sort import preprocessing
-from deep_sort import nn_matching
-from deep_sort.detection import Detection
-from deep_sort.tracker import Tracker
-from deep_sort.generate_detections import create_box_encoder
+from model.deep_sort import preprocessing
+from model.deep_sort import nn_matching
+from model.deep_sort.detection import Detection
+from model.deep_sort.tracker import Tracker
+from model.deep_sort.generate_detections import create_box_encoder
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from yolo import YOLO, YOLO_np
@@ -88,8 +89,8 @@ def deepsort(yolo, args):
             raise IOError("Couldn't open webcam or video")
 
     # create video save stream if needed
-    save_output = True if args.output != "" else False
-    if save_output:
+    save_video = True if args.output != "" else False
+    if save_video:
         if images_input:
             raise ValueError("image folder input could be saved to video file")
 
@@ -131,6 +132,12 @@ def deepsort(yolo, args):
     np.random.seed(100)
     COLORS = np.random.randint(0, 255, size=(200, 3), dtype="uint8")
 
+    # init json dict for final output
+    output_dict = {
+        'filename': 'test',
+        'class':    'video',
+        'frames': []
+    }
 
     i=0
     fps = 0.0
@@ -143,6 +150,14 @@ def deepsort(yolo, args):
 
         start_time = time.time()
         image = Image.fromarray(frame[...,::-1]) # bgr to rgb
+
+        # init json dict for 1 frame
+        frame_dict = {
+            'timestamp': float(i), # just use frame id as timestamp
+            'num': int(i), # just use frame id as num
+            'class': 'frame',
+            'hypotheses': []
+        }
 
         # detect object from image
         _, out_boxes, out_classnames, out_scores = yolo.detect_image(image)
@@ -182,6 +197,17 @@ def deepsort(yolo, args):
             total_obj_counter.append(int(track.track_id))
             bbox = track.to_tlbr()
 
+            # json dict for 1 track box
+            track_dict = {
+                'height': float(int(bbox[3]) - int(bbox[1])),
+                'width': float(int(bbox[2]) - int(bbox[0])),
+                'id': str(track.track_id),
+                'y': float(int(bbox[1])),
+                'x': float(int(bbox[0])),
+            }
+            # record box dict to frame
+            frame_dict['hypotheses'].append(track_dict)
+
             # show all tracking result as color box
             color = [int(c) for c in COLORS[track_indexes[track_count] % len(COLORS)]]
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), (color), 3)
@@ -217,7 +243,10 @@ def deepsort(yolo, args):
         cv2.resizeWindow('DeepSORT', 1024, 768);
         cv2.imshow('DeepSORT', frame)
 
-        if save_output:
+        # record frame dict to output
+        output_dict['frames'].append(frame_dict)
+
+        if save_video:
             #save a frame
             out.write(frame)
 
@@ -230,14 +259,18 @@ def deepsort(yolo, args):
     # Release everything if job is finished
     if not images_input:
         frame_capture.release()
-    if save_output:
+    if save_video:
         out.release()
+    if args.output_json:
+        # save output json
+        with open(args.output_json, 'w') as fp:
+            json.dump([output_dict], fp, indent=4)
+
     cv2.destroyAllWindows()
 
 
 
 def sort(yolo, args):
-
     images_input = True if os.path.isdir(args.input) else False
     if images_input:
         # get images list
@@ -252,8 +285,8 @@ def sort(yolo, args):
             raise IOError("Couldn't open webcam or video")
 
     # create video save stream if needed
-    save_output = True if args.output != "" else False
-    if save_output:
+    save_video = True if args.output != "" else False
+    if save_video:
         if images_input:
             raise ValueError("image folder input could be saved to video file")
 
@@ -287,6 +320,12 @@ def sort(yolo, args):
     np.random.seed(100)
     COLORS = np.random.randint(0, 255, size=(200, 3), dtype="uint8")
 
+    # init json dict for final output
+    output_dict = {
+        'filename': 'test',
+        'class':    'video',
+        'frames': []
+    }
 
     i=0
     fps = 0.0
@@ -299,6 +338,14 @@ def sort(yolo, args):
 
         start_time = time.time()
         image = Image.fromarray(frame[...,::-1]) # bgr to rgb
+
+        # init json dict for 1 frame
+        frame_dict = {
+            'timestamp': float(i), # just use frame id as timestamp
+            'num': int(i), # just use frame id as num
+            'class': 'frame',
+            'hypotheses': []
+        }
 
         # detect object from image
         _, out_boxes, out_classnames, out_scores = yolo.detect_image(image)
@@ -324,6 +371,17 @@ def sort(yolo, args):
         for track in tracks:
             bbox = track[:4]
             track_id = int(track[4])
+
+            # json dict for 1 track box
+            track_dict = {
+                'height': float(int(bbox[3]) - int(bbox[1])),
+                'width': float(int(bbox[2]) - int(bbox[0])),
+                'id': str(track_id),
+                'y': float(int(bbox[1])),
+                'x': float(int(bbox[0])),
+            }
+            # record box dict to frame
+            frame_dict['hypotheses'].append(track_dict)
 
             # record tracking info and get bbox
             track_indexes.append(int(track_id))
@@ -365,7 +423,10 @@ def sort(yolo, args):
         cv2.resizeWindow('SORT', 1024, 768);
         cv2.imshow('SORT', frame)
 
-        if save_output:
+        # record frame dict to output
+        output_dict['frames'].append(frame_dict)
+
+        if save_video:
             #save a frame
             out.write(frame)
 
@@ -378,8 +439,13 @@ def sort(yolo, args):
     # Release everything if job is finished
     if not images_input:
         frame_capture.release()
-    if save_output:
+    if save_video:
         out.release()
+    if args.output_json:
+        # save output json
+        with open(args.output_json, 'w') as fp:
+            json.dump([output_dict], fp, indent=4)
+
     cv2.destroyAllWindows()
 
 
@@ -397,11 +463,11 @@ def main():
 
     parser.add_argument(
         '--tracking_classes_path', type=str, required=False,
-        help='[Optional] Path to DeepSORT tracking class definitions, will track all detect classes if None, default=%(default)s', default=None
+        help='[Optional] Path to tracking class definitions, will track all detect classes if None, default=%(default)s', default=None
     )
 
     parser.add_argument(
-        '--deepsort_model_path', type=str, required=False, default="tracking/model/mars-small128.pb",
+        '--deepsort_model_path', type=str, required=False, default="tracking/weights/mars-small128.pb",
         help = "[Optional] DeepSORT encoder model path, default=%(default)s"
     )
 
@@ -464,13 +530,18 @@ def main():
     Command line positional arguments -- for video detection mode
     '''
     parser.add_argument(
-        "--input", nargs='?', type=str,required=False,default='./path2your_video',
+        "--input", nargs='?', type=str, required=False, default='./path2your_video',
         help = "Input video file or images folder path"
     )
 
     parser.add_argument(
         "--output", nargs='?', type=str, default="",
         help = "[Optional] output video file path"
+    )
+
+    parser.add_argument(
+        "--output_json", nargs='?', type=str, required=False, default=None,
+        help = "[Optional] output json file for pymot eval"
     )
 
     args = parser.parse_args()

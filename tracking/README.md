@@ -14,7 +14,7 @@ A simple demo of MOT(Multi Object Tracking) implementation using YOLO detection 
 1. Install requirements on Ubuntu 16.04/18.04:
 
 ```
-# apt install python3-opencv
+# apt install python3-opencv python3-tk
 # pip install Cython
 # pip install -r requirements.txt
 ```
@@ -33,7 +33,7 @@ usage: mot_tracker.py [-h] [--tracking_model_type {sort,deepsort}]
                       [--classes_path CLASSES_PATH]
                       [--model_image_size MODEL_IMAGE_SIZE] [--score SCORE]
                       [--iou IOU] [--elim_grid_sense] [--input [INPUT]]
-                      [--output [OUTPUT]]
+                      [--output [OUTPUT]] [--output_json [OUTPUT_JSON]]
 
 Demo of multi object tracking (MOT) with YOLO detection model
 
@@ -42,12 +42,11 @@ optional arguments:
   --tracking_model_type {sort,deepsort}
                         MOT model type (sort/deepsort), default=sort
   --tracking_classes_path TRACKING_CLASSES_PATH
-                        [Optional] Path to DeepSORT tracking class
-                        definitions, will track all detect classes if None,
-                        default=None
+                        [Optional] Path to tracking class definitions, will
+                        track all detect classes if None, default=None
   --deepsort_model_path DEEPSORT_MODEL_PATH
                         [Optional] DeepSORT encoder model path,
-                        default=tracking/model/mars-small128.pb
+                        default=tracking/weights/mars-small128.pb
   --model_type MODEL_TYPE
                         YOLO model type: yolo3_mobilenet_lite/tiny_yolo3_mobil
                         enet/yolo3_darknet/..., default tiny_yolo3_darknet
@@ -71,11 +70,13 @@ optional arguments:
                         default False
   --input [INPUT]       Input video file or images folder path
   --output [OUTPUT]     [Optional] output video file path
+  --output_json [OUTPUT_JSON]
+                        [Optional] output json file for pymot eval
 ```
 
 Reference demo config:
 ```
-# python tracking/mot_tracker.py --tracking_model_type=deepsort --tracking_classes_path=tracking_classes.txt --deepsort_model_path=tracking/model/mars-small128.pb --model_type=yolo3_mobilenet_lite --weights_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --score=0.2 --iou=0.6 --input=demo.mp4
+# python tracking/mot_tracker.py --tracking_model_type=deepsort --tracking_classes_path=tracking_classes.txt --deepsort_model_path=tracking/weights/mars-small128.pb --model_type=yolo3_mobilenet_lite --weights_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --score=0.2 --iou=0.6 --input=demo.mp4
 ```
 
 ![image](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/assets/tracking.gif)
