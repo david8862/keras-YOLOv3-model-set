@@ -15,7 +15,7 @@ def convert_mot16_annotation(annotation_file, output_json, ground_truth):
     """
     MOT16 txt annotation file line format
     ground truth (gt.txt):
-        <frame_id>,<track_id>,<bbox_top>,<bbox_left>,<bbox_width>,<bbox_height>,<ignore>,<classes>
+        <frame_id>,<track_id>,<bbox_left>,<bbox_top>,<bbox_width>,<bbox_height>,<ignore>,<classes>
         box are grouped with track id, like
             1,1,912,484,97,109,0,7,1
             2,1,912,484,97,109,0,7,1
@@ -25,7 +25,7 @@ def convert_mot16_annotation(annotation_file, output_json, ground_truth):
             ...
 
     detection (det.txt):
-        <frame_id>,<track_id(-1)>,<bbox_top>,<bbox_left>,<bbox_width>,<bbox_height>,<confidence>,<mot3d_x(-1)>,<mot3d_y(-1)>,<mot3d_z(-1)>
+        <frame_id>,<track_id(-1)>,<bbox_left>,<bbox_top>,<bbox_width>,<bbox_height>,<confidence>,<mot3d_x(-1)>,<mot3d_y(-1)>,<mot3d_z(-1)>
         box are grouped with frame id, like
             1,-1,1359.1,413.27,120.26,362.77,2.3092,-1,-1,-1
             1,-1,571.03,402.13,104.56,315.68,1.5028,-1,-1,-1
@@ -77,8 +77,8 @@ def convert_mot16_annotation(annotation_file, output_json, ground_truth):
                     'height': float(annotation[5]),
                     'width': float(annotation[4]),
                     'id': annotation[1],
-                    'y': float(annotation[2]),
-                    'x': float(annotation[3]),
+                    'y': float(annotation[3]),
+                    'x': float(annotation[2]),
                 }
 
                 # set dco flag by 'ignore' for ground truth

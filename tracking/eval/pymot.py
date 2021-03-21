@@ -592,7 +592,7 @@ if __name__ == "__main__":
             write_stderr_red("Error:", "Stopping. Fix ids first. Evaluating with broken data does not make sense!\n    File: %s" % args.groundtruth)
             sys.exit()
         else:
-            print("format check pass")
+            print("Format check pass\n")
 
     evaluator.evaluate()
     print("Track statistics")
