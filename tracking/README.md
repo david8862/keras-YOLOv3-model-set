@@ -83,11 +83,30 @@ Reference demo config:
 
 ### Evaluation
 1. Prepare ground truth json file as [PyMOT](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tracking/eval) guided. A sample tool for [MOT16](https://motchallenge.net/data/MOT16/) could be found [here](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tracking/eval/tools/mot16_annotation.py)
-
 2. Use `--output_json` option in `mot_tracker.py` to generate pymot json format result file
-
 3. Use [pymot.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tracking/eval/pymot.py) to get MOTA/MOTP metrics
 
+Here is a sample result with `scaled_yolo4_csp_darknet` & `deepsort` pretrained model on MOT16-04 frame sequense, with default options:
+
+```
+Track statistics
+Lonely ground truth tracks 79
+Total ground truth tracks  141
+Lonely hypothesis tracks 1
+Total hypothesis tracks  93
+
+Results
+Ground truths               108005
+False positives             162
+Misses                      28629
+Mismatches                  90
+Recoverable mismatches      79
+Non recoverable mismatches  47
+Correspondences             19177
+
+MOTP 0.7780507098981845
+MOTA 0.7325957131614277
+```
 
 ## Train deep association metric model
 
