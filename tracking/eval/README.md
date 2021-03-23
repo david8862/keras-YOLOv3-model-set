@@ -18,14 +18,20 @@ This is a python implementation which determines the *MOTP* and *MOTA* metrics f
 ```
 $ pymot.py -h
 usage: pymot.py [-h] -a GROUNDTRUTH -b HYPOTHESIS [-c] [-v VISUAL_DEBUG_FILE]
+                [-i IOU_THRESHOLD]
 
 optional arguments:
   -h, --help            show this help message and exit
   -a GROUNDTRUTH, --groundtruth GROUNDTRUTH
+                        Groundtruth json file
   -b HYPOTHESIS, --hypothesis HYPOTHESIS
-  -c, --check_format
+                        Hypotheses json file
+  -c, --check_format    Check if input json follow required format,
+                        default=True
   -v VISUAL_DEBUG_FILE, --visual_debug_file VISUAL_DEBUG_FILE
-  -i IOU, --iou IOU     iou threshold
+                        save visual debug frames to json file
+  -i IOU_THRESHOLD, --iou_threshold IOU_THRESHOLD
+                        iou threshold for bbox match, default=0.2
 ```
 You have to feed `pymot.py` with a groundtruth file and a hypothesis file.
 

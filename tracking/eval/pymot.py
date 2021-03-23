@@ -1,5 +1,10 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
+'''
+Multiple Object Tracking (MOT) metrics evaluation tool, ported from pymot:
+
+https://github.com/Videmo/pymot
+'''
 import sys
 import json
 import argparse
@@ -552,14 +557,13 @@ class MOTEvaluation:
         self.hypothesis_ids_ = set()
 
 
-if __name__ == "__main__":
-
+def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-a', '--groundtruth', required=True)
-    parser.add_argument('-b', '--hypothesis', required=True)
-    parser.add_argument('-c', '--check_format', action="store_true", default=True)
-    parser.add_argument('-v', '--visual_debug_file')
-    parser.add_argument('-i', '--iou', default=0.2, type=float, help='iou threshold')
+    parser.add_argument('-a', '--groundtruth', type=str, required=True, help='Groundtruth json file')
+    parser.add_argument('-b', '--hypothesis', type=str, required=True, help='Hypotheses json file')
+    parser.add_argument('-c', '--check_format', action="store_true", default=True, help='Check if input json follow required format, default=%(default)s')
+    parser.add_argument('-v', '--visual_debug_file', type=str, required=False, default=None, help='save visual debug frames to json file')
+    parser.add_argument('-i', '--iou_threshold', type=float, required=False, default=0.2, help='iou threshold for bbox match, default=%(default)s')
     args = parser.parse_args()
 
     # Load ground truth according to format
@@ -580,7 +584,7 @@ if __name__ == "__main__":
     hypo.close()
 
 
-    evaluator = MOTEvaluation(groundtruth, hypotheses, args.iou)
+    evaluator = MOTEvaluation(groundtruth, hypotheses, args.iou_threshold)
 
     if(args.check_format):
         formatChecker = FormatChecker(groundtruth, hypotheses)
@@ -609,3 +613,5 @@ if __name__ == "__main__":
         with open(args.visual_debug_file, 'w') as fp:
             json.dump(evaluator.getVisualDebug(), fp, indent=4)
 
+if __name__ == '__main__':
+    main()
