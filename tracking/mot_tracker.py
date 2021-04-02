@@ -98,8 +98,8 @@ def deepsort(yolo, args):
         # to convert it to x264 to reduce file size:
         # ffmpeg -i test.mp4 -vcodec libx264 -f mp4 test_264.mp4
         #
-        #video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if args.input == '0' else int(frame_capture.get(cv2.CAP_PROP_FOURCC))
-        video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if args.input == '0' else cv2.VideoWriter_fourcc(*"mp4v")
+        #video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if args.input == '0' else cv2.VideoWriter_fourcc(*"mp4v")
+        video_FourCC    = cv2.VideoWriter_fourcc(*"mp4v")
         video_fps       = frame_capture.get(cv2.CAP_PROP_FPS)
         video_size      = (int(frame_capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
                             int(frame_capture.get(cv2.CAP_PROP_FRAME_HEIGHT)))

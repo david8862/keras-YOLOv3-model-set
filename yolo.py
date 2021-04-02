@@ -265,8 +265,8 @@ def detect_video(yolo, video_path, output_path=""):
         # to convert it to x264 to reduce file size:
         # ffmpeg -i test.mp4 -vcodec libx264 -f mp4 test_264.mp4
         #
-        #video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if video_path == '0' else int(vid.get(cv2.CAP_PROP_FOURCC))
-        video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if video_path == '0' else cv2.VideoWriter_fourcc(*"mp4v")
+        #video_FourCC    = cv2.VideoWriter_fourcc(*'XVID') if video_path == '0' else cv2.VideoWriter_fourcc(*"mp4v")
+        video_FourCC    = cv2.VideoWriter_fourcc(*"mp4v")
         video_fps       = vid.get(cv2.CAP_PROP_FPS)
         video_size      = (int(vid.get(cv2.CAP_PROP_FRAME_WIDTH)),
                             int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT)))

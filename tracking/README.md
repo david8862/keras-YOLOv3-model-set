@@ -2,7 +2,7 @@
 
 ## Introduction
 
-A simple demo of MOT(Multi Object Tracking) implementation using YOLO detection model family, which is ported from [deep_sort_yolov3](https://github.com/Qidian213/deep_sort_yolov3) and [abewley/sort](https://github.com/abewley/sort).
+An extend submodule of MOT(Multi Object Tracking) implementation using YOLO detection model family, which is ported from [deep_sort_yolov3](https://github.com/Qidian213/deep_sort_yolov3) and [abewley/sort](https://github.com/abewley/sort).
 
 #### MOT Model
 - [x] SORT
