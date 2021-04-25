@@ -21,6 +21,7 @@ from yolo3.models.yolo3_nano import yolo3_nano_body
 from yolo3.models.yolo3_efficientnet import yolo3_efficientnet_body, tiny_yolo3_efficientnet_body, yolo3lite_efficientnet_body, yolo3lite_spp_efficientnet_body, tiny_yolo3lite_efficientnet_body
 from yolo3.models.yolo3_mobilenetv3_large import yolo3_mobilenetv3large_body, yolo3lite_mobilenetv3large_body, tiny_yolo3_mobilenetv3large_body, tiny_yolo3lite_mobilenetv3large_body
 from yolo3.models.yolo3_mobilenetv3_small import yolo3_mobilenetv3small_body, yolo3lite_mobilenetv3small_body, tiny_yolo3_mobilenetv3small_body, tiny_yolo3lite_mobilenetv3small_body, yolo3_ultralite_mobilenetv3small_body, tiny_yolo3_ultralite_mobilenetv3small_body
+from yolo3.models.yolo3_peleenet import yolo3_peleenet_body, yolo3lite_peleenet_body, tiny_yolo3_peleenet_body, tiny_yolo3lite_peleenet_body, yolo3_ultralite_peleenet_body, tiny_yolo3_ultralite_peleenet_body
 #from yolo3.models.yolo3_resnet50v2 import yolo3_resnet50v2_body, yolo3lite_resnet50v2_body, yolo3lite_spp_resnet50v2_body, tiny_yolo3_resnet50v2_body, tiny_yolo3lite_resnet50v2_body
 
 
@@ -58,6 +59,10 @@ yolo3_model_map = {
     'yolo3_mobilenetv3small': [yolo3_mobilenetv3small_body, 166, None],
     'yolo3_mobilenetv3small_lite': [yolo3lite_mobilenetv3small_body, 166, None],
     'yolo3_mobilenetv3small_ultralite': [yolo3_ultralite_mobilenetv3small_body, 166, None],
+
+    'yolo3_peleenet': [yolo3_peleenet_body, 366, None],
+    'yolo3_peleenet_lite': [yolo3lite_peleenet_body, 366, None],
+    'yolo3_peleenet_ultralite': [yolo3_ultralite_peleenet_body, 366, None],
 
     #'yolo3_resnet50v2': [yolo3_resnet50v2_body, 190, None],
     #'yolo3_resnet50v2_lite': [yolo3lite_resnet50v2_body, 190, None],
@@ -124,6 +129,10 @@ yolo3_tiny_model_map = {
     'tiny_yolo3_mobilenetv3small': [tiny_yolo3_mobilenetv3small_body, 166, None],
     'tiny_yolo3_mobilenetv3small_lite': [tiny_yolo3lite_mobilenetv3small_body, 166, None],
     'tiny_yolo3_mobilenetv3small_ultralite': [tiny_yolo3_ultralite_mobilenetv3small_body, 166, None],
+
+    'tiny_yolo3_peleenet': [tiny_yolo3_peleenet_body, 366, None],
+    'tiny_yolo3_peleenet_lite': [tiny_yolo3lite_peleenet_body, 366, None],
+    'tiny_yolo3_peleenet_ultralite': [tiny_yolo3_ultralite_peleenet_body, 366, None],
 
     #'tiny_yolo3_resnet50v2': [tiny_yolo3_resnet50v2_body, 190, None],
     #'tiny_yolo3_resnet50v2_lite': [tiny_yolo3lite_resnet50v2_body, 190, None],
