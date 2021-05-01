@@ -425,6 +425,7 @@ Some experiment on PascalVOC dataset and comparison:
 | [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_mobilnet_lite_320_voc.tar.gz) | 320x320 | VOC07+12 | VOC07 | 73.47% | 4.51G | 7.77M | 31.8MB | 17ms | Keras on Titan XP |
 | [YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_mobilnet_lite_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 76.55% | 7.60G | 7.77M | 31.8MB | 20ms | Keras on Titan XP |
 | [YOLOv3 Lite-SPP-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/yolo3_mobilnet_lite_spp_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 76.32% | 7.98G | 8.81M | 34MB | 22ms | Keras on Titan XP |
+| [YOLOv3 Lite-PeleeNet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.3.0/yolo3_peleenet_lite_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 78.07% | 6.60G | 4.92M | 21MB | 33ms | Keras on Titan XP |
 | [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/tiny_yolo3_mobilnet_lite_320_voc.tar.gz) | 320x320 | VOC07+12 | VOC07 | 69.10% | 2.93G | 4.92M | 20.1MB | 9ms | Keras on Titan XP |
 | [Tiny YOLOv3 Lite-Mobilenet](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/tiny_yolo3_mobilnet_lite_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 72.90% | 4.95G | 4.92M | 20.1MB | 11ms | Keras on Titan XP |
 | [Tiny YOLOv3 Lite-Mobilenet with GIoU loss](https://github.com/david8862/keras-YOLOv3-model-set/releases/download/v1.0.0/tiny_yolo3_mobilnet_lite_giou_416_voc.tar.gz) | 416x416 | VOC07+12 | VOC07 | 72.92% | 4.95G | 4.92M | 20.1MB | 11ms | Keras on Titan XP |
@@ -439,7 +440,11 @@ Some experiment on PascalVOC dataset and comparison:
 | [SSD,VGG-16](https://github.com/pierluigiferrari/ssd_keras) | 300x300 | VOC07+12 | VOC07	| 77.5% |  |  | 201MB | 39fps | Keras on Titan X |
 
 
-**NOTE**: mAP/AP is evaluated with "Weighted-Distance-Cluster-NMS" post process, which has better performance than Traditional NMS
+**NOTE**:
+1. mAP/AP is evaluated with "Weighted-Distance-Cluster-NMS" post process, which has better performance than Traditional NMS
+
+2. If you meet any model loading problem with these pretrained weights due to h5 format compatibility issue, try to run "Model dump" with it again to regenerate the inference model.
+
 
 ### Demo
 1. [yolo.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/yolo.py)
