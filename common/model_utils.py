@@ -5,6 +5,7 @@ from tensorflow.keras.optimizers import Adam, RMSprop, SGD
 from tensorflow.keras.optimizers.schedules import ExponentialDecay, PolynomialDecay, PiecewiseConstantDecay
 from tensorflow.keras.experimental import CosineDecay
 from tensorflow_model_optimization.sparsity import keras as sparsity
+import tensorflow.keras.backend as K
 
 
 def add_metrics(model, metric_dict):
@@ -104,7 +105,7 @@ def get_lr_scheduler(learning_rate, decay_type, decay_steps):
     if decay_type == None:
         lr_scheduler = learning_rate
     elif decay_type == 'cosine':
-        lr_scheduler = CosineDecay(initial_learning_rate=learning_rate, decay_steps=decay_steps)
+        lr_scheduler = CosineDecay(initial_learning_rate=learning_rate, decay_steps=decay_steps, alpha=0.2) # use 0.2*learning_rate as final minimum learning rate
     elif decay_type == 'exponential':
         lr_scheduler = ExponentialDecay(initial_learning_rate=learning_rate, decay_steps=decay_steps, decay_rate=0.9)
     elif decay_type == 'polynomial':
@@ -120,7 +121,7 @@ def get_lr_scheduler(learning_rate, decay_type, decay_steps):
     return lr_scheduler
 
 
-def get_optimizer(optim_type, learning_rate, decay_type='cosine', decay_steps=100000):
+def get_optimizer(optim_type, learning_rate, average_type=None, decay_type='cosine', decay_steps=100000):
     optim_type = optim_type.lower()
 
     lr_scheduler = get_lr_scheduler(learning_rate, decay_type, decay_steps)
@@ -134,5 +135,108 @@ def get_optimizer(optim_type, learning_rate, decay_type='cosine', decay_steps=10
     else:
         raise ValueError('Unsupported optimizer type')
 
+    if average_type:
+        optimizer = get_averaged_optimizer(average_type, optimizer)
+
     return optimizer
+
+
+def get_averaged_optimizer(average_type, optimizer):
+    """
+    Apply weights average mechanism in optimizer. Need tensorflow-addons
+    which request TF 2.x and have following compatibility table:
+    -------------------------------------------------------------
+    |    Tensorflow Addons     | Tensorflow |    Python          |
+    -------------------------------------------------------------
+    | tfa-nightly              | 2.3, 2.4   | 3.6, 3.7, 3.8      |
+    -------------------------------------------------------------
+    | tensorflow-addons-0.12.0 | 2.3, 2.4   | 3.6, 3.7, 3.8      |
+    -------------------------------------------------------------
+    | tensorflow-addons-0.11.2 | 2.2, 2.3   | 3.5, 3.6, 3.7, 3.8 |
+    -------------------------------------------------------------
+    | tensorflow-addons-0.10.0 | 2.2        | 3.5, 3.6, 3.7, 3.8 |
+    -------------------------------------------------------------
+    | tensorflow-addons-0.9.1  | 2.1, 2.2   | 3.5, 3.6, 3.7      |
+    -------------------------------------------------------------
+    | tensorflow-addons-0.8.3  | 2.1        | 3.5, 3.6, 3.7      |
+    -------------------------------------------------------------
+    | tensorflow-addons-0.7.1  | 2.1        | 2.7, 3.5, 3.6, 3.7 |
+    -------------------------------------------------------------
+    | tensorflow-addons-0.6.0  | 2.0        | 2.7, 3.5, 3.6, 3.7 |
+    -------------------------------------------------------------
+    """
+    import tensorflow_addons as tfa
+
+    average_type = average_type.lower()
+
+    if average_type == None:
+        averaged_optimizer = optimizer
+    elif average_type == 'ema':
+        averaged_optimizer = tfa.optimizers.MovingAverage(optimizer, average_decay=0.99)
+    elif average_type == 'swa':
+        averaged_optimizer = tfa.optimizers.SWA(optimizer, start_averaging=0, average_period=10)
+    elif average_type == 'lookahead':
+        averaged_optimizer = tfa.optimizers.Lookahead(optimizer, sync_period=6, slow_step_size=0.5)
+    else:
+        raise ValueError('Unsupported average type')
+
+    return averaged_optimizer
+
+
+class ExponentialMovingAverage(object):
+    """
+    Apply exponential moving average on model weights
+    Reference:
+            https://www.tensorflow.org/api_docs/python/tf/train/ExponentialMovingAverage
+            https://kexue.fm/archives/6575
+    Usage:
+            model.compile(...)
+            ...
+            EMAer = ExponentialMovingAverage(model)
+            EMAer.inject()
+
+            model.fit(x_train, y_train)
+
+            EMAer.apply_ema_weights()
+            model.predict(x_test)
+
+            EMAer.reset_old_weights() #apply old weights before keep on training
+            model.fit(x_train, y_train) #keep on training
+    """
+    def __init__(self, model, momentum=0.9999):
+        self.momentum = momentum
+        self.model = model
+        self.ema_weights = [K.zeros(K.shape(w)) for w in model.weights]
+
+    def inject(self):
+        """
+        add moving average update op
+        to model.metrics_updates
+        """
+        self.initialize()
+        for w1, w2 in zip(self.ema_weights, self.model.weights):
+            op = K.moving_average_update(w1, w2, self.momentum)
+            self.model.metrics_updates.append(op)
+
+    def initialize(self):
+        """
+        initialize ema_weights with origin model weights
+        """
+        self.old_weights = K.batch_get_value(self.model.weights)
+        K.batch_set_value(zip(self.ema_weights, self.old_weights))
+
+    def apply_ema_weights(self):
+        """
+        store origin model weights, then apply the ema_weights
+        to model
+        """
+        self.old_weights = K.batch_get_value(self.model.weights)
+        ema_weights = K.batch_get_value(self.ema_weights)
+        K.batch_set_value(zip(self.model.weights, ema_weights))
+
+    def reset_old_weights(self):
+        """
+        reset model to old weights
+        """
+        K.batch_set_value(zip(self.model.weights, self.old_weights))
 

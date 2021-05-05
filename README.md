@@ -52,6 +52,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] Singlescale image input training
 - [x] Multiscale image input training
 - [x] Dynamic learning rate decay (Cosine/Exponential/Polynomial/PiecewiseConstant)
+- [x] Weights Average policy for optimizer (EMA/SWA/Lookahead, valid for TF-2.x with tfa)
 - [x] Mosaic data augmentation
 - [x] GridMask data augmentation ([paper](https://arxiv.org/abs/2001.04086))
 - [x] Multi anchors for single GT (from [YOLOv4](https://arxiv.org/abs/2004.10934))
@@ -227,6 +228,7 @@ usage: train.py [-h] [--model_type MODEL_TYPE] [--anchors_path ANCHORS_PATH]
                 [--val_split VAL_SPLIT] [--classes_path CLASSES_PATH]
                 [--batch_size BATCH_SIZE] [--optimizer {adam,rmsprop,sgd}]
                 [--learning_rate LEARNING_RATE]
+                [--average_type {None,ema,swa,lookahead}]
                 [--decay_type {None,cosine,exponential,polynomial,piecewise_constant}]
                 [--transfer_epoch TRANSFER_EPOCH]
                 [--freeze_level {None,0,1,2}] [--init_epoch INIT_EPOCH]
@@ -269,6 +271,8 @@ optional arguments:
                         default=adam
   --learning_rate LEARNING_RATE
                         Initial learning rate, default=0.001
+  --average_type {None,ema,swa,lookahead}
+                        weights average type, default=None
   --decay_type {None,cosine,exponential,polynomial,piecewise_constant}
                         Learning rate decay type, default=None
   --transfer_epoch TRANSFER_EPOCH
