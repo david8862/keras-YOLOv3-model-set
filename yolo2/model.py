@@ -129,9 +129,7 @@ def get_yolo2_train_model(model_type, anchors, num_classes, weights_path=None, f
     loss_dict = {'location_loss':location_loss, 'confidence_loss':confidence_loss, 'class_loss':class_loss}
     add_metrics(model, loss_dict)
 
-    model.compile(optimizer=optimizer, loss={
-        # use custom yolo_loss Lambda layer.
-        'yolo_loss': lambda y_true, y_pred: y_pred})
+    model.compile(optimizer=optimizer, loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # use custom yolo_loss Lambda layer
 
     return model
 
