@@ -150,7 +150,7 @@ def main(args):
         callbacks = callbacks + pruning_callbacks
 
     # prepare optimizer
-    optimizer = get_optimizer(args.optimizer, args.learning_rate, average_type=args.average_type, decay_type=None)
+    optimizer = get_optimizer(args.optimizer, args.learning_rate, average_type=None, decay_type=None)
 
     # support multi-gpu training
     if args.gpu_num >= 2:
@@ -190,10 +190,11 @@ def main(args):
     # Wait 2 seconds for next stage
     time.sleep(2)
 
-    if args.decay_type:
-        # rebuild optimizer to apply learning rate decay, only after
-        # unfreeze all layers
-        callbacks.remove(reduce_lr)
+    if args.decay_type or args.average_type:
+        # rebuild optimizer to apply learning rate decay or weights averager,
+        # only after unfreeze all layers
+        if args.decay_type:
+            callbacks.remove(reduce_lr)
         steps_per_epoch = max(1, num_train//args.batch_size)
         decay_steps = steps_per_epoch * (args.total_epoch - args.init_epoch - args.transfer_epoch)
         optimizer = get_optimizer(args.optimizer, args.learning_rate, average_type=args.average_type, decay_type=args.decay_type, decay_steps=decay_steps)
