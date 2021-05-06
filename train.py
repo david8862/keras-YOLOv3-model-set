@@ -195,6 +195,22 @@ def main(args):
         # only after unfreeze all layers
         if args.decay_type:
             callbacks.remove(reduce_lr)
+
+        if args.average_type == 'ema' or args.average_type == 'swa':
+            # weights averager need tensorflow-addons,
+            # which request TF 2.x and have version compatibility
+            import tensorflow_addons as tfa
+            callbacks.remove(checkpoint)
+            avg_checkpoint = tfa.callbacks.AverageModelCheckpoint(filepath=os.path.join(log_dir, 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5'),
+                                                                  update_weights=True,
+                                                                  monitor='val_loss',
+                                                                  mode='min',
+                                                                  verbose=1,
+                                                                  save_weights_only=False,
+                                                                  save_best_only=True,
+                                                                  period=1)
+            callbacks.append(avg_checkpoint)
+
         steps_per_epoch = max(1, num_train//args.batch_size)
         decay_steps = steps_per_epoch * (args.total_epoch - args.init_epoch - args.transfer_epoch)
         optimizer = get_optimizer(args.optimizer, args.learning_rate, average_type=args.average_type, decay_type=args.decay_type, decay_steps=decay_steps)
