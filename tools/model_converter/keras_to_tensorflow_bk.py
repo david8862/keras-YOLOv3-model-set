@@ -8,22 +8,54 @@ The following code snippet will convert the keras model files
 to the freezed .pb tensorflow weight file. The resultant TensorFlow model
 holds both the model architecture and its associated weights.
 """
-import os, sys, argparse, logging
-import tensorflow.compat.v1 as tf
+
+import os, sys
+import tensorflow as tf
 from tensorflow.python.framework import graph_util
 from tensorflow.python.framework import graph_io
 from pathlib import Path
-from tensorflow.compat.v1.keras import backend as K
-from tensorflow.compat.v1.keras.models import model_from_json, model_from_yaml, load_model
+from absl import app
+from absl import flags
+from absl import logging
+from tensorflow.keras import backend as K
+from tensorflow.keras.models import model_from_json, model_from_yaml, load_model
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.utils import get_custom_objects
 
-tf.disable_eager_execution()
 K.set_learning_phase(0)
+FLAGS = flags.FLAGS
 
-LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
-logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
+flags.DEFINE_string('input_model', None, 'Path to the input model.')
+flags.DEFINE_string('input_model_json', None, 'Path to the input model '
+                                              'architecture in json format.')
+flags.DEFINE_string('input_model_yaml', None, 'Path to the input model '
+                                              'architecture in yaml format.')
+flags.DEFINE_string('output_model', None, 'Path where the converted model will '
+                                          'be stored.')
+flags.DEFINE_boolean('save_graph_def', False,
+                     'Whether to save the graphdef.pbtxt file which contains '
+                     'the graph definition in ASCII format.')
+flags.DEFINE_string('output_nodes_prefix', None,
+                    'If set, the output nodes will be renamed to '
+                    '`output_nodes_prefix`+i, where `i` will numerate the '
+                    'number of of output nodes of the network.')
+flags.DEFINE_boolean('quantize', False,
+                     'If set, the resultant TensorFlow graph weights will be '
+                     'converted from float into eight-bit equivalents. See '
+                     'documentation here: '
+                     'https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/graph_transforms')
+flags.DEFINE_boolean('channels_first', False,
+                     'Whether channels are the first dimension of a tensor. '
+                     'The default is TensorFlow behaviour where channels are '
+                     'the last dimension.')
+flags.DEFINE_boolean('output_meta_ckpt', False,
+                     'If set to True, exports the model as .meta, .index, and '
+                     '.data files, with a checkpoint file. These can be later '
+                     'loaded in TensorFlow to continue training.')
+
+flags.mark_flag_as_required('input_model')
+flags.mark_flag_as_required('output_model')
 
 
 def load_input_model(input_model_path, input_json_path=None, input_yaml_path=None, custom_objects=None):
@@ -34,7 +66,7 @@ def load_input_model(input_model_path, input_json_path=None, input_yaml_path=Non
         model = load_model(input_model_path, custom_objects=custom_objects)
         return model
     except FileNotFoundError as err:
-        logging.error('Input mode file (%s) does not exist.', input_model_path)
+        logging.error('Input mode file (%s) does not exist.', FLAGS.input_model)
         raise err
     except ValueError as wrong_file_err:
         if input_json_path:
@@ -77,9 +109,9 @@ def load_input_model(input_model_path, input_json_path=None, input_yaml_path=Non
             raise wrong_file_err
 
 
-def keras_to_tensorflow(args):
+def main(args):
     # If output_model path is relative and in cwd, make it absolute from root
-    output_model = args.output_model
+    output_model = FLAGS.output_model
     if str(Path(output_model).parent) == '.':
         output_model = str((Path.cwd() / output_model))
 
@@ -91,19 +123,18 @@ def keras_to_tensorflow(args):
     # Create output directory if it does not exist
     Path(output_model).parent.mkdir(parents=True, exist_ok=True)
 
-    if args.channels_first:
+    if FLAGS.channels_first:
         K.set_image_data_format('channels_first')
     else:
         K.set_image_data_format('channels_last')
 
     custom_object_dict = get_custom_objects()
 
-    model = load_input_model(args.input_model, args.input_model_json, args.input_model_yaml, custom_objects=custom_object_dict)
+    model = load_input_model(FLAGS.input_model, FLAGS.input_model_json, FLAGS.input_model_yaml, custom_objects=custom_object_dict)
 
     # TODO(amirabdi): Support networks with multiple inputs
-    orig_output_node_names = [node.name.split(':')[0] for node in model.outputs]
-    #orig_output_node_names = [node.op.name for node in model.outputs]
-    if args.output_nodes_prefix:
+    orig_output_node_names = [node.op.name for node in model.outputs]
+    if FLAGS.output_nodes_prefix:
         num_output = len(orig_output_node_names)
         pred = [None] * num_output
         converted_output_node_names = [None] * num_output
@@ -111,7 +142,7 @@ def keras_to_tensorflow(args):
         # Create dummy tf nodes to rename output
         for i in range(num_output):
             converted_output_node_names[i] = '{}{}'.format(
-                args.output_nodes_prefix, i)
+                FLAGS.output_nodes_prefix, i)
             pred[i] = tf.identity(model.outputs[i],
                                   name=converted_output_node_names[i])
     else:
@@ -120,17 +151,17 @@ def keras_to_tensorflow(args):
                  str(converted_output_node_names))
 
     sess = K.get_session()
-    if args.output_meta_ckpt:
+    if FLAGS.output_meta_ckpt:
         saver = tf.train.Saver()
         saver.save(sess, str(output_fld / output_model_stem))
 
-    if args.save_graph_def:
+    if FLAGS.save_graph_def:
         tf.train.write_graph(sess.graph.as_graph_def(), str(output_fld),
                              output_model_pbtxt_name, as_text=True)
         logging.info('Saved the graph definition in ascii format at %s',
                      str(Path(output_fld) / output_model_pbtxt_name))
 
-    if args.quantize:
+    if FLAGS.quantize:
         from tensorflow.tools.graph_transforms import TransformGraph
         transforms = ["quantize_weights", "quantize_nodes"]
         transformed_graph_def = TransformGraph(sess.graph.as_graph_def(), [],
@@ -152,23 +183,5 @@ def keras_to_tensorflow(args):
                  str(Path(output_fld) / output_model_name))
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--input_model', required=True, type=str, help='Path to the input model.')
-    parser.add_argument('--input_model_json', required=False, type=str, help='Path to the input model architecture in json format.')
-    parser.add_argument('--input_model_yaml', required=False, type=str, help='Path to the input model architecture in yaml format.')
-    parser.add_argument('--output_model', required=True, type=str, help='Path where the converted model will be stored.')
-
-    parser.add_argument('--save_graph_def', default=False, action="store_true", help='Whether to save the graphdef.pbtxt file which contains the graph definition in ASCII format. default=%(default)s')
-    parser.add_argument('--output_nodes_prefix', required=False, type=str, help='If set, the output nodes will be renamed to `output_nodes_prefix`+i, where `i` will numerate the number of of output nodes of the network.')
-    parser.add_argument('--quantize', default=False, action="store_true", help='If set, the resultant TensorFlow graph weights will be converted from float into eight-bit equivalents. See documentation here: https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/graph_transforms. default=%(default)s')
-    parser.add_argument('--channels_first', default=False, action="store_true", help='Whether channels are the first dimension of a tensor. The default is TensorFlow behaviour where channels are the last dimension. default=%(default)s')
-    parser.add_argument('--output_meta_ckpt', default=False, action="store_true", help='If set to True, exports the model as .meta, .index, and .data files, with a checkpoint file. These can be later loaded in TensorFlow to continue training. default=%(default)s')
-
-    args = parser.parse_args()
-
-    keras_to_tensorflow(args)
-
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    app.run(main)

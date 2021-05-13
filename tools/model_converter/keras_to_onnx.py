@@ -3,9 +3,7 @@
 """
 Script to convert YOLO keras model to ONNX model
 """
-import os
-import sys
-import argparse
+import os, sys, argparse
 import shutil
 import subprocess
 import tensorflow as tf
