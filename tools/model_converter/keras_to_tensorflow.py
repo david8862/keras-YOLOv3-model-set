@@ -1,25 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2019, by the Authors: Amir H. Abdi
-This script is freely available under the MIT Public License.
-Please see the License file in the root for details.
-The following code snippet will convert the keras model files
-to the freezed .pb tensorflow weight file. The resultant TensorFlow model
+convert keras model files to frozen pb tensorflow weight file. The resultant TensorFlow model
 holds both the model architecture and its associated weights.
 """
 import os, sys, argparse, logging
-import tensorflow.compat.v1 as tf
+from pathlib import Path
+import tensorflow as tf
 from tensorflow.python.framework import graph_util
 from tensorflow.python.framework import graph_io
-from pathlib import Path
-from tensorflow.compat.v1.keras import backend as K
-from tensorflow.compat.v1.keras.models import model_from_json, model_from_yaml, load_model
+from tensorflow.keras import backend as K
+from tensorflow.keras.models import model_from_json, model_from_yaml, load_model
+
+# compatible with TF 2.x
+if tf.__version__.startswith('2'):
+    import tensorflow.compat.v1 as tf
+    from tensorflow.compat.v1.keras import backend as K
+    from tensorflow.compat.v1.keras.models import model_from_json, model_from_yaml, load_model
+    tf.disable_eager_execution()
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.utils import get_custom_objects
 
-tf.disable_eager_execution()
 K.set_learning_phase(0)
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
