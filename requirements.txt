@@ -1,9 +1,9 @@
-numpy==1.17.5
+numpy
 setuptools
 scipy
-scikit-learn
-opencv-python
-opencv-contrib-python
+scikit-learn==0.20.3
+opencv-python==4.2.0.32
+opencv-contrib-python==4.2.0.32
 tensorflow-gpu
 keras_applications
 tensorflow-model-optimization

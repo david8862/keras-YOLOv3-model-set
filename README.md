@@ -53,7 +53,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] Multiscale image input training
 - [x] Dynamic learning rate decay (Cosine/Exponential/Polynomial/PiecewiseConstant)
 - [x] Weights Average policy for optimizer (EMA/SWA/Lookahead, valid for TF-2.x with tfa)
-- [x] Mosaic data augmentation
+- [x] Mosaic data augmentation (from [YOLOv4](https://arxiv.org/abs/2004.10934))
 - [x] GridMask data augmentation ([paper](https://arxiv.org/abs/2001.04086))
 - [x] Multi anchors for single GT (from [YOLOv4](https://arxiv.org/abs/2004.10934))
 - [x] Pruned model training (only valid for TF 1.x)
