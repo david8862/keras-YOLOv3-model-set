@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-test enhace data argument functions (mosaic/cutmix)
+test enhace data argument functions (mosaic/mosaic_v5/cutmix)
 """
 import os, sys, argparse
 import numpy as np
@@ -11,7 +11,7 @@ import cv2
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from yolo3.data import get_ground_truth_data
 from common.utils import get_dataset, get_classes, draw_label
-from common.data_utils import random_mosaic_augment, random_cutmix_augment
+from common.data_utils import random_mosaic_augment, random_mosaic_augment_v5, random_cutmix_augment
 
 
 def draw_boxes(images, boxes, class_names, output_path):
@@ -44,7 +44,7 @@ def main():
     parser.add_argument('--output_path', type=str, required=False,  help='output path for augmented images, default=%(default)s', default='./test')
     parser.add_argument('--batch_size', type=int, required=False, help = "batch size for test data, default=%(default)s", default=16)
     parser.add_argument('--model_image_size', type=str, required=False, help='model image input size as <height>x<width>, default=%(default)s', default='416x416')
-    parser.add_argument('--augment_type', type=str, required=False, help = "enhance data augmentation type (mosaic/cutmix), default=%(default)s", default='mosaic', choices=['mosaic', 'cutmix'])
+    parser.add_argument('--enhance_augment', type=str, required=False, help = "enhance data augmentation type, default=%(default)s", default=None, choices=['mosaic', 'mosaic_v5', 'cutmix', None])
 
     args = parser.parse_args()
     class_names = get_classes(args.classes_path)
@@ -69,14 +69,19 @@ def main():
     image_data = np.array(image_data)
     boxes_data = np.array(boxes_data)
 
-    if args.augment_type == 'mosaic':
+    if args.enhance_augment == 'mosaic':
         image_data, boxes_data = random_mosaic_augment(image_data, boxes_data, prob=1)
-    elif args.augment_type == 'cutmix':
+    elif args.enhance_augment == 'mosaic_v5':
+        image_data, boxes_data = random_mosaic_augment_v5(image_data, boxes_data, prob=1)
+    elif args.enhance_augment == 'cutmix':
         image_data, boxes_data = random_cutmix_augment(image_data, boxes_data, prob=1)
+    elif args.enhance_augment == None:
+        print('No enhance augment type. Will only apply base augment')
     else:
         raise ValueError('Unsupported augment type')
 
     draw_boxes(image_data, boxes_data, class_names, args.output_path)
+    print('Done. augment images have been saved in', args.output_path)
 
 
 if __name__ == "__main__":

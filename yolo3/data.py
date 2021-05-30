@@ -5,7 +5,7 @@ import numpy as np
 import random, math
 from PIL import Image
 from tensorflow.keras.utils import Sequence
-from common.data_utils import normalize_image, letterbox_resize, random_resize_crop_pad, reshape_boxes, random_hsv_distort, random_horizontal_flip, random_vertical_flip, random_grayscale, random_brightness, random_chroma, random_contrast, random_sharpness, random_blur, random_motion_blur, random_rotate, random_gridmask, random_mosaic_augment
+from common.data_utils import normalize_image, letterbox_resize, random_resize_crop_pad, reshape_boxes, random_hsv_distort, random_horizontal_flip, random_vertical_flip, random_grayscale, random_brightness, random_chroma, random_contrast, random_sharpness, random_blur, random_motion_blur, random_rotate, random_gridmask, random_mosaic_augment, random_mosaic_augment_v5
 from common.utils import get_multiscale_list
 
 
@@ -232,6 +232,9 @@ class Yolo3DataGenerator(Sequence):
         if self.enhance_augment == 'mosaic':
             # add random mosaic augment on batch ground truth data
             image_data, box_data = random_mosaic_augment(image_data, box_data, prob=0.2)
+        elif self.enhance_augment == 'mosaic_v5':
+            # mosaic augment from YOLOv5
+            image_data, box_data = random_mosaic_augment_v5(image_data, box_data, prob=0.2)
 
         y_true = preprocess_true_boxes(box_data, self.input_shape, self.anchors, self.num_classes, self.multi_anchor_assign)
 
@@ -273,6 +276,9 @@ def yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num
         if enhance_augment == 'mosaic':
             # add random mosaic augment on batch ground truth data
             image_data, box_data = random_mosaic_augment(image_data, box_data, prob=0.2)
+        elif enhance_augment == 'mosaic_v5':
+            # mosaic augment from YOLOv5
+            image_data, box_data = random_mosaic_augment_v5(image_data, box_data, prob=0.2)
 
         y_true = preprocess_true_boxes(box_data, input_shape, anchors, num_classes, multi_anchor_assign)
         yield [image_data, *y_true], np.zeros(batch_size)

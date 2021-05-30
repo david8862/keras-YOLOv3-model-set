@@ -169,7 +169,7 @@ def random_hsv_distort(image, hue=.1, sat=1.5, val=1.5):
     usually for training data preprocess
 
     # Arguments
-        image: origin image to be resize
+        image: origin image for HSV distort
             PIL Image object containing image data
         hue: distort range for Hue
             scalar
@@ -755,6 +755,161 @@ def random_mosaic_augment(image_data, boxes_data, prob=.1):
 
             new_images.append(merged_image)
             new_boxes.append(merged_boxes)
+
+        new_images = np.stack(new_images)
+        new_boxes = np.array(new_boxes)
+        return new_images, new_boxes
+
+
+def random_mosaic_augment_v5(image_data, boxes_data, prob=.1):
+    """
+    Random mosaic augment from YOLOv5 implementation
+
+    reference:
+        https://github.com/ultralytics/yolov5/blob/develop/utils/datasets.py
+
+    # Arguments
+        image_data: origin images for mosaic augment
+            numpy array for normalized batch image data
+        boxes_data: origin bboxes for mosaic augment
+            numpy array for batch bboxes
+        prob: probability for augment ,
+            scalar to control the augment probability.
+
+    # Returns
+        image_data: augmented batch image data.
+        boxes_data: augmented batch bboxes data.
+    """
+    do_augment = rand() < prob
+    if not do_augment:
+        return image_data, boxes_data
+    else:
+        batch_size = len(image_data)
+        assert batch_size >= 4, 'mosaic augment need batch size >= 4'
+
+        def get_mosaic_samples():
+            # random select 4 images from batch as mosaic samples
+            random_index = random.sample(list(range(batch_size)), 4)
+
+            random_images = []
+            random_bboxes = []
+            for idx in random_index:
+                random_images.append(image_data[idx])
+                random_bboxes.append(boxes_data[idx])
+            return random_images, np.array(random_bboxes)
+
+        new_images = []
+        new_boxes = []
+        input_height, input_width, input_channel = image_data[0].shape[:3]
+
+        #each batch has batch_size images, so we also need to
+        #generate batch_size mosaic images
+        for j in range(batch_size):
+            images, bboxes = get_mosaic_samples()
+
+            # mosaic center x, y
+            mosaic_border = (input_width//2, input_height//2)
+            x_center = int(random.uniform(mosaic_border[0], input_width*2-mosaic_border[0]))
+            y_center = int(random.uniform(mosaic_border[1], input_height*2-mosaic_border[1]))
+
+            # create large mosaic image with size (input_height*2, input_width*2)
+            mosaic_image = np.full((input_height*2, input_width*2, input_channel), 128, dtype=np.uint8)
+            mosaic_bbox = []
+            max_boxes = bboxes.shape[1]
+
+            for i in range(4):
+                image = images[i]
+                bbox = bboxes[i]
+                height, width = image.shape[:2]
+
+                # calculate padding area in each src & target image
+                if i == 0:  # top left
+                    #x1a, y1a, x2a, y2a = max(xc - w, 0), max(yc - h, 0), xc, yc
+                    #x1b, y1b, x2b, y2b = w - (x2a - x1a), h - (y2a - y1a), w, h
+                    xmin_target = max(x_center - width, 0)
+                    ymin_target = max(y_center - height, 0)
+                    xmax_target = x_center
+                    ymax_target = y_center
+
+                    xmin_src = width - (xmax_target - xmin_target)
+                    ymin_src = height - (ymax_target - ymin_target)
+                    xmax_src = width
+                    ymax_src = height
+                elif i == 1:  # top right
+                    #x1a, y1a, x2a, y2a = xc, max(yc - h, 0), min(xc + w, s * 2), yc
+                    #x1b, y1b, x2b, y2b = 0, h - (y2a - y1a), min(w, x2a - x1a), h
+                    xmin_target = x_center
+                    ymin_target = max(y_center - height, 0)
+                    xmax_target = min(x_center + width, width * 2)
+                    ymax_target = y_center
+
+                    xmin_src = 0
+                    ymin_src = height - (ymax_target - ymin_target)
+                    xmax_src = min(width, xmax_target - xmin_target)
+                    ymax_src = height
+                elif i == 2:  # bottom left
+                    #x1a, y1a, x2a, y2a = max(xc - w, 0), yc, xc, min(s * 2, yc + h)
+                    #x1b, y1b, x2b, y2b = w - (x2a - x1a), 0, w, min(y2a - y1a, h)
+                    xmin_target = max(x_center - width, 0)
+                    ymin_target = y_center
+                    xmax_target = x_center
+                    ymax_target = min(height * 2, y_center + height)
+
+                    xmin_src = width - (xmax_target - xmin_target)
+                    ymin_src = 0
+                    xmax_src = width
+                    ymax_src = min(ymax_target - ymin_target, height)
+                elif i == 3:  # bottom right
+                    #x1a, y1a, x2a, y2a = xc, yc, min(xc + w, s * 2), min(s * 2, yc + h)
+                    #x1b, y1b, x2b, y2b = 0, 0, min(w, x2a - x1a), min(y2a - y1a, h)
+                    xmin_target = x_center
+                    ymin_target = y_center
+                    xmax_target = min(x_center + width, width * 2)
+                    ymax_target = min(height * 2, y_center + height)
+
+                    xmin_src = 0
+                    ymin_src = 0
+                    xmax_src = min(width, xmax_target - xmin_target)
+                    ymax_src = min(ymax_target - ymin_target, height)
+
+                # padding src image to corresponding mosaic area
+                mosaic_image[ymin_target:ymax_target, xmin_target:xmax_target] = image[ymin_src:ymax_src, xmin_src:xmax_src]
+                # padding width & height for bbox
+                padding_width = xmin_target - xmin_src
+                padding_height = ymin_target - ymin_src
+
+                # adjust bbox to new mosaic image, with padding width & height
+                for box in bbox:
+                    # break loop when reach invalid box line
+                    if (box[:4] == 0).all():
+                        break
+                    x_min, y_min, x_max, y_max = box[0], box[1], box[2], box[3]
+                    x_min += padding_width
+                    y_min += padding_height
+                    x_max += padding_width
+                    y_max += padding_height
+
+                    mosaic_bbox.append([x_min, y_min, x_max, y_max, box[4]])
+
+            if len(mosaic_bbox) > max_boxes:
+                mosaic_bbox = mosaic_bbox[:max_boxes]
+
+            box_data = np.zeros((max_boxes, 5))
+            if len(mosaic_bbox) > 0:
+                box_data[:len(mosaic_bbox)] = mosaic_bbox
+
+            # clip boxes to valid image area
+            np.clip(box_data[..., 0], 0, input_width*2-1, out=box_data[..., 0])
+            np.clip(box_data[..., 1], 0, input_height*2-1, out=box_data[..., 1])
+            np.clip(box_data[..., 2], 0, input_width*2-1, out=box_data[..., 2])
+            np.clip(box_data[..., 3], 0, input_height*2-1, out=box_data[..., 3])
+
+            # resize image & box back to input shape
+            mosaic_image = cv2.resize(mosaic_image, (input_width, input_height), cv2.INTER_AREA)
+            box_data[..., :4] //= 2
+
+            new_images.append(mosaic_image)
+            new_boxes.append(box_data)
 
         new_images = np.stack(new_images)
         new_boxes = np.array(new_boxes)
