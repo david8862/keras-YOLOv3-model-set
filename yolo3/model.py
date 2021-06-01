@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-create YOLOv3 models with different backbone & head
+create YOLOv3/v4 models with different backbone & head
 """
 import warnings
 from functools import partial
@@ -22,6 +22,7 @@ from yolo3.models.yolo3_efficientnet import yolo3_efficientnet_body, tiny_yolo3_
 from yolo3.models.yolo3_mobilenetv3_large import yolo3_mobilenetv3large_body, yolo3lite_mobilenetv3large_body, tiny_yolo3_mobilenetv3large_body, tiny_yolo3lite_mobilenetv3large_body
 from yolo3.models.yolo3_mobilenetv3_small import yolo3_mobilenetv3small_body, yolo3lite_mobilenetv3small_body, tiny_yolo3_mobilenetv3small_body, tiny_yolo3lite_mobilenetv3small_body, yolo3_ultralite_mobilenetv3small_body, tiny_yolo3_ultralite_mobilenetv3small_body
 from yolo3.models.yolo3_peleenet import yolo3_peleenet_body, yolo3lite_peleenet_body, tiny_yolo3_peleenet_body, tiny_yolo3lite_peleenet_body, yolo3_ultralite_peleenet_body, tiny_yolo3_ultralite_peleenet_body
+from yolo3.models.yolo3_resnet50 import yolo3_resnet50_body, yolo3lite_resnet50_body, yolo3lite_spp_resnet50_body, tiny_yolo3_resnet50_body, tiny_yolo3lite_resnet50_body
 #from yolo3.models.yolo3_resnet50v2 import yolo3_resnet50v2_body, yolo3lite_resnet50v2_body, yolo3lite_spp_resnet50v2_body, tiny_yolo3_resnet50v2_body, tiny_yolo3lite_resnet50v2_body
 
 
@@ -32,6 +33,7 @@ from yolo4.models.yolo4_mobilenetv2 import yolo4_mobilenetv2_body, yolo4lite_mob
 from yolo4.models.yolo4_mobilenetv3_large import yolo4_mobilenetv3large_body, yolo4lite_mobilenetv3large_body, tiny_yolo4_mobilenetv3large_body, tiny_yolo4lite_mobilenetv3large_body
 from yolo4.models.yolo4_mobilenetv3_small import yolo4_mobilenetv3small_body, yolo4lite_mobilenetv3small_body, tiny_yolo4_mobilenetv3small_body, tiny_yolo4lite_mobilenetv3small_body
 from yolo4.models.yolo4_efficientnet import yolo4_efficientnet_body, yolo4lite_efficientnet_body, tiny_yolo4_efficientnet_body, tiny_yolo4lite_efficientnet_body
+from yolo4.models.yolo4_resnet50 import yolo4_resnet50_body, yolo4lite_resnet50_body, tiny_yolo4_resnet50_body, tiny_yolo4lite_resnet50_body
 #from yolo4.models.yolo4_resnet50v2 import yolo4_resnet50v2_body, yolo4lite_resnet50v2_body, tiny_yolo4_resnet50v2_body, tiny_yolo4lite_resnet50v2_body
 
 from yolo3.loss import yolo3_loss
@@ -63,6 +65,10 @@ yolo3_model_map = {
     'yolo3_peleenet': [yolo3_peleenet_body, 366, None],
     'yolo3_peleenet_lite': [yolo3lite_peleenet_body, 366, None],
     'yolo3_peleenet_ultralite': [yolo3_ultralite_peleenet_body, 366, None],
+
+    'yolo3_resnet50': [yolo3_resnet50_body, 175, None],
+    'yolo3_resnet50_lite': [yolo3lite_resnet50_body, 175, None],
+    'yolo3_resnet50_lite_spp': [yolo3lite_spp_resnet50_body, 175, None],
 
     #'yolo3_resnet50v2': [yolo3_resnet50v2_body, 190, None],
     #'yolo3_resnet50v2_lite': [yolo3lite_resnet50v2_body, 190, None],
@@ -101,6 +107,9 @@ yolo3_model_map = {
     'yolo4_mobilenetv3small': [yolo4_mobilenetv3small_body, 166, None],
     'yolo4_mobilenetv3small_lite': [yolo4lite_mobilenetv3small_body, 166, None],
 
+    'yolo4_resnet50': [yolo4_resnet50_body, 175, None],
+    'yolo4_resnet50_lite': [yolo4lite_resnet50_body, 175, None],
+
     #'yolo4_resnet50v2': [yolo4_resnet50v2_body, 190, None],
     #'yolo4_resnet50v2_lite': [yolo4lite_resnet50v2_body, 190, None],
 
@@ -134,6 +143,9 @@ yolo3_tiny_model_map = {
     'tiny_yolo3_peleenet_lite': [tiny_yolo3lite_peleenet_body, 366, None],
     'tiny_yolo3_peleenet_ultralite': [tiny_yolo3_ultralite_peleenet_body, 366, None],
 
+    'tiny_yolo3_resnet50': [tiny_yolo3_resnet50_body, 175, None],
+    'tiny_yolo3_resnet50_lite': [tiny_yolo3lite_resnet50_body, 175, None],
+
     #'tiny_yolo3_resnet50v2': [tiny_yolo3_resnet50v2_body, 190, None],
     #'tiny_yolo3_resnet50v2_lite': [tiny_yolo3lite_resnet50v2_body, 190, None],
 
@@ -166,6 +178,9 @@ yolo3_tiny_model_map = {
     'tiny_yolo4_mobilenetv3small': [tiny_yolo4_mobilenetv3small_body, 166, None],
     'tiny_yolo4_mobilenetv3small_lite': [tiny_yolo4lite_mobilenetv3small_body, 166, None],
     'tiny_yolo4_mobilenetv3small_lite_nospp': [partial(tiny_yolo4lite_mobilenetv3small_body, use_spp=False), 166, None],
+
+    'tiny_yolo4_resnet50': [tiny_yolo4_resnet50_body, 175, None],
+    'tiny_yolo4_resnet50_lite': [tiny_yolo4lite_resnet50_body, 175, None],
 
     #'tiny_yolo4_resnet50v2': [tiny_yolo4_resnet50v2_body, 190, None],
     #'tiny_yolo4_resnet50v2_lite': [tiny_yolo4lite_resnet50v2_body, 190, None],
