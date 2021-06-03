@@ -356,7 +356,7 @@ def handle_prediction(prediction, image_file, image, image_shape, anchors, class
         xmin, ymin, xmax, ymax = box
         print("Class: {}, Score: {}, Box: {},{}".format(class_names[cls], score, (xmin, ymin), (xmax, ymax)))
 
-    colors = get_colors(class_names)
+    colors = get_colors(len(class_names))
     image = draw_boxes(image, boxes, classes, scores, class_names, colors)
 
     Image.fromarray(image).show()

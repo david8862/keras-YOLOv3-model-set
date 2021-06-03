@@ -422,7 +422,7 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
 
             result_dir=os.path.join('result','detection')
             os.makedirs(result_dir, exist_ok=True)
-            colors = get_colors(class_names)
+            colors = get_colors(len(class_names))
             image_array = draw_boxes(image_array, gt_boxes, gt_classes, gt_scores, class_names, colors=None, show_score=False)
             image_array = draw_boxes(image_array, pred_boxes, pred_classes, pred_scores, class_names, colors)
             image = Image.fromarray(image_array)

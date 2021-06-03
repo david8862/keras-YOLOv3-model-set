@@ -19,7 +19,7 @@ from model.deep_sort.generate_detections import create_box_encoder
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from yolo import YOLO, YOLO_np
-from common.utils import get_classes, get_colors
+from common.utils import get_classes
 
 
 def get_frame(frame_capture, i, images_input):

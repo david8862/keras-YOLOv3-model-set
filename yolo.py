@@ -64,7 +64,7 @@ class YOLO_np(object):
         self.__dict__.update(kwargs) # and update with user overrides
         self.class_names = get_classes(self.classes_path)
         self.anchors = get_anchors(self.anchors_path)
-        self.colors = get_colors(self.class_names)
+        self.colors = get_colors(len(self.class_names))
         K.set_learning_phase(0)
         self.yolo_model = self._generate_model()
 
@@ -173,7 +173,7 @@ class YOLO(object):
         self.__dict__.update(kwargs) # and update with user overrides
         self.class_names = get_classes(self.classes_path)
         self.anchors = get_anchors(self.anchors_path)
-        self.colors = get_colors(self.class_names)
+        self.colors = get_colors(len(self.class_names))
         K.set_learning_phase(0)
         self.inference_model = self._generate_model()
 

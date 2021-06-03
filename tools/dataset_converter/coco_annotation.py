@@ -26,6 +26,31 @@ def get_classes(classes_path):
     classes = [c.strip() for c in classes]
     return classes
 
+
+def get_coco_classes(json_path):
+    '''load coco classes from json'''
+    with open(json_path) as f:
+        data = json.load(f)
+
+    classes = []
+    categories = data['categories']
+    current_id = -1
+    for category in categories:
+        # category format:
+        # {
+        #  "supercategory": string,
+        #  "id": int,
+        #  "name": string,
+        # }
+        if category['id'] <= current_id:
+            # category list should be in ascending order
+            raise ValueError('categories did not follow ascending order')
+        current_id = category['id']
+        classes.append(category['name'])
+
+    return classes
+
+
 def convert_coco_category(category_id):
     # since original 80 COCO category_ids is discontinuous,
     # we need to align them to continuous id (0~79) for further process

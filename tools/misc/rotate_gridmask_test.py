@@ -28,7 +28,7 @@ def main():
     scores = [1.0]*len(classes)
 
     class_names = get_classes('../../configs/voc_classes.txt')
-    colors = get_colors(class_names)
+    colors = get_colors(len(class_names))
 
 
     image_origin = draw_boxes(np.array(image, dtype='uint8'), boxes[:, :4], classes, scores, class_names, colors)
