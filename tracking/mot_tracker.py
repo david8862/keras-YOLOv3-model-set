@@ -521,11 +521,6 @@ def main():
         help = "Whether to apply eliminate grid sensitivity in YOLO, default " + str(YOLO.get_defaults("elim_grid_sense"))
     )
 
-    #parser.add_argument(
-        #'--gpu_num', type=int,
-        #help='Number of GPU to use, default ' + str(YOLO.get_defaults("gpu_num"))
-    #)
-
     '''
     Command line positional arguments -- for video detection mode
     '''

@@ -83,19 +83,6 @@ def get_anchors(anchors_path):
     anchors = [float(x) for x in anchors.split(',')]
     return np.array(anchors).reshape(-1, 2)
 
-#def get_colors(class_names):
-    ## Generate colors for drawing bounding boxes.
-    #hsv_tuples = [(x / len(class_names), 1., 1.)
-                  #for x in range(len(class_names))]
-    #colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
-    #colors = list(
-        #map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)),
-            #colors))
-    #np.random.seed(10101)  # Fixed seed for consistent colors across runs.
-    #np.random.shuffle(colors)  # Shuffle colors to decorrelate adjacent classes.
-    #np.random.seed(None)  # Reset seed to default.
-    #return colors
-
 def get_colors(number, bright=True):
     """
     Generate random colors for drawing bounding boxes.

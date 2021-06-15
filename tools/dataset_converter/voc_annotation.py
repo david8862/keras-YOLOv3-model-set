@@ -12,8 +12,8 @@ classes = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat"
 class_count = {}
 
 def convert_annotation(dataset_path, year, image_id, list_file, include_difficult):
-    in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id), encoding='utf-8')
-    tree=ET.parse(in_file)
+    xml_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id), encoding='utf-8')
+    tree=ET.parse(xml_file)
     root = tree.getroot()
 
     for obj in root.iter('object'):
@@ -43,11 +43,11 @@ def has_object(dataset_path, year, image_id, include_difficult):
     return a boolean result
     '''
     try:
-        in_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id), encoding='utf-8')
+        xml_file = open('%s/VOC%s/Annotations/%s.xml'%(dataset_path, year, image_id), encoding='utf-8')
     except:
         # bypass image if no annotation
         return False
-    tree=ET.parse(in_file)
+    tree=ET.parse(xml_file)
     root = tree.getroot()
     count = 0
 

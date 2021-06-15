@@ -25,7 +25,7 @@ from yolo2.model import get_yolo2_model, get_yolo2_inference_model
 from yolo2.postprocess_np import yolo2_postprocess_np
 from common.data_utils import preprocess_image
 from common.utils import get_classes, get_anchors, get_colors, draw_boxes, optimize_tf_gpu
-from tensorflow.keras.utils import multi_gpu_model
+#from tensorflow.keras.utils import multi_gpu_model
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -44,7 +44,7 @@ default_config = {
         "iou" : 0.4,
         "model_image_size" : (416, 416),
         "elim_grid_sense": False,
-        "gpu_num" : 1,
+        #"gpu_num" : 1,
     }
 
 
@@ -105,8 +105,8 @@ class YOLO_np(object):
                 num_anchors/len(yolo_model.output) * (num_classes + 5), \
                 'Mismatch between model and given anchor and class sizes'
         print('{} model, anchors, and classes loaded.'.format(weights_path))
-        if self.gpu_num>=2:
-            yolo_model = multi_gpu_model(yolo_model, gpus=self.gpu_num)
+        #if self.gpu_num>=2:
+            #yolo_model = multi_gpu_model(yolo_model, gpus=self.gpu_num)
 
         return yolo_model
 
@@ -365,10 +365,10 @@ def main():
         help = "Eliminate grid sensitivity, default " + str(YOLO.get_defaults("elim_grid_sense"))
     )
 
-    parser.add_argument(
-        '--gpu_num', type=int,
-        help='Number of GPU to use, default ' + str(YOLO.get_defaults("gpu_num"))
-    )
+    #parser.add_argument(
+        #'--gpu_num', type=int,
+        #help='Number of GPU to use, default ' + str(YOLO.get_defaults("gpu_num"))
+    #)
     parser.add_argument(
         '--image', default=False, action="store_true",
         help='Image detection mode, will ignore all positional arguments'
