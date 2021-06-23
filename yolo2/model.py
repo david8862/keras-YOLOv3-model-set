@@ -3,6 +3,7 @@
 """
 create YOLOv2 models with different backbone & head
 """
+import os
 import warnings
 import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Input, Lambda
@@ -21,6 +22,7 @@ from yolo2.postprocess import batched_yolo2_postprocess
 
 from common.model_utils import add_metrics, get_pruning_model
 
+ROOT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
 
 # A map of model type to construction info list for YOLOv2
 #
@@ -28,7 +30,7 @@ from common.model_utils import add_metrics, get_pruning_model
 #   [model_function, backbone_length, pretrain_weight_path]
 #
 yolo2_model_map = {
-    'yolo2_darknet': [yolo2_body, 60, 'weights/darknet19.h5'],
+    'yolo2_darknet': [yolo2_body, 60, os.path.join(ROOT_PATH, 'weights', 'darknet19.h5')],
     'yolo2_mobilenet': [yolo2_mobilenet_body, 87, None],
     'yolo2_mobilenet_lite': [yolo2lite_mobilenet_body, 87, None],
     'yolo2_mobilenetv2': [yolo2_mobilenetv2_body, 155, None],

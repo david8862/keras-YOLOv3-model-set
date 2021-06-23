@@ -89,6 +89,9 @@ def get_colors(number, bright=True):
     To get visually distinct colors, generate them in HSV space then
     convert to RGB.
     """
+    if number <= 0:
+        return []
+
     brightness = 1.0 if bright else 0.7
     hsv_tuples = [(x / number, 1., brightness)
                   for x in range(number)]

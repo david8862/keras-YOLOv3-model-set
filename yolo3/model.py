@@ -3,6 +3,7 @@
 """
 create YOLOv3/v4 models with different backbone & head
 """
+import os
 import warnings
 from functools import partial
 
@@ -22,7 +23,7 @@ from yolo3.models.yolo3_efficientnet import yolo3_efficientnet_body, tiny_yolo3_
 from yolo3.models.yolo3_mobilenetv3_large import yolo3_mobilenetv3large_body, yolo3lite_mobilenetv3large_body, tiny_yolo3_mobilenetv3large_body, tiny_yolo3lite_mobilenetv3large_body
 from yolo3.models.yolo3_mobilenetv3_small import yolo3_mobilenetv3small_body, yolo3lite_mobilenetv3small_body, tiny_yolo3_mobilenetv3small_body, tiny_yolo3lite_mobilenetv3small_body, yolo3_ultralite_mobilenetv3small_body, tiny_yolo3_ultralite_mobilenetv3small_body
 from yolo3.models.yolo3_peleenet import yolo3_peleenet_body, yolo3lite_peleenet_body, tiny_yolo3_peleenet_body, tiny_yolo3lite_peleenet_body, yolo3_ultralite_peleenet_body, tiny_yolo3_ultralite_peleenet_body
-from yolo3.models.yolo3_resnet50 import yolo3_resnet50_body, yolo3lite_resnet50_body, yolo3lite_spp_resnet50_body, tiny_yolo3_resnet50_body, tiny_yolo3lite_resnet50_body
+#from yolo3.models.yolo3_resnet50 import yolo3_resnet50_body, yolo3lite_resnet50_body, yolo3lite_spp_resnet50_body, tiny_yolo3_resnet50_body, tiny_yolo3lite_resnet50_body
 #from yolo3.models.yolo3_resnet50v2 import yolo3_resnet50v2_body, yolo3lite_resnet50v2_body, yolo3lite_spp_resnet50v2_body, tiny_yolo3_resnet50v2_body, tiny_yolo3lite_resnet50v2_body
 
 
@@ -33,7 +34,7 @@ from yolo4.models.yolo4_mobilenetv2 import yolo4_mobilenetv2_body, yolo4lite_mob
 from yolo4.models.yolo4_mobilenetv3_large import yolo4_mobilenetv3large_body, yolo4lite_mobilenetv3large_body, tiny_yolo4_mobilenetv3large_body, tiny_yolo4lite_mobilenetv3large_body
 from yolo4.models.yolo4_mobilenetv3_small import yolo4_mobilenetv3small_body, yolo4lite_mobilenetv3small_body, tiny_yolo4_mobilenetv3small_body, tiny_yolo4lite_mobilenetv3small_body
 from yolo4.models.yolo4_efficientnet import yolo4_efficientnet_body, yolo4lite_efficientnet_body, tiny_yolo4_efficientnet_body, tiny_yolo4lite_efficientnet_body
-from yolo4.models.yolo4_resnet50 import yolo4_resnet50_body, yolo4lite_resnet50_body, tiny_yolo4_resnet50_body, tiny_yolo4lite_resnet50_body
+#from yolo4.models.yolo4_resnet50 import yolo4_resnet50_body, yolo4lite_resnet50_body, tiny_yolo4_resnet50_body, tiny_yolo4lite_resnet50_body
 #from yolo4.models.yolo4_resnet50v2 import yolo4_resnet50v2_body, yolo4lite_resnet50v2_body, tiny_yolo4_resnet50v2_body, tiny_yolo4lite_resnet50v2_body
 
 from yolo3.loss import yolo3_loss
@@ -41,6 +42,7 @@ from yolo3.postprocess import batched_yolo3_postprocess, batched_yolo3_prenms, Y
 
 from common.model_utils import add_metrics, get_pruning_model
 
+ROOT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
 
 # A map of model type to construction info list for YOLOv3
 #
@@ -66,9 +68,9 @@ yolo3_model_map = {
     'yolo3_peleenet_lite': [yolo3lite_peleenet_body, 366, None],
     'yolo3_peleenet_ultralite': [yolo3_ultralite_peleenet_body, 366, None],
 
-    'yolo3_resnet50': [yolo3_resnet50_body, 175, None],
-    'yolo3_resnet50_lite': [yolo3lite_resnet50_body, 175, None],
-    'yolo3_resnet50_lite_spp': [yolo3lite_spp_resnet50_body, 175, None],
+    #'yolo3_resnet50': [yolo3_resnet50_body, 175, None],
+    #'yolo3_resnet50_lite': [yolo3lite_resnet50_body, 175, None],
+    #'yolo3_resnet50_lite_spp': [yolo3lite_spp_resnet50_body, 175, None],
 
     #'yolo3_resnet50v2': [yolo3_resnet50v2_body, 190, None],
     #'yolo3_resnet50v2_lite': [yolo3lite_resnet50v2_body, 190, None],
@@ -84,8 +86,8 @@ yolo3_model_map = {
     'yolo3_efficientnet_lite': [yolo3lite_efficientnet_body, 382, None],
     'yolo3_efficientnet_lite_spp': [yolo3lite_spp_efficientnet_body, 382, None],
 
-    'yolo3_darknet': [yolo3_body, 185, 'weights/darknet53.h5'],
-    'yolo3_darknet_spp': [custom_yolo3_spp_body, 185, 'weights/yolov3-spp.h5'],
+    'yolo3_darknet': [yolo3_body, 185, os.path.join(ROOT_PATH, 'weights', 'darknet53.h5')],
+    'yolo3_darknet_spp': [custom_yolo3_spp_body, 185, os.path.join(ROOT_PATH, 'weights', 'yolov3-spp.h5')],
     #Doesn't have pretrained weights, so no need to return backbone length
     'yolo3_darknet_lite': [yolo3lite_body, 0, None],
     'yolo3_vgg16': [yolo3_vgg16_body, 19, None],
@@ -95,7 +97,7 @@ yolo3_model_map = {
 
     'yolo3_nano': [yolo3_nano_body, 268, None],
 
-    'yolo4_darknet': [yolo4_body, 250, 'weights/cspdarknet53.h5'],
+    'yolo4_darknet': [yolo4_body, 250, os.path.join(ROOT_PATH, 'weights', 'cspdarknet53.h5')],
     'yolo4_mobilenet': [yolo4_mobilenet_body, 87, None],
     'yolo4_mobilenet_lite': [yolo4lite_mobilenet_body, 87, None],
 
@@ -107,8 +109,8 @@ yolo3_model_map = {
     'yolo4_mobilenetv3small': [yolo4_mobilenetv3small_body, 166, None],
     'yolo4_mobilenetv3small_lite': [yolo4lite_mobilenetv3small_body, 166, None],
 
-    'yolo4_resnet50': [yolo4_resnet50_body, 175, None],
-    'yolo4_resnet50_lite': [yolo4lite_resnet50_body, 175, None],
+    #'yolo4_resnet50': [yolo4_resnet50_body, 175, None],
+    #'yolo4_resnet50_lite': [yolo4lite_resnet50_body, 175, None],
 
     #'yolo4_resnet50v2': [yolo4_resnet50v2_body, 190, None],
     #'yolo4_resnet50v2_lite': [yolo4lite_resnet50v2_body, 190, None],
@@ -143,8 +145,8 @@ yolo3_tiny_model_map = {
     'tiny_yolo3_peleenet_lite': [tiny_yolo3lite_peleenet_body, 366, None],
     'tiny_yolo3_peleenet_ultralite': [tiny_yolo3_ultralite_peleenet_body, 366, None],
 
-    'tiny_yolo3_resnet50': [tiny_yolo3_resnet50_body, 175, None],
-    'tiny_yolo3_resnet50_lite': [tiny_yolo3lite_resnet50_body, 175, None],
+    #'tiny_yolo3_resnet50': [tiny_yolo3_resnet50_body, 175, None],
+    #'tiny_yolo3_resnet50_lite': [tiny_yolo3lite_resnet50_body, 175, None],
 
     #'tiny_yolo3_resnet50v2': [tiny_yolo3_resnet50v2_body, 190, None],
     #'tiny_yolo3_resnet50v2_lite': [tiny_yolo3lite_resnet50v2_body, 190, None],
@@ -157,7 +159,7 @@ yolo3_tiny_model_map = {
     'tiny_yolo3_efficientnet': [tiny_yolo3_efficientnet_body, 235, None],
     'tiny_yolo3_efficientnet_lite': [tiny_yolo3lite_efficientnet_body, 235, None],
 
-    'tiny_yolo3_darknet': [custom_tiny_yolo3_body, 20, 'weights/yolov3-tiny.h5'],
+    'tiny_yolo3_darknet': [custom_tiny_yolo3_body, 20, os.path.join(ROOT_PATH, 'weights', 'yolov3-tiny.h5')],
     #Doesn't have pretrained weights, so no need to return backbone length
     'tiny_yolo3_darknet_lite': [tiny_yolo3lite_body, 0, None],
     'tiny_yolo3_vgg16': [tiny_yolo3_vgg16_body, 19, None],
@@ -179,8 +181,8 @@ yolo3_tiny_model_map = {
     'tiny_yolo4_mobilenetv3small_lite': [tiny_yolo4lite_mobilenetv3small_body, 166, None],
     'tiny_yolo4_mobilenetv3small_lite_nospp': [partial(tiny_yolo4lite_mobilenetv3small_body, use_spp=False), 166, None],
 
-    'tiny_yolo4_resnet50': [tiny_yolo4_resnet50_body, 175, None],
-    'tiny_yolo4_resnet50_lite': [tiny_yolo4lite_resnet50_body, 175, None],
+    #'tiny_yolo4_resnet50': [tiny_yolo4_resnet50_body, 175, None],
+    #'tiny_yolo4_resnet50_lite': [tiny_yolo4lite_resnet50_body, 175, None],
 
     #'tiny_yolo4_resnet50v2': [tiny_yolo4_resnet50v2_body, 190, None],
     #'tiny_yolo4_resnet50v2_lite': [tiny_yolo4lite_resnet50v2_body, 190, None],

@@ -232,9 +232,9 @@ class Yolo3DataGenerator(Sequence):
         if self.enhance_augment == 'mosaic':
             # add random mosaic augment on batch ground truth data
             image_data, box_data = random_mosaic_augment(image_data, box_data, prob=0.2)
-        elif self.enhance_augment == 'mosaic_v5':
+        #elif self.enhance_augment == 'mosaic_v5':
             # mosaic augment from YOLOv5
-            image_data, box_data = random_mosaic_augment_v5(image_data, box_data, prob=0.2)
+            #image_data, box_data = random_mosaic_augment_v5(image_data, box_data, prob=0.2)
 
         y_true = preprocess_true_boxes(box_data, self.input_shape, self.anchors, self.num_classes, self.multi_anchor_assign)
 
@@ -276,9 +276,9 @@ def yolo3_data_generator(annotation_lines, batch_size, input_shape, anchors, num
         if enhance_augment == 'mosaic':
             # add random mosaic augment on batch ground truth data
             image_data, box_data = random_mosaic_augment(image_data, box_data, prob=0.2)
-        elif enhance_augment == 'mosaic_v5':
+        #elif enhance_augment == 'mosaic_v5':
             # mosaic augment from YOLOv5
-            image_data, box_data = random_mosaic_augment_v5(image_data, box_data, prob=0.2)
+            #image_data, box_data = random_mosaic_augment_v5(image_data, box_data, prob=0.2)
 
         y_true = preprocess_true_boxes(box_data, input_shape, anchors, num_classes, multi_anchor_assign)
         yield [image_data, *y_true], np.zeros(batch_size)

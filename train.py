@@ -296,8 +296,8 @@ if __name__ == '__main__':
         help='Whether to use multiscale training')
     parser.add_argument('--rescale_interval', type=int, required=False, default=10,
         help = "Number of iteration(batches) interval to rescale input size, default=%(default)s")
-    parser.add_argument('--enhance_augment', type=str, required=False, default=None, choices=[None, 'mosaic', 'mosaic_v5'],
-        help = "enhance data augmentation type (None/mosaic/mosaic_v5), default=%(default)s")
+    parser.add_argument('--enhance_augment', type=str, required=False, default=None, choices=[None, 'mosaic'],
+        help = "enhance data augmentation type (None/mosaic), default=%(default)s")
     parser.add_argument('--label_smoothing', type=float, required=False, default=0,
         help = "Label smoothing factor (between 0 and 1) for classification loss, default=%(default)s")
     parser.add_argument('--multi_anchor_assign', default=False, action="store_true",
