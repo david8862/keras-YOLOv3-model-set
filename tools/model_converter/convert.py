@@ -21,8 +21,8 @@ from collections import defaultdict
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K
-from tensorflow.keras.layers import (Conv2D, DepthwiseConv2D, Input, ZeroPadding2D, Add, Multiply, Lambda, Dropout,
-                          UpSampling2D, MaxPooling2D, AveragePooling2D, Concatenate, Activation)
+from tensorflow.keras.layers import (Conv2D, DepthwiseConv2D, Input, ZeroPadding2D, Add, Multiply, Lambda, Dropout,Reshape,
+                          UpSampling2D, MaxPooling2D, AveragePooling2D, Concatenate, Activation, GlobalAveragePooling2D)
 from tensorflow.keras.layers import LeakyReLU, ReLU
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.models import Model
@@ -76,8 +76,8 @@ def unique_config_sections(config_file):
     output_stream.seek(0)
     return output_stream
 
-# %%
-def _main(args):
+
+def main(args):
     config_path = os.path.expanduser(args.config_path)
     weights_path = os.path.expanduser(args.weights_path)
     assert config_path.endswith('.cfg'), '{} is not a .cfg file'.format(
@@ -315,6 +315,21 @@ def _main(args):
                 AveragePooling2D()(prev_layer))
             prev_layer = all_layers[-1]
 
+        # support GAP and Reshape layer for se block
+        # Reference:
+        #
+        # https://github.com/gitE0Z9/keras-YOLOv3-model-set/commit/67ed826f2ce00f28296fcf88c03c86f1d86b8b9e
+        #
+        elif section.startswith('gap'):
+            all_layers.append(
+                GlobalAveragePooling2D()(prev_layer))
+            prev_layer = all_layers[-1]
+
+        elif section.startswith('reshape'):
+            all_layers.append(
+                Reshape((1, 1, K.int_shape(prev_layer)[-1]))(prev_layer))
+            prev_layer = all_layers[-1]
+
         elif section.startswith('shortcut'):
             index = int(cfg_parser[section]['from'])
             activation = cfg_parser[section]['activation']
@@ -403,4 +418,4 @@ def _main(args):
 
 
 if __name__ == '__main__':
-    _main(parser.parse_args())
+    main(parser.parse_args())
