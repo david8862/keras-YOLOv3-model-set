@@ -15,6 +15,9 @@ from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, BatchNormalization,
 from tensorflow.keras.layers import Input, GlobalAveragePooling2D, GlobalMaxPooling2D, Concatenate, Dropout, Add, Multiply
 from tensorflow.keras import backend as K
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
+from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatchNormalization
+
 
 BASE_WEIGHT_PATH = (
     'https://github.com/david8862/tf-keras-image-classifier/'
@@ -69,24 +72,24 @@ def hard_sigmoid(x):
 
 
 def primary_conv(x, output_filters, kernel_size, strides=(1,1), padding='same', act=True, use_bias=False, name=None):
-    x = Conv2D(filters=output_filters,
+    x = YoloConv2D(filters=output_filters,
                kernel_size=kernel_size,
                strides=strides,
                padding=padding,
                use_bias=use_bias,
                name=name + '_0')(x)
-    x = BatchNormalization(name=name+'_1')(x)
+    x = CustomBatchNormalization(name=name+'_1')(x)
     x = ReLU(name=name+'_relu')(x) if act else x
     return x
 
 
 def cheap_operations(x, output_filters, kernel_size, strides=(1,1), padding='same', act=True, use_bias=False, name=None):
-    x = DepthwiseConv2D(kernel_size=kernel_size,
+    x = YoloDepthwiseConv2D(kernel_size=kernel_size,
                         strides=strides,
                         padding=padding,
                         use_bias=use_bias,
                         name=name+'_0')(x)
-    x = BatchNormalization(name=name+'_1')(x)
+    x = CustomBatchNormalization(name=name+'_1')(x)
     x = ReLU(name=name+'_relu')(x) if act else x
     return x
 
@@ -100,9 +103,9 @@ def SqueezeExcite(input_x, se_ratio=0.25, reduced_base_chs=None, divisor=4, name
     else:
         x = Reshape((1, 1, int(input_x.shape[-1])))(x)
 
-    x = Conv2D(filters=reduce_chs, kernel_size=1, use_bias=True, name=name+'_conv_reduce')(x)
+    x = YoloConv2D(filters=reduce_chs, kernel_size=1, use_bias=True, name=name+'_conv_reduce')(x)
     x = ReLU(name=name+'_act')(x)
-    x = Conv2D(filters=input_x.shape[-1], kernel_size=1, use_bias=True, name=name+'_conv_expand')(x)
+    x = YoloConv2D(filters=input_x.shape[-1], kernel_size=1, use_bias=True, name=name+'_conv_expand')(x)
 
     x = Activation(hard_sigmoid, name=name+'_hard_sigmoid')(x)
     x = Multiply()([input_x, x])
@@ -111,13 +114,13 @@ def SqueezeExcite(input_x, se_ratio=0.25, reduced_base_chs=None, divisor=4, name
 
 
 def ConvBnAct(input_x, out_chs, kernel_size, stride = (1,1), name=None):
-    x = Conv2D(filters=out_chs,
+    x = YoloConv2D(filters=out_chs,
                kernel_size=kernel_size,
                strides=stride,
                padding='valid',
                use_bias=False,
                name=name+'_conv')(input_x)
-    x = BatchNormalization(name=name+'_bn1')(x)
+    x = CustomBatchNormalization(name=name+'_bn1')(x)
     x = ReLU(name=name+'_relu')(x)
     return x
 
@@ -152,12 +155,12 @@ def GhostBottleneck(input_x, mid_chs, out_chs, dw_kernel_size=3, stride=(1,1), s
 
     #depth_with convolution
     if stride[0] > 1:
-        x = DepthwiseConv2D(kernel_size=dw_kernel_size,
+        x = YoloDepthwiseConv2D(kernel_size=dw_kernel_size,
                             strides=stride,
                             padding='same',
                             use_bias=False,
                             name=name+'_conv_dw')(x)
-        x = BatchNormalization(name=name+'_bn_dw')(x)
+        x = CustomBatchNormalization(name=name+'_bn_dw')(x)
 
     #Squeeze_and_excitation
     if has_se:
@@ -171,19 +174,19 @@ def GhostBottleneck(input_x, mid_chs, out_chs, dw_kernel_size=3, stride=(1,1), s
         sc = input_x
     else:
         name1 = name + '_shortcut'
-        sc = DepthwiseConv2D(kernel_size=dw_kernel_size,
+        sc = YoloDepthwiseConv2D(kernel_size=dw_kernel_size,
                              strides=stride,
                              padding='same',
                              use_bias=False,
                              name=name1+'_0')(input_x)
-        sc = BatchNormalization(name=name1+'_1')(sc)
-        sc = Conv2D(filters=out_chs,
+        sc = CustomBatchNormalization(name=name1+'_1')(sc)
+        sc = YoloConv2D(filters=out_chs,
                     kernel_size=1,
                     strides=(1,1),
                     padding='valid',
                     use_bias=False,
                     name=name1+'_2')(sc)
-        sc = BatchNormalization(name=name1+'_3')(sc)
+        sc = CustomBatchNormalization(name=name1+'_3')(sc)
 
     x = Add(name=name+'_add')([x, sc])
     return x
@@ -308,13 +311,13 @@ def GhostNet(input_shape=None,
 
     # building first layer
     output_channel = int(_make_divisible(16 * width, 4))
-    x = Conv2D(filters=output_channel,
+    x = YoloConv2D(filters=output_channel,
                kernel_size=3,
                strides=(2, 2),
                padding='same',
                use_bias=False,
                name='conv_stem')(img_input)
-    x = BatchNormalization(name='bn1')(x)
+    x = CustomBatchNormalization(name='bn1')(x)
     x = ReLU(name='Conv2D_1_act')(x)
 
     # building inverted residual blocks
@@ -340,7 +343,7 @@ def GhostNet(input_shape=None,
 
         # building last several layers
         output_channel = 1280
-        x = Conv2D(filters=output_channel,
+        x = YoloConv2D(filters=output_channel,
                    kernel_size=1,
                    strides=(1,1),
                    padding='valid',

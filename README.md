@@ -14,6 +14,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] MobilenetV2
 - [x] MobilenetV3(Large/Small)
 - [x] PeleeNet ([paper](https://arxiv.org/abs/1804.06882))
+- [x] GhostNet ([link](https://arxiv.org/abs/1911.11907))
 - [x] EfficientNet
 - [x] Xception
 - [x] VGG16
