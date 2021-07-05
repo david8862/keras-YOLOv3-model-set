@@ -18,7 +18,7 @@ from yolo2.model import get_yolo2_train_model
 from yolo2.data import yolo2_data_generator_wrapper, Yolo2DataGenerator
 from common.utils import get_classes, get_anchors, get_dataset, optimize_tf_gpu
 from common.model_utils import get_optimizer
-from common.callbacks import EvalCallBack, DatasetShuffleCallBack
+from common.callbacks import EvalCallBack, CheckpointCleanCallBack, DatasetShuffleCallBack
 
 # Try to enable Auto Mixed Precision on TF 2.0
 os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '1'
@@ -59,9 +59,10 @@ def main(args):
         period=1)
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, mode='min', patience=10, verbose=1, cooldown=0, min_lr=1e-10)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=50, verbose=1, mode='min')
+    checkpoint_clean = CheckpointCleanCallBack(log_dir, max_val_keep=5, max_eval_keep=2)
     terminate_on_nan = TerminateOnNaN()
 
-    callbacks=[logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan]
+    callbacks=[logging, checkpoint, checkpoint_clean, reduce_lr, early_stopping, terminate_on_nan]
 
     # get train&val dataset
     dataset = get_dataset(annotation_file)
