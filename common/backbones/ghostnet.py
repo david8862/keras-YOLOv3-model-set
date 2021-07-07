@@ -113,7 +113,7 @@ def SqueezeExcite(input_x, se_ratio=0.25, reduced_base_chs=None, divisor=4, name
     return x
 
 
-def ConvBnAct(input_x, out_chs, kernel_size, stride = (1,1), name=None):
+def ConvBnAct(input_x, out_chs, kernel_size, stride=(1,1), name=None):
     x = YoloConv2D(filters=out_chs,
                kernel_size=kernel_size,
                strides=stride,
@@ -125,7 +125,7 @@ def ConvBnAct(input_x, out_chs, kernel_size, stride = (1,1), name=None):
     return x
 
 
-def GhostModule(input_x,output_chs,kernel_size=1,ratio = 2,dw_size = 3,stride = (1,1),act = True,name = None):
+def GhostModule(input_x, output_chs, kernel_size=1, ratio=2, dw_size=3, stride=(1,1), act=True, name=None):
     init_channels = int(math.ceil(output_chs / ratio))
     new_channels = int(init_channels * (ratio - 1))
     x1 = primary_conv(input_x,
@@ -226,7 +226,7 @@ def GhostNet(input_shape=None,
              input_tensor=None,
              cfgs=DEFAULT_CFGS,
              width=1.0,
-             dropout=0.2,
+             dropout_rate=0.2,
              pooling=None,
              classes=1000,
              **kwargs):
@@ -251,6 +251,9 @@ def GhostNet(input_shape=None,
         input_tensor: optional Keras tensor (i.e. output of
             `layers.Input()`)
             to use as image input for the model.
+        cfgs: model structure config list
+        width: controls the width of the network
+        dropout_rate: fraction of the input units to drop on the last layer
         pooling: Optional pooling mode for feature extraction
             when `include_top` is `False`.
             - `None` means that the output of the model
@@ -351,8 +354,8 @@ def GhostNet(input_shape=None,
                    name='conv_head')(x)
         x = ReLU(name='relu_head')(x)
 
-        if dropout > 0.:
-            x = Dropout(dropout, name='dropout_1')(x)
+        if dropout_rate > 0.:
+            x = Dropout(dropout_rate, name='dropout_1')(x)
         x = Flatten()(x)
         x = Dense(units=classes, activation='softmax',
                          use_bias=True, name='classifier')(x)
