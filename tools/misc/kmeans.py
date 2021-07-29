@@ -3,15 +3,13 @@
 import numpy as np
 import argparse
 import warnings
-from PIL import Image
 
 
 class YOLO_Kmeans:
-    def __init__(self, cluster_number, filename, anchors_file, model_image_size):
+    def __init__(self, cluster_number, filename, anchors_file):
         self.cluster_number = cluster_number
         self.filename = filename
         self.anchors_file = anchors_file
-        self.model_image_size = model_image_size
 
     def iou(self, boxes, clusters):  # 1 box -> k clusters
         n = boxes.shape[0]
@@ -79,21 +77,12 @@ class YOLO_Kmeans:
         dataSet = []
         for line in f:
             infos = line.split(" ")
-            # get image size
-            image = Image.open(infos[0].strip())
-            image_width, image_height = image.size
-
             length = len(infos)
             for i in range(1, length):
                 width = int(infos[i].split(",")[2]) - \
                     int(infos[i].split(",")[0])
                 height = int(infos[i].split(",")[3]) - \
                     int(infos[i].split(",")[1])
-
-                # rescale box size to model anchor size
-                scale = min(float(self.model_image_size[1])/float(image_width), float(self.model_image_size[0])/float(image_height))
-                width = round(width * scale)
-                height = round(height * scale)
                 dataSet.append([width, height])
         result = np.array(dataSet)
         f.close()
@@ -109,7 +98,7 @@ class YOLO_Kmeans:
             self.avg_iou(all_boxes, result) * 100))
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description='Do K-means anchor clustering on selected dataset')
     parser.add_argument('--annotation_file', type=str, required=True,
             help='annotation txt file for ground truth anchors')
@@ -117,17 +106,15 @@ if __name__ == "__main__":
             help='anchor numbers to cluster')
     parser.add_argument('--anchors_file', type=str, required=True,
             help='anchor file to output')
-    parser.add_argument('--model_image_size', type=str, required=False,
-            help='model image input size as <height>x<width>, default=%(default)s', default='608x608')
 
     args = parser.parse_args()
-
-    height, width = args.model_image_size.split('x')
-    model_image_size = (int(height), int(width))
-    assert (model_image_size[0]%32 == 0 and model_image_size[1]%32 == 0), 'model_image_size should be multiples of 32'
 
     if args.cluster_number != 9 and args.cluster_number != 6 and args.cluster_number != 5:
         warnings.warn('You choose to generate {} anchor clusters, but default YOLO anchor number should 5, 6 or 9'.format(args.cluster_number))
 
-    kmeans = YOLO_Kmeans(args.cluster_number, args.annotation_file, args.anchors_file, model_image_size)
+    kmeans = YOLO_Kmeans(args.cluster_number, args.annotation_file, args.anchors_file)
     kmeans.txt2clusters()
+
+
+if __name__ == "__main__":
+    main()
