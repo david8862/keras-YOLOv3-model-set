@@ -15,7 +15,7 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
     image = Image.open(line[0])
     image_size = image.size
     model_input_size = tuple(reversed(input_shape))
-    boxes = np.array([np.array(list(map(int,box.split(',')))) for box in line[1:]])
+    boxes = np.array([np.array(list(map(int, box.split(',')))) for box in line[1:]])
 
     if not augment:
         new_image, padding_size, offset = letterbox_resize(image, target_size=model_input_size, return_padding_info=True)
