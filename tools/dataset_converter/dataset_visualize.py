@@ -10,14 +10,13 @@ from common.utils import get_classes, get_dataset, get_colors, draw_boxes
 
 
 def dataset_visualize(annotation_file, classes_path):
-
     annotation_lines = get_dataset(annotation_file, shuffle=False)
     # get class names and count class item number
     class_names = get_classes(classes_path)
     colors = get_colors(len(class_names))
 
     pbar = tqdm(total=len(annotation_lines), desc='Visualize dataset')
-    for annotation_line in annotation_lines:
+    for i, annotation_line in enumerate(annotation_lines):
         pbar.update(1)
         line = annotation_line.split()
         image = cv2.imread(line[0])
@@ -29,9 +28,20 @@ def dataset_visualize(annotation_file, classes_path):
 
         image = draw_boxes(image, boxes, classes, scores, class_names, colors, show_score=False)
 
+        # show image file info
+        image_file_name = os.path.basename(line[0])
+        cv2.putText(image, image_file_name+'({}/{})'.format(i+1, len(annotation_lines)),
+                    (3,15),
+                    cv2.FONT_HERSHEY_PLAIN,
+                    fontScale=1,
+                    color=(0,0,255),
+                    thickness=1,
+                    lineType=cv2.LINE_AA)
+
         cv2.namedWindow("Image", 0)
         cv2.imshow("Image", image)
-        if cv2.waitKey(0) & 0xFF == ord('q'):
+        keycode = cv2.waitKey(0) & 0xFF
+        if keycode == ord('q') or keycode == 27: # 27 is keycode for Esc
             break
     pbar.close()
 
