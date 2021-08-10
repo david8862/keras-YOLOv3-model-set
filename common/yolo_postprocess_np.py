@@ -101,13 +101,18 @@ def yolo_correct_boxes(predictions, img_shape, model_image_size):
 
 
 
-def yolo_handle_predictions(predictions, image_shape, max_boxes=100, confidence=0.1, iou_threshold=0.4, use_cluster_nms=False, use_wbf=False):
+def yolo_handle_predictions(predictions, image_shape, num_classes, max_boxes=100, confidence=0.1, iou_threshold=0.4, use_cluster_nms=False, use_wbf=False):
     boxes = predictions[:, :, :4]
     box_confidences = np.expand_dims(predictions[:, :, 4], -1)
     box_class_probs = predictions[:, :, 5:]
 
-    # filter boxes with confidence threshold
-    box_scores = box_confidences * box_class_probs
+    # check if only 1 class for different score
+    if num_classes == 1:
+        box_scores = box_confidences
+    else:
+        box_scores = box_confidences * box_class_probs
+
+    # filter boxes with score threshold
     box_classes = np.argmax(box_scores, axis=-1)
     box_class_scores = np.max(box_scores, axis=-1)
     pos = np.where(box_class_scores >= confidence)

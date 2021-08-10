@@ -312,8 +312,13 @@ def yolo2_loss(args, anchors, num_classes, label_smoothing=0, elim_grid_sense=Fa
 
 
     confidence_loss_sum = K.sum(confidence_loss) / batch_size_f
-    classification_loss_sum = K.sum(classification_loss) / batch_size_f
     location_loss_sum = K.sum(location_loss) / batch_size_f
+    # only involve class loss for multiple classes
+    if num_classes == 1:
+        classification_loss_sum = K.constant(0)
+    else:
+        classification_loss_sum = K.sum(classification_loss) / batch_size_f
+
     total_loss = 0.5 * (
         confidence_loss_sum + classification_loss_sum + location_loss_sum)
 

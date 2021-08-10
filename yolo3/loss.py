@@ -359,8 +359,13 @@ def yolo3_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
             wh_loss = K.sum(wh_loss) / batch_size_f
             location_loss = xy_loss + wh_loss
 
+        # only involve class loss for multiple classes
+        if num_classes == 1:
+            class_loss = K.constant(0)
+        else:
+            class_loss = K.sum(class_loss) / batch_size_f
+
         confidence_loss = K.sum(confidence_loss) / batch_size_f
-        class_loss = K.sum(class_loss) / batch_size_f
         loss += location_loss + confidence_loss + class_loss
         total_location_loss += location_loss
         total_confidence_loss += confidence_loss

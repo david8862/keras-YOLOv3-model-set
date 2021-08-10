@@ -104,12 +104,16 @@ void yolo_postprocess(const TfLiteTensor* feature_map, const int input_width, co
     //    bbox_y = (bbox_y_tmp + h) / height;
     //
     //
-    // 2. get bbox confidence (class_score * objectness)
-    //    and filter with threshold
+    // 2. get bbox confidence and filter with threshold:
     //
-    //    bbox_conf[:] = sigmoid/softmax(bbox_class_score[:]) * bbox_obj
+    //    if(num_classes == 1) {
+    //        bbox_conf[:] = bbox_obj
+    //    } else {
+    //        bbox_conf[:] = sigmoid/softmax(bbox_class_score[:]) * bbox_obj
+    //    }
     //    bbox_max_conf = max(bbox_conf[:])
     //    bbox_max_index = argmax(bbox_conf[:])
+    //
     //
     // 3. filter bbox_max_conf with threshold
     //
@@ -192,10 +196,21 @@ void yolo_postprocess(const TfLiteTensor* feature_map, const int input_width, co
                         float tmp_conf = 0.0;
                         if(anchor_num_per_layer == 5) {
                             // YOLOv2 use 5 anchors and softmax class scores
-                            tmp_conf = bbox_score[i] * bbox_obj;
+                            if(num_classes == 1) {
+                                tmp_conf = bbox_obj;
+                            }
+                            else {
+                                tmp_conf = bbox_score[i] * bbox_obj;
+                            }
                         }
                         else {
-                            tmp_conf = sigmoid(bytes[bbox_scores_offset + i * bbox_scores_step]) * bbox_obj;
+                            // check if only 1 class for different score
+                            if(num_classes == 1) {
+                                tmp_conf = bbox_obj;
+                            }
+                            else {
+                                tmp_conf = sigmoid(bytes[bbox_scores_offset + i * bbox_scores_step]) * bbox_obj;
+                            }
                         }
 
                         if(tmp_conf > max_conf) {

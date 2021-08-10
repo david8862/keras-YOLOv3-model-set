@@ -58,7 +58,8 @@ def yolo5_boxes_and_scores(feats, anchors, num_classes, input_shape, image_shape
         anchors, num_classes, input_shape, scale_x_y=scale_x_y)
     boxes = yolo3_correct_boxes(box_xy, box_wh, input_shape, image_shape)
     boxes = K.reshape(boxes, [-1, 4])
-    box_scores = box_confidence * box_class_probs
+    # check if only 1 class for different score
+    box_scores = tf.cond(K.equal(K.constant(value=num_classes, dtype='int32'), 1), lambda: box_confidence, lambda: box_confidence * box_class_probs)
     box_scores = K.reshape(box_scores, [-1, num_classes])
     return boxes, box_scores
 
@@ -132,7 +133,8 @@ def batched_yolo5_boxes_and_scores(feats, anchors, num_classes, input_shape, ima
 
     boxes = yolo3_correct_boxes(box_xy, box_wh, input_shape, image_shape)
     boxes = K.reshape(boxes, [-1, total_anchor_num, 4])
-    box_scores = box_confidence * box_class_probs
+    # check if only 1 class for different score
+    box_scores = tf.cond(K.equal(K.constant(value=num_classes, dtype='int32'), 1), lambda: box_confidence, lambda: box_confidence * box_class_probs)
     box_scores = K.reshape(box_scores, [-1, total_anchor_num, num_classes])
     return boxes, box_scores
 

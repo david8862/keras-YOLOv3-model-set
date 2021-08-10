@@ -39,6 +39,7 @@ def yolo3_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_
 
     boxes, classes, scores = yolo_handle_predictions(predictions,
                                                      image_shape,
+                                                     num_classes,
                                                      max_boxes=max_boxes,
                                                      confidence=confidence,
                                                      iou_threshold=iou_threshold)

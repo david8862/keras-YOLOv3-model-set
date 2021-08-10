@@ -385,15 +385,25 @@ def yolo5_loss(args, anchors, num_classes, ignore_thresh=.5, label_smoothing=0, 
 
 
         confidence_loss = confidence_loss_gain * K.sum(confidence_loss) / batch_size_f
-        class_loss = class_loss_gain * K.sum(class_loss) / batch_size_f
         location_loss = box_loss_gain * K.sum(location_loss) / batch_size_f
+        # only involve class loss for multiple classes
+        if num_classes == 1:
+            class_loss = K.constant(0)
+        else:
+            class_loss = class_loss_gain * K.sum(class_loss) / batch_size_f
+
 
         #object_number = K.sum(object_mask)
         #divided_factor = K.switch(object_number > 1, object_number, K.constant(1, K.dtype(object_number)))
 
         #confidence_loss = confidence_loss_gain * K.mean(confidence_loss)
-        #class_loss = class_loss_gain * K.sum(class_loss) / divided_factor
         #location_loss = box_loss_gain * K.sum(location_loss) / divided_factor
+
+        # only involve class loss for multiple classes
+        #if num_classes == 1:
+            #class_loss = K.constant(0)
+        #else:
+            #class_loss = class_loss_gain * K.sum(class_loss) / divided_factor
 
         loss += location_loss + confidence_loss + class_loss
         total_location_loss += location_loss
