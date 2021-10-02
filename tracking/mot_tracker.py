@@ -500,10 +500,10 @@ def main():
     )
 
     parser.add_argument(
-        '--model_image_size', type=str,
-        help='YOLO detection model input size as <height>x<width>, default ' +
-        str(YOLO.get_defaults("model_image_size")[0])+'x'+str(YOLO.get_defaults("model_image_size")[1]),
-        default=str(YOLO.get_defaults("model_image_size")[0])+'x'+str(YOLO.get_defaults("model_image_size")[1])
+        '--model_input_shape', type=str,
+        help='YOLO detection model input shape as <height>x<width>, default ' +
+        str(YOLO.get_defaults("model_input_shape")[0])+'x'+str(YOLO.get_defaults("model_input_shape")[1]),
+        default=str(YOLO.get_defaults("model_input_shape")[0])+'x'+str(YOLO.get_defaults("model_input_shape")[1])
     )
 
     parser.add_argument(
@@ -541,10 +541,10 @@ def main():
 
     args = parser.parse_args()
     # param parse
-    if args.model_image_size:
-        height, width = args.model_image_size.split('x')
-        args.model_image_size = (int(height), int(width))
-        assert (args.model_image_size[0]%32 == 0 and args.model_image_size[1]%32 == 0), 'model_image_size should be multiples of 32'
+    if args.model_input_shape:
+        height, width = args.model_input_shape.split('x')
+        args.model_input_shape = (int(height), int(width))
+        assert (args.model_input_shape[0]%32 == 0 and args.model_input_shape[1]%32 == 0), 'model_input_shape should be multiples of 32'
 
     # get YOLO wrapped detection object
     yolo = YOLO_np(**vars(args))

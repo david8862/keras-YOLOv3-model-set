@@ -10,11 +10,11 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] CSPDarknet53
 - [x] Darknet53/Tiny Darknet
 - [x] Darknet19
-- [x] MobilenetV1
-- [x] MobilenetV2
-- [x] MobilenetV3(Large/Small)
-- [x] PeleeNet ([paper](https://arxiv.org/abs/1804.06882))
-- [x] GhostNet ([paper](https://arxiv.org/abs/1911.11907))
+- [x] MobileNetV1
+- [x] MobileNetV2
+- [x] MobileNetV3(Large/Small)
+- [x] PeleeNet([paper](https://arxiv.org/abs/1804.06882))
+- [x] GhostNet([paper](https://arxiv.org/abs/1911.11907))
 - [x] EfficientNet
 - [x] Xception
 - [x] VGG16
@@ -222,7 +222,7 @@ Image detection sample:
 ```
 # python train.py -h
 usage: train.py [-h] [--model_type MODEL_TYPE] [--anchors_path ANCHORS_PATH]
-                [--model_image_size MODEL_IMAGE_SIZE]
+                [--model_input_shape MODEL_INPUT_SHAPE]
                 [--weights_path WEIGHTS_PATH]
                 [--annotation_file ANNOTATION_FILE]
                 [--val_annotation_file VAL_ANNOTATION_FILE]
@@ -250,8 +250,8 @@ optional arguments:
   --anchors_path ANCHORS_PATH
                         path to anchor definitions,
                         default=configs/yolo3_anchors.txt
-  --model_image_size MODEL_IMAGE_SIZE
-                        Initial model image input size as <height>x<width>,
+  --model_input_shape MODEL_INPUT_SHAPE
+                        Initial model image input shape as <height>x<width>,
                         default=416x416
   --weights_path WEIGHTS_PATH
                         Pretrained model/weights file for fine tune
@@ -336,12 +336,12 @@ Postprocess type (SoftNMS/DIoU-NMS/Cluster-NMS/WBF) could be configured in [yolo
 We need to dump out inference model from training checkpoint for eval or demo. Following script cmd work for that.
 
 ```
-# python yolo.py --model_type=yolo3_mobilenet_lite --weights_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --dump_model --output_model_file=model.h5
+# python yolo.py --model_type=yolo3_mobilenet_lite --weights_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_input_shape=416x416 --dump_model --output_model_file=model.h5
 ```
 
 Change model_type, anchors file & class file for different training mode. If "--model_pruning" was added in training, you also need to use "--pruning_model" here for dumping out the pruned model.
 
-NOTE: Now you can dump out a non-square input shape (e.g. using `--model_image_size=320x416`) model and do inference as normal, but the input height & weights must be multiples of 32.
+NOTE: Now you can dump out a non-square input shape (e.g. using `--model_input_shape=320x416`) model and do inference as normal, but the input height & weights must be multiples of 32.
 
 ### Evaluation
 Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/eval.py) to do evaluation on the inference model with your test data. It support following metrics:
@@ -351,7 +351,7 @@ Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/ev
 2. MS COCO AP. will generate txt detection result, draw overall AP chart and AP on different scale (small, medium, large) as COCO standard. It can also optionally save all the detection result
 
 ```
-# python eval.py --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.001 --annotation_file=2007_test.txt --save_result
+# python eval.py --model_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_input_shape=416x416 --eval_type=VOC --iou_threshold=0.5 --conf_threshold=0.001 --annotation_file=2007_test.txt --save_result
 ```
 
 If you're evaluating with MSCOCO dataset, you can further use [pycoco_eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/evaluation/pycoco_eval.py) with the generated txt detection result and COCO GT annotation to get official COCO AP with [pycocotools](https://github.com/cocodataset/cocoapi/tree/master/PythonAPI/pycocotools):
@@ -458,11 +458,11 @@ Some experiment on PascalVOC dataset and comparison:
 
 image detection mode
 ```
-# python yolo.py --model_type=yolo3_mobilenet_lite --weights_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --image
+# python yolo.py --model_type=yolo3_mobilenet_lite --weights_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_input_shape=416x416 --image
 ```
 video detection mode
 ```
-# python yolo.py --model_type=yolo3_mobilenet_lite --weights_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --input=test.mp4
+# python yolo.py --model_type=yolo3_mobilenet_lite --weights_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_input_shape=416x416 --input=test.mp4
 ```
 For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
 

@@ -6,23 +6,23 @@ from scipy.special import expit
 from common.yolo_postprocess_np import yolo_handle_predictions, yolo_correct_boxes, yolo_adjust_boxes
 
 
-def yolo5_decode_single_head(prediction, anchors, num_classes, input_dims, scale_x_y):
+def yolo5_decode_single_head(prediction, anchors, num_classes, input_shape, scale_x_y):
     '''Decode final layer features to bounding box parameters.'''
     batch_size = np.shape(prediction)[0]
     num_anchors = len(anchors)
 
-    grid_size = np.shape(prediction)[1:3]
+    grid_shape = np.shape(prediction)[1:3]
     #check if stride on height & width are same
-    assert input_dims[0]//grid_size[0] == input_dims[1]//grid_size[1], 'model stride mismatch.'
-    stride = input_dims[0] // grid_size[0]
+    assert input_shape[0]//grid_shape[0] == input_shape[1]//grid_shape[1], 'model stride mismatch.'
+    stride = input_shape[0] // grid_shape[0]
 
     prediction = np.reshape(prediction,
-                            (batch_size, grid_size[0] * grid_size[1] * num_anchors, num_classes + 5))
+                            (batch_size, grid_shape[0] * grid_shape[1] * num_anchors, num_classes + 5))
 
     ################################
     # generate x_y_offset grid map
-    grid_y = np.arange(grid_size[0])
-    grid_x = np.arange(grid_size[1])
+    grid_y = np.arange(grid_shape[0])
+    grid_x = np.arange(grid_shape[1])
     x_offset, y_offset = np.meshgrid(grid_x, grid_y)
 
     x_offset = np.reshape(x_offset, (-1, 1))
@@ -36,7 +36,7 @@ def yolo5_decode_single_head(prediction, anchors, num_classes, input_dims, scale
     ################################
 
     # Log space transform of the height and width
-    anchors = np.tile(anchors, (grid_size[0] * grid_size[1], 1))
+    anchors = np.tile(anchors, (grid_shape[0] * grid_shape[1], 1))
     anchors = np.expand_dims(anchors, 0)
 
     assert scale_x_y, 'YOLOv5 decode should have scale_x_y.'
@@ -51,8 +51,8 @@ def yolo5_decode_single_head(prediction, anchors, num_classes, input_dims, scale
     prediction = expit(prediction)
 
     box_xy_tmp = prediction[..., :2] * scale_x_y - (scale_x_y - 1) / 2
-    box_xy = (box_xy_tmp + x_y_offset) / np.array(grid_size)[::-1]
-    box_wh = ((prediction[..., 2:4]*2)**2 * anchors) / np.array(input_dims)[::-1]
+    box_xy = (box_xy_tmp + x_y_offset) / np.array(grid_shape)[::-1]
+    box_wh = ((prediction[..., 2:4]*2)**2 * anchors) / np.array(input_shape)[::-1]
 
     # Sigmoid objectness scores
     objectness = prediction[..., 4]  # p_o (objectness score)
@@ -64,13 +64,13 @@ def yolo5_decode_single_head(prediction, anchors, num_classes, input_dims, scale
     return np.concatenate([box_xy, box_wh, objectness, class_scores], axis=2)
 
 
-def yolo5_decode(predictions, anchors, num_classes, input_dims, elim_grid_sense=True):
+def yolo5_decode(predictions, anchors, num_classes, input_shape, elim_grid_sense=True):
     """
     YOLOv5 Head to process predictions from YOLOv5 models
 
     :param num_classes: Total number of classes
     :param anchors: YOLO style anchor list for bounding box assignment
-    :param input_dims: Input dimensions of the image
+    :param input_shape: Input shape of the image
     :param predictions: A list of three tensors with shape (N, 19, 19, 255), (N, 38, 38, 255) and (N, 76, 76, 255)
     :return: A tensor with the shape (N, num_boxes, 85)
     """
@@ -88,14 +88,14 @@ def yolo5_decode(predictions, anchors, num_classes, input_dims, elim_grid_sense=
 
     results = []
     for i, prediction in enumerate(predictions):
-        results.append(yolo5_decode_single_head(prediction, anchors[anchor_mask[i]], num_classes, input_dims, scale_x_y=scale_x_y[i]))
+        results.append(yolo5_decode_single_head(prediction, anchors[anchor_mask[i]], num_classes, input_shape, scale_x_y=scale_x_y[i]))
 
     return np.concatenate(results, axis=1)
 
 
-def yolo5_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=0.1, iou_threshold=0.4, elim_grid_sense=True):
-    predictions = yolo5_decode(yolo_outputs, anchors, num_classes, input_dims=model_image_size, elim_grid_sense=elim_grid_sense)
-    predictions = yolo_correct_boxes(predictions, image_shape, model_image_size)
+def yolo5_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=0.1, iou_threshold=0.4, elim_grid_sense=True):
+    predictions = yolo5_decode(yolo_outputs, anchors, num_classes, input_shape=model_input_shape, elim_grid_sense=elim_grid_sense)
+    predictions = yolo_correct_boxes(predictions, image_shape, model_input_shape)
 
     boxes, classes, scores = yolo_handle_predictions(predictions,
                                                      image_shape,

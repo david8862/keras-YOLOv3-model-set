@@ -71,7 +71,7 @@ def get_flops(model):
 def main():
     parser = argparse.ArgumentParser(description='tf.keras model FLOPs & PARAMs checking tool')
     parser.add_argument('--model_path', type=str, required=True, help='model file to evaluate')
-    parser.add_argument('--model_image_size', type=str, required=False, default=None, help='model image input size as <height>x<width>, optional')
+    parser.add_argument('--model_input_shape', type=str, required=False, default=None, help='model image input shape as <height>x<width>, optional')
     args = parser.parse_args()
 
     custom_object_dict = get_custom_objects()
@@ -79,10 +79,10 @@ def main():
 
     batch, height, width, channel = model.input.shape.as_list()
 
-    if args.model_image_size:
-        height, width = args.model_image_size.split('x')
+    if args.model_input_shape:
+        height, width = args.model_input_shape.split('x')
         height, width = int(height), int(width)
-        assert (height%32 == 0 and width%32 == 0), 'model_image_size should be multiples of 32'
+        assert (height%32 == 0 and width%32 == 0), 'model_input_shape should be multiples of 32'
 
     # to calculate FLOPs we need to use fixed input shape & batch size
     assert height and width and channel, 'input shape should be specified'

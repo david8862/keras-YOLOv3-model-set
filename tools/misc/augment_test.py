@@ -43,14 +43,14 @@ def main():
     parser.add_argument('--classes_path', type=str, required=True, help='path to class definitions')
     parser.add_argument('--output_path', type=str, required=False,  help='output path for augmented images, default=%(default)s', default='./test')
     parser.add_argument('--batch_size', type=int, required=False, help = "batch size for test data, default=%(default)s", default=16)
-    parser.add_argument('--model_image_size', type=str, required=False, help='model image input size as <height>x<width>, default=%(default)s', default='416x416')
+    parser.add_argument('--model_input_shape', type=str, required=False, help='model image input shape as <height>x<width>, default=%(default)s', default='416x416')
     parser.add_argument('--enhance_augment', type=str, required=False, help = "enhance data augmentation type, default=%(default)s", default=None, choices=['mosaic', 'mosaic_v5', 'cutmix', None])
 
     args = parser.parse_args()
     class_names = get_classes(args.classes_path)
-    height, width = args.model_image_size.split('x')
-    model_image_size = (int(height), int(width))
-    assert (model_image_size[0]%32 == 0 and model_image_size[1]%32 == 0), 'model_image_size should be multiples of 32'
+    height, width = args.model_input_shape.split('x')
+    model_input_shape = (int(height), int(width))
+    assert (model_input_shape[0]%32 == 0 and model_input_shape[1]%32 == 0), 'model_input_shape should be multiples of 32'
 
     annotation_lines = get_dataset(args.annotation_file)
     os.makedirs(args.output_path, exist_ok=True)
@@ -59,7 +59,7 @@ def main():
     boxes_data = []
     for i in range(args.batch_size):
         annotation_line = annotation_lines[i]
-        image, boxes = get_ground_truth_data(annotation_line, input_shape=model_image_size, augment=True)
+        image, boxes = get_ground_truth_data(annotation_line, input_shape=model_input_shape, augment=True)
         #un-normalize image
         image = image*255.0
         image = image.astype(np.uint8)

@@ -13,7 +13,7 @@ import argparse
 from rknn.api import RKNN
 
 
-def rknn_convert(input_model, output_model, model_image_size, output_tensor_num, dataset_file, target_platform):
+def rknn_convert(input_model, output_model, model_input_shape, output_tensor_num, dataset_file, target_platform):
     # Create RKNN object
     rknn = RKNN()
     print('--> config model')
@@ -34,7 +34,7 @@ def rknn_convert(input_model, output_model, model_image_size, output_tensor_num,
     ret = rknn.load_tensorflow(tf_pb=input_model,
                                inputs=['image_input'],
                                outputs=output_tensor_names,
-                               input_size_list=[model_image_size+(3,)],
+                               input_size_list=[model_input_shape+(3,)],
                                predef_file=None)
     #ret = rknn.load_onnx(model=input_model)
     if ret != 0:
@@ -63,16 +63,16 @@ def main():
     parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='Convert YOLO tensorflow model to RKNN model')
     parser.add_argument('--input_model', required=True, type=str, help='tensorflow pb model file')
     parser.add_argument('--output_model', required=True, type=str, help='output rknn model file')
-    parser.add_argument('--model_image_size', type=str, help='model image input size as <height>x<width>, default=%(default)s', default='416x416')
+    parser.add_argument('--model_input_shape', type=str, help='model image input shape as <height>x<width>, default=%(default)s', default='416x416')
     parser.add_argument('--output_tensor_num', required=False, type=int, default=3, choices=[1, 2, 3], help='YOLO output tensor number, default=%(default)s')
     parser.add_argument('--dataset_file', required=True, type=str, help='data samples txt file')
     parser.add_argument('--target_platform', required=False, type=str, default='rv1126', choices=['rk1808', 'rk3399pro', 'rv1109', 'rv1126'], help='target Rockchip platform, default=%(default)s')
 
     args = parser.parse_args()
-    height, width = args.model_image_size.split('x')
-    model_image_size = (int(height), int(width))
+    height, width = args.model_input_shape.split('x')
+    model_input_shape = (int(height), int(width))
 
-    rknn_convert(args.input_model, args.output_model, model_image_size, args.output_tensor_num, args.dataset_file, args.target_platform)
+    rknn_convert(args.input_model, args.output_model, model_input_shape, args.output_tensor_num, args.dataset_file, args.target_platform)
 
 
 if __name__ == '__main__':

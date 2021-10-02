@@ -6,23 +6,23 @@ from scipy.special import expit, softmax
 
 from common.wbf_postprocess import weighted_boxes_fusion
 
-def yolo_decode(prediction, anchors, num_classes, input_dims, scale_x_y=None, use_softmax=False):
+def yolo_decode(prediction, anchors, num_classes, input_shape, scale_x_y=None, use_softmax=False):
     '''Decode final layer features to bounding box parameters.'''
     batch_size = np.shape(prediction)[0]
     num_anchors = len(anchors)
 
-    grid_size = np.shape(prediction)[1:3]
+    grid_shape = np.shape(prediction)[1:3]
     #check if stride on height & width are same
-    assert input_dims[0]//grid_size[0] == input_dims[1]//grid_size[1], 'model stride mismatch.'
-    stride = input_dims[0] // grid_size[0]
+    assert input_shape[0]//grid_shape[0] == input_shape[1]//grid_shape[1], 'model stride mismatch.'
+    stride = input_shape[0] // grid_shape[0]
 
     prediction = np.reshape(prediction,
-                            (batch_size, grid_size[0] * grid_size[1] * num_anchors, num_classes + 5))
+                            (batch_size, grid_shape[0] * grid_shape[1] * num_anchors, num_classes + 5))
 
     ################################
     # generate x_y_offset grid map
-    grid_y = np.arange(grid_size[0])
-    grid_x = np.arange(grid_size[1])
+    grid_y = np.arange(grid_shape[0])
+    grid_x = np.arange(grid_shape[1])
     x_offset, y_offset = np.meshgrid(grid_x, grid_y)
 
     x_offset = np.reshape(x_offset, (-1, 1))
@@ -36,7 +36,7 @@ def yolo_decode(prediction, anchors, num_classes, input_dims, scale_x_y=None, us
     ################################
 
     # Log space transform of the height and width
-    anchors = np.tile(anchors, (grid_size[0] * grid_size[1], 1))
+    anchors = np.tile(anchors, (grid_shape[0] * grid_shape[1], 1))
     anchors = np.expand_dims(anchors, 0)
 
     if scale_x_y:
@@ -48,10 +48,10 @@ def yolo_decode(prediction, anchors, num_classes, input_dims, scale_x_y=None, us
         #     https://github.com/opencv/opencv/issues/17148
         #
         box_xy_tmp = expit(prediction[..., :2]) * scale_x_y - (scale_x_y - 1) / 2
-        box_xy = (box_xy_tmp + x_y_offset) / np.array(grid_size)[::-1]
+        box_xy = (box_xy_tmp + x_y_offset) / np.array(grid_shape)[::-1]
     else:
-        box_xy = (expit(prediction[..., :2]) + x_y_offset) / np.array(grid_size)[::-1]
-    box_wh = (np.exp(prediction[..., 2:4]) * anchors) / np.array(input_dims)[::-1]
+        box_xy = (expit(prediction[..., :2]) + x_y_offset) / np.array(grid_shape)[::-1]
+    box_wh = (np.exp(prediction[..., 2:4]) * anchors) / np.array(input_shape)[::-1]
 
     # Sigmoid objectness scores
     objectness = expit(prediction[..., 4])  # p_o (objectness score)
@@ -67,21 +67,21 @@ def yolo_decode(prediction, anchors, num_classes, input_dims, scale_x_y=None, us
     return np.concatenate([box_xy, box_wh, objectness, class_scores], axis=2)
 
 
-def yolo_correct_boxes(predictions, img_shape, model_image_size):
+def yolo_correct_boxes(predictions, img_shape, model_input_shape):
     '''rescale predicition boxes back to original image shape'''
     box_xy = predictions[..., :2]
     box_wh = predictions[..., 2:4]
     objectness = np.expand_dims(predictions[..., 4], -1)
     class_scores = predictions[..., 5:]
 
-    # model_image_size & image_shape should be (height, width) format
-    model_image_size = np.array(model_image_size, dtype='float32')
+    # model_input_shape & image_shape should be (height, width) format
+    model_input_shape = np.array(model_input_shape, dtype='float32')
     image_shape = np.array(img_shape, dtype='float32')
     height, width = image_shape
 
-    new_shape = np.round(image_shape * np.min(model_image_size/image_shape))
-    offset = (model_image_size-new_shape)/2./model_image_size
-    scale = model_image_size/new_shape
+    new_shape = np.round(image_shape * np.min(model_input_shape/image_shape))
+    offset = (model_input_shape-new_shape)/2./model_input_shape
+    scale = model_input_shape/new_shape
     # reverse offset/scale to match (w,h) order
     offset = offset[..., ::-1]
     scale = scale[..., ::-1]

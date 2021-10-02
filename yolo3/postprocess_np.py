@@ -5,13 +5,13 @@ import numpy as np
 from common.yolo_postprocess_np import yolo_decode, yolo_handle_predictions, yolo_correct_boxes, yolo_adjust_boxes
 
 
-def yolo3_decode(predictions, anchors, num_classes, input_dims, elim_grid_sense=False):
+def yolo3_decode(predictions, anchors, num_classes, input_shape, elim_grid_sense=False):
     """
     YOLOv3 Head to process predictions from YOLOv3 models
 
     :param num_classes: Total number of classes
     :param anchors: YOLO style anchor list for bounding box assignment
-    :param input_dims: Input dimensions of the image
+    :param input_shape: Input shape of the image
     :param predictions: A list of three tensors with shape (N, 19, 19, 255), (N, 38, 38, 255) and (N, 76, 76, 255)
     :return: A tensor with the shape (N, num_boxes, 85)
     """
@@ -28,14 +28,14 @@ def yolo3_decode(predictions, anchors, num_classes, input_dims, elim_grid_sense=
 
     results = []
     for i, prediction in enumerate(predictions):
-        results.append(yolo_decode(prediction, anchors[anchor_mask[i]], num_classes, input_dims, scale_x_y=scale_x_y[i], use_softmax=False))
+        results.append(yolo_decode(prediction, anchors[anchor_mask[i]], num_classes, input_shape, scale_x_y=scale_x_y[i], use_softmax=False))
 
     return np.concatenate(results, axis=1)
 
 
-def yolo3_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=0.1, iou_threshold=0.4, elim_grid_sense=False):
-    predictions = yolo3_decode(yolo_outputs, anchors, num_classes, input_dims=model_image_size, elim_grid_sense=elim_grid_sense)
-    predictions = yolo_correct_boxes(predictions, image_shape, model_image_size)
+def yolo3_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=0.1, iou_threshold=0.4, elim_grid_sense=False):
+    predictions = yolo3_decode(yolo_outputs, anchors, num_classes, input_shape=model_input_shape, elim_grid_sense=elim_grid_sense)
+    predictions = yolo_correct_boxes(predictions, image_shape, model_input_shape)
 
     boxes, classes, scores = yolo_handle_predictions(predictions,
                                                      image_shape,

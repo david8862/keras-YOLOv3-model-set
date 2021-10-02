@@ -61,7 +61,7 @@ Refer to [Model dump](https://github.com/david8862/keras-YOLOv3-model-set#model-
 * dump out inference model from training checkpoint:
 
     ```
-    # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/tiny_yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=320x320 --dump_model --output_model_file=model.h5
+    # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/tiny_yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_input_shape=320x320 --dump_model --output_model_file=model.h5
     ```
 
 * convert keras .h5 model to tensorflow frozen pb model:
@@ -186,7 +186,7 @@ Tensorflow-lite support both Float32 and UInt8 type model. We can dump out the k
 * dump out inference model from training checkpoint:
 
     ```
-    # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/tiny_yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=320x320 --dump_model --output_model_file=model.h5
+    # python yolo.py --model_type=mobilenet_lite --model_path=logs/000/<checkpoint>.h5 --anchors_path=configs/tiny_yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_input_shape=320x320 --dump_model --output_model_file=model.h5
     ```
 
 * convert keras .h5 model to Float32 tflite model:

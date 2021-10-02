@@ -11,7 +11,7 @@ import tfcoreml
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.utils import get_custom_objects
 
-def coreml_convert(input_model_file, output_file, model_image_size):
+def coreml_convert(input_model_file, output_file, model_input_shape):
     if input_model_file.endswith('.h5'):
         if not tf.__version__.startswith('2'):
             raise ValueError('tf.keras model convert only support in TF 2.x env')
@@ -42,7 +42,7 @@ def coreml_convert(input_model_file, output_file, model_image_size):
     else:
         raise ValueError('unsupported model type')
 
-    input_name_shape_dict={input_name: (1,) + model_image_size + (3,)}
+    input_name_shape_dict={input_name: (1,) + model_input_shape + (3,)}
     # convert to CoreML model file
     model = tfcoreml.convert(tf_model_path=input_model_file,
                              mlmodel_path=output_file,
@@ -58,14 +58,14 @@ def main():
     parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS, description='Convert YOLO h5/pb model to CoreML model')
     parser.add_argument('--input_model_file', required=True, type=str, help='path to input h5/pb model file')
     parser.add_argument('--output_file', required=True, type=str, help='output CoreML .mlmodel file')
-    parser.add_argument('--model_image_size', required=False, type=str, help='model image input size as <height>x<width>, default=%(default)s', default='416x416')
+    parser.add_argument('--model_input_shape', required=False, type=str, help='model image input shape as <height>x<width>, default=%(default)s', default='416x416')
 
     args = parser.parse_args()
-    height, width = args.model_image_size.split('x')
-    model_image_size = (int(height), int(width))
-    assert (model_image_size[0]%32 == 0 and model_image_size[1]%32 == 0), 'model_image_size should be multiples of 32'
+    height, width = args.model_input_shape.split('x')
+    model_input_shape = (int(height), int(width))
+    assert (model_input_shape[0]%32 == 0 and model_input_shape[1]%32 == 0), 'model_input_shape should be multiples of 32'
 
-    coreml_convert(args.input_model_file, args.output_file, model_image_size)
+    coreml_convert(args.input_model_file, args.output_file, model_input_shape)
 
 
 if __name__ == '__main__':

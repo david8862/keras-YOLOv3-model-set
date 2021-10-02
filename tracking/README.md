@@ -31,7 +31,7 @@ usage: mot_tracker.py [-h] [--tracking_model_type {sort,deepsort}]
                       [--model_type MODEL_TYPE] [--weights_path WEIGHTS_PATH]
                       [--pruning_model] [--anchors_path ANCHORS_PATH]
                       [--classes_path CLASSES_PATH]
-                      [--model_image_size MODEL_IMAGE_SIZE] [--score SCORE]
+                      [--model_input_shape MODEL_INPUT_SHAPE] [--score SCORE]
                       [--iou IOU] [--elim_grid_sense] [--input [INPUT]]
                       [--output [OUTPUT]] [--output_json [OUTPUT_JSON]]
 
@@ -61,8 +61,8 @@ optional arguments:
   --classes_path CLASSES_PATH
                         path to YOLO detection class definitions, default
                         configs/coco_classes.txt
-  --model_image_size MODEL_IMAGE_SIZE
-                        YOLO detection model input size as <height>x<width>,
+  --model_input_shape MODEL_INPUT_SHAPE
+                        YOLO detection model input shape as <height>x<width>,
                         default 416x416
   --score SCORE         score threshold for YOLO detection model, default 0.1
   --iou IOU             iou threshold for YOLO detection NMS, default 0.4
@@ -76,7 +76,7 @@ optional arguments:
 
 Reference demo config:
 ```
-# python tracking/mot_tracker.py --tracking_model_type=deepsort --tracking_classes_path=tracking_classes.txt --deepsort_model_path=tracking/weights/mars-small128.pb --model_type=yolo3_mobilenet_lite --weights_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_image_size=416x416 --score=0.2 --iou=0.6 --input=demo.mp4
+# python tracking/mot_tracker.py --tracking_model_type=deepsort --tracking_classes_path=tracking_classes.txt --deepsort_model_path=tracking/weights/mars-small128.pb --model_type=yolo3_mobilenet_lite --weights_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_input_shape=416x416 --score=0.2 --iou=0.6 --input=demo.mp4
 ```
 
 ![image](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/assets/tracking.gif)

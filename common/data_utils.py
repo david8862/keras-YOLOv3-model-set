@@ -108,20 +108,20 @@ def random_resize_crop_pad(image, target_size, aspect_ratio_jitter=0.3, scale_ji
     return new_image, padding_size, padding_offset
 
 
-def reshape_boxes(boxes, src_shape, target_shape, padding_shape, offset, horizontal_flip=False, vertical_flip=False):
+def reshape_boxes(boxes, src_size, target_size, padding_size, offset, horizontal_flip=False, vertical_flip=False):
     """
-    Reshape bounding boxes from src_shape image to target_shape image,
+    Reshape bounding boxes from src_size image to target_size image,
     usually for training data preprocess
 
     # Arguments
         boxes: Ground truth object bounding boxes,
             numpy array of shape (num_boxes, 5),
             box format (xmin, ymin, xmax, ymax, cls_id).
-        src_shape: origin image shape,
+        src_size: origin image size,
             tuple of format (width, height).
-        target_shape: target image shape,
+        target_size: target image size,
             tuple of format (width, height).
-        padding_shape: padding image shape,
+        padding_size: padding image shape,
             tuple of format (width, height).
         offset: top-left offset when padding target image.
             tuple of format (dx, dy).
@@ -134,9 +134,9 @@ def reshape_boxes(boxes, src_shape, target_shape, padding_shape, offset, horizon
         boxes: reshaped bounding box numpy array
     """
     if len(boxes)>0:
-        src_w, src_h = src_shape
-        target_w, target_h = target_shape
-        padding_w, padding_h = padding_shape
+        src_w, src_h = src_size
+        target_w, target_h = target_size
+        padding_w, padding_h = padding_size
         dx, dy = offset
 
         # shuffle and reshape boxes
@@ -1118,7 +1118,7 @@ def denormalize_image(image):
     return image
 
 
-def preprocess_image(image, model_image_size):
+def preprocess_image(image, model_input_shape):
     """
     Prepare model input image data with letterbox
     resize, normalize and dim expansion
@@ -1126,14 +1126,14 @@ def preprocess_image(image, model_image_size):
     # Arguments
         image: origin input image
             PIL Image object containing image data
-        model_image_size: model input image size
+        model_input_shape: model input image shape
             tuple of format (height, width).
 
     # Returns
         image_data: numpy array of image data for model input.
     """
-    #resized_image = cv2.resize(image, tuple(reversed(model_image_size)), cv2.INTER_AREA)
-    resized_image = letterbox_resize(image, tuple(reversed(model_image_size)))
+    #resized_image = cv2.resize(image, model_input_shape[::-1], cv2.INTER_AREA)
+    resized_image = letterbox_resize(image, model_input_shape[::-1])
     image_data = np.asarray(resized_image).astype('float32')
     image_data = normalize_image(image_data)
     image_data = np.expand_dims(image_data, 0)  # Add batch dimension.

@@ -83,8 +83,8 @@ def main(args):
         rescale_interval = -1  #Doesn't rescale
 
     # model input shape check
-    input_shape = args.model_image_size
-    assert (input_shape[0]%32 == 0 and input_shape[1]%32 == 0), 'model_image_size should be multiples of 32'
+    input_shape = args.model_input_shape
+    assert (input_shape[0]%32 == 0 and input_shape[1]%32 == 0), 'model_input_shape should be multiples of 32'
 
     # get different model type & train&val data generator
     if args.model_type.startswith('scaled_yolo4_') or args.model_type.startswith('yolo5_'):
@@ -136,7 +136,7 @@ def main(args):
 
     # prepare online evaluation callback
     if args.eval_online:
-        eval_callback = EvalCallBack(args.model_type, dataset[num_train:], anchors, class_names, args.model_image_size, args.model_pruning, log_dir, eval_epoch_interval=args.eval_epoch_interval, save_eval_checkpoint=args.save_eval_checkpoint, elim_grid_sense=args.elim_grid_sense)
+        eval_callback = EvalCallBack(args.model_type, dataset[num_train:], anchors, class_names, args.model_input_shape, args.model_pruning, log_dir, eval_epoch_interval=args.eval_epoch_interval, save_eval_checkpoint=args.save_eval_checkpoint, elim_grid_sense=args.elim_grid_sense)
         callbacks.insert(-1, eval_callback) # add before checkpoint clean
 
     # prepare train/val data shuffle callback
@@ -259,8 +259,8 @@ if __name__ == '__main__':
         help='YOLO model type: yolo3_mobilenet_lite/tiny_yolo3_mobilenet/yolo3_darknet/..., default=%(default)s')
     parser.add_argument('--anchors_path', type=str, required=False, default=os.path.join('configs', 'yolo3_anchors.txt'),
         help='path to anchor definitions, default=%(default)s')
-    parser.add_argument('--model_image_size', type=str, required=False, default='416x416',
-        help = "Initial model image input size as <height>x<width>, default=%(default)s")
+    parser.add_argument('--model_input_shape', type=str, required=False, default='416x416',
+        help = "Initial model image input shape as <height>x<width>, default=%(default)s")
     parser.add_argument('--weights_path', type=str, required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
 
@@ -321,7 +321,7 @@ if __name__ == '__main__':
         help='Whether to save checkpoint with best evaluation result')
 
     args = parser.parse_args()
-    height, width = args.model_image_size.split('x')
-    args.model_image_size = (int(height), int(width))
+    height, width = args.model_input_shape.split('x')
+    args.model_input_shape = (int(height), int(width))
 
     main(args)

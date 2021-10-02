@@ -42,7 +42,7 @@ default_config = {
         "classes_path": os.path.join('configs', 'coco_classes.txt'),
         "score" : 0.1,
         "iou" : 0.4,
-        "model_image_size" : (416, 416),
+        "model_input_shape" : (416, 416),
         "elim_grid_sense": False,
         #"gpu_num" : 1,
     }
@@ -84,14 +84,14 @@ class YOLO_np(object):
         try:
             if self.model_type.startswith('scaled_yolo4_') or self.model_type.startswith('yolo5_'):
                 # Scaled-YOLOv4 & YOLOv5 entrance
-                yolo_model, _ = get_yolo5_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.pruning_model)
+                yolo_model, _ = get_yolo5_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_input_shape + (3,), model_pruning=self.pruning_model)
             elif self.model_type.startswith('yolo3_') or self.model_type.startswith('yolo4_') or \
                  self.model_type.startswith('tiny_yolo3_') or self.model_type.startswith('tiny_yolo4_'):
                 # YOLOv3 & v4 entrance
-                yolo_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.pruning_model)
+                yolo_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_input_shape + (3,), model_pruning=self.pruning_model)
             elif self.model_type.startswith('yolo2_') or self.model_type.startswith('tiny_yolo2_'):
                 # YOLOv2 entrance
-                yolo_model, _ = get_yolo2_model(self.model_type, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.pruning_model)
+                yolo_model, _ = get_yolo2_model(self.model_type, num_anchors, num_classes, input_shape=self.model_input_shape + (3,), model_pruning=self.pruning_model)
             else:
                 raise ValueError('Unsupported model type')
 
@@ -112,13 +112,13 @@ class YOLO_np(object):
 
 
     def detect_image(self, image):
-        if self.model_image_size != (None, None):
-            assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
-            assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
+        if self.model_input_shape != (None, None):
+            assert self.model_input_shape[0]%32 == 0, 'Multiples of 32 required'
+            assert self.model_input_shape[1]%32 == 0, 'Multiples of 32 required'
 
-        image_data = preprocess_image(image, self.model_image_size)
+        image_data = preprocess_image(image, self.model_input_shape)
         #origin image shape, in (height, width) format
-        image_shape = tuple(reversed(image.size))
+        image_shape = image.size[::-1]
 
         start = time.time()
         out_boxes, out_classes, out_scores = self.predict(image_data, image_shape)
@@ -138,14 +138,14 @@ class YOLO_np(object):
         num_anchors = len(self.anchors)
         if self.model_type.startswith('scaled_yolo4_') or self.model_type.startswith('yolo5_'):
             # Scaled-YOLOv4 & YOLOv5 entrance, enable "elim_grid_sense" by default
-            out_boxes, out_classes, out_scores = yolo5_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100, confidence=self.score, iou_threshold=self.iou, elim_grid_sense=True)
+            out_boxes, out_classes, out_scores = yolo5_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_input_shape, max_boxes=100, confidence=self.score, iou_threshold=self.iou, elim_grid_sense=True)
         elif self.model_type.startswith('yolo3_') or self.model_type.startswith('yolo4_') or \
              self.model_type.startswith('tiny_yolo3_') or self.model_type.startswith('tiny_yolo4_'):
             # YOLOv3 & v4 entrance
-            out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100, confidence=self.score, iou_threshold=self.iou, elim_grid_sense=self.elim_grid_sense)
+            out_boxes, out_classes, out_scores = yolo3_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_input_shape, max_boxes=100, confidence=self.score, iou_threshold=self.iou, elim_grid_sense=self.elim_grid_sense)
         elif self.model_type.startswith('yolo2_') or self.model_type.startswith('tiny_yolo2_'):
             # YOLOv2 entrance
-            out_boxes, out_classes, out_scores = yolo2_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_image_size, max_boxes=100, confidence=self.score, iou_threshold=self.iou, elim_grid_sense=self.elim_grid_sense)
+            out_boxes, out_classes, out_scores = yolo2_postprocess_np(self.yolo_model.predict(image_data), image_shape, self.anchors, len(self.class_names), self.model_input_shape, max_boxes=100, confidence=self.score, iou_threshold=self.iou, elim_grid_sense=self.elim_grid_sense)
         else:
             raise ValueError('Unsupported model type')
 
@@ -192,14 +192,14 @@ class YOLO(object):
 
         if self.model_type.startswith('scaled_yolo4_') or self.model_type.startswith('yolo5_'):
             # Scaled-YOLOv4 & YOLOv5 entrance, enable "elim_grid_sense" by default
-            inference_model = get_yolo5_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=self.score, iou_threshold=self.iou, elim_grid_sense=True)
+            inference_model = get_yolo5_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_input_shape + (3,), confidence=self.score, iou_threshold=self.iou, elim_grid_sense=True)
         elif self.model_type.startswith('yolo3_') or self.model_type.startswith('yolo4_') or \
              self.model_type.startswith('tiny_yolo3_') or self.model_type.startswith('tiny_yolo4_'):
             # YOLOv3 & v4 entrance
-            inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=self.score, iou_threshold=self.iou, elim_grid_sense=self.elim_grid_sense)
+            inference_model = get_yolo3_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_input_shape + (3,), confidence=self.score, iou_threshold=self.iou, elim_grid_sense=self.elim_grid_sense)
         elif self.model_type.startswith('yolo2_') or self.model_type.startswith('tiny_yolo2_'):
             # YOLOv2 entrance
-            inference_model = get_yolo2_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_image_size + (3,), confidence=self.score, iou_threshold=self.iou, elim_grid_sense=self.elim_grid_sense)
+            inference_model = get_yolo2_inference_model(self.model_type, self.anchors, num_classes, weights_path=weights_path, input_shape=self.model_input_shape + (3,), confidence=self.score, iou_threshold=self.iou, elim_grid_sense=self.elim_grid_sense)
         else:
             raise ValueError('Unsupported model type')
 
@@ -218,11 +218,11 @@ class YOLO(object):
         return out_boxes, out_classes, out_scores
 
     def detect_image(self, image):
-        if self.model_image_size != (None, None):
-            assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
-            assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
+        if self.model_input_shape != (None, None):
+            assert self.model_input_shape[0]%32 == 0, 'Multiples of 32 required'
+            assert self.model_input_shape[1]%32 == 0, 'Multiples of 32 required'
 
-        image_data = preprocess_image(image, self.model_image_size)
+        image_data = preprocess_image(image, self.model_input_shape)
 
         # prepare origin image shape, (height, width) format
         image_shape = np.array([image.size[1], image.size[0]])
@@ -354,10 +354,10 @@ def main():
     )
 
     parser.add_argument(
-        '--model_image_size', type=str,
-        help='model image input size as <height>x<width>, default ' +
-        str(YOLO.get_defaults("model_image_size")[0])+'x'+str(YOLO.get_defaults("model_image_size")[1]),
-        default=str(YOLO.get_defaults("model_image_size")[0])+'x'+str(YOLO.get_defaults("model_image_size")[1])
+        '--model_input_shape', type=str,
+        help='model image input shape as <height>x<width>, default ' +
+        str(YOLO.get_defaults("model_input_shape")[0])+'x'+str(YOLO.get_defaults("model_input_shape")[1]),
+        default=str(YOLO.get_defaults("model_input_shape")[0])+'x'+str(YOLO.get_defaults("model_input_shape")[1])
     )
 
     parser.add_argument(
@@ -400,10 +400,10 @@ def main():
 
     args = parser.parse_args()
     # param parse
-    if args.model_image_size:
-        height, width = args.model_image_size.split('x')
-        args.model_image_size = (int(height), int(width))
-        assert (args.model_image_size[0]%32 == 0 and args.model_image_size[1]%32 == 0), 'model_image_size should be multiples of 32'
+    if args.model_input_shape:
+        height, width = args.model_input_shape.split('x')
+        args.model_input_shape = (int(height), int(width))
+        assert (args.model_input_shape[0]%32 == 0 and args.model_input_shape[1]%32 == 0), 'model_input_shape should be multiples of 32'
 
     # get wrapped inference object
     yolo = YOLO_np(**vars(args))

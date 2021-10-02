@@ -22,16 +22,16 @@ from common.utils import get_classes, get_anchors, get_colors, draw_boxes, get_c
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
-def validate_yolo_model(model_path, image_file, anchors, class_names, model_image_size, elim_grid_sense, v5_decode, loop_count):
+def validate_yolo_model(model_path, image_file, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode, loop_count):
 
     custom_object_dict = get_custom_objects()
     model = load_model(model_path, compile=False, custom_objects=custom_object_dict)
 
     img = Image.open(image_file)
     image = np.array(img, dtype='uint8')
-    image_data = preprocess_image(img, model_image_size)
+    image_data = preprocess_image(img, model_input_shape)
     #origin image shape, in (height, width) format
-    image_shape = tuple(reversed(img.size))
+    image_shape = img.size[::-1]
 
     # predict once first to bypass the model building time
     model.predict([image_data])
@@ -45,7 +45,7 @@ def validate_yolo_model(model_path, image_file, anchors, class_names, model_imag
         prediction = [prediction]
 
     prediction.sort(key=lambda x: len(x[0]))
-    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size, elim_grid_sense, v5_decode)
+    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode)
     return
 
 
@@ -68,11 +68,11 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, eli
 
     height = input_details[0]['shape'][1]
     width = input_details[0]['shape'][2]
-    model_image_size = (height, width)
+    model_input_shape = (height, width)
 
-    image_data = preprocess_image(img, model_image_size)
+    image_data = preprocess_image(img, model_input_shape)
     #origin image shape, in (height, width) format
-    image_shape = tuple(reversed(img.size))
+    image_shape = img.size[::-1]
 
     # predict once first to bypass the model building time
     interpreter.set_tensor(input_details[0]['index'], image_data)
@@ -91,7 +91,7 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, eli
         prediction.append(output_data)
 
     prediction.sort(key=lambda x: len(x[0]))
-    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size, elim_grid_sense, v5_decode)
+    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode)
     return
 
 
@@ -111,14 +111,14 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, elim_g
         # should be MNN.Tensor_DimensionType_Caffe_C4, unsupported now
         raise ValueError('unsupported input tensor dimension type')
 
-    model_image_size = (height, width)
+    model_input_shape = (height, width)
 
     # prepare input image
     img = Image.open(image_file)
     image = np.array(img, dtype='uint8')
-    image_data = preprocess_image(img, model_image_size)
+    image_data = preprocess_image(img, model_input_shape)
     #origin image shape, in (height, width) format
-    image_shape = tuple(reversed(img.size))
+    image_shape = img.size[::-1]
 
     # use a temp tensor to copy data
     tmp_input = MNN.Tensor(input_shape, input_tensor.getDataType(),\
@@ -209,11 +209,11 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, elim_g
         prediction.append(output_data)
 
     prediction.sort(key=lambda x: len(x[0]))
-    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size, elim_grid_sense, v5_decode)
+    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode)
     return
 
 
-def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_image_size, elim_grid_sense, v5_decode, loop_count):
+def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode, loop_count):
     # check tf version to be compatible with TF 2.x
     global tf
     if tf.__version__.startswith('2'):
@@ -273,13 +273,13 @@ def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_i
     output_tensors = [graph.get_tensor_by_name(output_tensor_name) for output_tensor_name in output_tensor_names]
 
     batch, height, width, channel = image_input.shape
-    model_image_size = (int(height), int(width))
+    model_input_shape = (int(height), int(width))
 
     img = Image.open(image_file)
     image = np.array(img, dtype='uint8')
-    image_data = preprocess_image(img, model_image_size)
+    image_data = preprocess_image(img, model_input_shape)
     #origin image shape, in (height, width) format
-    image_shape = tuple(reversed(img.size))
+    image_shape = img.size[::-1]
 
     # predict once first to bypass the model building time
     with tf.Session(graph=graph) as sess:
@@ -297,7 +297,7 @@ def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_i
     print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
 
     prediction.sort(key=lambda x: len(x[0]))
-    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size, elim_grid_sense, v5_decode)
+    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode)
 
 
 def validate_yolo_model_onnx(model_path, image_file, anchors, class_names, elim_grid_sense, v5_decode, loop_count):
@@ -311,14 +311,14 @@ def validate_yolo_model_onnx(model_path, image_file, anchors, class_names, elim_
     assert len(input_tensors) == 1, 'invalid input tensor number.'
 
     batch, height, width, channel = input_tensors[0].shape
-    model_image_size = (height, width)
+    model_input_shape = (height, width)
 
     # prepare input image
     img = Image.open(image_file)
     image = np.array(img, dtype='uint8')
-    image_data = preprocess_image(img, model_image_size)
+    image_data = preprocess_image(img, model_input_shape)
     #origin image shape, in (height, width) format
-    image_shape = tuple(reversed(img.size))
+    image_shape = img.size[::-1]
 
     feed = {input_tensors[0].name: image_data}
 
@@ -333,20 +333,20 @@ def validate_yolo_model_onnx(model_path, image_file, anchors, class_names, elim_
     print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
 
     prediction.sort(key=lambda x: len(x[0]))
-    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size, elim_grid_sense, v5_decode)
+    handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode)
 
 
-def handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_image_size, elim_grid_sense, v5_decode):
+def handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode):
     start = time.time()
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
-        boxes, classes, scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, len(class_names), model_image_size, elim_grid_sense=elim_grid_sense)
+        boxes, classes, scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, len(class_names), model_input_shape, elim_grid_sense=elim_grid_sense)
     else:
         if v5_decode:
-            boxes, classes, scores = yolo5_postprocess_np(prediction, image_shape, anchors, len(class_names), model_image_size, elim_grid_sense=True) #enable "elim_grid_sense" by default
+            boxes, classes, scores = yolo5_postprocess_np(prediction, image_shape, anchors, len(class_names), model_input_shape, elim_grid_sense=True) #enable "elim_grid_sense" by default
         else:
-            boxes, classes, scores = yolo3_postprocess_np(prediction, image_shape, anchors, len(class_names), model_image_size, elim_grid_sense=elim_grid_sense)
+            boxes, classes, scores = yolo3_postprocess_np(prediction, image_shape, anchors, len(class_names), model_input_shape, elim_grid_sense=elim_grid_sense)
 
     end = time.time()
     print("PostProcess time: {:.8f}ms".format((end - start) * 1000))
@@ -369,7 +369,7 @@ def main():
     parser.add_argument('--image_file', help='image file to predict', type=str, required=True)
     parser.add_argument('--anchors_path', help='path to anchor definitions', type=str, required=True)
     parser.add_argument('--classes_path', help='path to class definitions, default=%(default)s', type=str, default='../../configs/voc_classes.txt')
-    parser.add_argument('--model_image_size', help='model image input size as <height>x<width>, default=%(default)s', type=str, default='416x416')
+    parser.add_argument('--model_input_shape', help='model image input shape as <height>x<width>, default=%(default)s', type=str, default='416x416')
     parser.add_argument('--elim_grid_sense', help="Eliminate grid sensitivity", default=False, action="store_true")
     parser.add_argument('--v5_decode', help="Use YOLOv5 prediction decode", default=False, action="store_true")
     parser.add_argument('--loop_count', help='loop inference for certain times', type=int, default=1)
@@ -379,9 +379,9 @@ def main():
     # param parse
     anchors = get_anchors(args.anchors_path)
     class_names = get_classes(args.classes_path)
-    height, width = args.model_image_size.split('x')
-    model_image_size = (int(height), int(width))
-    assert (model_image_size[0]%32 == 0 and model_image_size[1]%32 == 0), 'model_image_size should be multiples of 32'
+    height, width = args.model_input_shape.split('x')
+    model_input_shape = (int(height), int(width))
+    assert (model_input_shape[0]%32 == 0 and model_input_shape[1]%32 == 0), 'model_input_shape should be multiples of 32'
 
     # support of tflite model
     if args.model_path.endswith('.tflite'):
@@ -391,13 +391,13 @@ def main():
         validate_yolo_model_mnn(args.model_path, args.image_file, anchors, class_names, args.elim_grid_sense, args.v5_decode, args.loop_count)
     # support of TF 1.x frozen pb model
     elif args.model_path.endswith('.pb'):
-        validate_yolo_model_pb(args.model_path, args.image_file, anchors, class_names, model_image_size, args.elim_grid_sense, args.v5_decode, args.loop_count)
+        validate_yolo_model_pb(args.model_path, args.image_file, anchors, class_names, model_input_shape, args.elim_grid_sense, args.v5_decode, args.loop_count)
     # support of ONNX model
     elif args.model_path.endswith('.onnx'):
         validate_yolo_model_onnx(args.model_path, args.image_file, anchors, class_names, args.elim_grid_sense, args.v5_decode, args.loop_count)
     # normal keras h5 model
     elif args.model_path.endswith('.h5'):
-        validate_yolo_model(args.model_path, args.image_file, anchors, class_names, model_image_size, args.elim_grid_sense, args.v5_decode, args.loop_count)
+        validate_yolo_model(args.model_path, args.image_file, anchors, class_names, model_input_shape, args.elim_grid_sense, args.v5_decode, args.loop_count)
     else:
         raise ValueError('invalid model file')
 

@@ -46,12 +46,12 @@ class CheckpointCleanCallBack(Callback):
 
 
 class EvalCallBack(Callback):
-    def __init__(self, model_type, annotation_lines, anchors, class_names, model_image_size, model_pruning, log_dir, eval_epoch_interval=10, save_eval_checkpoint=False, elim_grid_sense=False):
+    def __init__(self, model_type, annotation_lines, anchors, class_names, model_input_shape, model_pruning, log_dir, eval_epoch_interval=10, save_eval_checkpoint=False, elim_grid_sense=False):
         self.model_type = model_type
         self.annotation_lines = annotation_lines
         self.anchors = anchors
         self.class_names = class_names
-        self.model_image_size = model_image_size
+        self.model_input_shape = model_input_shape
         self.model_pruning = model_pruning
         self.log_dir = log_dir
         self.eval_epoch_interval = eval_epoch_interval
@@ -71,16 +71,16 @@ class EvalCallBack(Callback):
 
         if self.model_type.startswith('scaled_yolo4_') or self.model_type.startswith('yolo5_'):
             # Scaled-YOLOv4 & YOLOv5 entrance
-            eval_model, _ = get_yolo5_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.model_pruning)
+            eval_model, _ = get_yolo5_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_input_shape + (3,), model_pruning=self.model_pruning)
             self.v5_decode = True
         elif self.model_type.startswith('yolo3_') or self.model_type.startswith('yolo4_') or \
              self.model_type.startswith('tiny_yolo3_') or self.model_type.startswith('tiny_yolo4_'):
             # YOLOv3 & v4 entrance
-            eval_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.model_pruning)
+            eval_model, _ = get_yolo3_model(self.model_type, num_feature_layers, num_anchors, num_classes, input_shape=self.model_input_shape + (3,), model_pruning=self.model_pruning)
             self.v5_decode = False
         elif self.model_type.startswith('yolo2_') or self.model_type.startswith('tiny_yolo2_'):
             # YOLOv2 entrance
-            eval_model, _ = get_yolo2_model(self.model_type, num_anchors, num_classes, input_shape=self.model_image_size + (3,), model_pruning=self.model_pruning)
+            eval_model, _ = get_yolo2_model(self.model_type, num_anchors, num_classes, input_shape=self.model_input_shape + (3,), model_pruning=self.model_pruning)
             self.v5_decode = False
         else:
             raise ValueError('Unsupported model type')
@@ -138,7 +138,7 @@ class EvalCallBack(Callback):
         if (epoch+1) % self.eval_epoch_interval == 0:
             # Do eval every eval_epoch_interval epochs
             eval_model = self.update_eval_model(self.model)
-            mAP = eval_AP(eval_model, 'H5', self.annotation_lines, self.anchors, self.class_names, self.model_image_size, eval_type='VOC', iou_threshold=0.5, conf_threshold=0.001, elim_grid_sense=self.elim_grid_sense, v5_decode=self.v5_decode, save_result=False)
+            mAP = eval_AP(eval_model, 'H5', self.annotation_lines, self.anchors, self.class_names, self.model_input_shape, eval_type='VOC', iou_threshold=0.5, conf_threshold=0.001, elim_grid_sense=self.elim_grid_sense, v5_decode=self.v5_decode, save_result=False)
             if self.save_eval_checkpoint and mAP > self.best_mAP:
                 # Save best mAP value and model checkpoint
                 self.best_mAP = mAP

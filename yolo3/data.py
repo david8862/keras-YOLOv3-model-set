@@ -14,7 +14,7 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
     line = annotation_line.split()
     image = Image.open(line[0])
     image_size = image.size
-    model_input_size = tuple(reversed(input_shape))
+    model_input_size = input_shape[::-1]
     boxes = np.array([np.array(list(map(int, box.split(',')))) for box in line[1:]])
 
     if not augment:
@@ -23,7 +23,7 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
         image_data = normalize_image(image_data)
 
         # reshape boxes
-        boxes = reshape_boxes(boxes, src_shape=image_size, target_shape=model_input_size, padding_shape=padding_size, offset=offset)
+        boxes = reshape_boxes(boxes, src_size=image_size, target_size=model_input_size, padding_size=padding_size, offset=offset)
         if len(boxes)>max_boxes:
             boxes = boxes[:max_boxes]
 
@@ -70,7 +70,7 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
     #image = random_hsv_distort(image)
 
     # reshape boxes based on augment
-    boxes = reshape_boxes(boxes, src_shape=image_size, target_shape=model_input_size, padding_shape=padding_size, offset=padding_offset, horizontal_flip=horizontal_flip, vertical_flip=vertical_flip)
+    boxes = reshape_boxes(boxes, src_size=image_size, target_size=model_input_size, padding_size=padding_size, offset=padding_offset, horizontal_flip=horizontal_flip, vertical_flip=vertical_flip)
 
     # random rotate image and boxes
     image, boxes = random_rotate(image, boxes)

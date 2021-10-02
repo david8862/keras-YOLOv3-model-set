@@ -112,11 +112,11 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
 
     height = input_details[0]['shape'][1]
     width = input_details[0]['shape'][2]
-    model_image_size = (height, width)
+    model_input_shape = (height, width)
 
-    image_data = preprocess_image(image, model_image_size)
+    image_data = preprocess_image(image, model_input_shape)
     #origin image shape, in (height, width) format
-    image_shape = tuple(reversed(image.size))
+    image_shape = image.size[::-1]
 
     interpreter.set_tensor(input_details[0]['index'], image_data)
     interpreter.invoke()
@@ -130,12 +130,12 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
-        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
     else:
         if v5_decode:
-            pred_boxes, pred_classes, pred_scores = yolo5_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=True) #enable "elim_grid_sense" by default
+            pred_boxes, pred_classes, pred_scores = yolo5_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=True) #enable "elim_grid_sense" by default
         else:
-            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
+            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
 
     return pred_boxes, pred_classes, pred_scores
 
@@ -153,12 +153,12 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
         # should be MNN.Tensor_DimensionType_Caffe_C4, unsupported now
         raise ValueError('unsupported input tensor dimension type')
 
-    model_image_size = (height, width)
+    model_input_shape = (height, width)
 
     # prepare input image
-    image_data = preprocess_image(image, model_image_size)
+    image_data = preprocess_image(image, model_input_shape)
     #origin image shape, in (height, width) format
-    image_shape = tuple(reversed(image.size))
+    image_shape = image.size[::-1]
 
     # use a temp tensor to copy data
     tmp_input = MNN.Tensor(input_shape, input_tensor.getDataType(),\
@@ -242,17 +242,17 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
-        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
     else:
         if v5_decode:
-            pred_boxes, pred_classes, pred_scores = yolo5_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=True) #enable "elim_grid_sense" by default
+            pred_boxes, pred_classes, pred_scores = yolo5_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=True) #enable "elim_grid_sense" by default
         else:
-            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
+            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
 
     return pred_boxes, pred_classes, pred_scores
 
 
-def yolo_predict_pb(model, image, anchors, num_classes, model_image_size, conf_threshold, elim_grid_sense, v5_decode):
+def yolo_predict_pb(model, image, anchors, num_classes, model_input_shape, conf_threshold, elim_grid_sense, v5_decode):
     # NOTE: TF 1.x frozen pb graph need to specify input/output tensor name
     # so we hardcode the input/output tensor names here to get them from model
     if len(anchors) == 6:
@@ -273,12 +273,12 @@ def yolo_predict_pb(model, image, anchors, num_classes, model_image_size, conf_t
     output_tensors = [model.get_tensor_by_name(output_tensor_name) for output_tensor_name in output_tensor_names]
 
     batch, height, width, channel = image_input.shape
-    model_image_size = (int(height), int(width))
+    model_input_shape = (int(height), int(width))
 
     # prepare input image
-    image_data = preprocess_image(image, model_image_size)
+    image_data = preprocess_image(image, model_input_shape)
     #origin image shape, in (height, width) format
-    image_shape = tuple(reversed(image.size))
+    image_shape = image.size[::-1]
 
     with tf.Session(graph=model) as sess:
         prediction = sess.run(output_tensors, feed_dict={
@@ -289,12 +289,12 @@ def yolo_predict_pb(model, image, anchors, num_classes, model_image_size, conf_t
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
-        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
     else:
         if v5_decode:
-            pred_boxes, pred_classes, pred_scores = yolo5_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=True) #enable "elim_grid_sense" by default
+            pred_boxes, pred_classes, pred_scores = yolo5_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=True) #enable "elim_grid_sense" by default
         else:
-            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
+            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
 
     return pred_boxes, pred_classes, pred_scores
 
@@ -308,12 +308,12 @@ def yolo_predict_onnx(model, image, anchors, num_classes, conf_threshold, elim_g
     assert len(input_tensors) == 1, 'invalid input tensor number.'
 
     batch, height, width, channel = input_tensors[0].shape
-    model_image_size = (height, width)
+    model_input_shape = (height, width)
 
     # prepare input image
-    image_data = preprocess_image(image, model_image_size)
+    image_data = preprocess_image(image, model_input_shape)
     #origin image shape, in (height, width) format
-    image_shape = tuple(reversed(image.size))
+    image_shape = image.size[::-1]
 
     feed = {input_tensors[0].name: image_data}
     prediction = model.run(None, feed)
@@ -322,35 +322,35 @@ def yolo_predict_onnx(model, image, anchors, num_classes, conf_threshold, elim_g
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
-        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
     else:
         if v5_decode:
-            pred_boxes, pred_classes, pred_scores = yolo5_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=True) #enable "elim_grid_sense" by default
+            pred_boxes, pred_classes, pred_scores = yolo5_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=True) #enable "elim_grid_sense" by default
         else:
-            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
+            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
 
     return pred_boxes, pred_classes, pred_scores
 
 
-def yolo_predict_keras(model, image, anchors, num_classes, model_image_size, conf_threshold, elim_grid_sense, v5_decode):
-    image_data = preprocess_image(image, model_image_size)
+def yolo_predict_keras(model, image, anchors, num_classes, model_input_shape, conf_threshold, elim_grid_sense, v5_decode):
+    image_data = preprocess_image(image, model_input_shape)
     #origin image shape, in (height, width) format
-    image_shape = tuple(reversed(image.size))
+    image_shape = image.size[::-1]
 
     prediction = model.predict([image_data])
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors
-        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
     else:
         if v5_decode:
-            pred_boxes, pred_classes, pred_scores = yolo5_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=True) #enable "elim_grid_sense" by default
+            pred_boxes, pred_classes, pred_scores = yolo5_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=True) #enable "elim_grid_sense" by default
         else:
-            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_image_size, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
+            pred_boxes, pred_classes, pred_scores = yolo3_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
 
     return pred_boxes, pred_classes, pred_scores
 
 
-def get_prediction_class_records(model, model_format, annotation_records, anchors, class_names, model_image_size, conf_threshold, elim_grid_sense, v5_decode, save_result):
+def get_prediction_class_records(model, model_format, annotation_records, anchors, class_names, model_input_shape, conf_threshold, elim_grid_sense, v5_decode, save_result):
     '''
     Do the predict with YOLO model on annotation images to get predict class dict
 
@@ -393,13 +393,13 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
             pred_boxes, pred_classes, pred_scores = yolo_predict_mnn(model, session, image, anchors, len(class_names), conf_threshold, elim_grid_sense, v5_decode)
         # support of TF 1.x frozen pb model
         elif model_format == 'PB':
-            pred_boxes, pred_classes, pred_scores = yolo_predict_pb(model, image, anchors, len(class_names), model_image_size, conf_threshold, elim_grid_sense, v5_decode)
+            pred_boxes, pred_classes, pred_scores = yolo_predict_pb(model, image, anchors, len(class_names), model_input_shape, conf_threshold, elim_grid_sense, v5_decode)
         # support of ONNX model
         elif model_format == 'ONNX':
             pred_boxes, pred_classes, pred_scores = yolo_predict_onnx(model, image, anchors, len(class_names), conf_threshold, elim_grid_sense, v5_decode)
         # normal keras h5 model
         elif model_format == 'H5':
-            pred_boxes, pred_classes, pred_scores = yolo_predict_keras(model, image, anchors, len(class_names), model_image_size, conf_threshold, elim_grid_sense, v5_decode)
+            pred_boxes, pred_classes, pred_scores = yolo_predict_keras(model, image, anchors, len(class_names), model_input_shape, conf_threshold, elim_grid_sense, v5_decode)
         else:
             raise ValueError('invalid model format')
 
@@ -1233,12 +1233,12 @@ def get_filter_class_mAP(APs, class_filter, show_result=True):
     return filtered_mAP
 
 
-def eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, eval_type, iou_threshold, conf_threshold, elim_grid_sense, v5_decode, save_result, class_filter=None):
+def eval_AP(model, model_format, annotation_lines, anchors, class_names, model_input_shape, eval_type, iou_threshold, conf_threshold, elim_grid_sense, v5_decode, save_result, class_filter=None):
     '''
     Compute AP for detection model on annotation dataset
     '''
     annotation_records, gt_classes_records = annotation_parse(annotation_lines, class_names)
-    pred_classes_records = get_prediction_class_records(model, model_format, annotation_records, anchors, class_names, model_image_size, conf_threshold, elim_grid_sense, v5_decode, save_result)
+    pred_classes_records = get_prediction_class_records(model, model_format, annotation_records, anchors, class_names, model_input_shape, conf_threshold, elim_grid_sense, v5_decode, save_result)
     AP = 0.0
 
     if eval_type == 'VOC':
@@ -1260,6 +1260,12 @@ def eval_AP(model, model_format, annotation_lines, anchors, class_names, model_i
 
 #load TF 1.x frozen pb graph
 def load_graph(model_path):
+    # check tf version to be compatible with TF 2.x
+    global tf
+    if tf.__version__.startswith('2'):
+        import tensorflow.compat.v1 as tf
+        tf.disable_eager_execution()
+
     # We parse the graph_def file
     with tf.gfile.GFile(model_path, "rb") as f:
         graph_def = tf.GraphDef()
@@ -1353,8 +1359,8 @@ def main():
         help='confidence threshold for filtering box in postprocess, default=%(default)s', default=0.001)
 
     parser.add_argument(
-        '--model_image_size', type=str,
-        help='model image input size as <height>x<width>, default=%(default)s', default='416x416')
+        '--model_input_shape', type=str,
+        help='model image input shape as <height>x<width>, default=%(default)s', default='416x416')
 
     parser.add_argument(
         '--elim_grid_sense', default=False, action="store_true",
@@ -1374,9 +1380,9 @@ def main():
     # param parse
     anchors = get_anchors(args.anchors_path)
     class_names = get_classes(args.classes_path)
-    height, width = args.model_image_size.split('x')
-    model_image_size = (int(height), int(width))
-    assert (model_image_size[0]%32 == 0 and model_image_size[1]%32 == 0), 'model_image_size should be multiples of 32'
+    height, width = args.model_input_shape.split('x')
+    model_input_shape = (int(height), int(width))
+    assert (model_input_shape[0]%32 == 0 and model_input_shape[1]%32 == 0), 'model_input_shape should be multiples of 32'
 
     # class filter parse
     if args.classes_filter_path is not None:
@@ -1388,7 +1394,7 @@ def main():
     model, model_format = load_eval_model(args.model_path)
 
     start = time.time()
-    eval_AP(model, model_format, annotation_lines, anchors, class_names, model_image_size, args.eval_type, args.iou_threshold, args.conf_threshold, args.elim_grid_sense, args.v5_decode, args.save_result, class_filter=class_filter)
+    eval_AP(model, model_format, annotation_lines, anchors, class_names, model_input_shape, args.eval_type, args.iou_threshold, args.conf_threshold, args.elim_grid_sense, args.v5_decode, args.save_result, class_filter=class_filter)
     end = time.time()
     print("Evaluation time cost: {:.6f}s".format(end - start))
 
