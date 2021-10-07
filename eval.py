@@ -160,9 +160,14 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
     #origin image shape, in (height, width) format
     image_shape = image.size[::-1]
 
-    # use a temp tensor to copy data
-    tmp_input = MNN.Tensor(input_shape, input_tensor.getDataType(),\
-                    image_data, input_tensor.getDimensionType())
+    # create a temp tensor to copy data
+    # use TF NHWC layout to align with image data array
+    # TODO: currently MNN python binding have mem leak when creating MNN.Tensor
+    # from numpy array, only from tuple is good. So we convert input image to tuple
+    tmp_input_shape = (batch, height, width, channel)
+    input_elementsize = reduce(mul, tmp_input_shape)
+    tmp_input = MNN.Tensor(tmp_input_shape, input_tensor.getDataType(),\
+                    tuple(image_data.reshape(input_elementsize, -1)), MNN.Tensor_DimensionType_Tensorflow)
 
     input_tensor.copyFrom(tmp_input)
     interpreter.runSession(session)
@@ -229,7 +234,7 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
         #tmp_output.printTensorData()
 
         output_data = np.array(tmp_output.getData(), dtype=float).reshape(output_shape)
-        # our postprocess code based on TF channel last format, so if the output format
+        # our postprocess code based on TF NHWC layout, so if the output format
         # doesn't match, we need to transpose
         if output_tensor.getDimensionType() == MNN.Tensor_DimensionType_Caffe:
             output_data = output_data.transpose((0,2,3,1))
