@@ -146,37 +146,11 @@ void yolo_postprocess(const TfLiteTensor* feature_map, const int input_width, co
             for (int w = 0; w < width; w++) {
                 for (int anc = 0; anc < anchor_num_per_layer; anc++) {
                     //get bbox prediction data for each anchor, each feature point
-                    int bbox_x_offset = h * width * channel + w * channel + anc * (num_classes + 5);
-                    int bbox_y_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 1;
-                    int bbox_w_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 2;
-                    int bbox_h_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 3;
                     int bbox_obj_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 4;
                     int bbox_scores_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 5;
                     int bbox_scores_step = 1;
 
-                    // Decode YOLO predictions
-                    float bbox_x, bbox_y;
-
-                    if(scale_x_y > 0) {
-                        // Eliminate grid sensitivity trick involved in YOLOv4
-                        //
-                        // Reference Paper & code:
-                        //     "YOLOv4: Optimal Speed and Accuracy of Object Detection"
-                        //     https://arxiv.org/abs/2004.10934
-                        //     https://github.com/opencv/opencv/issues/17148
-                        //
-                        float bbox_x_tmp = sigmoid(bytes[bbox_x_offset]) * scale_x_y - (scale_x_y - 1) / 2;
-                        float bbox_y_tmp = sigmoid(bytes[bbox_y_offset]) * scale_x_y - (scale_x_y - 1) / 2;
-                        bbox_x = (bbox_x_tmp + w) / width;
-                        bbox_y = (bbox_y_tmp + h) / height;
-                    }
-                    else {
-                        bbox_x = (sigmoid(bytes[bbox_x_offset]) + w) / width;
-                        bbox_y = (sigmoid(bytes[bbox_y_offset]) + h) / height;
-                    }
-
-                    float bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first / input_width;
-                    float bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second / input_height;
+                    // get anchor objectness score
                     float bbox_obj = sigmoid(bytes[bbox_obj_offset]);
 
                     // Get softmax score for YOLOv2 prediction
@@ -219,6 +193,35 @@ void yolo_postprocess(const TfLiteTensor* feature_map, const int input_width, co
                         }
                     }
                     if(max_conf >= conf_threshold) {
+                        // Decode YOLO predictions
+                        int bbox_x_offset = h * width * channel + w * channel + anc * (num_classes + 5);
+                        int bbox_y_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 1;
+                        int bbox_w_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 2;
+                        int bbox_h_offset = h * width * channel + w * channel + anc * (num_classes + 5) + 3;
+
+                        float bbox_x, bbox_y;
+
+                        if(scale_x_y > 0) {
+                            // Eliminate grid sensitivity trick involved in YOLOv4
+                            //
+                            // Reference Paper & code:
+                            //     "YOLOv4: Optimal Speed and Accuracy of Object Detection"
+                            //     https://arxiv.org/abs/2004.10934
+                            //     https://github.com/opencv/opencv/issues/17148
+                            //
+                            float bbox_x_tmp = sigmoid(bytes[bbox_x_offset]) * scale_x_y - (scale_x_y - 1) / 2;
+                            float bbox_y_tmp = sigmoid(bytes[bbox_y_offset]) * scale_x_y - (scale_x_y - 1) / 2;
+                            bbox_x = (bbox_x_tmp + w) / width;
+                            bbox_y = (bbox_y_tmp + h) / height;
+                        }
+                        else {
+                            bbox_x = (sigmoid(bytes[bbox_x_offset]) + w) / width;
+                            bbox_y = (sigmoid(bytes[bbox_y_offset]) + h) / height;
+                        }
+
+                        float bbox_w = exp(bytes[bbox_w_offset]) * anchors[anc].first / input_width;
+                        float bbox_h = exp(bytes[bbox_h_offset]) * anchors[anc].second / input_height;
+
                         // got a valid prediction, form up data and push to result vector
                         t_prediction bbox_prediction;
                         bbox_prediction.x = bbox_x;
