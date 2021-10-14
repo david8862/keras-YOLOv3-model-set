@@ -315,7 +315,14 @@ def validate_yolo_model_onnx(model_path, image_file, anchors, class_names, elim_
     # assume only 1 input tensor for image
     assert len(input_tensors) == 1, 'invalid input tensor number.'
 
-    batch, height, width, channel = input_tensors[0].shape
+    # check if input layout is NHWC or NCHW
+    if input_tensors[0].shape[1] == 3:
+        print("NCHW input layout")
+        batch, channel, height, width = input_tensors[0].shape  #NCHW
+    else:
+        print("NHWC input layout")
+        batch, height, width, channel = input_tensors[0].shape  #NHWC
+
     model_input_shape = (height, width)
 
     # prepare input image
@@ -324,6 +331,10 @@ def validate_yolo_model_onnx(model_path, image_file, anchors, class_names, elim_
     image_data = preprocess_image(img, model_input_shape)
     #origin image shape, in (height, width) format
     image_shape = img.size[::-1]
+
+    if input_tensors[0].shape[1] == 3:
+        # transpose image for NCHW layout
+        image_data = image_data.transpose((0,3,1,2))
 
     feed = {input_tensors[0].name: image_data}
 

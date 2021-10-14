@@ -312,13 +312,22 @@ def yolo_predict_onnx(model, image, anchors, num_classes, conf_threshold, elim_g
     # assume only 1 input tensor for image
     assert len(input_tensors) == 1, 'invalid input tensor number.'
 
-    batch, height, width, channel = input_tensors[0].shape
+    # check if input layout is NHWC or NCHW
+    if input_tensors[0].shape[1] == 3:
+        batch, channel, height, width = input_tensors[0].shape  #NCHW
+    else:
+        batch, height, width, channel = input_tensors[0].shape  #NHWC
+
     model_input_shape = (height, width)
 
     # prepare input image
     image_data = preprocess_image(image, model_input_shape)
     #origin image shape, in (height, width) format
     image_shape = image.size[::-1]
+
+    if input_tensors[0].shape[1] == 3:
+        # transpose image for NCHW layout
+        image_data = image_data.transpose((0,3,1,2))
 
     feed = {input_tensors[0].name: image_data}
     prediction = model.run(None, feed)
@@ -409,6 +418,7 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
             raise ValueError('invalid model format')
 
         #print('Found {} boxes for {}'.format(len(pred_boxes), image_name))
+        image.close()
         pbar.update(1)
 
         # save prediction result to txt

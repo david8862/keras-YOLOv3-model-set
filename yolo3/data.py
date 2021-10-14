@@ -88,6 +88,7 @@ def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=
     if len(boxes)>0:
         box_data[:len(boxes)] = boxes
 
+    image.close()
     return image_data, box_data
 
 
