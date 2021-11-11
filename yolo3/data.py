@@ -12,7 +12,7 @@ from common.utils import get_multiscale_list
 def get_ground_truth_data(annotation_line, input_shape, augment=True, max_boxes=100):
     '''random preprocessing for real-time data augmentation'''
     line = annotation_line.split()
-    image = Image.open(line[0])
+    image = Image.open(line[0]).convert('RGB')
     image_size = image.size
     model_input_size = input_shape[::-1]
     boxes = np.array([np.array(list(map(int, box.split(',')))) for box in line[1:]])

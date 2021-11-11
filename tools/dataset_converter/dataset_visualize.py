@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import os, sys, argparse
 import numpy as np
+from PIL import Image
 import cv2
 from tqdm import tqdm
 
@@ -19,7 +20,8 @@ def dataset_visualize(annotation_file, classes_path):
     for i, annotation_line in enumerate(annotation_lines):
         pbar.update(1)
         line = annotation_line.split()
-        image = cv2.imread(line[0])
+        image = Image.open(line[0]).convert('RGB')
+        image = np.array(image, dtype='uint8')
         boxes = np.array([np.array(list(map(int, box.split(',')))) for box in line[1:]])
 
         classes = boxes[:, -1]
@@ -31,12 +33,15 @@ def dataset_visualize(annotation_file, classes_path):
         # show image file info
         image_file_name = os.path.basename(line[0])
         cv2.putText(image, image_file_name+'({}/{})'.format(i+1, len(annotation_lines)),
-                    (3,15),
+                    (3, 15),
                     cv2.FONT_HERSHEY_PLAIN,
                     fontScale=1,
-                    color=(0,0,255),
+                    color=(255, 0, 0),
                     thickness=1,
                     lineType=cv2.LINE_AA)
+
+        # convert to BGR for cv2.imshow
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
         cv2.namedWindow("Image", 0)
         cv2.imshow("Image", image)

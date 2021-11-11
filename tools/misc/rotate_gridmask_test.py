@@ -14,13 +14,13 @@ from common.utils import get_classes, get_colors, draw_boxes
 
 def main():
     # load some VOC2007 images for test
-    #image = Image.open("000001.jpg")
+    #image = Image.open("000001.jpg").convert('RGB')
     #boxes = np.array([[48,240,195,371,11],[8,12,352,498,14]])
 
-    image = Image.open("000004.jpg")
+    image = Image.open("000004.jpg").convert('RGB')
     boxes = np.array([[13,311,84,362,6],[362,330,500,389,6],[235,328,334,375,6],[175,327,252,364,6],[139,320,189,359,6],[108,325,150,353,6],[84,323,121,350,6]])
 
-    #image = Image.open("000010.jpg")
+    #image = Image.open("000010.jpg").convert('RGB')
     #boxes = np.array([[87,97,258,427,12],[133,72,245,284,14]])
 
 

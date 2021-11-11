@@ -199,7 +199,7 @@ def verify_with_image(model, input_shape):
     while True:
         img_file = input('Input image filename:')
         try:
-            img = Image.open(img_file)
+            img = Image.open(img_file).convert('RGB')
             resized_img = img.resize(input_shape, Image.BICUBIC)
         except:
             print('Open Error! Try again!')
@@ -215,10 +215,10 @@ def verify_with_image(model, input_shape):
             # show predict result on origin image
             img_array = np.asarray(img)
             cv2.putText(img_array, '{name}:{conf:.3f}'.format(name=result[0][0][1], conf=float(result[0][0][2])),
-                        (10,30),
+                        (10, 30),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         fontScale=1,
-                        color=(255,0,0),
+                        color=(255, 0, 0),
                         thickness=2,
                         lineType=cv2.LINE_AA)
             Image.fromarray(img_array).show()

@@ -27,7 +27,7 @@ def validate_yolo_model(model_path, image_file, anchors, class_names, model_inpu
     custom_object_dict = get_custom_objects()
     model = load_model(model_path, compile=False, custom_objects=custom_object_dict)
 
-    img = Image.open(image_file)
+    img = Image.open(image_file).convert('RGB')
     image = np.array(img, dtype='uint8')
     image_data = preprocess_image(img, model_input_shape)
     #origin image shape, in (height, width) format
@@ -63,7 +63,7 @@ def validate_yolo_model_tflite(model_path, image_file, anchors, class_names, eli
     if input_details[0]['dtype'] == np.float32:
         floating_model = True
 
-    img = Image.open(image_file)
+    img = Image.open(image_file).convert('RGB')
     image = np.array(img, dtype='uint8')
 
     height = input_details[0]['shape'][1]
@@ -114,7 +114,7 @@ def validate_yolo_model_mnn(model_path, image_file, anchors, class_names, elim_g
     model_input_shape = (height, width)
 
     # prepare input image
-    img = Image.open(image_file)
+    img = Image.open(image_file).convert('RGB')
     image = np.array(img, dtype='uint8')
     image_data = preprocess_image(img, model_input_shape)
     #origin image shape, in (height, width) format
@@ -280,7 +280,7 @@ def validate_yolo_model_pb(model_path, image_file, anchors, class_names, model_i
     batch, height, width, channel = image_input.shape
     model_input_shape = (int(height), int(width))
 
-    img = Image.open(image_file)
+    img = Image.open(image_file).convert('RGB')
     image = np.array(img, dtype='uint8')
     image_data = preprocess_image(img, model_input_shape)
     #origin image shape, in (height, width) format
@@ -326,7 +326,7 @@ def validate_yolo_model_onnx(model_path, image_file, anchors, class_names, elim_
     model_input_shape = (height, width)
 
     # prepare input image
-    img = Image.open(image_file)
+    img = Image.open(image_file).convert('RGB')
     image = np.array(img, dtype='uint8')
     image_data = preprocess_image(img, model_input_shape)
     #origin image shape, in (height, width) format
