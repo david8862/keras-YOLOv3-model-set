@@ -460,13 +460,19 @@ float get_diou(t_prediction pred1, t_prediction pred2)
     return diou;
 }
 
-//ascend order sort for prediction records
-bool compare_conf(t_prediction lpred, t_prediction rpred)
+
+// less compare function for 2 prediction records (compare with confidence score),
+// could be used for ascend order sort for prediction list
+bool less_compare_pred(t_prediction lpred, t_prediction rpred)
 {
-    if (lpred.confidence < rpred.confidence)
-        return true;
-    else
-        return false;
+    return (lpred.confidence < rpred.confidence);
+}
+
+// greater compare function for 2 prediction records (compare with confidence score),
+// could be used for descend order sort for prediction list
+bool greater_compare_pred(t_prediction lpred, t_prediction rpred)
+{
+    return (lpred.confidence > rpred.confidence);
 }
 
 
@@ -488,7 +494,7 @@ void nms_boxes(const std::vector<t_prediction> prediction_list, std::vector<t_pr
         if(!class_pred_list.empty()) {
             std::vector<t_prediction> class_pick_list;
             // ascend sort the class prediction list
-            std::sort(class_pred_list.begin(), class_pred_list.end(), compare_conf);
+            std::sort(class_pred_list.begin(), class_pred_list.end(), less_compare_pred);
 
             while(class_pred_list.size() > 0) {
                 // pick the max score prediction result
@@ -791,6 +797,8 @@ void RunInference(Settings* s) {
   gettimeofday(&stop_time, nullptr);
   LOG(INFO) << "NMS time: " << (get_us(stop_time) - get_us(start_time)) / 1000 << " ms\n";
 
+  // descend sort the final prediction result
+  std::sort(prediction_nms_list.begin(), prediction_nms_list.end(), greater_compare_pred);
 
   // Open result txt file, in append mode
   std::ofstream resultOs (s->result_file_name.c_str(), std::ios::out | std::ios::app);

@@ -216,6 +216,8 @@ Image detection sample:
 
    For class names file format, refer to  [coco_classes.txt](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/configs/coco_classes.txt)
 
+   After dataset is ready, you can manually review it with [dataset_visualize.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/dataset_converter/dataset_visualize.py)
+
 2. If you're training YOLOv4/v3/v2 models with Darknet based backbones, make sure you have converted pretrain model weights as in [Quick Start](https://github.com/david8862/keras-YOLOv3-model-set#quick-start) part
 
 3. [train.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/train.py)
@@ -341,7 +343,7 @@ We need to dump out inference model from training checkpoint for eval or demo. F
 
 Change model_type, anchors file & class file for different training mode. If "--model_pruning" was added in training, you also need to use "--pruning_model" here for dumping out the pruned model.
 
-NOTE: Now you can dump out a non-square input shape (e.g. using `--model_input_shape=320x416`) model and do inference as normal, but the input height & weights must be multiples of 32.
+**NOTE**: Now you can dump out a non-square input shape (e.g. using `--model_input_shape=320x416`) model and do inference as normal, but the input height & weights must be multiples of 32.
 
 ### Evaluation
 Use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/eval.py) to do evaluation on the inference model with your test data. It support following metrics:
