@@ -69,6 +69,21 @@ def Spp_Conv2D_BN_Swish(x, num_filters):
     return y
 
 
+def Spp_Conv2D_BN_Swish_Fast(x, num_filters):
+    """
+    An optimized SPP block using smaller size pooling layer,
+    which would be more friendly to some edge inference device (NPU).
+    """
+    y1 = MaxPooling2D(pool_size=(5,5), strides=(1,1), padding='same')(x)
+    y2 = MaxPooling2D(pool_size=(5,5), strides=(1,1), padding='same')(y1)
+    y3 = MaxPooling2D(pool_size=(5,5), strides=(1,1), padding='same')(y2)
+
+    y = compose(
+            Concatenate(),
+            DarknetConv2D_BN_Swish(num_filters, (1,1)))([y3, y2, y1, x])
+    return y
+
+
 def focus_block(x, num_filters, width_multiple, kernel):
     num_filters = make_divisible(num_filters*width_multiple, 8)
     x1 = Lambda(lambda z: z[:, ::2, ::2, :], name='focus_slice1')(x)

@@ -92,6 +92,21 @@ def Spp_Conv2D_BN_Leaky(x, num_filters):
     return y
 
 
+def Spp_Conv2D_BN_Leaky_Fast(x, num_filters):
+    """
+    An optimized SPP block using smaller size pooling layer,
+    which would be more friendly to some edge inference device (NPU).
+    """
+    y1 = MaxPooling2D(pool_size=(5,5), strides=(1,1), padding='same')(x)
+    y2 = MaxPooling2D(pool_size=(5,5), strides=(1,1), padding='same')(y1)
+    y3 = MaxPooling2D(pool_size=(5,5), strides=(1,1), padding='same')(y2)
+
+    y = compose(
+            Concatenate(),
+            DarknetConv2D_BN_Leaky(num_filters, (1,1)))([y3, y2, y1, x])
+    return y
+
+
 def make_last_layers(x, num_filters, out_filters, predict_filters=None, predict_id='1'):
     '''6 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer'''
     x = compose(
