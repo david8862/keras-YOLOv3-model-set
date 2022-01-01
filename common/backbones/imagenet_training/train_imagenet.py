@@ -19,6 +19,7 @@ from tensorflow.keras.utils import multi_gpu_model
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from shufflenet import ShuffleNet
 from shufflenet_v2 import ShuffleNetV2
+from mobilevit import MobileViT_S, MobileViT_XS, MobileViT_XXS
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', '..'))
 from yolo3.models.yolo3_nano import NanoNet
@@ -77,6 +78,15 @@ def get_model(model_type, include_top=True):
     elif model_type == 'cspdarknet53':
         input_shape = (224, 224, 3)
         model = CSPDarkNet53(weights=None, include_top=include_top)
+    elif model_type == 'mobilevit_s':
+        input_shape = (256, 256, 3)
+        model = MobileViT_S(weights=None, include_top=include_top)
+    elif model_type == 'mobilevit_xs':
+        input_shape = (256, 256, 3)
+        model = MobileViT_XS(weights=None, include_top=include_top)
+    elif model_type == 'mobilevit_xxs':
+        input_shape = (256, 256, 3)
+        model = MobileViT_XXS(weights=None, include_top=include_top)
     else:
         raise ValueError('Unsupported model type')
     return model, input_shape[:2]
