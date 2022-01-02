@@ -17,6 +17,8 @@ from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnP
 #from tensorflow.keras.utils import multi_gpu_model
 import tensorflow as tf
 
+from data_utils import normalize_image, random_grayscale, random_chroma, random_contrast, random_sharpness
+
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from shufflenet import ShuffleNet
 from shufflenet_v2 import ShuffleNetV2
@@ -39,28 +41,23 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 ## set session
 #K.set_session(session)
 
+def preprocess(image):
+    # random adjust color level
+    image = random_chroma(image)
 
-def preprocess(x):
-    x = np.expand_dims(x, axis=0)
+    # random adjust contrast
+    image = random_contrast(image)
 
-    """
-    "mode" option description in preprocess_input
-    mode: One of "caffe", "tf" or "torch".
-        - caffe: will convert the images from RGB to BGR,
-            then will zero-center each color channel with
-            respect to the ImageNet dataset,
-            without scaling.
-        - tf: will scale pixels between -1 and 1,
-            sample-wise.
-        - torch: will scale pixels between 0 and 1 and then
-            will normalize each channel with respect to the
-            ImageNet dataset.
-    """
-    #x = preprocess_input(x, mode='tf')
-    x /= 255.0
-    x -= 0.5
-    x *= 2.0
-    return x
+    # random adjust sharpness
+    image = random_sharpness(image)
+
+    # random convert image to grayscale
+    image = random_grayscale(image)
+
+    # normalize image
+    image = normalize_image(image)
+
+    return image
 
 
 def get_model(model_type, include_top=True):
@@ -106,7 +103,7 @@ def get_optimizer(optim_type, learning_rate):
 
 
 def train(args, model, input_shape, strategy):
-    log_dir = 'logs'
+    log_dir = os.path.join('logs', '000')
 
     # callbacks for training process
     checkpoint = ModelCheckpoint(os.path.join(log_dir, 'ep{epoch:03d}-val_loss{val_loss:.3f}-val_accuracy{val_accuracy:.3f}-val_top_k_categorical_accuracy{val_top_k_categorical_accuracy:.3f}.h5'),
@@ -252,8 +249,8 @@ def verify_with_image(model, input_shape):
             continue
         else:
             img_array = np.asarray(resized_img).astype('float32')
-            x = preprocess(img_array)
-            preds = model.predict(x)
+            x = normalize_image(img_array)
+            preds = model.predict(np.expand_dims(x, 0))
 
             result = decode_predictions(preds)
             print('Predict result:', result)

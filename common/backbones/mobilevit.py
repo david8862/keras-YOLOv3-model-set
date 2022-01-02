@@ -133,13 +133,13 @@ def feedforward(x, hidden_units, dropout_rate, name):
     return x
 
 
-def transformer_block(x, transformer_layers, projection_dim, num_heads, prefix):
+def transformer_block(x, projection_dim, num_heads, dropout, prefix):
     # Layer normalization 1.
     x1 = LayerNormalization(epsilon=1e-6, name=prefix+'_LN1')(x)
     # Create a multi-head attention layer.
     attention_output = MultiHeadAttention(num_heads=num_heads,
                                           key_dim=projection_dim,
-                                          dropout=0.1,
+                                          dropout=dropout,
                                           name=prefix+'_attention')(x1, x1)
     # Skip connection 1.
     x2 = Add(name=prefix+'_add1')([attention_output, x])
@@ -179,9 +179,9 @@ def mobilevit_block(x, num_blocks, projection_dim, strides, block_id):
     for i in range(num_blocks):
         name = prefix + 'transformer_' + str(i)
         global_features = transformer_block(global_features,
-                                            num_blocks,
                                             projection_dim,
                                             num_heads=2,
+                                            dropout=0.1,
                                             prefix=name)
 
     # Fold into conv-like feature-maps.
