@@ -14,7 +14,8 @@ from tensorflow.keras.optimizers import Adam, SGD, RMSprop
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, TerminateOnNaN
-from tensorflow.keras.utils import multi_gpu_model
+#from tensorflow.keras.utils import multi_gpu_model
+import tensorflow as tf
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from shufflenet import ShuffleNet
@@ -65,28 +66,28 @@ def preprocess(x):
 def get_model(model_type, include_top=True):
     if model_type == 'shufflenet':
         input_shape = (224, 224, 3)
-        model = ShuffleNet(groups=3, weights=None, include_top=include_top)
+        model = ShuffleNet(input_shape=input_shape, groups=3, weights=None, include_top=include_top)
     elif model_type == 'shufflenet_v2':
         input_shape = (224, 224, 3)
-        model = ShuffleNetV2(bottleneck_ratio=1, weights=None, include_top=include_top)
+        model = ShuffleNetV2(input_shape=input_shape, bottleneck_ratio=1, weights=None, include_top=include_top)
     elif model_type == 'nanonet':
         input_shape = (224, 224, 3)
-        model = NanoNet(weights=None, include_top=include_top)
+        model = NanoNet(input_shape=input_shape, weights=None, include_top=include_top)
     elif model_type == 'darknet53':
         input_shape = (224, 224, 3)
-        model = DarkNet53(weights=None, include_top=include_top)
+        model = DarkNet53(input_shape=input_shape, weights=None, include_top=include_top)
     elif model_type == 'cspdarknet53':
         input_shape = (224, 224, 3)
-        model = CSPDarkNet53(weights=None, include_top=include_top)
+        model = CSPDarkNet53(input_shape=input_shape, weights=None, include_top=include_top)
     elif model_type == 'mobilevit_s':
         input_shape = (256, 256, 3)
-        model = MobileViT_S(weights=None, include_top=include_top)
+        model = MobileViT_S(input_shape=input_shape, weights=None, include_top=include_top)
     elif model_type == 'mobilevit_xs':
         input_shape = (256, 256, 3)
-        model = MobileViT_XS(weights=None, include_top=include_top)
+        model = MobileViT_XS(input_shape=input_shape, weights=None, include_top=include_top)
     elif model_type == 'mobilevit_xxs':
         input_shape = (256, 256, 3)
-        model = MobileViT_XXS(weights=None, include_top=include_top)
+        model = MobileViT_XXS(input_shape=input_shape, weights=None, include_top=include_top)
     else:
         raise ValueError('Unsupported model type')
     return model, input_shape[:2]
@@ -104,12 +105,12 @@ def get_optimizer(optim_type, learning_rate):
     return optimizer
 
 
-def train(args, model, input_shape):
+def train(args, model, input_shape, strategy):
     log_dir = 'logs'
 
     # callbacks for training process
-    checkpoint = ModelCheckpoint(os.path.join(log_dir, 'ep{epoch:03d}-val_loss{val_loss:.3f}-val_acc{val_acc:.3f}-val_top_k_categorical_accuracy{val_top_k_categorical_accuracy:.3f}.h5'),
-        monitor='val_acc',
+    checkpoint = ModelCheckpoint(os.path.join(log_dir, 'ep{epoch:03d}-val_loss{val_loss:.3f}-val_accuracy{val_accuracy:.3f}-val_top_k_categorical_accuracy{val_top_k_categorical_accuracy:.3f}.h5'),
+        monitor='val_accuracy',
         mode='max',
         verbose=1,
         save_weights_only=False,
@@ -122,38 +123,73 @@ def train(args, model, input_shape):
 
     # data generator
     train_datagen = ImageDataGenerator(preprocessing_function=preprocess,
+                                       #featurewise_center=False,
+                                       #samplewise_center=False,
+                                       #featurewise_std_normalization=False,
+                                       #samplewise_std_normalization=False,
+                                       #zca_whitening=False,
+                                       #zca_epsilon=1e-06,
                                        zoom_range=0.25,
+                                       brightness_range=[0.5,1.5],
+                                       channel_shift_range=0.1,
+                                       shear_range=0.2,
+                                       rotation_range=30,
                                        width_shift_range=0.05,
                                        height_shift_range=0.05,
-                                       brightness_range=[0.5,1.5],
-                                       rotation_range=30,
-                                       shear_range=0.2,
-                                       channel_shift_range=0.1,
-                                       #rescale=1./255,
                                        vertical_flip=True,
-                                       horizontal_flip=True)
+                                       horizontal_flip=True,
+                                       #rescale=1./255,
+                                       #validation_split=0.1,
+                                       fill_mode='constant',
+                                       cval=0.,
+                                       data_format=None,
+                                       dtype=None)
 
     test_datagen = ImageDataGenerator(preprocessing_function=preprocess)
 
     train_generator = train_datagen.flow_from_directory(
             args.train_data_path,
             target_size=input_shape,
-            batch_size=args.batch_size)
+            batch_size=args.batch_size,
+            color_mode='rgb',
+            classes=None,
+            class_mode='categorical',
+            shuffle=True,
+            #save_to_dir='check',
+            #save_prefix='augmented_',
+            #save_format='jpg',
+            interpolation='nearest')
 
     test_generator = test_datagen.flow_from_directory(
             args.val_data_path,
             target_size=input_shape,
-            batch_size=args.batch_size)
+            batch_size=args.batch_size,
+            color_mode='rgb',
+            classes=None,
+            class_mode='categorical',
+            shuffle=True,
+            #save_to_dir='check',
+            #save_prefix='augmented_',
+            #save_format='jpg',
+            interpolation='nearest')
 
     # get optimizer
     optimizer = get_optimizer(args.optim_type, args.learning_rate)
 
-    # start training
-    model.compile(
-              optimizer=optimizer,
-              metrics=['accuracy', 'top_k_categorical_accuracy'],
-              loss='categorical_crossentropy')
+    # model compile
+    if strategy:
+        with strategy.scope():
+            model.compile(
+                      optimizer=optimizer,
+                      metrics=['accuracy', 'top_k_categorical_accuracy'],
+                      loss='categorical_crossentropy')
+    else:
+        model.compile(
+                  optimizer=optimizer,
+                  metrics=['accuracy', 'top_k_categorical_accuracy'],
+                  loss='categorical_crossentropy')
 
+    # start training
     print('Train on {} samples, val on {} samples, with batch size {}.'.format(train_generator.samples, test_generator.samples, args.batch_size))
     model.fit_generator(
             train_generator,
@@ -183,7 +219,7 @@ def evaluate_model(args, model, input_shape):
     # get optimizer
     optimizer = get_optimizer(args.optim_type, args.learning_rate)
 
-    # start training
+    # start evaluate
     model.compile(
               optimizer=optimizer,
               metrics=['accuracy', 'top_k_categorical_accuracy'],
@@ -239,13 +275,21 @@ def main(args):
     if args.dump_headless:
         include_top = False
 
-    # prepare model
-    model, input_shape = get_model(args.model_type, include_top=include_top)
-    if args.weights_path:
-        model.load_weights(args.weights_path, by_name=True)
     # support multi-gpu training
     if args.gpu_num >= 2:
-        model = multi_gpu_model(model, gpus=args.gpu_num)
+        # devices_list=["/gpu:0", "/gpu:1"]
+        devices_list=["/gpu:{}".format(n) for n in range(args.gpu_num)]
+        strategy = tf.distribute.MirroredStrategy(devices=devices_list)
+        print ('Number of devices: {}'.format(strategy.num_replicas_in_sync))
+        with strategy.scope():
+            model, input_shape = get_model(args.model_type, include_top=include_top)
+    else:
+        # get normal train model
+        model, input_shape = get_model(args.model_type, include_top=include_top)
+        strategy = None
+
+    if args.weights_path:
+        model.load_weights(args.weights_path, by_name=True)
     model.summary()
 
     if args.evaluate:
@@ -259,7 +303,7 @@ def main(args):
         model.save(args.output_model_file)
         print('export headless model to %s' % str(args.output_model_file))
     else:
-        train(args, model, input_shape)
+        train(args, model, input_shape, strategy)
 
 
 if __name__ == '__main__':

@@ -133,26 +133,24 @@ def feedforward(x, hidden_units, dropout_rate, name):
     return x
 
 
-def transformer_block(x, transformer_layers, projection_dim, num_heads, name):
-    for i in range(transformer_layers):
-        prefix = name + '_' + str(i)
-        # Layer normalization 1.
-        x1 = LayerNormalization(epsilon=1e-6, name=prefix+'_LN1')(x)
-        # Create a multi-head attention layer.
-        attention_output = MultiHeadAttention(num_heads=num_heads,
-                                              key_dim=projection_dim,
-                                              dropout=0.1,
-                                              name=prefix+'_attention')(x1, x1)
-        # Skip connection 1.
-        x2 = Add(name=prefix+'_add1')([attention_output, x])
-        # Layer normalization 2.
-        x3 = LayerNormalization(epsilon=1e-6, name=prefix+'_LN2')(x2)
-        # FeedForward network.
-        x3 = feedforward(x3, hidden_units=[x.shape[-1] * 2, x.shape[-1]],
-                         dropout_rate=0.1,
-                         name=prefix+'_ff')
-        # Skip connection 2.
-        x = Add(name=prefix+'_add2')([x3, x2])
+def transformer_block(x, transformer_layers, projection_dim, num_heads, prefix):
+    # Layer normalization 1.
+    x1 = LayerNormalization(epsilon=1e-6, name=prefix+'_LN1')(x)
+    # Create a multi-head attention layer.
+    attention_output = MultiHeadAttention(num_heads=num_heads,
+                                          key_dim=projection_dim,
+                                          dropout=0.1,
+                                          name=prefix+'_attention')(x1, x1)
+    # Skip connection 1.
+    x2 = Add(name=prefix+'_add1')([attention_output, x])
+    # Layer normalization 2.
+    x3 = LayerNormalization(epsilon=1e-6, name=prefix+'_LN2')(x2)
+    # FeedForward network.
+    x3 = feedforward(x3, hidden_units=[x.shape[-1] * 2, x.shape[-1]],
+                     dropout_rate=0.1,
+                     name=prefix+'_ff')
+    # Skip connection 2.
+    x = Add(name=prefix+'_add2')([x3, x2])
 
     return x
 
@@ -175,11 +173,16 @@ def mobilevit_block(x, num_blocks, projection_dim, strides, block_id):
     num_patches = int((local_features.shape[1] * local_features.shape[2]) / patch_size)
     non_overlapping_patches = Reshape((patch_size, num_patches, projection_dim),
                                       name=prefix+'unfold')(local_features)
-    global_features = transformer_block(non_overlapping_patches,
-                                        num_blocks,
-                                        projection_dim,
-                                        num_heads=2,
-                                        name=prefix+'transformer')
+
+    # Transformer blocks
+    global_features = non_overlapping_patches
+    for i in range(num_blocks):
+        name = prefix + 'transformer_' + str(i)
+        global_features = transformer_block(global_features,
+                                            num_blocks,
+                                            projection_dim,
+                                            num_heads=2,
+                                            prefix=name)
 
     # Fold into conv-like feature-maps.
     folded_feature_map = Reshape((*local_features.shape[1:-1], projection_dim),
