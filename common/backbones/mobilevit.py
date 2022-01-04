@@ -76,24 +76,31 @@ def correct_pad(backend, inputs, kernel_size):
 
 
 def conv_block(x, filters=16, kernel_size=3, strides=2, name=''):
-    conv_layer = Conv2D(filters,
-                        kernel_size,
-                        strides=strides,
-                        activation=swish,
-                        padding='same',
-                        name=name)
-    return conv_layer(x)
+    channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
+
+    x = Conv2D(filters,
+               kernel_size,
+               strides=strides,
+               padding='same',
+               use_bias=False,
+               name=name)(x)
+    x = BatchNormalization(axis=channel_axis,
+                           momentum=0.1,
+                           name=name+'_BN')(x)
+    x = Activation(swish, name=name+'_swish')(x)
+    return x
 
 
 # Reference: https://git.io/JKgtC
 def inverted_residual_block(inputs, expanded_channels, output_channels, strides, block_id):
     channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
-    in_channels = K.int_shape(inputs)[channel_axis]
     prefix = 'mv2_block_{}_'.format(block_id)
 
     # Expand
     x = Conv2D(expanded_channels, 1, padding='same', use_bias=False, name=prefix+'_expand')(inputs)
-    x = BatchNormalization(name=prefix+'expand_BN')(x)
+    x = BatchNormalization(axis=channel_axis,
+                           momentum=0.1,
+                           name=prefix+'expand_BN')(x)
     x = Activation(swish, name=prefix+'expand_swish')(x)
 
     # Depthwise
@@ -106,7 +113,9 @@ def inverted_residual_block(inputs, expanded_channels, output_channels, strides,
                         use_bias=False,
                         padding='same' if strides == 1 else 'valid',
                         name=prefix+'depthwise')(x)
-    x = BatchNormalization(name=prefix+'depthwise_BN')(x)
+    x = BatchNormalization(axis=channel_axis,
+                           momentum=0.1,
+                           name=prefix+'depthwise_BN')(x)
     x = Activation(swish, name=prefix+'depthwise_swish')(x)
 
     # Project
@@ -116,7 +125,9 @@ def inverted_residual_block(inputs, expanded_channels, output_channels, strides,
                use_bias=False,
                activation=None,
                name=prefix+'project')(x)
-    x = BatchNormalization(name=prefix+'project_BN')(x)
+    x = BatchNormalization(axis=channel_axis,
+                           momentum=0.1,
+                           name=prefix+'project_BN')(x)
 
     if inputs.shape[-1] == output_channels and strides == 1:
         return Add(name=prefix+'add')([inputs, x])
@@ -147,7 +158,7 @@ def transformer_block(x, projection_dim, num_heads, dropout, prefix):
     x3 = LayerNormalization(epsilon=1e-6, name=prefix+'_LN2')(x2)
     # FeedForward network.
     x3 = feedforward(x3, hidden_units=[x.shape[-1] * 2, x.shape[-1]],
-                     dropout_rate=0.1,
+                     dropout_rate=dropout,
                      name=prefix+'_ff')
     # Skip connection 2.
     x = Add(name=prefix+'_add2')([x3, x2])
@@ -155,7 +166,7 @@ def transformer_block(x, projection_dim, num_heads, dropout, prefix):
     return x
 
 
-def mobilevit_block(x, num_blocks, projection_dim, strides, block_id):
+def mobilevit_block(x, num_blocks, num_heads, projection_dim, strides, dropout, block_id):
     prefix = 'mvit_block_{}_'.format(block_id)
 
     # Local projection with convolutions.
@@ -180,8 +191,8 @@ def mobilevit_block(x, num_blocks, projection_dim, strides, block_id):
         name = prefix + 'transformer_' + str(i)
         global_features = transformer_block(global_features,
                                             projection_dim,
-                                            num_heads=2,
-                                            dropout=0.1,
+                                            num_heads=num_heads,
+                                            dropout=dropout,
                                             prefix=name)
 
     # Fold into conv-like feature-maps.
@@ -217,6 +228,7 @@ def MobileViT(channels,
               input_tensor=None,
               classes=1000,
               pooling=None,
+              dropout_rate=0.1,
               **kwargs):
     # Check TF version for compatibility
     import tensorflow as tf
@@ -248,8 +260,8 @@ def MobileViT(channels,
     rows = input_shape[row_axis]
     cols = input_shape[col_axis]
 
-    if rows and cols and (rows < 32 or cols < 32):
-        raise ValueError('Input size must be at least 32x32; got `input_shape=' +
+    if rows and cols and (rows < 64 or cols < 64):
+        raise ValueError('Input size must be at least 64x64; got `input_shape=' +
                          str(input_shape) + '`')
 
     if input_tensor is None:
@@ -261,6 +273,8 @@ def MobileViT(channels,
             raise ValueError('Does not support dynamic input shape; got input tensor with shape `' +
                              str(input_tensor.shape) + '`')
         img_input = input_tensor
+
+    assert (rows%64 == 0 and cols%64 == 0), 'input shape should be multiples of 64'
 
     channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
@@ -284,23 +298,25 @@ def MobileViT(channels,
     # First MV2 -> MobileViT block.
     x = inverted_residual_block(
         x, expanded_channels=channels[3] * expansion, output_channels=channels[4], strides=2, block_id=4)
-    x = mobilevit_block(x, num_blocks=mvit_blocks[0], projection_dim=dims[0], strides=1, block_id=0)
+    x = mobilevit_block(x, num_blocks=mvit_blocks[0], num_heads=4, projection_dim=dims[0], strides=1, dropout=0.1, block_id=0)
 
     # Second MV2 -> MobileViT block.
     x = inverted_residual_block(
         x, expanded_channels=channels[5] * expansion, output_channels=channels[5], strides=2, block_id=5)
-    x = mobilevit_block(x, num_blocks=mvit_blocks[1], projection_dim=dims[1], strides=1, block_id=1)
+    x = mobilevit_block(x, num_blocks=mvit_blocks[1], num_heads=4, projection_dim=dims[1], strides=1, dropout=0.1, block_id=1)
 
     # Third MV2 -> MobileViT block.
     x = inverted_residual_block(
         x, expanded_channels=channels[6] * expansion, output_channels=channels[6], strides=2, block_id=6)
-    x = mobilevit_block(x, num_blocks=mvit_blocks[2], projection_dim=dims[2], strides=1, block_id=2)
+    x = mobilevit_block(x, num_blocks=mvit_blocks[2], num_heads=4, projection_dim=dims[2], strides=1, dropout=0.1, block_id=2)
 
     x = conv_block(x, filters=channels[7], kernel_size=1, strides=1, name='1x1_conv')
 
     if include_top:
         # Classification head.
         x = GlobalAveragePooling2D(name='avg_pool')(x)
+        if dropout_rate > 0:
+            x = Dropout(dropout_rate, name='predict_dropout')(x)
         x = Dense(classes, activation='softmax',
                   use_bias=True, name='logits')(x)
     else:

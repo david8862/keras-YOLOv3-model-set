@@ -18,6 +18,7 @@ from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnP
 import tensorflow as tf
 
 from data_utils import normalize_image, random_grayscale, random_chroma, random_contrast, random_sharpness
+from callbacks import CheckpointCleanCallBack
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from shufflenet import ShuffleNet
@@ -117,6 +118,9 @@ def train(args, model, input_shape, strategy):
     terminate_on_nan = TerminateOnNaN()
     learn_rates = [0.05, 0.01, 0.005, 0.001, 0.0005]
     lr_scheduler = LearningRateScheduler(lambda epoch: learn_rates[epoch // 30])
+    checkpoint_clean = CheckpointCleanCallBack(log_dir, max_val_keep=5)
+
+    callbacks=[logging, checkpoint, lr_scheduler, terminate_on_nan, checkpoint_clean])
 
     # data generator
     train_datagen = ImageDataGenerator(preprocessing_function=preprocess,
@@ -198,7 +202,7 @@ def train(args, model, input_shape, strategy):
             max_queue_size=10,
             validation_data=test_generator,
             validation_steps=test_generator.samples // args.batch_size,
-            callbacks=[logging, checkpoint, lr_scheduler, terminate_on_nan])
+            callbacks=callbacks)
 
     # Finally store model
     model.save(os.path.join(log_dir, 'trained_final.h5'))
