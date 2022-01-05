@@ -10,8 +10,8 @@ import cv2
 from multiprocessing import cpu_count
 
 import tensorflow.keras.backend as K
-from tensorflow.keras.optimizers import Adam, SGD, RMSprop
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, TerminateOnNaN
 #from tensorflow.keras.utils import multi_gpu_model
@@ -29,6 +29,11 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 
 from yolo3.models.yolo3_nano import NanoNet
 from yolo3.models.yolo3_darknet import DarkNet53
 from yolo4.models.yolo4_darknet import CSPDarkNet53
+
+#from common.utils import optimize_tf_gpu
+from common.model_utils import get_optimizer
+from common.callbacks import CheckpointCleanCallBack
+
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -91,18 +96,6 @@ def get_model(model_type, include_top=True):
     return model, input_shape[:2]
 
 
-def get_optimizer(optim_type, learning_rate):
-    if optim_type == 'sgd':
-        optimizer = SGD(lr=learning_rate, decay=5e-4, momentum=0.9)
-    elif optim_type == 'rmsprop':
-        optimizer = RMSprop(lr=learning_rate)
-    elif optim_type == 'adam':
-        optimizer = Adam(lr=learning_rate, decay=5e-4)
-    else:
-        raise ValueError('Unsupported optimizer type')
-    return optimizer
-
-
 def train(args, model, input_shape, strategy):
     log_dir = os.path.join('logs', '000')
 
@@ -120,7 +113,7 @@ def train(args, model, input_shape, strategy):
     lr_scheduler = LearningRateScheduler(lambda epoch: learn_rates[epoch // 30])
     checkpoint_clean = CheckpointCleanCallBack(log_dir, max_val_keep=5)
 
-    callbacks=[logging, checkpoint, lr_scheduler, terminate_on_nan, checkpoint_clean])
+    callbacks=[logging, checkpoint, lr_scheduler, terminate_on_nan, checkpoint_clean]
 
     # data generator
     train_datagen = ImageDataGenerator(preprocessing_function=preprocess,
@@ -175,7 +168,14 @@ def train(args, model, input_shape, strategy):
             interpolation='nearest')
 
     # get optimizer
-    optimizer = get_optimizer(args.optim_type, args.learning_rate)
+    if args.decay_type:
+        callbacks.remove(lr_scheduler)
+    steps_per_epoch = max(1, train_generator.samples//args.batch_size)
+    decay_steps = steps_per_epoch * (args.total_epoch - args.init_epoch)
+    optimizer = get_optimizer(args.optimizer, args.learning_rate, average_type=None, decay_type=args.decay_type, decay_steps=decay_steps)
+
+    # get loss
+    losses = CategoricalCrossentropy(label_smoothing=args.label_smoothing)
 
     # model compile
     if strategy:
@@ -183,12 +183,12 @@ def train(args, model, input_shape, strategy):
             model.compile(
                       optimizer=optimizer,
                       metrics=['accuracy', 'top_k_categorical_accuracy'],
-                      loss='categorical_crossentropy')
+                      loss=losses)
     else:
         model.compile(
                   optimizer=optimizer,
                   metrics=['accuracy', 'top_k_categorical_accuracy'],
-                  loss='categorical_crossentropy')
+                  loss=losses)
 
     # start training
     print('Train on {} samples, val on {} samples, with batch size {}.'.format(train_generator.samples, test_generator.samples, args.batch_size))
@@ -218,7 +218,7 @@ def evaluate_model(args, model, input_shape):
             batch_size=args.batch_size)
 
     # get optimizer
-    optimizer = get_optimizer(args.optim_type, args.learning_rate)
+    optimizer = get_optimizer(args.optimizer, args.learning_rate, average_type=None, decay_type=None)
 
     # start evaluate
     model.compile(
@@ -309,26 +309,37 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    # Model definition options
     parser.add_argument('--model_type', type=str, required=False, default='shufflenet_v2',
         help='backbone model type: shufflenet/shufflenet_v2/nanonet/darknet53/cspdarknet53, default=%(default)s')
-    parser.add_argument('--train_data_path', type=str,# required=True,
-        help='path to Imagenet train data')
-    parser.add_argument('--val_data_path', type=str,# required=True,
-        help='path to Imagenet validation dataset')
     parser.add_argument('--weights_path', type=str, required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
+
+    # Data options
+    parser.add_argument('--train_data_path', type=str, #required=True,
+        help='path to Imagenet train data')
+    parser.add_argument('--val_data_path', type=str, #required=True,
+        help='path to Imagenet validation dataset')
+
+    # Training options
     parser.add_argument('--batch_size', type=int, required=False, default=128,
         help = "batch size for train, default=%(default)s")
-    parser.add_argument('--optim_type', type=str, required=False, default='sgd', choices=['sgd', 'rmsprop', 'adam'],
-        help='optimizer type: sgd/rmsprop/adam, default=%(default)s')
+    parser.add_argument('--optimizer', type=str, required=False, default='sgd', choices=['adam', 'rmsprop', 'sgd'],
+        help = "optimizer for training (adam/rmsprop/sgd), default=%(default)s")
     parser.add_argument('--learning_rate', type=float,required=False, default=.05,
         help = "Initial learning rate, default=%(default)s")
+    parser.add_argument('--decay_type', type=str, required=False, default=None, choices=[None, 'cosine', 'exponential', 'polynomial', 'piecewise_constant'],
+        help = "Learning rate decay type, default=%(default)s")
+    parser.add_argument('--label_smoothing', type=float, required=False, default=0,
+        help = "Label smoothing factor (between 0 and 1) for classification loss, default=%(default)s")
     parser.add_argument('--init_epoch', type=int,required=False, default=0,
         help = "Initial training epochs for fine tune training, default=%(default)s")
     parser.add_argument('--total_epoch', type=int,required=False, default=200,
         help = "Total training epochs, default=%(default)s")
     parser.add_argument('--gpu_num', type=int, required=False, default=1,
         help='Number of GPU to use, default=%(default)s')
+
+    # Evaluation options
     parser.add_argument('--evaluate', default=False, action="store_true",
         help='Evaluate a trained model with validation dataset')
     parser.add_argument('--verify_with_image', default=False, action="store_true",

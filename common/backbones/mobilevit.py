@@ -4,20 +4,23 @@
 # A tf.keras implementation of MobileViT,
 # ported from https://keras.io/examples/vision/mobilevit/
 #
-# Reference Paper
+# Reference
 #   [MobileViT: Light-weight, General-purpose, and Mobile-friendly Vision Transformer](https://arxiv.org/abs/2110.02178)
+#   https://github.com/apple/ml-cvnets/blob/main/cvnets/models/classification/mobilevit.py
 #
 import os, sys
 import warnings
+import math
 
 from keras_applications.imagenet_utils import _obtain_input_shape
 from keras_applications.imagenet_utils import preprocess_input as _preprocess_input
 from tensorflow.keras.utils import get_source_inputs, get_file
-from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Dense, GlobalAveragePooling2D, GlobalMaxPooling2D, Dropout, ZeroPadding2D
+from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Dense, GlobalAveragePooling2D, GlobalMaxPooling2D, Dropout, ZeroPadding2D, Lambda
 from tensorflow.keras.layers import Input, BatchNormalization, Add, Reshape, LayerNormalization, MultiHeadAttention, Concatenate, Activation
 from tensorflow.keras.activations import swish
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
+import tensorflow as tf
 
 
 def preprocess_input(x):
@@ -166,7 +169,50 @@ def transformer_block(x, projection_dim, num_heads, dropout, prefix):
     return x
 
 
+def img_resize(x, size, mode='bilinear'):
+    if mode == 'bilinear':
+        return tf.image.resize(x, size=size, method='bilinear')
+    elif mode == 'nearest':
+        return tf.image.resize(x, size=size, method='nearest')
+    elif mode == 'bicubic':
+        return tf.image.resize(x, size=size, method='bicubic')
+    elif mode == 'area':
+        return tf.image.resize(x, size=size, method='area')
+    elif mode == 'gaussian':
+        return tf.image.resize(x, size=size, method='gaussian')
+    else:
+        raise ValueError('invalid resize type {}'.format(mode))
+
+
+def unfolding(x, patch_h, patch_w, prefix):
+    batch_size, orig_h, orig_w, in_channels = x.shape
+
+    # get tensor width & height aligned with patch size
+    new_h = int(math.ceil(orig_h / patch_h) * patch_h)
+    new_w = int(math.ceil(orig_w / patch_w) * patch_w)
+
+    if new_h != orig_h or new_w != orig_w:
+        # resize feature tensor for unfolding
+        x = Lambda(img_resize,
+                   arguments={'size': (new_h, new_w), 'mode': 'bilinear'},
+                   name=prefix+'unfold_resize')(x)
+
+    # number of patches along new width and height
+    num_patch_w = new_w // patch_w # n_w
+    num_patch_h = new_h // patch_h # n_h
+    num_patches = num_patch_h * num_patch_w # N
+    patch_size = patch_h * patch_w # P
+
+    # [new_h, new_w, C] --> [P, N, C]
+    x = Reshape((patch_size, num_patches, -1),
+                name=prefix+'unfold')(x)
+
+    return x, new_h, new_w
+
+
 def mobilevit_block(x, num_blocks, num_heads, projection_dim, strides, dropout, block_id):
+    channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
+    in_channels = x.shape[channel_axis]
     prefix = 'mvit_block_{}_'.format(block_id)
 
     # Local projection with convolutions.
@@ -179,11 +225,9 @@ def mobilevit_block(x, num_blocks, num_heads, projection_dim, strides, dropout, 
                                 strides=strides,
                                 name=prefix+'conv2')
 
-    patch_size = 4  # 2x2, for the Transformer blocks.
     # Unfold into patches and then pass through Transformers.
-    num_patches = int((local_features.shape[1] * local_features.shape[2]) / patch_size)
-    non_overlapping_patches = Reshape((patch_size, num_patches, projection_dim),
-                                      name=prefix+'unfold')(local_features)
+    patch_h, patch_w = 2, 2 # 2x2, for the Transformer blocks.
+    non_overlapping_patches, new_h, new_w = unfolding(local_features, patch_h, patch_w, prefix)
 
     # Transformer blocks
     global_features = non_overlapping_patches
@@ -196,12 +240,19 @@ def mobilevit_block(x, num_blocks, num_heads, projection_dim, strides, dropout, 
                                             prefix=name)
 
     # Fold into conv-like feature-maps.
-    folded_feature_map = Reshape((*local_features.shape[1:-1], projection_dim),
+    folded_feature_map = Reshape((new_h, new_w, projection_dim),
                                  name=prefix+'fold')(global_features)
+
+    # resize back to local feature shape
+    orig_h, orig_w = local_features.shape[1:-1]
+    if new_h != orig_h or new_w != orig_w:
+        folded_feature_map = Lambda(img_resize,
+                                    arguments={'size': (orig_h, orig_w), 'mode': 'bilinear'},
+                                    name=prefix+'fold_resize')(folded_feature_map)
 
     # Apply point-wise conv -> concatenate with the input features.
     folded_feature_map = conv_block(folded_feature_map,
-                                    filters=x.shape[-1],
+                                    filters=in_channels,
                                     kernel_size=1,
                                     strides=strides,
                                     name=prefix+'conv3')
@@ -211,7 +262,8 @@ def mobilevit_block(x, num_blocks, num_heads, projection_dim, strides, dropout, 
 
     # Fuse the local and global features using a convoluion layer.
     local_global_features = conv_block(local_global_features,
-                                       filters=projection_dim,
+                                       #filters=projection_dim,
+                                       filters=in_channels,
                                        strides=strides,
                                        name=prefix+'conv4')
     return local_global_features
@@ -248,7 +300,7 @@ def MobileViT(channels,
     # Determine proper input shape
     input_shape = _obtain_input_shape(input_shape,
                                       default_size=256,
-                                      min_size=64,
+                                      min_size=32,
                                       data_format=K.image_data_format(),
                                       require_flatten=include_top,
                                       weights=weights)
@@ -260,8 +312,8 @@ def MobileViT(channels,
     rows = input_shape[row_axis]
     cols = input_shape[col_axis]
 
-    if rows and cols and (rows < 64 or cols < 64):
-        raise ValueError('Input size must be at least 64x64; got `input_shape=' +
+    if rows and cols and (rows < 32 or cols < 32):
+        raise ValueError('Input size must be at least 32x32; got `input_shape=' +
                          str(input_shape) + '`')
 
     if input_tensor is None:
@@ -274,12 +326,11 @@ def MobileViT(channels,
                              str(input_tensor.shape) + '`')
         img_input = input_tensor
 
-    assert (rows%64 == 0 and cols%64 == 0), 'input shape should be multiples of 64'
-
     channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-    # Transformer block number for each MobileViT block
+    # Transformer block_number/head_number for each MobileViT block
     mvit_blocks = [2, 4, 3]
+    num_heads=1
 
     # Initial stem-conv -> MV2 block.
     x = conv_block(img_input, filters=channels[0], name='stem_conv')
@@ -298,17 +349,17 @@ def MobileViT(channels,
     # First MV2 -> MobileViT block.
     x = inverted_residual_block(
         x, expanded_channels=channels[3] * expansion, output_channels=channels[4], strides=2, block_id=4)
-    x = mobilevit_block(x, num_blocks=mvit_blocks[0], num_heads=4, projection_dim=dims[0], strides=1, dropout=0.1, block_id=0)
+    x = mobilevit_block(x, num_blocks=mvit_blocks[0], num_heads=num_heads, projection_dim=dims[0], strides=1, dropout=0.1, block_id=0)
 
     # Second MV2 -> MobileViT block.
     x = inverted_residual_block(
         x, expanded_channels=channels[5] * expansion, output_channels=channels[5], strides=2, block_id=5)
-    x = mobilevit_block(x, num_blocks=mvit_blocks[1], num_heads=4, projection_dim=dims[1], strides=1, dropout=0.1, block_id=1)
+    x = mobilevit_block(x, num_blocks=mvit_blocks[1], num_heads=num_heads, projection_dim=dims[1], strides=1, dropout=0.1, block_id=1)
 
     # Third MV2 -> MobileViT block.
     x = inverted_residual_block(
         x, expanded_channels=channels[6] * expansion, output_channels=channels[6], strides=2, block_id=6)
-    x = mobilevit_block(x, num_blocks=mvit_blocks[2], num_heads=4, projection_dim=dims[2], strides=1, dropout=0.1, block_id=2)
+    x = mobilevit_block(x, num_blocks=mvit_blocks[2], num_heads=num_heads, projection_dim=dims[2], strides=1, dropout=0.1, block_id=2)
 
     x = conv_block(x, filters=channels[7], kernel_size=1, strides=1, name='1x1_conv')
 

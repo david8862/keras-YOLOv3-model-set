@@ -34,11 +34,14 @@ The validation preprocess script and synset labels file are from [tensorflow inc
 ```
 # python train_imagenet.py -h
 usage: train_imagenet.py [-h] [--model_type MODEL_TYPE]
+                         [--weights_path WEIGHTS_PATH]
                          [--train_data_path TRAIN_DATA_PATH]
                          [--val_data_path VAL_DATA_PATH]
-                         [--weights_path WEIGHTS_PATH]
-                         [--batch_size BATCH_SIZE] [--optim_type OPTIM_TYPE]
+                         [--batch_size BATCH_SIZE]
+                         [--optimizer {adam,rmsprop,sgd}]
                          [--learning_rate LEARNING_RATE]
+                         [--decay_type {None,cosine,exponential,polynomial,piecewise_constant}]
+                         [--label_smoothing LABEL_SMOOTHING]
                          [--init_epoch INIT_EPOCH] [--total_epoch TOTAL_EPOCH]
                          [--gpu_num GPU_NUM] [--evaluate]
                          [--verify_with_image] [--dump_headless]
@@ -49,18 +52,23 @@ optional arguments:
   --model_type MODEL_TYPE
                         backbone model type: shufflenet/shufflenet_v2/nanonet/
                         darknet53/cspdarknet53, default=shufflenet_v2
+  --weights_path WEIGHTS_PATH
+                        Pretrained model/weights file for fine tune
   --train_data_path TRAIN_DATA_PATH
                         path to Imagenet train data
   --val_data_path VAL_DATA_PATH
                         path to Imagenet validation dataset
-  --weights_path WEIGHTS_PATH
-                        Pretrained model/weights file for fine tune
   --batch_size BATCH_SIZE
                         batch size for train, default=128
-  --optim_type OPTIM_TYPE
-                        optimizer type: sgd/rmsprop/adam, default=sgd
+  --optimizer {adam,rmsprop,sgd}
+                        optimizer for training (adam/rmsprop/sgd), default=sgd
   --learning_rate LEARNING_RATE
                         Initial learning rate, default=0.05
+  --decay_type {None,cosine,exponential,polynomial,piecewise_constant}
+                        Learning rate decay type, default=None
+  --label_smoothing LABEL_SMOOTHING
+                        Label smoothing factor (between 0 and 1) for
+                        classification loss, default=0
   --init_epoch INIT_EPOCH
                         Initial training epochs for fine tune training,
                         default=0
@@ -78,7 +86,7 @@ optional arguments:
 For example, following cmd will start training shufflenet_v2 with the Imagenet train/val data we prepared before:
 
 ```
-# python train_imagenet.py --model_type=shufflenet_v2 --train_data_path=data/ILSVRC2012_img_train/ --val_data_path=data/ILSVRC2012_img_val/ --batch_size=64
+# python train_imagenet.py --model_type=shufflenet_v2 --train_data_path=data/ILSVRC2012_img_train/ --val_data_path=data/ILSVRC2012_img_val/ --batch_size=128 --optimizer=adam --learning_rate=0.001 --decay_type=cosine --label_smoothing=0.1
 ```
 
 Currently it support shufflenet/shufflenet_v2/nanonet/darknet53/cspdarknet53 which is implement under [backbones](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones) with fixed hyperparam.
