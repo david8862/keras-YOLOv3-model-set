@@ -18,7 +18,6 @@ from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnP
 import tensorflow as tf
 
 from data_utils import normalize_image, random_grayscale, random_chroma, random_contrast, random_sharpness
-from callbacks import CheckpointCleanCallBack
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from shufflenet import ShuffleNet
@@ -326,7 +325,7 @@ if __name__ == '__main__':
         help = "batch size for train, default=%(default)s")
     parser.add_argument('--optimizer', type=str, required=False, default='sgd', choices=['adam', 'rmsprop', 'sgd'],
         help = "optimizer for training (adam/rmsprop/sgd), default=%(default)s")
-    parser.add_argument('--learning_rate', type=float,required=False, default=.05,
+    parser.add_argument('--learning_rate', type=float,required=False, default=.01,
         help = "Initial learning rate, default=%(default)s")
     parser.add_argument('--decay_type', type=str, required=False, default=None, choices=[None, 'cosine', 'exponential', 'polynomial', 'piecewise_constant'],
         help = "Learning rate decay type, default=%(default)s")

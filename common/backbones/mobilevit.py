@@ -148,6 +148,10 @@ def feedforward(x, hidden_units, dropout_rate, name):
 
 
 def transformer_block(x, projection_dim, num_heads, dropout, prefix):
+    """
+    Transformer encoder block for MobileViT. See official pytorch implementation:
+    https://github.com/apple/ml-cvnets/blob/main/cvnets/modules/transformer.py
+    """
     # Layer normalization 1.
     x1 = LayerNormalization(epsilon=1e-6, name=prefix+'_LN1')(x)
     # Create a multi-head attention layer.
@@ -282,6 +286,52 @@ def MobileViT(channels,
               pooling=None,
               dropout_rate=0.1,
               **kwargs):
+    """Instantiates the MobileViT architecture.
+    # Arguments
+        channels: a list that defines channel number for each stage.
+        dims: a list that defines project dimention of each MobileViT block.
+        expansion: integer number for expansion ratio in MV2 blocks
+        model_type: MobileViT is defined as three models: s, xs and xxs. These
+        models are targeted at high and low resource use cases respectively.
+        input_shape: optional shape tuple, to be specified if you would
+            like to use a model with an input img resolution that is not
+            (256, 256, 3).
+            It should have exactly 3 inputs channels (256, 256, 3).
+            You can also omit this option if you would like
+            to infer input_shape from an input_tensor.
+            If you choose to include both input_tensor and input_shape then
+            input_shape will be used if they match, if the shapes
+            do not match then we will throw an error.
+            E.g. `(160, 160, 3)` would be one valid value.
+        include_top: whether to include the fully-connected
+            layer at the top of the network.
+        weights: one of `None` (random initialization),
+              'imagenet' (pre-training on ImageNet),
+              or the path to the weights file to be loaded.
+        input_tensor: optional Keras tensor (i.e. output of
+            `layers.Input()`)
+            to use as image input for the model.
+        classes: optional number of classes to classify images
+            into, only to be specified if `include_top` is True, and
+            if no `weights` argument is specified.
+        pooling: optional pooling mode for feature extraction
+            when `include_top` is `False`.
+            - `None` means that the output of the model will be
+                the 4D tensor output of the
+                last convolutional layer.
+            - `avg` means that global average pooling
+                will be applied to the output of the
+                last convolutional layer, and thus
+                the output of the model will be a 2D tensor.
+            - `max` means that global max pooling will
+                be applied.
+        dropout_rate: fraction of the input units to drop on the last layer
+    # Returns
+        A Keras model instance.
+    # Raises
+        ValueError: in case of invalid model type, argument for `weights`,
+            or invalid input shape when weights='imagenet'
+    """
     # Check TF version for compatibility
     import tensorflow as tf
     if float(tf.__version__[:3]) < 2.4:

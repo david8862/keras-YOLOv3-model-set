@@ -86,7 +86,7 @@ optional arguments:
 For example, following cmd will start training shufflenet_v2 with the Imagenet train/val data we prepared before:
 
 ```
-# python train_imagenet.py --model_type=shufflenet_v2 --train_data_path=data/ILSVRC2012_img_train/ --val_data_path=data/ILSVRC2012_img_val/ --batch_size=128 --optimizer=adam --learning_rate=0.001 --decay_type=cosine --label_smoothing=0.1
+# python train_imagenet.py --model_type=shufflenet_v2 --train_data_path=data/ILSVRC2012_img_train/ --val_data_path=data/ILSVRC2012_img_val/ --batch_size=128 --optimizer=sgd --learning_rate=0.01 --decay_type=cosine --label_smoothing=0.1
 ```
 
 Currently it support shufflenet/shufflenet_v2/nanonet/darknet53/cspdarknet53 which is implement under [backbones](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones) with fixed hyperparam.
