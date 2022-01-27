@@ -6,7 +6,7 @@ opencv-python==4.2.0.32
 opencv-contrib-python==4.2.0.32
 tensorflow-gpu
 keras_applications
-tensorflow-model-optimization
+tensorflow-model-optimization==0.5.0
 tensorflow-addons
 matplotlib
 tqdm
