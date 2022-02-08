@@ -4,7 +4,7 @@
 # A tf.keras implementation of MobileViT,
 # ported from https://keras.io/examples/vision/mobilevit/
 #
-# Reference
+# Reference:
 #   [MobileViT: Light-weight, General-purpose, and Mobile-friendly Vision Transformer](https://arxiv.org/abs/2110.02178)
 #   https://github.com/apple/ml-cvnets/blob/main/cvnets/models/classification/mobilevit.py
 #
@@ -378,9 +378,18 @@ def MobileViT(channels,
 
     channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-    # Transformer block_number/head_number for each MobileViT block
+    # Transformer block_number for each MobileViT block
     mvit_blocks = [2, 4, 3]
-    num_heads=1
+
+    # TODO: In official model configs (see following link) the num of heads in transformer is 4,
+    #       but seems when using num_heads=4 here, the params statistics doesn't match with paper
+    #       (not sure why, but num_heads only impact tf.keras.layers.MultiHeadAttention), so we just
+    #       change to "num_heads = 1"
+    #
+    # Official model config:
+    #       https://github.com/apple/ml-cvnets/blob/main/config/classification/mobilevit_small.yaml#L64
+    #
+    num_heads = 1
 
     # Initial stem-conv -> MV2 block.
     x = conv_block(img_input, filters=channels[0], name='stem_conv')

@@ -110,7 +110,7 @@ def train(args, model, input_shape, strategy):
     terminate_on_nan = TerminateOnNaN()
     learn_rates = [0.05, 0.01, 0.005, 0.001, 0.0005]
     lr_scheduler = LearningRateScheduler(lambda epoch: learn_rates[epoch // 30])
-    checkpoint_clean = CheckpointCleanCallBack(log_dir, max_val_keep=5)
+    checkpoint_clean = CheckpointCleanCallBack(log_dir, max_val_keep=3)
 
     callbacks=[logging, checkpoint, lr_scheduler, terminate_on_nan, checkpoint_clean]
 

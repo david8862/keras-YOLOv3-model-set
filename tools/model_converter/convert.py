@@ -122,6 +122,7 @@ def main(args):
 
     count = 0
     out_index = []
+    anchors = None
     for section in cfg_parser.sections():
         print('Parsing section {}'.format(section))
         if section.startswith('convolutional'):
@@ -371,13 +372,19 @@ def main(args):
             prev_layer = all_layers[-1]
 
         elif section.startswith('region'):
-            with open('{}_anchors.txt'.format(output_root), 'w') as f:
-                print(cfg_parser[section]['anchors'], file=f)
+            # YOLOv2 anchors parse, here we convert origin
+            # grid-reference value to pixel size value
+            anchors_line = cfg_parser[section]['anchors']
+            anchors_list = list(map(float, anchors_line.split(',')))
+            anchors_line = [str(anchor * 32) for anchor in anchors_list]
+            anchors = ', '.join(anchors_line)
 
         elif section.startswith('yolo'):
             out_index.append(len(all_layers)-1)
             all_layers.append(None)
             prev_layer = all_layers[-1]
+            # YOLOv3/v4 anchors parse
+            anchors = cfg_parser[section]['anchors']
 
         elif (section.startswith('net') or section.startswith('cost') or
               section.startswith('softmax')):
@@ -411,6 +418,11 @@ def main(args):
                                                        remaining_weights))
     if remaining_weights > 0:
         print('Warning: {} unused weights'.format(remaining_weights))
+
+    if anchors:
+        with open('{}_anchors.txt'.format(output_root), 'w') as f:
+            print(anchors, file=f)
+        print('Saved anchors to {}_anchors.txt'.format(output_root))
 
     if args.plot_model:
         plot(model, to_file='{}.png'.format(output_root), show_shapes=True)

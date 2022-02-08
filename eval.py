@@ -352,6 +352,10 @@ def yolo_predict_keras(model, image, anchors, num_classes, model_input_shape, co
     image_shape = image.size[::-1]
 
     prediction = model.predict([image_data])
+    if type(prediction) is not list:
+        prediction = [prediction]
+
+    prediction.sort(key=lambda x: len(x[0]))
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors
         pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
