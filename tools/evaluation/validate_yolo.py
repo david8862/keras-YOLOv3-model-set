@@ -42,7 +42,6 @@ def validate_yolo_model(model, image_file, anchors, class_names, model_input_sha
     if type(prediction) is not list:
         prediction = [prediction]
 
-    prediction.sort(key=lambda x: len(x[0]))
     handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode, output_path)
     return
 
@@ -84,7 +83,6 @@ def validate_yolo_model_tflite(interpreter, image_file, anchors, class_names, el
         output_data = interpreter.get_tensor(output_detail['index'])
         prediction.append(output_data)
 
-    prediction.sort(key=lambda x: len(x[0]))
     handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode, output_path)
     return
 
@@ -204,7 +202,6 @@ def validate_yolo_model_mnn(interpreter, session, image_file, anchors, class_nam
 
         prediction.append(output_data)
 
-    prediction.sort(key=lambda x: len(x[0]))
     handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode, output_path)
     return
 
@@ -271,7 +268,6 @@ def validate_yolo_model_pb(model, image_file, anchors, class_names, model_input_
     end = time.time()
     print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
 
-    prediction.sort(key=lambda x: len(x[0]))
     handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode, output_path)
 
 
@@ -316,7 +312,6 @@ def validate_yolo_model_onnx(model, image_file, anchors, class_names, elim_grid_
     end = time.time()
     print("Average Inference time: {:.8f}ms".format((end - start) * 1000 /loop_count))
 
-    prediction.sort(key=lambda x: len(x[0]))
     handle_prediction(prediction, image_file, image, image_shape, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode, output_path)
 
 

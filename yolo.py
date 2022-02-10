@@ -405,7 +405,7 @@ def main():
         args.model_input_shape = (int(height), int(width))
         assert (args.model_input_shape[0]%32 == 0 and args.model_input_shape[1]%32 == 0), 'model_input_shape should be multiples of 32'
 
-    # get wrapped inference object
+    # get wrapped inference object, you can also try "YOLO" here ;)
     yolo = YOLO_np(**vars(args))
 
     if args.dump_model:

@@ -126,7 +126,6 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
         output_data = interpreter.get_tensor(output_detail['index'])
         prediction.append(output_data)
 
-    prediction.sort(key=lambda x: len(x[0]))
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
@@ -243,7 +242,6 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
 
         prediction.append(output_data)
 
-    prediction.sort(key=lambda x: len(x[0]))
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
@@ -290,7 +288,6 @@ def yolo_predict_pb(model, image, anchors, num_classes, model_input_shape, conf_
             image_input: image_data
         })
 
-    prediction.sort(key=lambda x: len(x[0]))
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
@@ -332,7 +329,6 @@ def yolo_predict_onnx(model, image, anchors, num_classes, conf_threshold, elim_g
     feed = {input_tensors[0].name: image_data}
     prediction = model.run(None, feed)
 
-    prediction.sort(key=lambda x: len(x[0]))
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction
         assert len(prediction) == 1, 'invalid YOLOv2 prediction number.'
@@ -355,10 +351,9 @@ def yolo_predict_keras(model, image, anchors, num_classes, model_input_shape, co
     if type(prediction) is not list:
         prediction = [prediction]
 
-    prediction.sort(key=lambda x: len(x[0]))
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors
-        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
+        pred_boxes, pred_classes, pred_scores = yolo2_postprocess_np(prediction[0], image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=elim_grid_sense)
     else:
         if v5_decode:
             pred_boxes, pred_classes, pred_scores = yolo5_postprocess_np(prediction, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=conf_threshold, elim_grid_sense=True) #enable "elim_grid_sense" by default

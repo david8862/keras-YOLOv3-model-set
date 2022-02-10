@@ -121,6 +121,10 @@ def yolo3_postprocess(args,
     yolo_outputs = args[:num_layers]
     image_shape = args[num_layers]
 
+    # here we sort the prediction tensor list with grid size (e.g. 19/38/76)
+    # to make sure it matches with anchors order
+    yolo_outputs.sort(key=lambda x: x.shape[1])
+
     if num_layers == 3:
         anchor_mask = [[6,7,8], [3,4,5], [0,1,2]]
         scale_x_y = [1.05, 1.1, 1.2] if elim_grid_sense else [None, None, None]
@@ -130,7 +134,6 @@ def yolo3_postprocess(args,
 
     input_shape = K.shape(yolo_outputs[0])[1:3] * 32
 
-    # print("yolo_outputs",yolo_outputs)
     boxes = []
     box_scores = []
     for l in range(num_layers):
@@ -195,6 +198,10 @@ def batched_yolo3_postprocess(args,
     yolo_outputs = args[:num_layers]
     image_shape = args[num_layers]
 
+    # here we sort the prediction tensor list with grid size (e.g. 19/38/76)
+    # to make sure it matches with anchors order
+    yolo_outputs.sort(key=lambda x: x.shape[1])
+
     if num_layers == 3:
         anchor_mask = [[6,7,8], [3,4,5], [0,1,2]]
         scale_x_y = [1.05, 1.1, 1.2] if elim_grid_sense else [None, None, None]
@@ -203,9 +210,8 @@ def batched_yolo3_postprocess(args,
         scale_x_y = [1.05, 1.05] if elim_grid_sense else [None, None]
 
     input_shape = K.shape(yolo_outputs[0])[1:3] * 32
-
     batch_size = K.shape(image_shape)[0] # batch size, tensor
-    # print("yolo_outputs",yolo_outputs)
+
     boxes = []
     box_scores = []
     for l in range(num_layers):

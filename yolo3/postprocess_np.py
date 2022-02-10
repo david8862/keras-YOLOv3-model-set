@@ -34,6 +34,10 @@ def yolo3_decode(predictions, anchors, num_classes, input_shape, elim_grid_sense
 
 
 def yolo3_postprocess_np(yolo_outputs, image_shape, anchors, num_classes, model_input_shape, max_boxes=100, confidence=0.1, iou_threshold=0.4, elim_grid_sense=False):
+    # here we sort the prediction tensor list with grid size (e.g. 19/38/76)
+    # to make sure it matches with anchors order
+    yolo_outputs.sort(key=lambda x: x.shape[1])
+
     predictions = yolo3_decode(yolo_outputs, anchors, num_classes, input_shape=model_input_shape, elim_grid_sense=elim_grid_sense)
     predictions = yolo_correct_boxes(predictions, image_shape, model_input_shape)
 
