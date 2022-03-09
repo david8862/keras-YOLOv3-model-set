@@ -309,8 +309,8 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # Model definition options
-    parser.add_argument('--model_type', type=str, required=False, default='shufflenet_v2',
-        help='backbone model type: shufflenet/shufflenet_v2/nanonet/darknet53/cspdarknet53, default=%(default)s')
+    parser.add_argument('--model_type', type=str, required=True, choices=['shufflenet', 'shufflenet_v2', 'nanonet', 'darknet53', 'cspdarknet53', 'mobilevit_s', 'mobilevit_xs', 'mobilevit_xxs'],
+        help='backbone model type')
     parser.add_argument('--weights_path', type=str, required=False, default=None,
         help = "Pretrained model/weights file for fine tune")
 

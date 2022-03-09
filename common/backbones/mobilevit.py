@@ -23,6 +23,11 @@ from tensorflow.keras import backend as K
 import tensorflow as tf
 
 
+BASE_WEIGHT_PATH = (
+    'https://github.com/david8862/tf-keras-image-classifier/'
+    'releases/download/v1.0.0/')
+
+
 def preprocess_input(x):
     """
     "mode" option description in preprocess_input
@@ -447,20 +452,20 @@ def MobileViT(channels,
 
     # Load weights.
     if weights == 'imagenet':
-        raise ValueError('No valid ImageNet pretrained weights now.')
-        #if include_top:
-            #model_name = ('mobilenet_v2_weights_tf_dim_ordering_tf_kernels_' +
-                          #str(alpha) + '_' + str(rows) + '.h5')
-            #weight_path = BASE_WEIGHT_PATH + model_name
-            #weights_path = get_file(
-                #model_name, weight_path, cache_subdir='models')
-        #else:
-            #model_name = ('mobilenet_v2_weights_tf_dim_ordering_tf_kernels_' +
-                          #str(alpha) + '_' + str(rows) + '_no_top' + '.h5')
-            #weight_path = BASE_WEIGHT_PATH + model_name
-            #weights_path = get_file(
-                #model_name, weight_path, cache_subdir='models')
-        #model.load_weights(weights_path)
+        if model_type == 's':
+            raise ValueError('No valid ImageNet pretrained weights for mobilevit_s now.')
+
+        if include_top:
+            model_name = ('mobilevit_' + model_type + '_weights_tf_dim_ordering_tf_kernels_256.h5')
+            weight_path = BASE_WEIGHT_PATH + model_name
+            weights_path = get_file(
+                model_name, weight_path, cache_subdir='models')
+        else:
+            model_name = ('mobilevit_' + model_type + '_weights_tf_dim_ordering_tf_kernels_256_no_top.h5')
+            weight_path = BASE_WEIGHT_PATH + model_name
+            weights_path = get_file(
+                model_name, weight_path, cache_subdir='models')
+        model.load_weights(weights_path)
     elif weights is not None:
         model.load_weights(weights)
 
@@ -514,9 +519,10 @@ def MobileViT_XXS(input_shape=None,
 
 if __name__ == '__main__':
     input_tensor = Input(shape=(None, None, 3), name='image_input')
-    #model = MobileViT_XXS(include_top=True, input_tensor=input_tensor, weights=None)
-    model = MobileViT_XXS(include_top=True, input_shape=(256, 256, 3), weights=None)
+    #model = MobileViT_XXS(include_top=True, input_tensor=input_tensor, weights='imagenet')
+    model = MobileViT_XXS(include_top=True, input_shape=(256, 256, 3), weights='imagenet')
     model.summary()
+    K.set_learning_phase(0)
 
     import numpy as np
     from tensorflow.keras.applications.resnet50 import decode_predictions

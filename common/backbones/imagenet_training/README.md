@@ -33,7 +33,8 @@ The validation preprocess script and synset labels file are from [tensorflow inc
 1. [train_imagenet.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/common/backbones/imagenet_training/train_imagenet.py)
 ```
 # python train_imagenet.py -h
-usage: train_imagenet.py [-h] [--model_type MODEL_TYPE]
+usage: train_imagenet.py [-h] --model_type
+                         {shufflenet,shufflenet_v2,nanonet,darknet53,cspdarknet53,mobilevit_s,mobilevit_xs,mobilevit_xxs}
                          [--weights_path WEIGHTS_PATH]
                          [--train_data_path TRAIN_DATA_PATH]
                          [--val_data_path VAL_DATA_PATH]
@@ -49,9 +50,8 @@ usage: train_imagenet.py [-h] [--model_type MODEL_TYPE]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --model_type MODEL_TYPE
-                        backbone model type: shufflenet/shufflenet_v2/nanonet/
-                        darknet53/cspdarknet53, default=shufflenet_v2
+  --model_type {shufflenet,shufflenet_v2,nanonet,darknet53,cspdarknet53,mobilevit_s,mobilevit_xs,mobilevit_xxs}
+                        backbone model type
   --weights_path WEIGHTS_PATH
                         Pretrained model/weights file for fine tune
   --train_data_path TRAIN_DATA_PATH
@@ -63,7 +63,7 @@ optional arguments:
   --optimizer {adam,rmsprop,sgd}
                         optimizer for training (adam/rmsprop/sgd), default=sgd
   --learning_rate LEARNING_RATE
-                        Initial learning rate, default=0.05
+                        Initial learning rate, default=0.01
   --decay_type {None,cosine,exponential,polynomial,piecewise_constant}
                         Learning rate decay type, default=None
   --label_smoothing LABEL_SMOOTHING
@@ -89,7 +89,7 @@ For example, following cmd will start training shufflenet_v2 with the Imagenet t
 # python train_imagenet.py --model_type=shufflenet_v2 --train_data_path=data/ILSVRC2012_img_train/ --val_data_path=data/ILSVRC2012_img_val/ --batch_size=128 --optimizer=sgd --learning_rate=0.01 --decay_type=cosine --label_smoothing=0.1
 ```
 
-Currently it support shufflenet/shufflenet_v2/nanonet/darknet53/cspdarknet53 which is implement under [backbones](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones) with fixed hyperparam.
+Currently it support shufflenet/shufflenet_v2/nanonet/darknet53/cspdarknet53/mobilevit_s/mobilevit_xs/mobilevit_xxs which is implement under [backbones](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones) with fixed hyperparam.
 
 Checkpoints during training could be found at logs/. Choose a best one as result
 
@@ -144,5 +144,11 @@ MultiGPU usage: use `--gpu_num N` to use N GPUs. It is passed to the [Keras mult
      author={Ningning Ma, Xiangyu Zhang, Hai-Tao Zheng, Jian Sun},
      journal = {arXiv},
      year={2018}
+}
+@article{MobileViT,
+     title={MobileViT: Light-weight, General-purpose, and Mobile-friendly Vision Transformer},
+     author={Sachin Mehta, Mohammad Rastegari},
+     journal = {arXiv},
+     year={2021}
 }
 ```
