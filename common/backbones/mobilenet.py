@@ -454,9 +454,10 @@ def _depthwise_conv_block(inputs, pointwise_conv_filters, alpha,
 
 if __name__ == '__main__':
     input_tensor = Input(shape=(None, None, 3), name='image_input')
-    #model = MobileNet(include_top=True, input_shape=(224, 224, 3), weights='imagenet', alpha=1.0)
-    model = MobileNet(include_top=True, input_tensor=input_tensor, weights='imagenet', alpha=1.0)
+    #model = MobileNet(include_top=False, input_tensor=input_tensor, weights='imagenet', alpha=1.0)
+    model = MobileNet(include_top=True, input_shape=(224, 224, 3), weights='imagenet', alpha=1.0)
     model.summary()
+    K.set_learning_phase(0)
 
     import numpy as np
     from tensorflow.keras.applications.resnet50 import decode_predictions

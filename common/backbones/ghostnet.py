@@ -9,6 +9,7 @@ import warnings
 import math
 
 from keras_applications.imagenet_utils import _obtain_input_shape
+from keras_applications.imagenet_utils import preprocess_input as _preprocess_input
 from tensorflow.keras.utils import get_source_inputs, get_file
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, BatchNormalization, Dense, Flatten, ReLU, Reshape, Activation
@@ -38,6 +39,9 @@ def preprocess_input(x):
             will normalize each channel with respect to the
             ImageNet dataset.
     """
+    # here we use pytorch mode preprocess to align with origin
+    #x = _preprocess_input(x, mode='torch', backend=K)
+
     x /= 255.
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]

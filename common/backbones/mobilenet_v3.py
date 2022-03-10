@@ -117,17 +117,6 @@ def preprocess_input(x):
             ImageNet dataset.
     """
     x = _preprocess_input(x, mode='tf', backend=K)
-    #x /= 255.
-    #mean = [0.485, 0.456, 0.406]
-    #std = [0.229, 0.224, 0.225]
-
-    #x[..., 0] -= mean[0]
-    #x[..., 1] -= mean[1]
-    #x[..., 2] -= mean[2]
-    #if std is not None:
-        #x[..., 0] /= std[0]
-        #x[..., 1] /= std[1]
-        #x[..., 2] /= std[2]
 
     return x
 
@@ -608,9 +597,10 @@ setattr(MobileNetV3Large, '__doc__', MobileNetV3.__doc__)
 
 if __name__ == '__main__':
     input_tensor = Input(shape=(None, None, 3), name='image_input')
-    #model = MobileNetV3Large(include_top=False, input_shape=(416, 416, 3), weights='imagenet', alpha=1.0)
-    model = MobileNetV3Large(include_top=True, input_tensor=input_tensor, weights='imagenet', alpha=1.0)
+    #model = MobileNetV3Large(include_top=False, input_tensor=input_tensor, weights='imagenet', alpha=1.0)
+    model = MobileNetV3Large(include_top=True, input_shape=(224, 224, 3), weights='imagenet', alpha=1.0)
     model.summary()
+    K.set_learning_phase(0)
 
     import numpy as np
     from tensorflow.keras.applications.resnet50 import decode_predictions

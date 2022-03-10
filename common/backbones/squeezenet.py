@@ -6,6 +6,7 @@
 #
 
 from keras_applications.imagenet_utils import _obtain_input_shape
+from keras_applications.imagenet_utils import preprocess_input as _preprocess_input
 from tensorflow.keras.utils import get_source_inputs, get_file
 from tensorflow.keras.layers import Conv2D, MaxPool2D, GlobalMaxPooling2D, GlobalAveragePooling2D
 from tensorflow.keras.layers import BatchNormalization, Dropout, Lambda
@@ -19,8 +20,28 @@ exp1x1 = "expand1x1"
 exp3x3 = "expand3x3"
 relu = "relu_"
 
-WEIGHTS_PATH = "https://github.com/rcmalli/keras-squeezenet/releases/download/v1.0/squeezenet_weights_tf_dim_ordering_tf_kernels.h5"
-WEIGHTS_PATH_NO_TOP = "https://github.com/rcmalli/keras-squeezenet/releases/download/v1.0/squeezenet_weights_tf_dim_ordering_tf_kernels_notop.h5"
+BASE_WEIGHT_PATH = ('https://github.com/rcmalli/keras-squeezenet/releases/download/v1.0/')
+
+
+def preprocess_input(x):
+    """
+    "mode" option description in preprocess_input
+    mode: One of "caffe", "tf" or "torch".
+        - caffe: will convert the images from RGB to BGR,
+            then will zero-center each color channel with
+            respect to the ImageNet dataset,
+            without scaling.
+        - tf: will scale pixels between -1 and 1,
+            sample-wise.
+        - torch: will scale pixels between 0 and 1 and then
+            will normalize each channel with respect to the
+            ImageNet dataset.
+    """
+    # squeezenet use caffe mode preprocess
+    x = _preprocess_input(x, mode='caffe', backend=K)
+
+    return x
+
 
 # Modular function for Fire Node
 
@@ -132,18 +153,20 @@ def SqueezeNet(include_top=True,
     # load weights
     if weights == 'imagenet':
         if include_top:
-            weights_path = get_file('squeezenet_weights_tf_dim_ordering_tf_kernels.h5',
-                                    WEIGHTS_PATH,
+            model_name = 'squeezenet_weights_tf_dim_ordering_tf_kernels.h5'
+            weight_path = BASE_WEIGHT_PATH + model_name
+            weights_path = get_file(model_name,
+                                    weight_path,
                                     cache_subdir='models')
         else:
-            weights_path = get_file('squeezenet_weights_tf_dim_ordering_tf_kernels_notop.h5',
-                                    WEIGHTS_PATH_NO_TOP,
+            model_name = 'squeezenet_weights_tf_dim_ordering_tf_kernels_notop.h5'
+            weight_path = BASE_WEIGHT_PATH + model_name
+            weights_path = get_file(model_name,
+                                    weight_path,
                                     cache_subdir='models')
-
         model.load_weights(weights_path)
 
         if K.image_data_format() == 'channels_first':
-
             if K.backend() == 'tensorflow':
                 warnings.warn('You are using the TensorFlow backend, yet you '
                               'are using the Theano '
@@ -153,21 +176,22 @@ def SqueezeNet(include_top=True,
                               '`image_data_format="channels_last"` in '
                               'your Keras config '
                               'at ~/.keras/keras.json.')
+    elif weights is not None:
+        model.load_weights(weights)
+
     return model
 
 
 if __name__ == '__main__':
     input_tensor = Input(shape=(None, None, 3), name='image_input')
-    #model = SqueezeNet(include_top=False, input_shape=(416, 416, 3), weights='imagenet')
-    model = SqueezeNet(include_top=True, input_tensor=input_tensor, weights='imagenet')
+    #model = SqueezeNet(include_top=False, input_tensor=input_tensor, weights='imagenet')
+    model = SqueezeNet(include_top=True, input_shape=(227, 227, 3), weights='imagenet')
     model.summary()
+    K.set_learning_phase(0)
 
     import numpy as np
-    #from keras_applications.imagenet_utils import preprocess_input, decode_predictions
-    from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
+    from tensorflow.keras.applications.resnet50 import decode_predictions
     from keras_preprocessing import image
-
-    model = SqueezeNet()
 
     img = image.load_img('../../example/eagle.jpg', target_size=(227, 227))
     x = image.img_to_array(img)

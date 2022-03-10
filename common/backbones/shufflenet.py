@@ -7,6 +7,7 @@
 import os, sys
 
 from keras_applications.imagenet_utils import _obtain_input_shape
+from keras_applications.imagenet_utils import preprocess_input as _preprocess_input
 from tensorflow.keras.models import Model
 from tensorflow.keras.utils import get_source_inputs, get_file
 from tensorflow.keras.layers import Activation, Add, Concatenate, GlobalAveragePooling2D, GlobalMaxPooling2D, Input, Dense
@@ -19,6 +20,26 @@ from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatch
 
 # TODO prepare an imagenet pretrained weights
 BASE_WEIGHT_PATH = ('https://github.com/scheckmedia/keras-shufflenet/tree/master/weights/')
+
+
+def preprocess_input(x):
+    """
+    "mode" option description in preprocess_input
+    mode: One of "caffe", "tf" or "torch".
+        - caffe: will convert the images from RGB to BGR,
+            then will zero-center each color channel with
+            respect to the ImageNet dataset,
+            without scaling.
+        - tf: will scale pixels between -1 and 1,
+            sample-wise.
+        - torch: will scale pixels between 0 and 1 and then
+            will normalize each channel with respect to the
+            ImageNet dataset.
+    """
+    x = _preprocess_input(x, mode='tf', backend=K)
+
+    return x
+
 
 def ShuffleNet(include_top=True,
                input_tensor=None,
@@ -163,17 +184,15 @@ def ShuffleNet(include_top=True,
                              'are not available.')
 
         if include_top:
-            model_name = ('shufflenet_weights_tf_dim_ordering_tf_kernels_' +
-                          str(alpha) + '_' + str(rows) + '.h5')
-            weigh_path = BASE_WEIGHT_PATH + model_name
+            model_name = ('shufflenet_weights_tf_dim_ordering_tf_kernels_224.h5')
+            weight_path = BASE_WEIGHT_PATH + model_name
             weights_path = get_file(
-                model_name, weigh_path, cache_subdir='models')
+                model_name, weight_path, cache_subdir='models')
         else:
-            model_name = ('shufflenet_weights_tf_dim_ordering_tf_kernels_' +
-                          str(alpha) + '_' + str(rows) + '_no_top' + '.h5')
-            weigh_path = BASE_WEIGHT_PATH + model_name
+            model_name = ('shufflenet_weights_tf_dim_ordering_tf_kernels_224_no_top.h5')
+            weight_path = BASE_WEIGHT_PATH + model_name
             weights_path = get_file(
-                model_name, weigh_path, cache_subdir='models')
+                model_name, weight_path, cache_subdir='models')
         model.load_weights(weights_path)
     elif weights is not None:
         model.load_weights(weights)
@@ -366,7 +385,19 @@ def channel_shuffle(x, groups):
 
 if __name__ == '__main__':
     input_tensor = Input(shape=(None, None, 3), name='image_input')
-    #model = ShuffleNet(include_top=True, input_tensor=input_tensor, weights=None, groups=3, bottleneck_ratio=1)
-    model = ShuffleNet(include_top=False, input_shape=(416, 416, 3), weights=None, groups=3, bottleneck_ratio=1)
+    #model = ShuffleNet(include_top=False, input_tensor=input_tensor, weights='imagenet')
+    model = ShuffleNet(include_top=True, input_shape=(224, 224, 3), weights='imagenet')
     model.summary()
+    K.set_learning_phase(0)
 
+    import numpy as np
+    from tensorflow.keras.applications.resnet50 import decode_predictions
+    from keras_preprocessing import image
+
+    img = image.load_img('../../example/eagle.jpg', target_size=(224, 224))
+    x = image.img_to_array(img)
+    x = np.expand_dims(x, axis=0)
+    x = preprocess_input(x)
+
+    preds = model.predict(x)
+    print('Predicted:', decode_predictions(preds))

@@ -22,6 +22,9 @@ from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 import tensorflow as tf
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
+from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatchNormalization
+
 
 BASE_WEIGHT_PATH = (
     'https://github.com/david8862/tf-keras-image-classifier/'
@@ -43,17 +46,6 @@ def preprocess_input(x):
             ImageNet dataset.
     """
     x = _preprocess_input(x, mode='tf', backend=K)
-    #x /= 255.
-    #mean = [0.485, 0.456, 0.406]
-    #std = [0.229, 0.224, 0.225]
-
-    #x[..., 0] -= mean[0]
-    #x[..., 1] -= mean[1]
-    #x[..., 2] -= mean[2]
-    #if std is not None:
-        #x[..., 0] /= std[0]
-        #x[..., 1] /= std[1]
-        #x[..., 2] /= std[2]
 
     return x
 
@@ -86,13 +78,13 @@ def correct_pad(backend, inputs, kernel_size):
 def conv_block(x, filters=16, kernel_size=3, strides=2, name=''):
     channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
 
-    x = Conv2D(filters,
+    x = YoloConv2D(filters,
                kernel_size,
                strides=strides,
                padding='same',
                use_bias=False,
                name=name)(x)
-    x = BatchNormalization(axis=channel_axis,
+    x = CustomBatchNormalization(axis=channel_axis,
                            momentum=0.1,
                            name=name+'_BN')(x)
     x = Activation(swish, name=name+'_swish')(x)
@@ -105,8 +97,8 @@ def inverted_residual_block(inputs, expanded_channels, output_channels, strides,
     prefix = 'mv2_block_{}_'.format(block_id)
 
     # Expand
-    x = Conv2D(expanded_channels, 1, padding='same', use_bias=False, name=prefix+'_expand')(inputs)
-    x = BatchNormalization(axis=channel_axis,
+    x = YoloConv2D(expanded_channels, 1, padding='same', use_bias=False, name=prefix+'_expand')(inputs)
+    x = CustomBatchNormalization(axis=channel_axis,
                            momentum=0.1,
                            name=prefix+'expand_BN')(x)
     x = Activation(swish, name=prefix+'expand_swish')(x)
@@ -115,25 +107,25 @@ def inverted_residual_block(inputs, expanded_channels, output_channels, strides,
     if strides == 2:
         x = ZeroPadding2D(padding=correct_pad(K, x, 3), name=prefix+'pad')(x)
 
-    x = DepthwiseConv2D(kernel_size=3,
+    x = YoloDepthwiseConv2D(kernel_size=3,
                         strides=strides,
                         activation=None,
                         use_bias=False,
                         padding='same' if strides == 1 else 'valid',
                         name=prefix+'depthwise')(x)
-    x = BatchNormalization(axis=channel_axis,
+    x = CustomBatchNormalization(axis=channel_axis,
                            momentum=0.1,
                            name=prefix+'depthwise_BN')(x)
     x = Activation(swish, name=prefix+'depthwise_swish')(x)
 
     # Project
-    x = Conv2D(output_channels,
+    x = YoloConv2D(output_channels,
                kernel_size=1,
                padding='same',
                use_bias=False,
                activation=None,
                name=prefix+'project')(x)
-    x = BatchNormalization(axis=channel_axis,
+    x = CustomBatchNormalization(axis=channel_axis,
                            momentum=0.1,
                            name=prefix+'project_BN')(x)
 
@@ -519,7 +511,7 @@ def MobileViT_XXS(input_shape=None,
 
 if __name__ == '__main__':
     input_tensor = Input(shape=(None, None, 3), name='image_input')
-    #model = MobileViT_XXS(include_top=True, input_tensor=input_tensor, weights='imagenet')
+    #model = MobileViT_XXS(include_top=False, input_tensor=input_tensor, weights='imagenet')
     model = MobileViT_XXS(include_top=True, input_shape=(256, 256, 3), weights='imagenet')
     model.summary()
     K.set_learning_phase(0)

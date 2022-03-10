@@ -8,7 +8,7 @@ import os, sys
 import numpy as np
 
 from keras_applications.imagenet_utils import _obtain_input_shape
-#from tensorflow.keras.utils import plot_model
+from keras_applications.imagenet_utils import preprocess_input as _preprocess_input
 from tensorflow.keras.utils import get_source_inputs, get_file
 from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Dense, MaxPool2D, GlobalMaxPooling2D, GlobalAveragePooling2D
 from tensorflow.keras.layers import BatchNormalization, Lambda
@@ -19,9 +19,30 @@ from tensorflow.keras import backend as K
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatchNormalization
 
+
 # TODO prepare an imagenet pretrained weights
-BASE_WEIGHT_PATH = ('https://github.com/JonathanCMitchell/mobilenet_v2_keras/'
-                    'releases/download/v1.1/')
+BASE_WEIGHT_PATH = ('https://github.com/david8862/tf-keras-image-classifier/'
+                    'releases/download/v1.0.0/')
+
+
+def preprocess_input(x):
+    """
+    "mode" option description in preprocess_input
+    mode: One of "caffe", "tf" or "torch".
+        - caffe: will convert the images from RGB to BGR,
+            then will zero-center each color channel with
+            respect to the ImageNet dataset,
+            without scaling.
+        - tf: will scale pixels between -1 and 1,
+            sample-wise.
+        - torch: will scale pixels between 0 and 1 and then
+            will normalize each channel with respect to the
+            ImageNet dataset.
+    """
+    x = _preprocess_input(x, mode='tf', backend=K)
+
+    return x
+
 
 def channel_split(x, name=''):
     # equipartition
@@ -227,17 +248,15 @@ def ShuffleNetV2(input_shape=None,
                              'are not available.')
 
         if include_top:
-            model_name = ('shufflenet_v2_weights_tf_dim_ordering_tf_kernels_' +
-                          str(alpha) + '_' + str(rows) + '.h5')
-            weigh_path = BASE_WEIGHT_PATH + model_name
+            model_name = ('shufflenet_v2_weights_tf_dim_ordering_tf_kernels_224.h5')
+            weight_path = BASE_WEIGHT_PATH + model_name
             weights_path = get_file(
-                model_name, weigh_path, cache_subdir='models')
+                model_name, weight_path, cache_subdir='models')
         else:
-            model_name = ('shufflenet_v2_weights_tf_dim_ordering_tf_kernels_' +
-                          str(alpha) + '_' + str(rows) + '_no_top' + '.h5')
-            weigh_path = BASE_WEIGHT_PATH + model_name
+            model_name = ('shufflenet_v2_weights_tf_dim_ordering_tf_kernels_224_no_top.h5')
+            weight_path = BASE_WEIGHT_PATH + model_name
             weights_path = get_file(
-                model_name, weigh_path, cache_subdir='models')
+                model_name, weight_path, cache_subdir='models')
         model.load_weights(weights_path)
     elif weights is not None:
         model.load_weights(weights)
@@ -247,8 +266,19 @@ def ShuffleNetV2(input_shape=None,
 
 if __name__ == '__main__':
     input_tensor = Input(shape=(None, None, 3), name='image_input')
-    #model = ShuffleNetV2(include_top=False, input_shape=(416, 416, 3), weights=None, bottleneck_ratio=1)
-    model = ShuffleNetV2(include_top=False, input_tensor=input_tensor, weights=None, bottleneck_ratio=1)
+    #model = ShuffleNetV2(include_top=False, input_tensor=input_tensor, weights='imagenet', bottleneck_ratio=1)
+    model = ShuffleNetV2(include_top=True, input_shape=(224, 224, 3), weights='imagenet', bottleneck_ratio=1)
     model.summary()
-    print(len(model.layers))
-    #plot_model(model, to_file='shufflenetv2.png', show_layer_names=True, show_shapes=True)
+    K.set_learning_phase(0)
+
+    import numpy as np
+    from tensorflow.keras.applications.resnet50 import decode_predictions
+    from keras_preprocessing import image
+
+    img = image.load_img('../../example/eagle.jpg', target_size=(224, 224))
+    x = image.img_to_array(img)
+    x = np.expand_dims(x, axis=0)
+    x = preprocess_input(x)
+
+    preds = model.predict(x)
+    print('Predicted:', decode_predictions(preds))

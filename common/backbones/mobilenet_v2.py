@@ -523,15 +523,16 @@ def _inverted_res_block(inputs, expansion, stride, alpha, filters, block_id):
 
 if __name__ == '__main__':
     input_tensor = Input(shape=(None, None, 3), name='image_input')
-    #model = MobileNetV2(include_top=True, input_shape=(224, 224, 3), weights='imagenet', alpha=1.0)
-    model = MobileNetV2(include_top=True, input_tensor=input_tensor, weights='imagenet', alpha=0.75)
+    #model = MobileNetV2(include_top=False, input_tensor=input_tensor, weights='imagenet', alpha=1.0)
+    model = MobileNetV2(include_top=True, input_shape=(224, 224, 3), weights='imagenet', alpha=1.0)
     model.summary()
+    K.set_learning_phase(0)
 
     import numpy as np
     from tensorflow.keras.applications.resnet50 import decode_predictions
     from keras_preprocessing import image
 
-    img = image.load_img('../../example/dog.jpg', target_size=(224, 224))
+    img = image.load_img('../../example/eagle.jpg', target_size=(224, 224))
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
     x = preprocess_input(x)

@@ -2,14 +2,16 @@
 # -*- coding: utf-8 -*-
 """YOLO_v3 Nano Model Defined in Keras."""
 
-import os
+import os, sys
 from keras_applications.imagenet_utils import _obtain_input_shape
+from keras_applications.imagenet_utils import preprocess_input as _preprocess_input
 from tensorflow.keras.utils import get_source_inputs, get_file
 from tensorflow.keras.layers import UpSampling2D, Concatenate, Dense, Multiply, Add, Lambda, Input, Reshape
 from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Concatenate, BatchNormalization, ReLU, ZeroPadding2D, GlobalAveragePooling2D, GlobalMaxPooling2D, Softmax
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.backbones.layers import YoloConv2D, YoloDepthwiseConv2D, CustomBatchNormalization
 from yolo3.models.layers import compose, DarknetConv2D
 
@@ -330,4 +332,44 @@ def NanoNet(input_shape=None,
         model.load_weights(weights)
 
     return model
+
+
+def preprocess_input(x):
+    """
+    "mode" option description in preprocess_input
+    mode: One of "caffe", "tf" or "torch".
+        - caffe: will convert the images from RGB to BGR,
+            then will zero-center each color channel with
+            respect to the ImageNet dataset,
+            without scaling.
+        - tf: will scale pixels between -1 and 1,
+            sample-wise.
+        - torch: will scale pixels between 0 and 1 and then
+            will normalize each channel with respect to the
+            ImageNet dataset.
+    """
+    x = _preprocess_input(x, mode='tf', backend=K)
+
+    return x
+
+
+if __name__ == '__main__':
+    input_tensor = Input(shape=(None, None, 3), name='image_input')
+    #model = NanoNet(include_top=False, input_tensor=input_tensor, weights='imagenet')
+    model = NanoNet(include_top=True, input_shape=(224, 224, 3), weights='imagenet')
+    model.summary()
+    K.set_learning_phase(0)
+
+    import numpy as np
+    #from keras_applications.imagenet_utils import preprocess_input, decode_predictions
+    from tensorflow.keras.applications.resnet50 import decode_predictions
+    from keras_preprocessing import image
+
+    img = image.load_img('../../example/air.jpg', target_size=(224, 224))
+    x = image.img_to_array(img)
+    x = np.expand_dims(x, axis=0)
+    x = preprocess_input(x)
+
+    preds = model.predict(x)
+    print('Predicted:', decode_predictions(preds))
 
