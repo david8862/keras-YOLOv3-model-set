@@ -70,7 +70,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 1. Install requirements on Ubuntu 16.04/18.04:
 
 ```
-# apt install python3-opencv
+# apt install python3-opencv imagemagick
 # pip install Cython
 # pip install -r requirements.txt
 ```

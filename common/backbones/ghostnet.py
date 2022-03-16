@@ -146,7 +146,7 @@ def GhostModule(input_x, output_chs, kernel_size=1, ratio=2, dw_size=3, stride=(
                           padding= 'same',
                           act=act,
                           name = name + '_cheap_operation')
-    x = Concatenate(axis=3,name=name+'_concat')([x1,x2])
+    x = Concatenate(axis=3, name=name+'_concat')([x1,x2])
     return x
 
 

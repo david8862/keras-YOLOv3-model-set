@@ -10,7 +10,7 @@ from keras_applications.imagenet_utils import preprocess_input as _preprocess_in
 from tensorflow.keras.utils import get_source_inputs, get_file
 from tensorflow.keras.layers import Conv2D, MaxPool2D, GlobalMaxPooling2D, GlobalAveragePooling2D
 from tensorflow.keras.layers import BatchNormalization, Dropout, Lambda
-from tensorflow.keras.layers import Input, Activation, concatenate
+from tensorflow.keras.layers import Input, Activation, Concatenate
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
 import warnings
@@ -62,7 +62,7 @@ def fire_module(x, fire_id, squeeze=16, expand=64):
     right = Conv2D(expand, (3, 3), padding='same', name=s_id + exp3x3)(x)
     right = Activation('relu', name=s_id + relu + exp3x3)(right)
 
-    x = concatenate([left, right], axis=channel_axis, name=s_id + 'concat')
+    x = Concatenate(axis=channel_axis, name=s_id + 'concat')([left, right])
     return x
 
 
@@ -122,7 +122,7 @@ def SqueezeNet(include_top=True,
     x = fire_module(x, fire_id=9, squeeze=64, expand=256)
 
     if include_top:
-        # It's not obvious where to cut the network... 
+        # It's not obvious where to cut the network...
         # Could do the 8th or 9th layer... some work recommends cutting earlier layers.
 
         x = Dropout(0.5, name='drop9')(x)
