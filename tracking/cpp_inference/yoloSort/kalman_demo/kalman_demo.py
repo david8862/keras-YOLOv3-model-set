@@ -30,10 +30,14 @@ def kalman_test():
     # here x', y' is speed of x, y
     state_num = 4
     measure_num = 2
+    control_num = 0;
     dt = 0.1
 
     # create kalman filter object, 0 is control value number
-    kalman = cv2.KalmanFilter(state_num, measure_num, 0)
+    kalman = cv2.KalmanFilter(state_num, measure_num, control_num)
+
+    #############################################################
+    # Kalman filter param config
 
     # define state transition matrix, here we assume
     # uniform linear motion for both x and y:
@@ -44,11 +48,6 @@ def kalman_test():
     #
     # in form of matrix:
     #
-    # / x* \ = / 1 0 1 0 \ / x \
-    # | y* | = | 0 1 0 1 | | y |
-    # | x*'| = | 0 0 1 0 | | x'|
-    # \ y*'/ = \ 0 0 0 1 / \ y'/
-    #
     # / x* \ = / 1  0 dt  0 \ / x \
     # | y* | = | 0  1  0 dt | | y |
     # | x*'| = | 0  0  1  0 | | x'|
@@ -58,14 +57,34 @@ def kalman_test():
                                         [0,  0,  1,  0],
                                         [0,  0,  0,  1]], dtype=np.float32)
 
-    # initialize measurement matrix with diag(1)
+    # define measurement matrix. since state value is (x, y, x', y')
+    # and measurement value is (x, y), measurement would be:
+    # x* = x
+    # y* = y
+    #
+    # in form of matrix:
+    #
+    #                         / x \
+    # / x* \ = / 1  0  0  0 \ | y |
+    # \ y* / = \ 0  1  0  0 / | x'|
+    #                         \ y'/
+    #
     kalman.measurementMatrix = np.eye(measure_num, state_num, dtype=np.float32)
-    # initialize system noise matrix with diag(0.01)
+
+    # set process noise covariance matrix with diag(0.01)
     kalman.processNoiseCov = np.eye(state_num, dtype=np.float32) * 0.01
-    # initialize measurement noise matrix with diag(0.1)
+
+    # set measurement noise covariance matrix with diag(0.1)
     kalman.measurementNoiseCov = np.eye(measure_num, dtype=np.float32) * 0.1
-    # initialize minimum mean squared error matrix with diag(1)
+
+    # initialize error estimate covariance matrix with diag(1),
+    # which would be update during following loop
     kalman.errorCovPost = np.eye(state_num, dtype=np.float32)
+
+    # initialize state value with 0
+    kalman.statePost = np.zeros(state_num, dtype=np.float32)
+    #############################################################
+
 
     # prepare UI window
     cv2.namedWindow("Kalman")

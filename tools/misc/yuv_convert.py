@@ -156,8 +156,8 @@ def main():
 
         # save or show result
         if args.output_path:
-            os.makedirs(output_path, exist_ok=True)
-            output_file = os.path.join(output_path, os.path.splitext(os.path.basename(image_file))[0]+'.jpg')
+            os.makedirs(args.output_path, exist_ok=True)
+            output_file = os.path.join(args.output_path, os.path.splitext(os.path.basename(image_file))[0]+'.jpg')
             Image.fromarray(image).save(output_file)
         else:
             Image.fromarray(image).show()

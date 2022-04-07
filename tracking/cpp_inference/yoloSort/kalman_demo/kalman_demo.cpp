@@ -58,13 +58,14 @@ void kalmanTest(void)
     // here x', y' is speed of x, y
     const int stateNum = 4;
     const int measureNum = 2;
+    const int controlNum = 0;
     const float dt = 0.1;
 
     // create kalman filter object, 0 is control value number
-    cv::KalmanFilter kalman = cv::KalmanFilter(stateNum, measureNum, 0);
+    cv::KalmanFilter kalman = cv::KalmanFilter(stateNum, measureNum, controlNum);
 
-    // initialize measurement values with 0
-    cv::Mat measurement = cv::Mat::zeros(measureNum, 1, CV_32F);
+    ////////////////////////////////////////////////////////////////
+    // Kalman filter param config
 
     // define state transition matrix, here we assume
     // uniform linear motion for both x and y:
@@ -86,17 +87,37 @@ void kalmanTest(void)
             0,  0,  1,  0,
             0,  0,  0,  1);
 
-    // initialize measurement matrix with diag(1)
+    // define measurement matrix. since state value is (x, y, x', y')
+    // and measurement value is (x, y), measurement would be:
+    // x* = x
+    // y* = y
+    //
+    // in form of matrix:
+    //
+    //                         / x \
+    // / x* \ = / 1  0  0  0 \ | y |
+    // \ y* / = \ 0  1  0  0 / | x'|
+    //                         \ y'/
+    //
     cv::setIdentity(kalman.measurementMatrix, cv::Scalar::all(1));
-    // initialize system noise matrix with diag(0.01)
+
+    // set process noise covariance matrix with diag(0.01)
     cv::setIdentity(kalman.processNoiseCov, cv::Scalar::all(1e-2));
-    // initialize measurement noise matrix with diag(0.1)
+
+    // set measurement noise covariance matrix with diag(0.1)
     cv::setIdentity(kalman.measurementNoiseCov, cv::Scalar::all(1e-1));
-    // initialize minimum mean squared error matrix with diag(1)
+
+    // initialize error estimate covariance matrix with diag(1),
+    // which would be update during following loop
     cv::setIdentity(kalman.errorCovPost, cv::Scalar::all(1));
 
-    // initialize state value to random
+    // initialize state value with random
     randn(kalman.statePost, cv::Scalar::all(0), cv::Scalar::all(winHeight));
+
+    // initialize measurement values with 0
+    cv::Mat measurement = cv::Mat::zeros(measureNum, 1, CV_32F);
+    ////////////////////////////////////////////////////////////////
+
 
     // prepare UI window
     cv::namedWindow("Kalman");
