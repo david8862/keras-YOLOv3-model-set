@@ -444,9 +444,6 @@ def MobileViT(channels,
 
     # Load weights.
     if weights == 'imagenet':
-        if model_type == 's':
-            raise ValueError('No valid ImageNet pretrained weights for mobilevit_s now.')
-
         if include_top:
             model_name = ('mobilevit_' + model_type + '_weights_tf_dim_ordering_tf_kernels_256.h5')
             weight_path = BASE_WEIGHT_PATH + model_name

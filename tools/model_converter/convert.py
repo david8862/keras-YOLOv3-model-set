@@ -22,7 +22,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import (Conv2D, DepthwiseConv2D, Input, ZeroPadding2D, Add, Multiply, Lambda, Dropout,Reshape,
-                          UpSampling2D, MaxPooling2D, AveragePooling2D, Concatenate, Activation, GlobalAveragePooling2D)
+                          UpSampling2D, MaxPooling2D, AveragePooling2D, Dense, Flatten, Concatenate, Activation, GlobalAveragePooling2D)
 from tensorflow.keras.layers import LeakyReLU, ReLU
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.models import Model
@@ -121,6 +121,7 @@ def main(args):
     all_layers = []
 
     count = 0
+    fc_flag = False
     out_index = []
     anchors = None
     for section in cfg_parser.sections():
@@ -130,7 +131,7 @@ def main(args):
             size = int(cfg_parser[section]['size'])
             stride = int(cfg_parser[section]['stride'])
             pad = int(cfg_parser[section]['pad'])
-            activation = cfg_parser[section]['activation']
+            activation = cfg_parser[section]['activation'] if 'activation' in cfg_parser[section] else 'linear'
             batch_normalize = 'batch_normalize' in cfg_parser[section]
 
             padding = 'same' if pad == 1 and stride == 1 else 'valid'
@@ -266,6 +267,88 @@ def main(args):
                 prev_layer = act_layer
                 all_layers.append(act_layer)
 
+        elif section.startswith('connected'):
+            assert args.fixed_input_shape, 'Model with full-connected layer need to specify fixed input shape'
+            output_size = int(cfg_parser[section]['output'])
+            activation = cfg_parser[section]['activation']
+
+            prev_layer_shape = K.int_shape(prev_layer)
+
+            # TODO: This assumes channel last dim_ordering.
+            weights_shape = (np.prod(prev_layer_shape[1:]), output_size)
+            darknet_w_shape = (output_size, weights_shape[0])
+            weights_size = np.product(weights_shape)
+
+            print('full-connected', activation, weights_shape)
+
+            fc_bias = np.ndarray(
+                shape=(output_size,),
+                dtype='float32',
+                buffer=weights_file.read(output_size * 4))
+            count += output_size
+
+            fc_weights = np.ndarray(
+                shape=darknet_w_shape,
+                dtype='float32',
+                buffer=weights_file.read(weights_size * 4))
+            count += weights_size
+
+            # DarkNet fc_weights are serialized Caffe-style:
+            # (out_dim, in_dim)
+            # We would like to set these to Tensorflow order:
+            # (in_dim, out_dim)
+            # TODO: Add check for Theano dim ordering.
+            fc_weights = np.transpose(fc_weights, [1, 0])
+            fc_weights = [fc_weights, fc_bias]
+
+            # Handle activation.
+            act_fn = None
+            if activation == 'leaky':
+                pass  # Add advanced activation later.
+            elif activation == 'relu':
+                pass  # Add advanced activation later.
+            elif activation == 'mish':
+                pass  # Add advanced activation later.
+            elif activation == 'logistic':
+                pass  # Add advanced activation later.
+            elif activation != 'linear':
+                raise ValueError(
+                    'Unknown activation function `{}` in section {}'.format(
+                        activation, section))
+
+            if not fc_flag:
+                prev_layer = Flatten()(prev_layer)
+                fc_flag = True
+
+            # Create Full-Connect layer
+            fc_layer = Dense(
+                output_size,
+                kernel_regularizer=l2(weight_decay),
+                weights=fc_weights,
+                activation=act_fn,
+                name=format(section))(prev_layer)
+
+            prev_layer = fc_layer
+
+            if activation == 'linear':
+                all_layers.append(prev_layer)
+            elif activation == 'mish':
+                act_layer = Activation(mish)(prev_layer)
+                prev_layer = act_layer
+                all_layers.append(act_layer)
+            elif activation == 'leaky':
+                act_layer = LeakyReLU(alpha=0.1)(prev_layer)
+                prev_layer = act_layer
+                all_layers.append(act_layer)
+            elif activation == 'relu':
+                act_layer = ReLU()(prev_layer)
+                prev_layer = act_layer
+                all_layers.append(act_layer)
+            elif activation == 'logistic':
+                act_layer = Activation('sigmoid')(prev_layer)
+                prev_layer = act_layer
+                all_layers.append(act_layer)
+
         elif section.startswith('route'):
             ids = [int(i) for i in cfg_parser[section]['layers'].split(',')]
             layers = [all_layers[i] for i in ids]
@@ -360,6 +443,18 @@ def main(args):
             all_layers.append(UpSampling2D(stride)(prev_layer))
             prev_layer = all_layers[-1]
 
+        elif section.startswith('detection'):
+            classes = int(cfg_parser[section]['classes'])
+            coords = int(cfg_parser[section]['coords'])
+            rescore = int(cfg_parser[section]['rescore'])
+            side = int(cfg_parser[section]['side'])
+            num = int(cfg_parser[section]['num'])
+            reshape_layer = Reshape(
+                (side, side, classes + num * (coords + rescore))
+            )(prev_layer)
+            prev_layer = reshape_layer
+            all_layers.append(prev_layer)
+
         elif section.startswith('reorg'):
             block_size = int(cfg_parser[section]['stride'])
             assert block_size == 2, 'Only reorg with stride 2 supported.'
@@ -388,14 +483,15 @@ def main(args):
 
         elif (section.startswith('net') or section.startswith('cost') or
               section.startswith('softmax')):
-            pass
+            pass  # Configs not currently handled during models definition.
 
         else:
             raise ValueError(
                 'Unsupported section header type: {}'.format(section))
 
     # Create and save model.
-    if len(out_index)==0: out_index.append(len(all_layers)-1)
+    if len(out_index)==0:
+        out_index.append(len(all_layers)-1)
 
     if args.yolo4_reorder:
         # reverse the output tensor index for YOLOv4 cfg & weights,
@@ -404,6 +500,7 @@ def main(args):
 
     model = Model(inputs=input_layer, outputs=[all_layers[i] for i in out_index])
     print(model.summary())
+
     if args.weights_only:
         model.save_weights('{}'.format(output_path))
         print('Saved Keras weights to {}'.format(output_path))
