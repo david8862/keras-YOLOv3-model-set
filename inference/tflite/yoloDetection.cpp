@@ -836,6 +836,12 @@ void RunInference(Settings* s) {
   resultOs << "\n";
   resultOs.close();
 
+  // Release buffer memory
+  if (letterboxImage) {
+      free(letterboxImage);
+      letterboxImage = nullptr;
+  }
+
   return;
 }
 

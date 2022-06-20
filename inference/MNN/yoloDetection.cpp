@@ -1228,6 +1228,14 @@ void RunInference(Settings* s) {
     resultOs << "\n";
     resultOs.close();
 
+    // Release buffer memory
+    if (letterboxImage) {
+        free(letterboxImage);
+        letterboxImage = nullptr;
+    }
+
+    delete dataTensor;
+
     // Release session and model
     net->releaseSession(session);
     //net->releaseModel();
