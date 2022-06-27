@@ -142,12 +142,21 @@ def yolo_predict_tflite(interpreter, image, anchors, num_classes, conf_threshold
 def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_threshold, elim_grid_sense, v5_decode):
     # assume only 1 input tensor for image
     input_tensor = interpreter.getSessionInput(session)
-    # get input shape
-    input_shape = input_tensor.getShape()
-    if input_tensor.getDimensionType() == MNN.Tensor_DimensionType_Tensorflow:
-        batch, height, width, channel = input_shape
-    elif input_tensor.getDimensionType() == MNN.Tensor_DimensionType_Caffe:
-        batch, channel, height, width = input_shape
+
+    # get & resize input shape
+    input_shape = list(input_tensor.getShape())
+    if input_shape[0] == 0:
+        input_shape[0] = 1
+        interpreter.resizeTensor(input_tensor, tuple(input_shape))
+        interpreter.resizeSession(session)
+
+    # check if input layout is NHWC or NCHW
+    if input_shape[1] == 3:
+        #print("NCHW input layout")
+        batch, channel, height, width = input_shape  #NCHW
+    elif input_shape[-1] == 3:
+        #print("NHWC input layout")
+        batch, height, width, channel = input_shape  #NHWC
     else:
         # should be MNN.Tensor_DimensionType_Caffe_C4, unsupported now
         raise ValueError('unsupported input tensor dimension type')
@@ -222,6 +231,22 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
         output_shape = output_tensor.getShape()
         output_elementsize = reduce(mul, output_shape)
 
+        # check output channel to confirm if output layout
+        # is NHWC or NCHW
+        if len(anchors) == 5:
+            out_channel = (num_classes + 5) * 5
+        else:
+            out_channel = (num_classes + 5) * (len(anchors)//3)
+
+        if output_shape[1] == out_channel:
+            #print("NCHW output layout")
+            pass
+        elif output_shape[-1] == out_channel:
+            #print("NHWC output layout")
+            pass
+        else:
+            raise ValueError('invalid output layout or shape')
+
         assert output_tensor.getDataType() == MNN.Halide_Type_Float
 
         # copy output tensor to host, for further postprocess
@@ -235,7 +260,7 @@ def yolo_predict_mnn(interpreter, session, image, anchors, num_classes, conf_thr
         output_data = np.array(tmp_output.getData(), dtype=float).reshape(output_shape)
         # our postprocess code based on TF NHWC layout, so if the output format
         # doesn't match, we need to transpose
-        if output_tensor.getDimensionType() == MNN.Tensor_DimensionType_Caffe:
+        if output_tensor.getDimensionType() == MNN.Tensor_DimensionType_Caffe and output_shape[1] == out_channel:
             output_data = output_data.transpose((0,2,3,1))
         elif output_tensor.getDimensionType() == MNN.Tensor_DimensionType_Caffe_C4:
             raise ValueError('unsupported output tensor dimension type')
@@ -317,6 +342,27 @@ def yolo_predict_onnx(model, image, anchors, num_classes, conf_threshold, elim_g
 
     model_input_shape = (height, width)
 
+    output_tensors = []
+    for i, output_tensor in enumerate(model.get_outputs()):
+        output_tensors.append(output_tensor)
+
+    # check output channel to confirm if output layout
+    # is NHWC or NCHW
+    if len(anchors) == 5:
+        out_channel = (num_classes + 5) * 5
+    else:
+        out_channel = (num_classes + 5) * (len(anchors)//3)
+
+    if output_tensors[0].shape[1] == out_channel:
+        #print("NCHW output layout")
+        pass
+    elif output_tensors[0].shape[-1] == out_channel:
+        #print("NHWC output layout")
+        pass
+    else:
+        raise ValueError('invalid output layout or shape')
+
+
     # prepare input image
     image_data = preprocess_image(image, model_input_shape)
     #origin image shape, in (height, width) format
@@ -328,6 +374,10 @@ def yolo_predict_onnx(model, image, anchors, num_classes, conf_threshold, elim_g
 
     feed = {input_tensors[0].name: image_data}
     prediction = model.run(None, feed)
+
+    if output_tensors[0].shape[1] == out_channel:
+        # transpose prediction array for NCHW layout
+        prediction = [p.transpose((0,2,3,1)) for p in prediction]
 
     if len(anchors) == 5:
         # YOLOv2 use 5 anchors and have only 1 prediction

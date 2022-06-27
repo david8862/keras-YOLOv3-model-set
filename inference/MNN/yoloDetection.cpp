@@ -1030,9 +1030,6 @@ void RunInference(Settings* s) {
     config.backendConfig = &bnconfig;
 
     auto session = net->createSession(config);
-    // since we don't need to create other sessions any more,
-    // just release model data to save memory
-    net->releaseModel();
 
     // get input tensor info
     // assume only 1 input tensor (image_input)
@@ -1050,13 +1047,16 @@ void RunInference(Settings* s) {
 
     // assume input tensor is Tensorflow format, NHWC
     // to align with the input image format
-    MNN_ASSERT(input_dim_type == Tensor::TENSORFLOW);
+    //MNN_ASSERT(input_dim_type == Tensor::TENSORFLOW);
 
-    //auto shape = image_input->shape();
-    //shape[0] = 1;
-    //net->resizeTensor(image_input, shape);
-    //net->resizeSession(session);
+    auto shape = image_input->shape();
+    shape[0] = 1;
+    net->resizeTensor(image_input, shape);
+    net->resizeSession(session);
 
+    // since we don't need to create other sessions any more,
+    // just release model data to save memory
+    net->releaseModel();
 
     // get output tensor info (e.g. for YOLOv3 arch):
     //image_input: 1 x 416 x 416 x 3
@@ -1140,8 +1140,15 @@ void RunInference(Settings* s) {
     // Copy output tensors to host, for further postprocess
     std::vector<std::shared_ptr<Tensor>> featureTensors;
     for(auto output : outputs) {
-        MNN_PRINT("output tensor name: %s\n", output.first.c_str());
+        //MNN_PRINT("output tensor name: %s\n", output.first.c_str());
         auto output_tensor = output.second;
+        int output_width = output_tensor->width();
+        int output_height = output_tensor->height();
+        int output_channel = output_tensor->channel();
+        int output_dim_type = output_tensor->getDimensionType();
+        MNN_PRINT("output tensor: name:%s, width:%d, height:%d, channel:%d, dim_type:%s\n", output.first.c_str(), output_width, output_height, output_channel, dim_type_string[output_dim_type].c_str());
+
+        //auto output_tensor = output.second;
         auto dim_type = output_tensor->getDimensionType();
         if (output_tensor->getType().code != halide_type_float) {
             dim_type = Tensor::TENSORFLOW;
