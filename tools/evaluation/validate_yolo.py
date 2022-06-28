@@ -218,7 +218,7 @@ def validate_yolo_model_mnn(interpreter, session, image_file, anchors, class_nam
         output_data = np.array(tmp_output.getData(), dtype=float).reshape(output_shape)
         # our postprocess code based on TF NHWC layout, so if the output format
         # doesn't match, we need to transpose
-        if output_tensor.getDimensionType() == MNN.Tensor_DimensionType_Caffe and output_shape[1] == out_channel:
+        if output_tensor.getDimensionType() == MNN.Tensor_DimensionType_Caffe and output_shape[1] == out_channel: # double check if it's NCHW format
             output_data = output_data.transpose((0,2,3,1))
         elif output_tensor.getDimensionType() == MNN.Tensor_DimensionType_Caffe_C4:
             raise ValueError('unsupported output tensor dimension type')

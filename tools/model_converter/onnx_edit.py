@@ -22,8 +22,15 @@ def onnx_edit(input_model, output_model):
             if n.op_type == 'Transpose' and len(n.output) == 1 and out.name == n.output[0]:
                 assert len(n.input) == 1, 'invalid input number for Transpose.'
 
-                # update output tensor name
-                out.name = n.input[0]
+                # Option 1: find OP before the "Transpose", and update its output
+                # tensor name to the graph output
+                for n_prev in node:
+                    if len(n_prev.output) == 1 and n_prev.output[0] == n.input[0]:
+                        print('Found the node before Transpose: {}, will use its output as final output'.format(n_prev.name))
+                        n_prev.output[0] = out.name
+
+                # Option 2: change graph output to the OP output before "Transpose"
+                #out.name = n.input[0]
 
                 # update output shape from NHWC to NCHW, since we delete a "Transpose"
                 output_shape = out.type.tensor_type.shape.dim
