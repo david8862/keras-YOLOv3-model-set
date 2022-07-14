@@ -35,6 +35,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] Softmax focal classification loss
 - [x] GIoU localization loss
 - [x] DIoU localization loss ([paper](https://arxiv.org/abs/1911.08287))
+- [x] SIoU localization loss ([paper](https://arxiv.org/abs/2205.12740))
 - [x] Binary focal loss for objectness (experimental)
 - [x] Label smoothing for classification loss
 
