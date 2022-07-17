@@ -34,7 +34,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 - [x] Binary focal classification loss
 - [x] Softmax focal classification loss
 - [x] GIoU localization loss
-- [x] DIoU localization loss ([paper](https://arxiv.org/abs/1911.08287))
+- [x] DIoU/CIoU localization loss ([paper](https://arxiv.org/abs/1911.08287))
 - [x] SIoU localization loss ([paper](https://arxiv.org/abs/2205.12740))
 - [x] Binary focal loss for objectness (experimental)
 - [x] Label smoothing for classification loss
@@ -315,7 +315,7 @@ optional arguments:
                         Whether to save checkpoint with best evaluation result
 ```
 
-**NOTE**: if enable "--elim_grid_sense" feature during training, recommended to also use it in following demo/inference step.
+**NOTE**: if enable `--elim_grid_sense` feature during training, recommended to also use it in following demo/inference step.
 
 Following is a reference training config cmd:
 ```
@@ -342,7 +342,7 @@ We need to dump out inference model from training checkpoint for eval or demo. F
 # python yolo.py --model_type=yolo3_mobilenet_lite --weights_path=logs/000/<checkpoint>.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_input_shape=416x416 --dump_model --output_model_file=model.h5
 ```
 
-Change model_type, anchors file & class file for different training mode. If "--model_pruning" was added in training, you also need to use "--pruning_model" here for dumping out the pruned model.
+Change model_type, anchors file & class file for different training mode. If `--model_pruning` was added in training, you also need to use `--pruning_model` here for dumping out the pruned model.
 
 **NOTE**: Now you can dump out a non-square input shape (e.g. using `--model_input_shape=320x416`) model and do inference as normal, but the input height & weights must be multiples of 32.
 
@@ -403,7 +403,7 @@ optional arguments:
 
 P.S. for VOC style dataset, we also provide [pascal_voc_to_coco.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/dataset_converter/pascal_voc_to_coco.py) to generate COCO GT annotation.
 
-If you enable "--eval_online" option in train.py, a default Pascal VOC mAP evaluation on validation dataset will be executed during training. But that may cost more time for train process.
+If you enable `--eval_online` option in train.py, a default Pascal VOC mAP evaluation on validation dataset will be executed during training. But that may cost more time for train process.
 
 
 Following is a sample result trained on Mobilenet YOLOv3 Lite model with PascalVOC dataset (using a reasonable score threshold=0.1):
@@ -467,7 +467,7 @@ video detection mode
 ```
 # python yolo.py --model_type=yolo3_mobilenet_lite --weights_path=model.h5 --anchors_path=configs/yolo3_anchors.txt --classes_path=configs/voc_classes.txt --model_input_shape=416x416 --input=test.mp4
 ```
-For video detection mode, you can use "input=0" to capture live video from web camera and "output=<video name>" to dump out detection result to another video
+For video detection mode, you can use `--input=0` to capture live video from web camera and `--output=<video name>` to dump out detection result to another video
 
 ### Tensorflow model convert
 Using [keras_to_tensorflow.py](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tools/model_converter/keras_to_tensorflow.py) to convert the tf.keras .h5 model to tensorflow frozen pb model:
@@ -487,6 +487,7 @@ Using [keras_to_onnx.py](https://github.com/david8862/keras-YOLOv3-model-set/tre
     --output_file="path/to/save/model.onnx"
     --op_set=11
 ```
+by default, the converted ONNX model follows TF NHWC layout. You can also use `--inputs_as_nchw` to convert input layout to NCHW, and use [onnx_edit.py](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/tools/model_converter/onnx_edit.py) to edit generated ONNX model to convert output layout to NCHW.
 
 You can also use [eval.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/eval.py) to do evaluation on the pb & onnx inference model
 
