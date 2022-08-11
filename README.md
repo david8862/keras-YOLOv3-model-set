@@ -496,7 +496,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
 
 
 ### TODO
-- [ ] Gaussian YOLOv3 loss
+- [ ] Decoupled head
 - [ ] support Quantization aware training
 - [ ] provide more imagenet pretrained backbone (e.g. shufflenet, shufflenetv2), see [Training backbone](https://github.com/david8862/keras-YOLOv3-model-set/tree/master/common/backbones/imagenet_training)
 
@@ -509,7 +509,7 @@ See [on-device inference](https://github.com/david8862/keras-YOLOv3-model-set/tr
     - tensorflow 2.0.0/tensorflow 1.15.0
     - tf.keras 2.2.4-tf
 
-2. Default YOLOv4/v3/v2 anchors are used. If you want to use your own anchors, probably some changes are needed. [kmeans.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/misc/kmeans.py) could be used to do K-Means anchor clustering on your dataset
+2. Default YOLOv4/v3/v2 anchors are used. If you want to use your own anchors, probably some changes are needed. [kmeans.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/misc/kmeans.py) or [kmeans_evolve.py](https://github.com/david8862/keras-YOLOv3-model-set/blob/master/tools/misc/kmeans_evolve.py) could be used to do K-Means anchor clustering on your dataset
 
 3. Imagenet pretrained weights for backbone is automatically loaded when training, so recommended to freeze backbone layers for several epochs in transfer traning stage.
 

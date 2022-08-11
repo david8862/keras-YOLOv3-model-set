@@ -212,6 +212,8 @@ def yolo5_data_generator(annotation_lines, batch_size, input_shape, anchors, num
 
 def yolo5_data_generator_wrapper(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment=None, rescale_interval=-1, multi_anchor_assign=False, **kwargs):
     n = len(annotation_lines)
-    if n==0 or batch_size<=0: return None
+    if n == 0 or batch_size <= 0:
+        return None
+
     return yolo5_data_generator(annotation_lines, batch_size, input_shape, anchors, num_classes, enhance_augment, rescale_interval, multi_anchor_assign)
 

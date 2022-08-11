@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Retrain the YOLO model for your own dataset.
+Train YOLO model for your own dataset.
 """
 import os, time, random, argparse
 import numpy as np
@@ -30,10 +30,8 @@ optimize_tf_gpu(tf, K)
 
 
 def main(args):
-    annotation_file = args.annotation_file
     log_dir = os.path.join('logs', '000')
-    classes_path = args.classes_path
-    class_names = get_classes(classes_path)
+    class_names = get_classes(args.classes_path)
     num_classes = len(class_names)
 
     anchors = get_anchors(args.anchors_path)
@@ -65,7 +63,7 @@ def main(args):
     callbacks = [logging, checkpoint, reduce_lr, early_stopping, terminate_on_nan, checkpoint_clean]
 
     # get train&val dataset
-    dataset = get_dataset(annotation_file)
+    dataset = get_dataset(args.annotation_file)
     if args.val_annotation_file:
         val_dataset = get_dataset(args.val_annotation_file)
         num_train = len(dataset)
