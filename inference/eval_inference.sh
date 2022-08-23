@@ -20,19 +20,23 @@ fi
 IMAGE_LIST=$(ls $IMAGE_PATH)
 IMAGE_NUM=$(ls $IMAGE_PATH | wc -l)
 
-#prepare process bar
+# prepare process bar
 i=0
 ICON_ARRAY=("\\" "|" "/" "-")
 
-#clean result file first
+# clean result file first
 rm -rf $RESULT_FILE
 
 for IMAGE in $IMAGE_LIST
 do
     ./yoloDetection -m $MODEL_FILE -i $IMAGE_PATH"/"$IMAGE -a $ANCHOR_FILE -l $CLASS_FILE -n $CONF_THRD -r $RESULT_FILE -t 4 -c 1 -w 1 2>&1 >> /dev/null
-    #update process bar
+    # update process bar
     let index=i%4
-    printf "inference process: %d/%d [%c]\r" "$i" "$IMAGE_NUM" "${ICON_ARRAY[$index]}"
+    let percent=i*100/IMAGE_NUM
+    let num=percent/2
+    bar=$(seq -s "#" $num | tr -d "[:digit:]")
+    #printf "inference process: %d/%d [%c]\r" "$i" "$IMAGE_NUM" "${ICON_ARRAY[$index]}"
+    printf "inference process: %d/%d [%-50s] %d%% \r" "$i" "$IMAGE_NUM" "$bar" "$percent"
     let i=i+1
 done
 printf "\nDone\n"

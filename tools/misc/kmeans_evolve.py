@@ -10,6 +10,7 @@ import os, sys, argparse
 import numpy as np
 from PIL import Image
 from scipy.cluster.vq import kmeans
+from sklearn.cluster import KMeans
 import warnings
 from tqdm import tqdm
 
@@ -210,7 +211,10 @@ def kmean_anchors(dataset, num_anchors, img_size, ratio_threshold=4.0, generatio
     bbox_std = bbox_wh.std(axis=0)
 
     # kmeans clustering to get new anchors
-    anchors, dist = kmeans(bbox_wh/bbox_std, num_anchors, iter=30)  # points, mean distance
+    anchors, _ = kmeans(bbox_wh/bbox_std, num_anchors, iter=30)  # points, mean distance
+    #kmeans = KMeans(n_clusters=num_anchors, init='k-means++', n_init=10, max_iter=30).fit(bbox_wh/bbox_std)
+    #anchors = kmeans.cluster_centers_
+
     anchors *= bbox_std
 
     # sort anchors with size, from small to large

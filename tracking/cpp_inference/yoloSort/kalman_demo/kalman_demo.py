@@ -48,10 +48,10 @@ def kalman_test():
     #
     # in form of matrix:
     #
-    # / x* \ = / 1  0 dt  0 \ / x \
+    # / x* \   / 1  0 dt  0 \ / x \
     # | y* | = | 0  1  0 dt | | y |
-    # | x*'| = | 0  0  1  0 | | x'|
-    # \ y*'/ = \ 0  0  0  1 / \ y'/
+    # | x*'|   | 0  0  1  0 | | x'|
+    # \ y*'/   \ 0  0  0  1 / \ y'/
     kalman.transitionMatrix = np.array([[1,  0, dt,  0],
                                         [0,  1,  0, dt],
                                         [0,  0,  1,  0],
@@ -66,7 +66,7 @@ def kalman_test():
     #
     #                         / x \
     # / x* \ = / 1  0  0  0 \ | y |
-    # \ y* / = \ 0  1  0  0 / | x'|
+    # \ y* /   \ 0  1  0  0 / | x'|
     #                         \ y'/
     #
     kalman.measurementMatrix = np.eye(measure_num, state_num, dtype=np.float32)

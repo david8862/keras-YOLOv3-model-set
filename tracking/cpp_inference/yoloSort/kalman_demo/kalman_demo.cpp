@@ -76,10 +76,10 @@ void kalmanTest(void)
     //
     // in form of matrix:
     //
-    // / x* \ = / 1  0 dt  0 \ / x \
+    // / x* \   / 1  0 dt  0 \ / x \
     // | y* | = | 0  1  0 dt | | y |
-    // | x*'| = | 0  0  1  0 | | x'|
-    // \ y*'/ = \ 0  0  0  1 / \ y'/
+    // | x*'|   | 0  0  1  0 | | x'|
+    // \ y*'/   \ 0  0  0  1 / \ y'/
     //
     kalman.transitionMatrix = (cv::Mat_<float>(stateNum, stateNum) <<
             1,  0, dt,  0,
@@ -96,7 +96,7 @@ void kalmanTest(void)
     //
     //                         / x \
     // / x* \ = / 1  0  0  0 \ | y |
-    // \ y* / = \ 0  1  0  0 / | x'|
+    // \ y* /   \ 0  1  0  0 / | x'|
     //                         \ y'/
     //
     cv::setIdentity(kalman.measurementMatrix, cv::Scalar::all(1));
