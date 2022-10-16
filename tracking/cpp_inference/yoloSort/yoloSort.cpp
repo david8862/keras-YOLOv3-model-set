@@ -974,7 +974,7 @@ uint8_t* letterbox_resize(uint8_t* inputImage, int image_width, int image_height
 }
 
 
-template <class T>
+template <typename T>
 void fill_data(T* out, uint8_t* in, int input_width, int input_height,
             int input_channels, Settings* s) {
   auto output_number_of_pixels = input_height * input_width * input_channels;

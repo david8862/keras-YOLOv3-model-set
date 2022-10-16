@@ -2,7 +2,7 @@
 
 Here are some C++ implementation of the on-device inference for trained YOLOv4/v3/v2 inference model, including forward propagation of the model, YOLO postprocess and bounding box NMS. Generally it should support all YOLOv4/v3/v2 related archs and all kinds of backbones & head. Now we have 2 approaches with different inference engine for that:
 
-* Tensorflow-Lite (verified on commit id: 1b8f5bc8011a1e85d7a110125c852a4f431d0f59)
+* Tensorflow-Lite (verified on tag: v2.6.0)
 * [MNN](https://github.com/alibaba/MNN) from Alibaba (verified on release: [1.0.0](https://github.com/alibaba/MNN/releases/tag/1.0.0))
 
 
@@ -165,9 +165,74 @@ We can do either native compile for X86 or cross-compile for ARM
 ```
 # git clone https://github.com/tensorflow/tensorflow <Path_to_TF>
 # cd <Path_to_TF>
+# git checkout v2.6.0
 # ./tensorflow/lite/tools/make/download_dependencies.sh
 # make -f tensorflow/lite/tools/make/Makefile   #for X86 native compile
 # ./tensorflow/lite/tools/make/build_rpi_lib.sh #for ARM cross compile, e.g Rasperberry Pi
+```
+
+you can also create your own build script for new ARM platform, like:
+
+```shell
+# vim ./tensorflow/lite/tools/make/build_my_arm_lib.sh
+
+#!/bin/bash -x
+set -e
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/../../../.."
+make CC_PREFIX=/root/toolchain/aarch64-linux-gnu/bin/aarch64-linux-gnu- -j 3 -f tensorflow/lite/tools/make/Makefile TARGET=myarm TARGET_ARCH=aarch64 $@
+```
+
+**NOTE:**
+* Using Makefile to build TensorFlow Lite is deprecated since Aug 2021. So v2.6.0 should be the last major version to support Makefile build (cmake is enabled on new version)
+* by default TF-Lite build only generate static lib (.a), but we can do minor change in Makefile to generate .so shared lib together, as follow:
+
+```diff
+diff --git a/tensorflow/lite/tools/make/Makefile b/tensorflow/lite/tools/make/Makefile
+index 662c6bb5129..83219a42845 100644
+--- a/tensorflow/lite/tools/make/Makefile
++++ b/tensorflow/lite/tools/make/Makefile
+@@ -99,6 +99,7 @@ endif
+ # This library is the main target for this makefile. It will contain a minimal
+ # runtime that can be linked in to other programs.
+ LIB_NAME := libtensorflow-lite.a
++SHARED_LIB_NAME := libtensorflow-lite.so
+
+ # Benchmark static library and binary
+ BENCHMARK_LIB_NAME := benchmark-lib.a
+@@ -301,6 +302,7 @@ BINDIR := $(GENDIR)bin/
+ LIBDIR := $(GENDIR)lib/
+
+ LIB_PATH := $(LIBDIR)$(LIB_NAME)
++SHARED_LIB_PATH := $(LIBDIR)$(SHARED_LIB_NAME)
+ BENCHMARK_LIB := $(LIBDIR)$(BENCHMARK_LIB_NAME)
+ BENCHMARK_BINARY := $(BINDIR)$(BENCHMARK_BINARY_NAME)
+ BENCHMARK_PERF_OPTIONS_BINARY := $(BINDIR)$(BENCHMARK_PERF_OPTIONS_BINARY_NAME)
+@@ -344,7 +346,7 @@ $(OBJDIR)%.o: %.c
+        $(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+ # The target that's compiled if there's no command-line arguments.
+-all: $(LIB_PATH)  $(MINIMAL_BINARY) $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY)
++all: $(LIB_PATH) $(SHARED_LIB_PATH) $(MINIMAL_BINARY) $(BENCHMARK_BINARY) $(BENCHMARK_PERF_OPTIONS_BINARY)
+
+ # The target that's compiled for micro-controllers
+ micro: $(LIB_PATH)
+@@ -361,7 +363,14 @@ $(LIB_PATH): tensorflow/lite/experimental/acceleration/configuration/configurati
+        @mkdir -p $(dir $@)
+        $(AR) $(ARFLAGS) $(LIB_PATH) $(LIB_OBJS)
+
+-lib: $(LIB_PATH)
++$(SHARED_LIB_PATH): tensorflow/lite/schema/schema_generated.h $(LIB_OBJS)
++       @mkdir -p $(dir $@)
++       $(CXX) $(CXXFLAGS) -shared -o $(SHARED_LIB_PATH) $(LIB_OBJS)
++$(SHARED_LIB_PATH): tensorflow/lite/experimental/acceleration/configuration/configuration_generated.h $(LIB_OBJS)
++       @mkdir -p $(dir $@)
++       $(CXX) $(CXXFLAGS) -shared -o $(SHARED_LIB_PATH) $(LIB_OBJS)
++
++lib: $(LIB_PATH) $(SHARED_LIB_PATH)
+
+ $(MINIMAL_BINARY): $(MINIMAL_OBJS) $(LIB_PATH)
+        @mkdir -p $(dir $@)
 ```
 
 2. Build demo inference application

@@ -598,7 +598,7 @@ uint8_t* letterbox_resize(uint8_t* inputImage, int image_width, int image_height
 }
 
 
-template <class T>
+template <typename T>
 void fill_data(T* out, uint8_t* in, int input_width, int input_height,
             int input_channels, Settings* s) {
   auto output_number_of_pixels = input_height * input_width * input_channels;
@@ -674,13 +674,37 @@ void RunInference(Settings* s) {
 
   // get input dimension from the input tensor metadata
   TfLiteIntArray* dims = interpreter->tensor(input)->dims;
+  // check input dimension
+  assert(dims->size == 4);
+
   int input_batch = dims->data[0];
   int input_height = dims->data[1];
   int input_width = dims->data[2];
   int input_channels = dims->data[3];
 
+  std::vector<std::string> tensor_type_string = {"kTfLiteNoType",
+                                                 "kTfLiteFloat32",
+                                                 "kTfLiteInt32",
+                                                 "kTfLiteUInt8",
+                                                 "kTfLiteInt64",
+                                                 "kTfLiteString",
+                                                 "kTfLiteBool",
+                                                 "kTfLiteInt16",
+                                                 "kTfLiteComplex64",
+                                                 "kTfLiteInt8",
+                                                 "kTfLiteFloat16",
+                                                 "kTfLiteFloat64",
+                                                 "kTfLiteComplex128",
+                                                 "kTfLiteUInt64",
+                                                 "kTfLiteResource",
+                                                 "kTfLiteVariant",
+                                                 "kTfLiteUInt32"
+                                                };
+
   if (s->verbose) LOG(INFO) << "input tensor info: "
-                            << "type " << interpreter->tensor(input)->type << ", "
+                            << "name " << interpreter->tensor(input)->name << ", "
+                            << "type " << tensor_type_string[interpreter->tensor(input)->type] << ", "
+                            << "dim_size " << interpreter->tensor(input)->dims->size << ", "
                             << "batch " << input_batch << ", "
                             << "height " << input_height << ", "
                             << "width " << input_width << ", "
@@ -755,6 +779,8 @@ void RunInference(Settings* s) {
   for (int i = 0; i < outputs.size(); i++) {
       int output = interpreter->outputs()[i];
       TfLiteIntArray* output_dims = interpreter->tensor(output)->dims;
+      // check output dimension
+      assert(output_dims->size == 4);
 
       int output_batch = output_dims->data[0];
       int output_height = output_dims->data[1];
@@ -763,7 +789,8 @@ void RunInference(Settings* s) {
 
       if (s->verbose) LOG(INFO) << "output tensor info: "
                                 << "name " << interpreter->tensor(output)->name << ", "
-                                << "type " << interpreter->tensor(output)->type << ", "
+                                << "type " << tensor_type_string[interpreter->tensor(output)->type] << ", "
+                                << "dim_size " << interpreter->tensor(output)->dims->size << ", "
                                 << "batch " << output_batch << ", "
                                 << "height " << output_height << ", "
                                 << "width " << output_width << ", "
@@ -952,7 +979,6 @@ int Main(int argc, char** argv) {
       default:
         /* getopt_long already printed an error message. */
         display_usage();
-        exit(-1);
         exit(-1);
     }
   }

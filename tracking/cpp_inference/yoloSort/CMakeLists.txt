@@ -5,7 +5,7 @@ SET(CMAKE_BUILD_TYPE "Debug")
 #SET(CMAKE_BUILD_TYPE "Release")
 
 #### specify the compiler flag
-SET(CMAKE_CXX_FLAGS  "-std=c++11 -O2")
+SET(CMAKE_CXX_FLAGS  "-std=c++14 -O2")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
 

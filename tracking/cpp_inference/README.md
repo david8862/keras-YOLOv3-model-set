@@ -16,7 +16,7 @@ Refer to [YOLO on-device inference](https://github.com/david8862/keras-YOLOv3-mo
 # cd opencv
 # git checkout 3.4.2
 # mkdir build && cd build
-# cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=<opencv path>/build/install/ [-DCMAKE_TOOLCHAIN_FILE=<cross-compile toolchain file>] ..
+# cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=<opencv path>/build/install/ [-DCMAKE_TOOLCHAIN_FILE=<cross-compile toolchain file>] ..
 # make -j4
 # make install
 ```
