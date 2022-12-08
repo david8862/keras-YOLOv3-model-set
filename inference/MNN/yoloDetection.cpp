@@ -4,13 +4,9 @@
 //
 //  Created by Xiaobin Zhang on 2019/09/20.
 //
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#include "MNN/ImageProcess.hpp"
-#include "MNN/Interpreter.hpp"
-#define MNN_OPEN_TIME_TRACE
 #include <algorithm>
 #include <fstream>
 #include <functional>
@@ -24,8 +20,13 @@
 #include <getopt.h>
 #include <string.h>
 #include <sys/time.h>
+
+#define MNN_OPEN_TIME_TRACE
+#include "MNN/ImageProcess.hpp"
+#include "MNN/Interpreter.hpp"
 #include "MNN/AutoTime.hpp"
 #include "MNN/ErrorCode.hpp"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define STB_IMAGE_RESIZE_IMPLEMENTATION

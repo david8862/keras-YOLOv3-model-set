@@ -33,7 +33,7 @@ def load_input_model(input_model_path, input_json_path=None, input_yaml_path=Non
         raise FileNotFoundError(
             'Model file `{}` does not exist.'.format(input_model_path))
     try:
-        model = load_model(input_model_path, custom_objects=custom_objects)
+        model = load_model(input_model_path, compile=False, custom_objects=custom_objects)
         return model
     except FileNotFoundError as err:
         logging.error('Input mode file (%s) does not exist.', input_model_path)

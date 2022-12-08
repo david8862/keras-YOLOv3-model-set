@@ -26,7 +26,7 @@ def post_train_quant_convert(keras_model_file, annotation_file, sample_num, mode
 
     custom_object_dict = get_custom_objects()
 
-    model = load_model(keras_model_file, custom_objects=custom_object_dict)
+    model = load_model(keras_model_file, compile=False, custom_objects=custom_object_dict)
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
 
     def data_generator():

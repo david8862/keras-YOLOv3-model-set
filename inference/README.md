@@ -26,7 +26,7 @@ Refer to [MNN build guide](https://www.yuque.com/mnn/cn/build_linux), we need to
 # ./tools/script/get_model.sh  # optional
 # mkdir build && cd build
 # cmake [-DCMAKE_TOOLCHAIN_FILE=<cross-compile toolchain file>]
-        [-DMNN_BUILD_QUANTOOLS=ON -DMNN_BUILD_CONVERTER=ON -DMNN_BUILD_BENCHMARK=ON -DMNN_BUILD_TRAIN=ON -MNN_BUILD_TRAIN_MINI=ON -MNN_USE_OPENCV=OFF] ..
+        [-DMNN_BUILD_QUANTOOLS=ON -DMNN_BUILD_CONVERTER=ON -DMNN_BUILD_BENCHMARK=ON -DMNN_BUILD_TRAIN=ON -DMNN_BUILD_TRAIN_MINI=ON -DMNN_USE_OPENCV=OFF] ..
         && make -j4
 
 ### MNN OpenCL backend build

@@ -22,7 +22,7 @@ def onnx_convert_old(keras_model_file, output_file, op_set):
     """
     import keras2onnx
     custom_object_dict = get_custom_objects()
-    model = load_model(keras_model_file, custom_objects=custom_object_dict)
+    model = load_model(keras_model_file, compile=False, custom_objects=custom_object_dict)
 
     # convert to onnx model
     onnx_model = keras2onnx.convert_keras(model, model.name, custom_op_conversions=custom_object_dict, target_opset=op_set)
@@ -34,7 +34,7 @@ def onnx_convert_old(keras_model_file, output_file, op_set):
 def onnx_convert(keras_model_file, output_file, op_set, inputs_as_nchw):
     import tf2onnx
     custom_object_dict = get_custom_objects()
-    model = load_model(keras_model_file, custom_objects=custom_object_dict)
+    model = load_model(keras_model_file, compile=False, custom_objects=custom_object_dict)
 
     # assume only 1 input tensor for image
     assert len(model.inputs) == 1, 'invalid input tensor number.'
@@ -57,7 +57,7 @@ def onnx_convert_with_savedmodel(keras_model_file, output_file, op_set, inputs_a
         raise ValueError('savedmodel convert only support in TF 2.x env')
 
     custom_object_dict = get_custom_objects()
-    model = load_model(keras_model_file, custom_objects=custom_object_dict)
+    model = load_model(keras_model_file, compile=False, custom_objects=custom_object_dict)
 
     # assume only 1 input tensor for image
     assert len(model.inputs) == 1, 'invalid input tensor number.'

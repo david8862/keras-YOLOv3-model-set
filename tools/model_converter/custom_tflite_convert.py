@@ -219,7 +219,7 @@ def _convert_tf2_model(flags):
     converter = lite.TFLiteConverterV2.from_saved_model(flags.saved_model_dir)
   elif flags.keras_model_file:
     custom_object_dict = get_custom_objects()
-    model = keras.models.load_model(flags.keras_model_file, custom_objects = custom_object_dict)
+    model = keras.models.load_model(flags.keras_model_file, compile=False, custom_objects=custom_object_dict)
     converter = lite.TFLiteConverterV2.from_keras_model(model)
 
   # Convert the model.

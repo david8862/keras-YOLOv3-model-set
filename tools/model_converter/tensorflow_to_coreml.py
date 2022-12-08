@@ -17,7 +17,7 @@ def coreml_convert(input_model_file, output_file, model_input_shape):
             raise ValueError('tf.keras model convert only support in TF 2.x env')
         # tf.keras h5 model
         custom_object_dict = get_custom_objects()
-        keras_model = load_model(input_model_file, custom_objects=custom_object_dict)
+        keras_model = load_model(input_model_file, compile=False, custom_objects=custom_object_dict)
 
         # get input, output node names for the TF graph from tf.keras model
         # assume only 1 input
