@@ -4,7 +4,6 @@ import os, sys, argparse
 import numpy as np
 from PIL import Image
 import cv2
-from tqdm import tqdm
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
 from common.utils import get_classes, get_dataset, get_colors, draw_boxes
@@ -15,10 +14,13 @@ def dataset_visualize(annotation_file, classes_path):
     # get class names and count class item number
     class_names = get_classes(classes_path)
     colors = get_colors(len(class_names))
+    print('number of samples:', len(annotation_lines))
 
-    pbar = tqdm(total=len(annotation_lines), desc='Visualize dataset')
-    for i, annotation_line in enumerate(annotation_lines):
-        pbar.update(1)
+
+    i=0
+    while i < len(annotation_lines):
+        annotation_line = annotation_lines[i]
+
         line = annotation_line.split()
         image = Image.open(line[0]).convert('RGB')
         image = np.array(image, dtype='uint8')
@@ -43,12 +45,34 @@ def dataset_visualize(annotation_file, classes_path):
         # convert to BGR for cv2.imshow
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-        cv2.namedWindow("Image", 0)
-        cv2.imshow("Image", image)
+
+        try:
+            cv2.namedWindow("Dataset visualize f: forward; b: back; q: quit", 0)
+            cv2.imshow("Dataset visualize f: forward; b: back; q: quit", image)
+        except Exception as e:
+            #print(repr(e))
+            print('invalid image', image_path)
+            try:
+                cv2.getWindowProperty('image',cv2.WND_PROP_VISIBLE)
+            except Exception as e:
+                print('No valid window yet, try next image')
+                i = i + 1
+
         keycode = cv2.waitKey(0) & 0xFF
-        if keycode == ord('q') or keycode == 27: # 27 is keycode for Esc
-            break
-    pbar.close()
+        if keycode == ord('f'):
+            #print('forward to next image')
+            if i < len(annotation_lines) - 1:
+                i = i + 1
+        elif keycode == ord('b'):
+            #print('back to previous image')
+            if i > 0:
+                i = i - 1
+        elif keycode == ord('q') or keycode == 27: # 27 is keycode for Esc
+            print('exit')
+            exit()
+        else:
+            print('unsupport key')
+
 
 
 def main():
