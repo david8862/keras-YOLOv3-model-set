@@ -8,6 +8,9 @@ from PIL import Image
 from timeit import time
 from collections import deque
 
+import tensorflow as tf
+import tensorflow.keras.backend as K
+
 # implementation of SORT tracker
 from model.sort.sort import Sort
 # implementation of DeepSORT tracker
@@ -19,7 +22,9 @@ from model.deep_sort.generate_detections import create_box_encoder
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 from yolo import YOLO, YOLO_np
-from common.utils import get_classes
+from common.utils import get_classes, optimize_tf_gpu
+
+optimize_tf_gpu(tf, K)
 
 
 def get_frame(frame_capture, i, images_input):

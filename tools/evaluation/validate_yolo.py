@@ -19,9 +19,11 @@ from yolo5.postprocess_np import yolo5_postprocess_np
 from yolo3.postprocess_np import yolo3_postprocess_np
 from yolo2.postprocess_np import yolo2_postprocess_np
 from common.data_utils import preprocess_image
-from common.utils import get_classes, get_anchors, get_colors, draw_boxes, get_custom_objects
+from common.utils import get_classes, get_anchors, get_colors, draw_boxes, get_custom_objects, optimize_tf_gpu
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+optimize_tf_gpu(tf, K)
 
 
 def validate_yolo_model(model, image_file, anchors, class_names, model_input_shape, elim_grid_sense, v5_decode, loop_count, output_path):

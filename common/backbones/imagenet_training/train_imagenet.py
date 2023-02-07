@@ -29,7 +29,7 @@ from yolo3.models.yolo3_nano import NanoNet
 from yolo3.models.yolo3_darknet import DarkNet53
 from yolo4.models.yolo4_darknet import CSPDarkNet53
 
-#from common.utils import optimize_tf_gpu
+from common.utils import optimize_tf_gpu
 from common.model_utils import get_optimizer
 from common.callbacks import CheckpointCleanCallBack
 
@@ -45,6 +45,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 ## set session
 #K.set_session(session)
+
+optimize_tf_gpu(tf, K)
+
 
 def preprocess(image):
     # random adjust color level
