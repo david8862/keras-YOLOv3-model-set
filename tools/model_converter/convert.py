@@ -499,7 +499,7 @@ def main(args):
         out_index.reverse()
 
     model = Model(inputs=input_layer, outputs=[all_layers[i] for i in out_index])
-    print(model.summary())
+    model.summary()
 
     if args.weights_only:
         model.save_weights('{}'.format(output_path))

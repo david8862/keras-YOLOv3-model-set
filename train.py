@@ -283,13 +283,13 @@ if __name__ == '__main__':
         help = "weights average type, default=%(default)s")
     parser.add_argument('--decay_type', type=str, required=False, default=None, choices=[None, 'cosine', 'exponential', 'polynomial', 'piecewise_constant'],
         help = "Learning rate decay type, default=%(default)s")
-    parser.add_argument('--transfer_epoch', type=int, required=False, default=20,
+    parser.add_argument('--transfer_epoch', type=int, required=False, default=10,
         help = "Transfer training (from Imagenet) stage epochs, default=%(default)s")
-    parser.add_argument('--freeze_level', type=int,required=False, default=None, choices=[None, 0, 1, 2],
+    parser.add_argument('--freeze_level', type=int, required=False, default=None, choices=[None, 0, 1, 2],
         help = "Freeze level of the model in transfer training stage. 0:NA/1:backbone/2:only open prediction layer")
-    parser.add_argument('--init_epoch', type=int,required=False, default=0,
+    parser.add_argument('--init_epoch', type=int, required=False, default=0,
         help = "Initial training epochs for fine tune training, default=%(default)s")
-    parser.add_argument('--total_epoch', type=int,required=False, default=250,
+    parser.add_argument('--total_epoch', type=int, required=False, default=250,
         help = "Total training epochs, default=%(default)s")
     parser.add_argument('--multiscale', default=False, action="store_true",
         help='Whether to use multiscale training')

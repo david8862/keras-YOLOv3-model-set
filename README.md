@@ -281,7 +281,7 @@ optional arguments:
                         Learning rate decay type, default=None
   --transfer_epoch TRANSFER_EPOCH
                         Transfer training (from Imagenet) stage epochs,
-                        default=20
+                        default=10
   --freeze_level {None,0,1,2}
                         Freeze level of the model in transfer training stage.
                         0:NA/1:backbone/2:only open prediction layer

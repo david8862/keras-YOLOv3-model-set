@@ -126,12 +126,13 @@ def get_optimizer(optim_type, learning_rate, average_type=None, decay_type='cosi
 
     lr_scheduler = get_lr_scheduler(learning_rate, decay_type, decay_steps)
 
+    # NOTE: you can try to use clipnorm/clipvalue to avoid run into nan, especially on new TF versions
     if optim_type == 'adam':
-        optimizer = Adam(learning_rate=lr_scheduler, amsgrad=False)
+        optimizer = Adam(learning_rate=lr_scheduler, amsgrad=False, clipnorm=None, clipvalue=None)
     elif optim_type == 'rmsprop':
-        optimizer = RMSprop(learning_rate=lr_scheduler, rho=0.9, momentum=0.0, centered=False)
+        optimizer = RMSprop(learning_rate=lr_scheduler, rho=0.9, momentum=0.0, centered=False, clipnorm=None, clipvalue=None)
     elif optim_type == 'sgd':
-        optimizer = SGD(learning_rate=lr_scheduler, momentum=0.0, nesterov=False)
+        optimizer = SGD(learning_rate=lr_scheduler, momentum=0.0, nesterov=False, clipnorm=None, clipvalue=None)
     else:
         raise ValueError('Unsupported optimizer type')
 

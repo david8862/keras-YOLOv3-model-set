@@ -80,7 +80,7 @@ def category_id_to_real_id(category_id):
   """
   NOTE: coco has 80 classes, but the category_id ranges from 1 to 90
   """
-  category_id_to_real_id = \
+  cat_id_to_real_id = \
     {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10,
      11: 11, 13: 12, 14: 13, 15: 14, 16: 15, 17: 16, 18: 17, 19: 18, 20: 19, 21: 20,
      22: 21, 23: 22, 24: 23, 25: 24, 27: 25, 28: 26, 31: 27, 32: 28, 33: 29, 34: 30,

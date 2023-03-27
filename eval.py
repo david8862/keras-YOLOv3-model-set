@@ -428,7 +428,13 @@ def get_prediction_class_records(model, model_format, annotation_records, anchor
     '''
     if model_format == 'MNN':
         #MNN inference engine need create session
-        session = model.createSession()
+        session_config = \
+        {
+          'backend': 'CPU',  #'CPU'/'OPENCL'/'OPENGL'/'VULKAN'/'METAL'/'TRT'/'CUDA'/'HIAI'
+          'precision': 'high',  #'normal'/'low'/'high'/'lowBF'
+          'numThread': 2
+        }
+        session = model.createSession(session_config)
 
     # create txt file to save prediction result, with
     # save format as annotation file but adding score, like:
@@ -679,7 +685,7 @@ def get_rec_prec(true_positive, false_positive, gt_records):
 
 def draw_rec_prec(rec, prec, mrec, mprec, class_name, ap):
     """
-     Draw plot
+    Draw plot
     """
     plt.plot(rec, prec, '-o')
     # add a new penultimate point to the list (mrec[-2], 0.0)
@@ -689,7 +695,8 @@ def draw_rec_prec(rec, prec, mrec, mprec, class_name, ap):
     plt.fill_between(area_under_curve_x, 0, area_under_curve_y, alpha=0.2, edgecolor='r')
     # set window title
     fig = plt.gcf() # gcf - get current figure
-    fig.canvas.set_window_title('AP ' + class_name)
+    if fig.canvas.manager is not None:
+        fig.canvas.manager.set_window_title('AP ' + class_name)
     # set plot title
     plt.title('class: ' + class_name + ' AP = {}%'.format(ap*100))
     #plt.suptitle('This is a somewhat long figure title', fontsize=16)
@@ -716,7 +723,10 @@ import bokeh.io as bokeh_io
 import bokeh.plotting as bokeh_plotting
 def generate_rec_prec_html(mrec, mprec, scores, class_name, ap):
     """
-     generate dynamic P-R curve HTML page for each class
+    Generate dynamic P-R curve HTML page for each class
+
+    Note: for convenince, we support double click on the HTML page
+          with mouse to capture the rec/prec/score value on curve
     """
     # bypass invalid class
     if len(mrec) == 0 or len(mprec) == 0 or len(scores) == 0:
@@ -747,8 +757,21 @@ def generate_rec_prec_html(mrec, mprec, scores, class_name, ap):
     plt.axis.axis_line_color = None
 
     # draw curve data
-    plt.line(x='rec', y='prec', line_width=2, color='#ebbd5b', source=source)
+    plt.line(x='rec', y='prec', line_width=2, color='#ebbd5b', source=source, legend_label='double click to copy P&R')
     plt.add_tools(bokeh.models.HoverTool(
+      callback=bokeh.models.CustomJS(
+        code="""var data=cb_data.renderer.data_source.data;
+         var line_id=cb_data.index.line_indices[0];
+         var x=cb_data.geometry.x;
+         if(data['rec'][line_id+1]-x > x-data['rec'][line_id])
+         {
+            window.spr_text=data['score'][line_id]+'\t'+data['prec'][line_id]+'\t'+data['rec'][line_id];
+         }
+         else
+         {
+            window.spr_text=data['score'][line_id+1]+'\t'+data['prec'][line_id+1]+'\t'+data['rec'][line_id+1];
+         }
+         """),
       tooltips=[
         ( 'score', '@score{0.0000 a}'),
         ( 'Prec', '@prec'),
@@ -760,6 +783,7 @@ def generate_rec_prec_html(mrec, mprec, scores, class_name, ap):
       },
       mode='vline'
     ))
+    plt.js_on_event(bokeh.events.DoubleTap, bokeh.models.CustomJS(code="""navigator.clipboard.writeText(window.spr_text);"""))
     bokeh_io.save(plt)
     return
 
@@ -836,7 +860,8 @@ def draw_plot_func(dictionary, n_classes, window_title, plot_title, x_label, out
           if i == (len(sorted_values)-1): # largest bar
               adjust_axes(r, t, fig, axes)
     # set window title
-    fig.canvas.set_window_title(window_title)
+    if fig.canvas.manager is not None:
+        fig.canvas.manager.set_window_title(window_title)
     # write classes in y axis
     tick_font_size = 12
     plt.yticks(range(n_classes), sorted_keys, fontsize=tick_font_size)

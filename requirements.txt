@@ -22,5 +22,5 @@ tfcoreml
 sympy
 imgaug
 imagecorruptions
-bokeh
+bokeh==2.4.0
 tidecv

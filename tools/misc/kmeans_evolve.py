@@ -35,7 +35,7 @@ def parse_dataset(dataset):
     shapes = []
     bboxes = []
 
-    for annotation_line in dataset:
+    for annotation_line in tqdm(dataset, desc="loading dataset"):
         line = annotation_line.split()
 
         # get shape by opening image
