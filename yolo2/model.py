@@ -70,10 +70,10 @@ yolo2_model_map = {
 def get_yolo2_model(model_type, num_anchors, num_classes, input_tensor=None, input_shape=None, model_pruning=False, pruning_end_step=10000):
     #prepare input tensor
     if input_shape:
-        input_tensor = Input(shape=input_shape, name='image_input')
+        input_tensor = Input(shape=input_shape, batch_size=None, name='image_input')
 
     if input_tensor is None:
-        input_tensor = Input(shape=(None, None, 3), name='image_input')
+        input_tensor = Input(shape=(None, None, 3), batch_size=None, name='image_input')
 
     #YOLOv2 model has 5 anchors
     if model_type in yolo2_model_map:

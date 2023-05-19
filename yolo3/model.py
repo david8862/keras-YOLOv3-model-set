@@ -208,10 +208,10 @@ yolo3_tiny_model_map = {
 def get_yolo3_model(model_type, num_feature_layers, num_anchors, num_classes, input_tensor=None, input_shape=None, model_pruning=False, pruning_end_step=10000):
     #prepare input tensor
     if input_shape:
-        input_tensor = Input(shape=input_shape, name='image_input')
+        input_tensor = Input(shape=input_shape, batch_size=None, name='image_input')
 
     if input_tensor is None:
-        input_tensor = Input(shape=(None, None, 3), name='image_input')
+        input_tensor = Input(shape=(None, None, 3), batch_size=None, name='image_input')
 
     #Tiny YOLOv3 model has 6 anchors and 2 feature layers
     if num_feature_layers == 2:
