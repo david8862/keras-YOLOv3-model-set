@@ -438,7 +438,7 @@ def load_val_model(model_path):
 
     # support of ONNX model
     elif model_path.endswith('.onnx'):
-        model = onnxruntime.InferenceSession(model_path)
+        model = onnxruntime.InferenceSession(model_path, providers=['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CPUExecutionProvider'], provider_options=None)
 
     # normal keras h5 model
     elif model_path.endswith('.h5'):

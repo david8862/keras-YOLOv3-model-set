@@ -1391,7 +1391,7 @@ def load_eval_model(model_path):
 
     # support of ONNX model
     elif model_path.endswith('.onnx'):
-        model = onnxruntime.InferenceSession(model_path)
+        model = onnxruntime.InferenceSession(model_path, providers=['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CPUExecutionProvider'], provider_options=None)
         model_format = 'ONNX'
 
     # normal keras h5 model

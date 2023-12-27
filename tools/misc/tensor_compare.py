@@ -24,8 +24,8 @@ def main():
     parser.add_argument('--tensor_file_2', type=str, required=True)
     args = parser.parse_args()
 
-    tensor_1 = np.loadtxt(args.tensor_file_1)
-    tensor_2 = np.loadtxt(args.tensor_file_2)
+    tensor_1 = np.loadtxt(args.tensor_file_1).reshape(-1, 1).squeeze()
+    tensor_2 = np.loadtxt(args.tensor_file_2).reshape(-1, 1).squeeze()
 
 
     simi = cosine_similarity([tensor_1], [tensor_2])
