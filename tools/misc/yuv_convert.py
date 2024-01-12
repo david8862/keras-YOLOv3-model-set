@@ -123,7 +123,9 @@ def main():
     parser.add_argument('--image_path', help='image file or directory to convert', type=str, required=True)
     parser.add_argument('--image_shape', help='image shape as <height>x<width>, default=%(default)s', type=str, default='480x640')
     parser.add_argument('--image_mode', help = "YUV image mode (NV12/YUV420/Y), default=%(default)s", type=str, required=False, default='NV12', choices=['NV12', 'YUV420', 'Y'])
-    parser.add_argument('--output_path', help='output path to save predict result, default=%(default)s', type=str, required=False, default=None)
+    parser.add_argument('--output_path', help='output path to save target image, default=%(default)s', type=str, required=False, default=None)
+    parser.add_argument('--target_format', type=str, required=False, default='jpg', choices=['jpg', 'png', 'bmp'],
+                        help='target image file format. default=%(default)s')
 
     args = parser.parse_args()
 
@@ -157,7 +159,7 @@ def main():
         # save or show result
         if args.output_path:
             os.makedirs(args.output_path, exist_ok=True)
-            output_file = os.path.join(args.output_path, os.path.splitext(os.path.basename(image_file))[0]+'.jpg')
+            output_file = os.path.join(args.output_path, os.path.splitext(os.path.basename(image_file))[0]+'.'+args.target_format)
             Image.fromarray(image).save(output_file)
         else:
             Image.fromarray(image).show()
