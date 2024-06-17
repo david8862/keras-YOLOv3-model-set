@@ -1,5 +1,5 @@
 tensorflow
-scikit-learn==0.20.3
+scikit-learn==1.5.0
 filterpy
 scikit-image
 lap
