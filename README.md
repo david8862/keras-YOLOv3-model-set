@@ -321,6 +321,10 @@ Following is a reference training config cmd:
 ```
 # python train.py --model_type=yolo3_mobilenet_lite --anchors_path=configs/yolo3_anchors.txt --annotation_file=trainval.txt --classes_path=configs/voc_classes.txt --eval_online --save_eval_checkpoint
 ```
+or training on GPU 0, 1 and 2, if you have several GPUs on your host/server:
+```
+# CUDA_VISIBLE_DEVICES=0,1,2 python train.py --model_type=yolo3_mobilenet_lite --anchors_path=configs/yolo3_anchors.txt --annotation_file=trainval.txt --classes_path=configs/voc_classes.txt --eval_online --save_eval_checkpoint
+```
 
 Checkpoints during training could be found at `logs/000/`. Choose a best one as result
 
