@@ -27,7 +27,21 @@ def main():
     tensor_1 = np.loadtxt(args.tensor_file_1).reshape(-1, 1).squeeze()
     tensor_2 = np.loadtxt(args.tensor_file_2).reshape(-1, 1).squeeze()
 
+    # check ndim of tensor
+    if tensor_1.ndim != tensor_2.ndim:
+        print('tensor_1.ndim:', tensor_1.ndim)
+        print('tensor_2.ndim:', tensor_2.ndim)
+        print('2 tensors has different dimensions. compare fail!')
+        return
 
+    # single value tensor couldn't calculate cosine similarity. just show value to compare
+    if tensor_1.ndim == 0:
+        print('single value tensor. just show value to compare')
+        print('tensor_1:', tensor_1)
+        print('tensor_2:', tensor_2)
+        return
+
+    # do normal tensor compare
     simi = cosine_similarity([tensor_1], [tensor_2])
     print('cosine similarity:', simi)
 
