@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import os, argparse
 import json
-import numpy as np
 from tqdm import tqdm
 from collections import defaultdict, OrderedDict
 
@@ -197,5 +196,5 @@ for dataset, datatype in sets:
     print('Object class number:')
     for (class_name, number) in class_count.items():
         print('%s: %d' % (class_name, number))
-    print('total object number:', np.sum(list(class_count.values())))
+    print('total object number:', sum(list(class_count.values())))
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os, argparse
-import numpy as np
 import xml.etree.ElementTree as ET
 from tqdm import tqdm
 from collections import OrderedDict
@@ -133,5 +132,5 @@ for year, image_set in sets:
     print('Object class number:')
     for (class_name, number) in class_count.items():
         print('%s: %d' % (class_name, number))
-    print('total object number:', np.sum(list(class_count.values())))
+    print('total object number:', sum(list(class_count.values())))
 

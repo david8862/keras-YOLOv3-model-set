@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os, argparse
-import numpy as np
 from PIL import Image
 from tqdm import tqdm
 from collections import OrderedDict
@@ -78,7 +77,7 @@ def yolo_annotation(image_path, label_path, classes_path, output_file):
     print('Object class number:')
     for (class_name, number) in class_count.items():
         print('%s: %d' % (class_name, number))
-    print('total object number:', np.sum(list(class_count.values())))
+    print('total object number:', sum(list(class_count.values())))
 
 
 def main():
