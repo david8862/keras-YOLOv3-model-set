@@ -330,7 +330,7 @@ Checkpoints during training could be found at `logs/000/`. Choose a best one as 
 
 You can also use Tensorboard to monitor the loss trend during train:
 ```
-# tensorboard --logdir=logs/000
+# tensorboard --logdir=logs/000 [--host="host public IP address"]
 ```
 
 MultiGPU usage: use `--gpu_num N` to use N GPUs. It use [tf.distribute.MirroredStrategy](https://www.tensorflow.org/guide/distributed_training#mirroredstrategy) to support MultiGPU environment.
