@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow.keras.backend as K
 #from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, EarlyStopping, TerminateOnNaN, LambdaCallback
-from tensorflow_model_optimization.sparsity import keras as sparsity
+#from tensorflow_model_optimization.sparsity import keras as sparsity
 
 from yolo5.model import get_yolo5_train_model
 from yolo5.data import yolo5_data_generator_wrapper, Yolo5DataGenerator

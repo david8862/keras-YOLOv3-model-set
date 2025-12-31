@@ -1,10 +1,13 @@
 #!/usr/bin/python3
 # -*- coding=utf-8 -*-
 """Model utility functions."""
-from tensorflow.keras.optimizers import Adam, RMSprop, SGD
+# try to use legecy optimizer if possible
+try:
+    from tensorflow.keras.optimizers.legacy import Adam, RMSprop, SGD
+except:
+    from tensorflow.keras.optimizers import Adam, RMSprop, SGD
 from tensorflow.keras.optimizers.schedules import ExponentialDecay, PolynomialDecay, PiecewiseConstantDecay
 from tensorflow.keras.experimental import CosineDecay
-from tensorflow_model_optimization.sparsity import keras as sparsity
 import tensorflow.keras.backend as K
 
 
@@ -25,6 +28,7 @@ def add_metrics(model, metric_dict):
 
 def get_pruning_model(model, begin_step, end_step):
     import tensorflow as tf
+    from tensorflow_model_optimization.sparsity import keras as sparsity
     if tf.__version__.startswith('2'):
         # model pruning API is not supported in TF 2.0 yet
         raise Exception('model pruning is not fully supported in TF 2.x, Please switch env to TF 1.x for this feature')

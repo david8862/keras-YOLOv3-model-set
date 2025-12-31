@@ -9,7 +9,11 @@ from functools import partial
 import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Input, Lambda
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
+# try to use legecy optimizer if possible
+try:
+    from tensorflow.keras.optimizers.legacy import Adam
+except:
+    from tensorflow.keras.optimizers import Adam
 
 from scaled_yolo4.models.scaled_yolo4_csp_darknet import scaled_yolo4_csp_body
 from yolo5.models.yolo5_darknet import yolo5_body

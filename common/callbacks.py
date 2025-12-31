@@ -4,7 +4,6 @@
 import os, sys, random, tempfile
 import numpy as np
 import glob
-from tensorflow_model_optimization.sparsity import keras as sparsity
 #from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import Callback
 
@@ -98,6 +97,7 @@ class EvalCallBack(Callback):
         os.remove(tmp_weights_path)
 
         if self.model_pruning:
+            from tensorflow_model_optimization.sparsity import keras as sparsity
             eval_model = sparsity.strip_pruning(self.eval_model)
         else:
             eval_model = self.eval_model
