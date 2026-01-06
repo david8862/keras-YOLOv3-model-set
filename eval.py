@@ -395,7 +395,7 @@ def yolo_predict_keras(model, image, anchors, num_classes, model_input_shape, co
     #origin image shape, in (height, width) format
     image_shape = image.size[::-1]
 
-    prediction = model.predict([image_data])
+    prediction = model.predict([image_data], verbose=0)
     if type(prediction) is not list:
         prediction = [prediction]
 

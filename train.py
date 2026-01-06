@@ -29,7 +29,7 @@ import tensorflow as tf
 optimize_tf_gpu(tf, K)
 
 
-def main(args):
+def train(args):
     log_dir = os.path.join('logs', '000')
     class_names = get_classes(args.classes_path)
     num_classes = len(class_names)
@@ -250,7 +250,7 @@ def main(args):
 
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
     # Model definition options
     parser.add_argument('--model_type', type=str, required=False, default='yolo3_mobilenet_lite',
@@ -322,4 +322,8 @@ if __name__ == '__main__':
     height, width = args.model_input_shape.split('x')
     args.model_input_shape = (int(height), int(width))
 
-    main(args)
+    train(args)
+
+
+if __name__ == '__main__':
+    main()

@@ -258,7 +258,7 @@ Tensorflow-lite support both Float32 and UInt8 type model. We can dump out the k
 
     ```
     # cd keras-YOLOv3-model-set/tools/model_converter/
-    # python custom_tflite_convert.py --keras_model_file=model.h5 --output_file=model.tflite
+    # python keras_to_tflite.py --keras_model_file=model.h5 --output_file=model.tflite
     ```
 
 * convert keras .h5 model to UInt8 tflite model with TF 2.0 Post-training integer quantization:

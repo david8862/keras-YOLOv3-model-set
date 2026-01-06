@@ -68,7 +68,7 @@ A general YOLOv4/v3/v2 object detection pipeline inherited from [keras-yolo3-Mob
 
 ## Quick Start
 
-1. Install requirements on Ubuntu 16.04/18.04:
+1. Install requirements on Ubuntu 22.04/24.04 (with Python 3.10):
 
 ```
 # apt install python3-opencv imagemagick
