@@ -326,6 +326,18 @@ or training on GPU 0, 1 and 2, if you have several GPUs on your host/server:
 # CUDA_VISIBLE_DEVICES=0,1,2 python train.py --model_type=yolo3_mobilenet_lite --anchors_path=configs/yolo3_anchors.txt --annotation_file=trainval.txt --classes_path=configs/voc_classes.txt --eval_online --save_eval_checkpoint
 ```
 
+if you meet following error during training:
+```
+qt.qpa.plugin: Could not load the Qt platform plugin "xcb" in "/root/.virtualenvs/py310ml/lib/python3.10/site-packages/cv2/qt/plugins" even though it was found.
+This application failed to start because no Qt platform plugin could be initialized. Reinstalling the application may fix this problem.
+
+Available platform plugins are: xcb, eglfs, linuxfb, minimal, minimalegl, offscreen, vnc, wayland-egl, wayland, wayland-xcomposite-egl, wayland-xcomposite-glx, webgl.
+```
+try to set `QT_QPA_PLATFORM=offscreen` in training cmd, like:
+```
+# QT_QPA_PLATFORM=offscreen python train.py --model_type=yolo3_mobilenet_lite --anchors_path=configs/yolo3_anchors.txt --annotation_file=trainval.txt --classes_path=configs/voc_classes.txt --eval_online --save_eval_checkpoint
+```
+
 Checkpoints during training could be found at `logs/000/`. Choose a best one as result
 
 You can also use Tensorboard to monitor the loss trend during train:
